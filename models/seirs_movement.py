@@ -6,7 +6,8 @@ class SEIR_Movement:
   def __init__(self, params, state_init_values):
     self.params = params
     self.state_init_values = state_init_values
-    self.time_params = self.params[:-6]
+    self.mu = self.params[0]
+    self.time_params = self.params[1:-6]
     self.p_params = self.params[-6:-3]
     self.N = self.params[-3]
     self.intervention_day = self.params[-2]
@@ -18,6 +19,7 @@ class SEIR_Movement:
     S, E, I, R_mild, R_severe, R_severe_hosp, R_fatal, C, D = y
 
     # Init time parameters and probabilities
+    mu = self.mu
     T_trans, T_inc, T_inf, T_recov_mild, T_hosp, T_recov_severe, T_death = self.time_params
     P_mild, P_severe, P_fatal = self.p_params
 
@@ -28,9 +30,9 @@ class SEIR_Movement:
     # Init derivative vector
     dydt = np.zeros(y.shape)
     # Write differential equations
-    dydt[0] = -I*S/(T_trans)
-    dydt[1] = I*S/(T_trans) - E/T_inc
-    dydt[2] = E/T_inc - I/T_inf
+    dydt[0] = -I*S/(T_trans) - mu*S
+    dydt[1] = I*S/(T_trans) - E/T_inc - mu*E
+    dydt[2] = E/T_inc - I/T_inf - mu*I
     dydt[3] = (P_mild*I)/T_inf - R_mild/T_recov_mild
     dydt[4] = (P_severe*I)/T_inf - R_severe/T_hosp
     dydt[5] = R_severe/T_hosp - R_severe_hosp/T_recov_severe
