@@ -1,2 +1,2 @@
 # covid-modelling
-Repo for modelling the spread of n-Covid-19
+Repo for modelling the spread of novel Covid-19
