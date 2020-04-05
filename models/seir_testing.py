@@ -53,7 +53,7 @@ class SEIR_Testing():
 
         return dydt
 
-    def solve_ode(self, total_no_of_days=200, time_step=2):
+    def solve_ode(self, total_no_of_days=200, time_step=0.5, method='RK45'):
         t_start = 0
         t_final = total_no_of_days
         time_steps = np.arange(t_start, total_no_of_days + time_step, time_step)
@@ -61,6 +61,6 @@ class SEIR_Testing():
         state_init_values_arr = [self.state_init_values[x] for x in self.state_init_values]
 
         sol = solve_ivp(self.get_derivative, [t_start, t_final], 
-                        state_init_values_arr, method='RK45', t_eval=time_steps)
+                        state_init_values_arr, method=method, t_eval=time_steps)
 
         return sol
