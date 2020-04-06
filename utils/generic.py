@@ -1,3 +1,5 @@
+import pandas as pd
+import numpy as np
 from collections import OrderedDict
 
 # define SEIR model parameters (Gabriel Goh's version)
@@ -69,3 +71,15 @@ def init_params(R0 = 2.2, T_inf = 2.9, T_inc = 5.2, T_hosp = 5, T_death = 32, P_
     state_init_values['D'] = 0
     
     return vanilla_params, testing_params, state_init_values
+
+def compute_regionwiseflow():
+    df_movement = pd.read_csv('/scratchd/data/readwrite/covid/fb-data/SEIR/mumbai_flow.csv')
+    date, time = np.array([x.split('_') for x in df_movement['date_time']]).T
+    df_movement['date'] = pd.to_datetime(date)
+    df_movement['time'] = time
+    df_movement['mu'] = df_movement['net_flow']/df_movement['population']
+
+    regionwiseflow = df_movement.groupby(['region', 'date']).mean()
+    districts = regionwiseflow.index.levels[0]
+    districts
+    return regionwiseflow, districts
