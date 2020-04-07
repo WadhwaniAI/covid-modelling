@@ -24,9 +24,8 @@ class SEIR:
     P_mild, P_severe, P_fatal = self.p_params
     
     # Modelling the intervention
-    for i in range(len(self.intervention_day)):
-        if (t >= self.intervention_day[i] and t<self.intervention_day[i]+self.intervention_duration[i]):
-          T_trans = self.intervention_amount[i]*T_trans
+    if (t >= self.intervention_day and t<self.intervention_day+self.intervention_duration):
+      T_trans = self.intervention_amount*T_trans
 
     # Init derivative vector
     dydt = np.zeros(y.shape)
