@@ -5,8 +5,8 @@ from numpy import exp
 def load_data(from_source=True):
 	if not from_source:
 		try:
-			states = pd.read_csv('data/states.csv')
-			counties = pd.read_csv('data/counties.csv')
+			states = pd.read_csv('../../data/data/states.csv')
+			counties = pd.read_csv('../../data/data/counties.csv')
 			return states, counties
 		except:
 			print("Failed to load pickles, reading from source")
@@ -24,13 +24,13 @@ def clean(df):
 
 def save_pickles(df_name_pairs):
 	for df, name in df_name_pairs:
-		filename = 'data/{}.pkl'.format(name)
+		filename = '../../data/data/{}.pkl'.format(name)
 		df.to_pickle(filename)
 		print("Saved to {}".format(filename))
 
 def save_csv(df_name_pairs):
 	for df, name in df_name_pairs:
-		filename = 'data/{}.csv'.format(name)
+		filename = '../../data/data/{}.csv'.format(name)
 		df.to_csv(filename, index=False)
 		print("Saved to {}".format(filename))
 
