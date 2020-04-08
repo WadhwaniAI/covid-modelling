@@ -7,6 +7,7 @@ import pandas as pd
 from dfisman_r0 import load_data, get_state
 import sys
 from inspect import signature
+from sklearn.metrics import r2_score, mean_squared_log_error
 
 def poly(x, a, b): 
     return a*(x**b)
@@ -92,12 +93,12 @@ def fit_leastsq(p0, x, y, function): # https://stackoverflow.com/a/21844726
 	perr_leastsq = np.array(error) 
 	return pfit_leastsq, perr_leastsq 
 
-def curve_fitting(funcs, xy, xcol, ycol, fname):
+def curve_fitting(funcs, df, xcol, ycol, fname):
 	# least squares log diff loss function
 	# funcs: list(functions)
 		# each function must also have a function_str method that takes in parameters and fname=False
 		# see above for examples
-	x, y = xy[xcol], xy[ycol]
+	x, y = df[xcol], df[ycol]
 	colors = ['r--', 'g--', 'c--', 'm--', 'y--', 'k--']
 
 	for i, func in enumerate(funcs):
@@ -112,10 +113,11 @@ def curve_fitting(funcs, xy, xcol, ycol, fname):
 		print(perr) 
 		print()
 
+
 		strfunc = getattr(sys.modules[__name__], func.__name__ + "_str")
 		plt.yscale("log")
 		plt.grid()
-		plt.xlabel("Time: Days since {}".format(dates[0]))
+		plt.xlabel("Days")
 		plt.ylabel("Cases")
 		plt.plot(x, y, 'b-', label='data')
 		plt.plot(x, func(x, *popt), 'r-', label='fit: {}: {}'.format(func.__name__, strfunc(*popt)))
@@ -139,12 +141,56 @@ def curve_fitting(funcs, xy, xcol, ycol, fname):
 		# plt.show() 
 		plt.clf() 
 
+def same_plot(funcs, df, xcol, ycol, fname):
+	# least squares log diff loss function
+	# funcs: list(functions)
+		# each function must also have a function_str method that takes in parameters and fname=False
+		# see above for examples
+	x, y = df[xcol], df[ycol]
+	colors_solid = ['r-', 'g-', 'c-', 'm-', 'y-', 'k-']
+	colors_dash = ['r--', 'g--', 'c--', 'm--', 'y--', 'k--']
+	plt.yscale("log")
+	plt.grid()
+	plt.xlabel("Days")
+	plt.ylabel("Cases")
+	plt.plot(x, y, 'b-', label='data')
+		
+	for i, func in enumerate(funcs):
+		# popt, pcov = curve_fit(func, x, y)
+		# popt, pcov = leastsq(func=log_diff, x0=(1.,1.), args=(x,y))
+		# perr = np.sqrt(np.diag(pcov))
+		popt, perr = fit_leastsq((len(signature(func).parameters)-1)*[1.], x, y, func)
+
+		print("{} coefficients:".format(func.__name__)) 
+		print(popt) 
+		print("covariance of coefficients:") 
+		print(perr) 
+		print()
+
+		ypred = func(x, *popt)
+		r2 = r2_score(y, ypred)
+		print ("r2: {}".format(r2))
+		msle = mean_squared_log_error(y, ypred)
+		print ("msle: {}".format(msle))
+		strfunc = getattr(sys.modules[__name__], func.__name__ + "_str")
+		plt.plot(x, ypred, colors_solid[i], label='fit: {}: {}'.format(func.__name__, strfunc(*popt)))
+		plt.title("{} Cases".format(fname))
+		print 
+		plt.plot(x, func(x, a=popt[0] + perr[0], b=popt[1] + perr[1], c=popt[2] + perr[2]), colors_dash[i], label='fit: {}: {}'.format(func.__name__, strfunc(a=popt[0] + perr[0], b=popt[1] + perr[1], c=popt[2] + perr[2])))
+		plt.plot(x, func(x, a=popt[0] - perr[0], b=popt[1] - perr[1], c=popt[2] - perr[2]), colors_dash[i], label='fit: {}: {}'.format(func.__name__, strfunc(a=popt[0] - perr[0], b=popt[1] - perr[1], c=popt[2] - perr[2])))
+		plt.plot([], [], ' ', label="std dev for a: {} b: {} c: {}".format(format_float_positional(perr[0], precision=4), format_float_positional(perr[1], precision=4), format_float_positional(perr[2], precision=4)))
+
+	plt.legend() 
+	plt.savefig('output/{}_fitting_sameplot.png'.format(fname))
+	# plt.show() 
+	plt.clf() 
+
 
 if __name__ == '__main__':
 	
 # --------------------------------------------
 # Set up Data
-	ny = pd.read_csv('../../data/ny_google.csv')
+	ny = pd.read_csv('../../data/data/ny_google.csv')
 	x = pd.Series([i+1 for i in range(len(ny))])
 	dates = ny["date"] # x - time in days
 	y = ny["cases"] # number of cases on day x
@@ -153,20 +199,19 @@ if __name__ == '__main__':
 	ri_smooth = ny["r_smooth"]
 	nyxy = pd.concat([x, y, dates, Ri, ri, ri_smooth], axis=1)
 
-	bbmp = pd.read_csv('../../data/bbmp.csv')
-	a = pd.Series([i+1 for i in range(len(bbmp))])
+	bbmp = pd.read_csv('../../data/data/bbmp.csv')
+	x = pd.Series([i+1 for i in range(len(bbmp))])
 	dates = bbmp["Date"] # x - time in days
-	b = bbmp["Active Cases on Date (Cum Cases - Cum Deaths - Cum Discharged)"] # number of cases on day x
-	bbmpxy = pd.concat([a, dates, b], axis=1)
-	print (bbmpxy.columns)
+	y = bbmp["Cumulative Cases Til Date"] # number of cases on day x
+	bbmpxy = pd.concat([x, dates, y], axis=1)
 
 # --------------------------------------------
 # Time/Cases
 
 	funcs = [poly, exponential, logreg, erf]
-	curve_fitting(funcs, nyxy, 0, 'cases', 'NY')
-	curve_fitting(funcs, bbmpxy, 0, 'Active Cases on Date (Cum Cases - Cum Deaths - Cum Discharged)', 'BBMP')
-
+	# curve_fitting(funcs, nyxy, 0, 'cases', 'NY')
+	# curve_fitting(funcs, bbmpxy, 0, 'Cumulative Cases Til Date', 'BBMP')
+	same_plot([logreg, erf], bbmpxy, 0, 'Cumulative Cases Til Date', 'BBMP')
 # --------------------------------------------
 # R_t/Cases
 
