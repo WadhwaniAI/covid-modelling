@@ -12,92 +12,82 @@ from sklearn.metrics import r2_score, mean_squared_log_error
 from sklearn.model_selection import train_test_split
 from datetime import datetime, timedelta
 from matplotlib.dates import DateFormatter
+# from curvefit.core.utils import data_translator
 
 # -------------------------------------------------------------------------
 # load data
 df = pd.read_csv('../../data/data/bbmp.csv')
-df['date'] = df['Date'].apply(lambda x: datetime.strptime(x, "%d.%m.%Y"))
+df.loc[:, 'date'] = df['Date'].apply(lambda x: datetime.strptime(x, "%d.%m.%Y"))
 df.drop("Date", axis=1, inplace=True)
-df['day'] = pd.Series([i+1 for i in range(len(df))])
+df.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
 df.rename(columns = {'Cumulative Deaths til Date':'deaths'}, inplace = True) 
 df.rename(columns = {'Cumulative Cases Til Date':'cases'}, inplace = True) 
-df['group'] = pd.Series([1 for i in range(len(df))])
+df.loc[:, 'group'] = pd.Series([1 for i in range(len(df))])
+
 test_size = 5
+data, test = df[:-test_size], df[-test_size:]
 seed = 'last{}'.format(test_size)
-# data, test = train_test_split(df, train_size=.8, shuffle=True, random_state=seed)
-data = df[:-test_size]
-test = df[-test_size:]
 print ('seed: {}'.format(seed))
+# data, test = train_test_split(df, train_size=.8, shuffle=True, random_state=seed)
 
 # set vars
-n_data       = len(data) # 29
+n_data       = len(data)
 num_params   = 3 # alpha beta p
-alpha_true   = 2.0
-beta_true    = 3.0
-p_true       = 4.0
-rel_tol      = 1e-6
-# model for the mean of the data
-def generalized_logistic(t, params) :
-    alpha = params[0]
-    beta  = params[1]
-    p     = params[2]
-    return p / ( 1.0 + np.exp( - alpha * ( t - beta ) ) )
-# erf, derf, expit, dderf
+alpha_true   = 2.0 # TODO
+beta_true    = 3.0 # TODO
+p_true       = 4.0 # TODO
+
+# erf, derf, expit, dderf etc
 fname = "BBMP"
 xcol = 'day'
 date = 'date'
+groupcol = 'group'
 ycols = {
     'cases' : erf,
-    'deaths': erf,
+    # 'deaths': erf,
 }
-groupcol = 'group'
 # -------------------------------------------------------------------------
-#
-# link function used for beta
-def identity_fun(x) :
-    return x
-#
-# link function used for alpha, p
-def exp_fun(x) :
-    return np.exp(x)
-#
-# params_true
+
+# link functions
+identity_fun = lambda x: x
+exp_fun = lambda x : np.exp(x)
+
 params_true       = np.array( [ alpha_true, beta_true, p_true ] )
-#
 
 def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate):
-    # fit_params
-    # TODO: what do do about the below line when we don't have params true?
     
     predictx = np.array([x+1 for x in range(len(predictdate))])
     
+    # pipeline
     pipeline.setup_pipeline()
-    pipeline.run_predictive_validity(theta=1) # TODO: determine theta
-    pipeline.fit(data)
+    # TODO: all params for below. the column names for covariates need to be fixed below, and need to be in pipeline.pv.all_residuals
+    pipeline.run(n_draws=5, prediction_times=predictx, cv_threshold=1e-2,
+            smoothed_radius=[3,3], num_smooths=3, exclude_groups=[], exclude_below=0,
+            exp_smoothing=None, max_last=None)
+    
     params_estimate = pipeline.mod.params
     print(params_estimate)
-    # print (pipeline.pv.all_residuals)
-    # TODO: all params for below. the column names for covariates need to be fixed below, and need to be in pipeline.pv.all_residuals
-    pipeline.fit_residuals(smoothed_radius=[3,3], num_smooths=4, covariates=['num_data', 'data_index'], exclude_below=0, exclude_groups=[])
-    # TODO: determine num_draws
-    pipeline.create_draws(num_draws=5, prediction_times=predictx)
-    predictions = pipeline.predict(times=predictx, predict_space=func, predict_group='all')
-
+    
+    # plot draws
     pipeline.plot_results(prediction_times=predictx)
     plt.savefig('output/pipeline/draws_{}_{}_{}_{}.png'.format(fname, ycol, func.__name__, seed))
     plt.clf()
     
+    predictions = pipeline.predict(times=predictx, predict_space=func, predict_group='all')
+    
+    # evaluate against test set
     xtest, ytest = test[xcol], test[ycol]
     predtest = pipeline.predict(times=xtest, predict_space=func, predict_group='all')
     r2, msle = r2_score(ytest, predtest), mean_squared_log_error(ytest, predtest)
     print ('test set - r2: {} msle: {}'.format(r2, msle))
 
+    # evaluate overall
     r2, msle = r2_score(data[ycol], predictions[:len(data[xcol])]), \
         mean_squared_log_error(data[ycol], predictions[:len(data[xcol])])
     print ('overall - r2: {} msle: {}'.format(r2, msle))
 
-    # sys.exit(0)
 
+    # plot predictions against actual
     plt.yscale("log")
     plt.gca().xaxis.set_major_formatter(DateFormatter("%d.%m"))
     plt.grid()
@@ -113,17 +103,45 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate):
     # plt.show() 
     plt.clf()
 
-    return predictions 
+
+    for i, group in enumerate(pipeline.groups):
+        # x = prediction_times = predictx
+        draws = pipeline.draws[group].copy()
+        # draws = data_translator(
+        #     data=draws,
+        #     input_space=pipeline.predict_space,
+        #     output_space=pipeline.predict_space
+        # )
+        mean_fit = pipeline.mean_predictions[group].copy() # predictions
+        # mean_fit = data_translator(
+        #     data=mean_fit,
+        #     input_space=pipeline.predict_space,
+        #     output_space=pipeline.predict_space
+        # )
+        
+        mean = draws.mean(axis=0)
+
+        # uncertainty
+        lower = np.quantile(draws, axis=0, q=0.025)
+        upper = np.quantile(draws, axis=0, q=0.975)
+
+    return mean_fit, lower, mean, upper 
 
 predictions = {}
 for ycol, func in ycols.items():
     
-    data['covs']            = n_data * [ 1.0 ]
+    data.loc[:,'covs']            = n_data * [ 1.0 ]
+    data.loc[:,'deaths_normalized']            = data['deaths']/data['deaths'].max()
 
     param_names  = [ 'alpha', 'beta',       'p'     ]
+    covs = ['covs', 'covs', 'covs']
     link_fun     = [ identity_fun, exp_fun, exp_fun ]
     var_link_fun = link_fun
-    covs = ['covs']
+
+    # # think this could work with more death data:
+    # link_fun     = [ identity_fun, identity_fun, exp_fun ]
+    # covs = ['covs', 'deaths_normalized', 'covs']
+    
     #
     pipeline = BasicModel(
         all_data=data, #: (pd.DataFrame) of *all* the data that will go into this modeling pipeline
@@ -142,7 +160,8 @@ for ycol, func in ycols.items():
         }, #: keyword arguments to CurveModel.fit_params()
         basic_model_dict= { #: additional keyword arguments to the CurveModel class
             'col_obs_se': None,#(str) of observation standard error
-            'col_covs': num_params*[covs],#TODO: List[str] list of names of covariates to put on the parameters
+            # 'col_covs': num_params*[covs],#TODO: List[str] list of names of covariates to put on the parameters
+            'col_covs': [[cov] for cov in covs],#TODO: List[str] list of names of covariates to put on the parameters
             'param_names': param_names,#(list{str}):
                 # Names of the parameters in the specific functional form.
             'link_fun': link_fun,#(list{function}):
@@ -159,15 +178,20 @@ for ycol, func in ycols.items():
 # datetime | confidence | infections lower bound | infections most likely
 
 
-# results = pd.concat([df[date], pd.Series(predictdate[len(df):], name=date)], axis=0)
+results = pd.concat([df[date], pd.Series(predictdate[len(df):], name=date)], axis=0)
 
-# for ycol, preds in predictions.items():
-#     col_results = pd.concat([pd.Series(df[ycol]), pd.Series(preds[len(df):], name=ycol)], axis=0)
-#     results = pd.concat([results, col_results], axis=1)
-#     temp = results[ycol].shift(1)
-#     results["new {}".format(ycol)] = results[ycol] - temp
+for ycol, (preds, lower, mean, upper) in predictions.items():
+    dummy = pd.Series(np.full((len(preds)-len(df),), fill_value=np.nan), name='observed {}'.format(ycol))
+    observed = pd.concat(
+        [pd.Series(df[ycol], name='observed {}'.format(ycol)), dummy],axis=0
+    ).reset_index(drop=True)
+    results = pd.concat([results, pd.Series(observed)], axis=1)
+    results = pd.concat([results, pd.Series(preds, name='preds {}'.format(ycol))], axis=1)
+    results = pd.concat([results, pd.Series(lower, name='lower {}'.format(ycol))], axis=1)
+    results = pd.concat([results, pd.Series(mean, name='mean {}'.format(ycol))], axis=1)
+    results = pd.concat([results, pd.Series(upper, name='upper {}'.format(ycol))], axis=1)
 
-# results.to_csv("output/{}_{}_{}.csv".format(fname, func.__name__, seed), index=False)
+results.to_csv("output/pipeline/{}_{}_{}.csv".format(fname, func.__name__, seed), index=False)
 
 
 
