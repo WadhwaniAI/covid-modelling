@@ -47,8 +47,8 @@ fname = "BBMP"
 xcol = 'day'
 date = 'date'
 ycols = {
-    'cases' : generalized_logistic,
-    'deaths': generalized_logistic,
+    'cases' : erf,
+    'deaths': erf,
 }
 groupcol = 'group'
 # -------------------------------------------------------------------------
@@ -72,18 +72,21 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate):
     predictx = np.array([x+1 for x in range(len(predictdate))])
     
     pipeline.setup_pipeline()
-    pipeline.run_predictive_validity(theta=1)
+    pipeline.run_predictive_validity(theta=1) # TODO: determine theta
     pipeline.fit(data)
-    # params_estimate = pipeline.mod.params
-    # print(params_estimate)
-    print (pipeline.pv.all_residuals)
-    # the column names for covariates need to be fixed below, and need to be in pipeline.pv.all_residuals
-    pipeline.fit_residuals(smoothed_radius=[3,3], covariates=['far_out', 'far_out'], exclude_below=0, exclude_groups=[])
-    pipeline.create_draws(5, predictx)
+    params_estimate = pipeline.mod.params
+    print(params_estimate)
+    # print (pipeline.pv.all_residuals)
+    # TODO: all params for below. the column names for covariates need to be fixed below, and need to be in pipeline.pv.all_residuals
+    pipeline.fit_residuals(smoothed_radius=[3,3], num_smooths=4, covariates=['num_data', 'data_index'], exclude_below=0, exclude_groups=[])
+    # TODO: determine num_draws
+    pipeline.create_draws(num_draws=5, prediction_times=predictx)
     predictions = pipeline.predict(times=predictx, predict_space=func, predict_group='all')
 
-    pipeline.plot_draws(predictx)
-
+    pipeline.plot_results(prediction_times=predictx)
+    plt.savefig('output/pipeline/draws_{}_{}_{}_{}.png'.format(fname, ycol, func.__name__, seed))
+    plt.clf()
+    
     xtest, ytest = test[xcol], test[ycol]
     predtest = pipeline.predict(times=xtest, predict_space=func, predict_group='all')
     r2, msle = r2_score(ytest, predtest), mean_squared_log_error(ytest, predtest)
@@ -96,9 +99,7 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate):
     # sys.exit(0)
 
     plt.yscale("log")
-    ax = plt.gca()
-    formatter = DateFormatter("%d.%m")
-    ax.xaxis.set_major_formatter(formatter)
+    plt.gca().xaxis.set_major_formatter(DateFormatter("%d.%m"))
     plt.grid()
     plt.xlabel("Date")
     plt.ylabel("Cases")
@@ -108,7 +109,7 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate):
     plt.title("{} Cases fit to {}".format(fname, func.__name__))
     
     plt.legend() 
-    plt.savefig('output/{}_{}_fitting_{}_{}.png'.format(fname, ycol, func.__name__, seed))
+    plt.savefig('output/pipeline/{}_{}_{}_{}.png'.format(fname, ycol, func.__name__, seed))
     # plt.show() 
     plt.clf()
 
@@ -116,32 +117,9 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate):
 
 predictions = {}
 for ycol, func in ycols.items():
-
-    # # data_frame
-    # independent_var   = data[xcol]
-    # measurement_value = data[ycol] # generalized_logistic(independent_var, params_true)
-    # measurement_std   = n_data * [ 0.1 ] # NEED TO DEFINE, SET TO NONE FOR NOW BELOW
-    # data_group        = data[groupcol]
-
-    # # covariates
+    
     data['covs']            = n_data * [ 1.0 ]
 
-
-    # data_dict         = {
-    #     'independent_var'   : independent_var   ,
-    #     'measurement_value' : measurement_value ,
-    #     'measurement_std'   : measurement_std   ,
-    #     'covs'              : covs      ,
-    #     'region'            : data_group        ,
-    # }
-    # data_frame        = pd.DataFrame(data_dict)
-    # #
-    # # curve_model
-
-    # col_t        = 'independent_var'
-    # col_obs      = 'measurement_value'
-    # col_covs     = num_params *[ [ 'covs' ] ]
-    # col_group    = 'region'
     param_names  = [ 'alpha', 'beta',       'p'     ]
     link_fun     = [ identity_fun, exp_fun, exp_fun ]
     var_link_fun = link_fun
@@ -152,19 +130,19 @@ for ycol, func in ycols.items():
         col_t=xcol, #: (str) name of the column with time
         col_group=groupcol, #: (str) name of the column with the group in it
         col_obs=ycol, #: (str) the name of the column with observations for fitting the model
-        col_obs_compare=ycol, #: (str) the name of the column that will be used for predictive validity comparison
-        all_cov_names=covs, #: List[str] list of name(s) of covariate(s). Not the same as the covariate specifications
+        col_obs_compare=ycol, #TODO: (str) the name of the column that will be used for predictive validity comparison
+        all_cov_names=covs, #TODO: List[str] list of name(s) of covariate(s). Not the same as the covariate specifications
             # that are required by CurveModel in order of parameters. You should exclude intercept from this list.
         fun=func, #: (callable) the space to fit in, one of curvefit.functions
-        predict_space=func, #: (callable) the space to do predictive validity in, one of curvefit.functions
-        obs_se_func=None, #: (optional) function to get observation standard error from col_t
+        predict_space=func, #TODO confirm: (callable) the space to do predictive validity in, one of curvefit.functions
+        obs_se_func=None, #TODO if we wanna specify: (optional) function to get observation standard error from col_t
         # predict_group='all', #: (str) which group to make predictions for
-        fit_dict={
+        fit_dict={ # TODO: add priors here
             'fe_init': params_true / 3.0,
         }, #: keyword arguments to CurveModel.fit_params()
         basic_model_dict= { #: additional keyword arguments to the CurveModel class
             'col_obs_se': None,#(str) of observation standard error
-            'col_covs': num_params*[covs],#List[str] list of names of covariates to put on the parameters
+            'col_covs': num_params*[covs],#TODO: List[str] list of names of covariates to put on the parameters
             'param_names': param_names,#(list{str}):
                 # Names of the parameters in the specific functional form.
             'link_fun': link_fun,#(list{function}):
@@ -175,8 +153,7 @@ for ycol, func in ycols.items():
         },
     )
 
-    print(data.dtypes)
-    predictdate = np.array([timedelta(days=x)+data[date].iloc[0] for x in range(90)])
+    predictdate = pd.to_datetime(pd.Series([timedelta(days=x)+data[date].iloc[0] for x in range(90)]))
     predictions[ycol] = fit_predict_plot(pipeline, xcol, ycol, data, test, func, predictdate)
 
 # datetime | confidence | infections lower bound | infections most likely

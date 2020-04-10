@@ -159,7 +159,7 @@ for ycol, func in ycols.items():
         col_obs_se
     )
 
-    predictdate = np.array([timedelta(days=x)+data[date].iloc[0] for x in range(90)])
+    predictdate = pd.to_datetime(pd.Series([timedelta(days=x)+data[date].iloc[0] for x in range(90)]))
     predictions[ycol] = fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate)
 
 # datetime | confidence | infections lower bound | infections most likely
