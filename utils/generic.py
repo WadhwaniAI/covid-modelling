@@ -4,7 +4,7 @@ from collections import OrderedDict
 
 # define SEIR model parameters (Gabriel Goh's version)
 def init_params(R0 = 2.2, T_inf = 2.9, T_inc = 5.2, T_hosp = 5, T_death = 32, P_severe = 0.2, P_fatal = 0.02, N = 7e6, 
-                init_infected = 1, intervention_day = 100, intervention_amount = 3, testing_rate_for_exposed = 0,
+                init_infected = 1, intervention_day = 100, intervention_amount = 0.33, testing_rate_for_exposed = 0,
                 positive_test_rate_for_exposed = 1, testing_rate_for_infected = 0, positive_test_rate_for_infected = 1, q = 0):
     
     T_trans = T_inf/R0
@@ -23,6 +23,9 @@ def init_params(R0 = 2.2, T_inf = 2.9, T_inc = 5.2, T_hosp = 5, T_death = 32, P_
     P_fatal_detected = P_fatal
 
     vanilla_params = {
+
+        'R0' : R0,
+
         'T_trans': T_trans,
         'T_inc': T_inc,
         'T_inf': T_inf,
