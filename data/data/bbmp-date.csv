@@ -1,0 +1,70 @@
+Sl. No.,State Patient ID,Age,Age group,Gender,Date of travel,Date of arrival to India,Date of Onset of Symptoms,Date of Hospitalization,Date of sample collection,Result declared on,Current Status,Status,Release Date
+1,P1,44,40 to 50,M,28.02.2020,01.03.2020,04.03.2020,08.03.2020,05.03.2020,08.03.2020,Asymtomatic; Sample Negative on 21.03.2020; Discharged on 26.03.2020,Recovered,03/26/2020
+2,P2,47,40 to 50,F,-,-,08.03.2020,08.03.2020,08.03.2020,09.03.2020,Second sample NEGATIVE on 19.03.2020 ; Discharged,Recovered,03/23/2020
+3,P3,13,10 to 20,F,-,-,08.03.2020,08.03.2020,08.03.2020,09.03.2020,Asymtomatic; Sample Negative on 21.03.2020 ; Discharged 26.03.2020,Recovered,03/26/2020
+4,P4,50,40 to 50,M,08.03.2020,08.03.2020,04.03.2020,09.03.2020,08.03.2020,09.03.2020,Asymtomatic; Sample Negative on 21.03.2020; Discharged ,Recovered,03/24/2020
+5,P5,26,20 to 30,M,06.03.2020,06.03.2020,09.03.2020,11.03.2020,10.03.2020,11.03.2020,Second sample NEGATIVE on 19.03.2020; Discharged on 19.03.2020,Recovered,03/19/2020
+6,P8,26,20 to 30,M,06.03.2020,08.03.2020,11.03.2020,15.03.2020,14.03.2020,16.03.2020,Discharged on 29.03.2020,Recovered,03/29/2020
+7,P10,20,10 to 20,F,14.03.2020,15.03.2020,10.03.2020,17.03.2020,15.03.2020,16.03.2020,Discharged on 04.01.2020,Recovered,4/1/2020
+8,P11,67,60 to 70,F,03.03.2020,08.03.2020,14.03.2020,14.03.2020,14.03.2020,16.03.2020,Discharged on 30.03.2020,Recovered,3/30/2020
+9,P12,25,20 to 30,M,08.03.2020,13.03.2020,15.03.2020,17.03.2020,16.03.2020,17.03.2020,,Recovered,04/05/2020
+10,P13,56,50 to 60,F,-,06.03.2020,13.03.2020,,13.03.2020,17.03.2020,,Recovered,04/05/2020
+11,P14,35,30 to 40,M,01.03.2020,10.03.2020,12.03.2020,16.03.2020,16.03.2020,17.03.2020,Discharged on 04.02.2020,Recovered,04/02/2020
+12,P16,52,50 to 60,F,-,-,16.03.2020,17.03.2020,17.03.2020,20.03.2020,Isolated in the hospital,Recovered,04/06/2020
+13,P17,39,30 to 40,M,17.03.2020,19.03.2020,16.03.2020,19.03.2020,19.03.2020,21.03.2020,Isolated in the hospital,Active,
+14,P18,21,20 to 30,M,16.03.2020,17.03.2020,17.03.2020,20.03.2020,19.03.2020,21.03.2020,Isolated in the hospital,Active,
+15,P23,36,30 to 40,F,8.03.2020,09.03.2020,16.03.2020,18.03.2020,17.03.2020,21.03.2020,,Recovered,4/6/2020
+16,P24,27,20 to 30,M,8.03.2020,14.03.2020,15.03.2020,21.03.2020,,22.03.2020,,Recovered,04/05/2020
+17,P25,51,50 to 60,M,-,17.03.2020,18.03.2020,21.03.2020,,22.03.2020,Isolated in the hospital,Active,
+18,P38,56,50 to 60,F,-,-,-,22.03.2020,21.03.2020,23.03.2020,Isolated in the hospital,Active,
+19,P31,24,20 to 30,M,17.03.2020,18.03.2020,18.03.2020,,21.03.2020,23.03.2020,,Recovered,
+20,P32 ,60,50 to 60,F,17.03.2020,18.03.2020,21.03.2020,23.03.2020,22.03.2020,22.03.2020,Isolated in the hospital,Active,
+21,P28,38,30 to 40,M,17.03.2020,17.03.2020,20.03.2020,,23.03.2020,23.03.2020,Isolated in the hospital,Recovered,04/06/2020
+22,P30,38,30 to 40,F,-,-,20.03.2020,22.03.2020,21.03.2020,23.03.2020,Isolated in the hospital,Active,
+23,P33-K,22,20 to 30,F,22.03.2020,22.03.2020,22.03.2020,,21.03.2020,22.03.2020,Isolated in the hospital,Active,
+24,P29,41,40 to 50,M,13.03.2020,14.03.2020,15.03.2020,16.03.2020,20.03.2020,23.03.2020,DIscharged on 04.02.2020,Recovered,04/04/2020
+25,P47,63,60 to 70,F,17.03.2020,18.03.2020,21.03.2020,23.03.2020,23.03.2020,24.03.2020,,Recovered,4/5/2020
+26,P48,69,60 to 70,M,17.03.2020,18.03.2020,21.03.2020,23.03.2020,23.03.2020,24.03.2020,,Recovered,4/5/2020
+27,P43,63,60 to 70,M,18.03.2020,19.03.2020,21.03.2020,23.03.2020,23.03.2020,24.03.2020,Isolated in the in the ICU with oxygen supply-Stable,Active,
+28,P44,59,50 to 60,F,18.03.2020,19.03.2020,21.03.2020,23.03.2020,23.03.2020,24.03.2020,Isolated in the hospital,Active,
+29,P49,11,10 to 20,F,-,-,21.03.2020,23.03.2020,23.03.2020,24.03.2020,Isolated in the hospital,Active,
+30,P50,7,<=10,F,-,-,21.03.2020,23.03.2020,23.03.2020,24.03.2020,Isolated in the hospital,Active,
+31,P46,26,20 to 30,M,14.03.2020,14.03.2020,07.03.2020,23.03.2020,23.03.2020,24.03.2020,Isolated in the hospital,Active,
+32,P45,26,20 to 30,M,14.03.2020,14.03.2020,"10.03.2020
+",23.03.2020,23.03.2020,24.03.2020,Isolated in the hospital,Active,
+33,P57,20,10 to 20,M,15.03.2020,15.03.2020,23.03.2020,24.03.2020,24.03.2020,26.03.2020,symtomatic; ,Active,
+34,P58,25,20 to 30,F,17.03.2020,18.03.2020,18.03.2020,24.03.2020,24.03.2020,26.03.2020,symtomatic; ,Active,
+35,P59,35,30 to 40,F,-,-,22.03.2020,25.03.2020,25.03.2020,26.03.2020,symtomatic; ,Active,
+36,P61,33,30 to 40,F,-,-,-,25.03.2020,25.03.2020,26.03.2020,symtomatic; ,Active,
+37,P55,45,40 to 50,M,-,-,24.03.2020,25.03.2020,23.03.2020,25.03.2020,symtomatic; ,Active,
+38,P68,21,20 to 30,M,16.03.2020,17.03.2020,-,26.03.2020,26.03.2020,27.03.2020,Asymtomatic; ,Active,
+39,P74,63,50 to 60,F,17.03.2020,16.03.2020,25.03.2020,27.03.2020,25.03.2020,27.03.2020,Isolated in the hospital,Active,
+40,P92,48,40 to 50,M,-,-,27.03.2020,27.03.2020,28.03.2020,31.03.2020,Isolated in the hospital,Active,
+41,P93,19,10 to 20,M,20.03.2020,22.03.2020,26.03.2020,26.03.2020,26.03.2020,31.03.2020,Isolated in the hospital,Active,
+42,P100,40,40 to 50,M,20.03.2020,21.03.2020,28.03.2020,29.03.2020,29.03.2020,31.03.2020,Isolated in the hospital,Active,
+43,P101,68,60 to 70,F,-,-,23.03.2020,27.03.2020,27.03.2020,31.03.2020,Patient is on Ventilator,Active,
+44,P102,24,20 to 30,M,-,-,31.03.2020,30.03.2020,25.03.2020,31.03.2020,ICU (On Ventilator),Active,
+45,P107,26,20 to 30,M,13.03.2020,14.03.2020,14.03.2020,26.03.2020,30.03.2020,01.04.2020,Isolated in the hospital,Active,
+46,P108-K,63,60 to 70,M,20.03.2020,21.03.2020,28.03.2020,21.03.2020,30.03.2020,01.04.2020,Isolated in the hospital,Active,
+47,P105,33,30 to 40,M,-,-,26.03.2020,30.03.2020,30.03.2020,31.03.2020,Isolated in the hospital,Active,
+48,P129,21,20 to 30,M,-,-,03.04.2020,,,03.04.2020,Isolated in the hospital,Active,
+49,P130,57,50 to 60,M,-,-,03.04.2020,,,03.04.2020,Isolated in the hospital,Active,
+50,P131,43,40 to 50,M,,,28.03.2020,01.04.2020,01.04.2020,03.04.2020,Isolated in the hospital,Active,
+51,P132,78,70 to 80,M,,17.03.2020,,01.04.2020,01.04.2020,03.04.2020,Isolated in the hospital,Active,
+52,P152Q,32,30 to 40,M,-,-,05.04.2020,,,,Isolated in the hospital,Active,
+53,P167TJ,29,20 to 30,M,,,06.04.2020,06.04.2020,,,Isolated in the hospital,Active,
+54,P168TJ,50,40 to 50,M,,,06.04.2020,06.04.2020,,,Isolated in the hospital,Active,
+55,P169TJ,35,30 to 40,M,,,,,,,Isolated in the hospital,Active,
+56,170-Q,68,60 to 70,M,21.03.2020,22.03.2020,,,,,Isolated in the hospital,Active,
+57,P133-K-Q,60,50 to 60,M,,,,,,,Isolated in the hospital,Active,
+58,P145-Q,68,60 to 70,M,,,,,,,Isolated in the hospital,Active,
+59,P146-Q,62,60 to 70,F,,,,,,,Isolated in the hospital,Active,
+60,P153-K-Q,62,60 to 70,F,,,,,,,Isolated in the hospital,Active,
+61,P19,31,30 to 40,M,,,,,,,Isolated in the hospital,Active,
+62,P22,64,60 to 70,F,,,,,,,Isolated in the hospital,Active,
+63,P53,70,70 to 80,F,,,,,,,Isolated in the hospital,Death,
+64,P54,64,60 to 70,M,,,,,,,Isolated in the hospital,Active,
+65,P84,13,10 to 20,M,,,,,,,Isolated in the hospital,Active,
+66,P181,27,20 to 30,F,,08.04.2020,,07.04.2020,,,Isolated in the hospital,Active,
+67,P189,19,21 to 30,,,,08.04.2020,,,,Isolated in the hospital,Active,
+68,P190,27,22 to 30,,,,08.04.2020,,,,Isolated in the hospital,Active,
