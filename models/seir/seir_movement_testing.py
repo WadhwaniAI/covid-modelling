@@ -28,7 +28,8 @@ class SEIR_Movement_Testing():
 
         # Modelling the intervention
         if t >= self.intervention_day:
-            self.T_trans = self.intervention_amount * self.T_trans
+            self.R0 = self.intervention_amount * self.R0
+            self.T_trans = self.T_inf/self.R0
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
