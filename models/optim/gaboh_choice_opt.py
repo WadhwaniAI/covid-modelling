@@ -11,9 +11,12 @@ class SEIR:
     self.p_params = self.params[-7:-4]
     self.N = self.params[-4]
     self.intervention_day = self.params[-3]
-    self.intervention_amount = self.params[-2]
-    self.intervention_duration = self.params[-1]
+    # self.intervention_amount = self.params[-3]
+    self.intervention_duration = self.params[-2]
+    self.intervention_choice = self.params[-1]
 
+  def get_impact(self, choice):
+    return(1+2*choice)
 
   def get_derivative(self, t, y):
     # Init state variables
@@ -24,8 +27,9 @@ class SEIR:
     P_mild, P_severe, P_fatal = self.p_params
     
     # Modelling the intervention
-    if (t >= self.intervention_day and t<self.intervention_day+self.intervention_duration):
-      T_trans = self.intervention_amount*T_trans
+    for i in range(len(self.intervention_day)):
+        if (t >= self.intervention_day[i] and t<self.intervention_day[i]+self.intervention_duration[i]):
+          T_trans = self.get_impact(self.intervention_choice[i])*T_trans
 
     # Init derivative vector
     dydt = np.zeros(y.shape)

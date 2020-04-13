@@ -10,7 +10,7 @@ import math
 sys.path.append('../..')
 import scipy.optimize as opt
 
-from models.optim.opt_gaboh_single_int import SEIR
+from models.optim.gaboh_single_opt import SEIR
 
 def calculate_opt(intervention):
     R0 = 2.2 
