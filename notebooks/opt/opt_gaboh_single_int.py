@@ -7,11 +7,10 @@ import pandas as pd
 import sys
 import os
 import math
-sys.path.append('..')
-os.chdir("..")
+sys.path.append('../..')
 import scipy.optimize as opt
 
-from models.opt_gaboh_single_int import SEIR
+from models.optim.opt_gaboh_single_int import SEIR
 
 def calculate_opt(intervention):
     R0 = 2.2 
