@@ -1,0 +1,137 @@
+{
+	"template": {
+		"data_func": "func",
+		"data_func_args": "args",
+		"test_size": 5,
+		"alpha_true": 2.0,
+		"beta_true": 3.0,
+		"p_true": 4.0,
+		"xcol": "day",
+		"date": "date",
+		"groupcol": "group",
+		"ycols": {
+		    "cases": "erf",
+		    "deaths": "erf"
+		},
+		"daysforward": 90,
+		"daysback": 10,
+		"n_draws": 5,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [2,2],
+        "num_smooths": 3,
+        "exclude_groups": [],
+        "exclude_below": 0,
+        "exp_smoothing": null,
+        "max_last": null
+	},
+	"india_all": {
+		"data_func": "india_all",
+		"test_size": 5,
+		"alpha_true": 2.0,
+		"beta_true": 3.0,
+		"p_true": 4.0,
+		"xcol": "day",
+		"date": "date",
+		"groupcol": "state",
+		"ycols": {
+		    "deaths": "erf"
+		},
+		"daysforward": 90,
+		"daysback": 10,
+		"n_draws": 5,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [5,5],
+        "num_smooths": 3,
+        "exclude_groups": [],
+        "exclude_below": 0,
+        "exp_smoothing": null,
+        "max_last": null
+	},
+	"bbmp": {
+		"data_func": "bbmp",
+		"test_size": 5,
+		"alpha_true": 2.0,
+		"beta_true": 3.0,
+		"p_true": 4.0,
+		"xcol": "day",
+		"date": "date",
+		"groupcol": "group",
+		"ycols": {
+		    "cases": "erf"
+		},
+		"daysforward": 90,
+		"daysback": 0
+	},
+	"india_all_state": {
+		"data_func": "india_all_state",
+		"test_size": 5,
+		"alpha_true": 2.0,
+		"beta_true": 3.0,
+		"p_true": 4.0,
+		"xcol": "day",
+		"date": "date",
+		"groupcol": "state",
+		"ycols": {
+		    "cases": "erf"
+		},
+		"daysforward": 90,
+		"daysback": 10,
+		"n_draws": 5,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [2,2],
+        "num_smooths": 3,
+        "exclude_groups": [],
+        "exclude_below": 0,
+        "exp_smoothing": null,
+        "max_last": null
+	},
+	"karnataka": {
+		"data_func": "india_state",
+		"data_func_args": "KA",
+		"test_size": 5,
+		"alpha_true": 2.0,
+		"beta_true": 3.0,
+		"p_true": 4.0,
+		"xcol": "day",
+		"date": "date",
+		"groupcol": "state",
+		"ycols": {
+		    "deaths": "erf",
+		    "cases": "erf"
+		},
+		"daysforward": 90,
+		"daysback": 10,
+		"n_draws": 5,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [5,5],
+        "num_smooths": 3,
+        "exclude_groups": [],
+        "exclude_below": 0,
+        "exp_smoothing": null,
+        "max_last": null
+	},
+	"maharashtra": {
+		"data_func": "india_state",
+		"data_func_args": "MH",
+		"test_size": 5,
+		"alpha_true": 2.0,
+		"beta_true": 3.0,
+		"p_true": 4.0,
+		"xcol": "day",
+		"date": "date",
+		"groupcol": "state",
+		"ycols": {
+		    "deaths": "erf"
+		},
+		"daysforward": 90,
+		"daysback": 10,
+		"n_draws": 5,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [2,2],
+        "num_smooths": 3,
+        "exclude_groups": [],
+        "exclude_below": 0,
+        "exp_smoothing": null,
+        "max_last": null
+	}
+}
