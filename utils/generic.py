@@ -3,9 +3,10 @@ import numpy as np
 from collections import OrderedDict
 
 # define SEIR model parameters (Gabriel Goh's version)
-def init_params(R0 = 2.2, T_inf = 2.9, T_inc = 5.2, T_hosp = 5, T_death = 32, P_severe = 0.2, P_fatal = 0.02, N = 7e6, 
-                init_infected = 1, intervention_day = 100, intervention_amount = 0.33, testing_rate_for_exposed = 0,
-                positive_test_rate_for_exposed = 1, testing_rate_for_infected = 0, positive_test_rate_for_infected = 1, q = 0):
+def init_params(R0 = 2.2, T_inf = 2.9, T_inc = 5.2, T_hosp = 5, T_death = 32, P_severe = 0.2, P_fatal = 0.02, T_recov_severe = 14, 
+                T_recov_mild = 11, N = 7e6, init_infected = 1, intervention_day = 100, intervention_amount = 0.33, q = 0, 
+                testing_rate_for_exposed = 0, positive_test_rate_for_exposed = 1, testing_rate_for_infected = 0, 
+                positive_test_rate_for_infected = 1, lockdown_removal_day = 45 ):
     
     T_trans = T_inf/R0
     T_recov_mild = (14 - T_inf)
@@ -39,6 +40,7 @@ def init_params(R0 = 2.2, T_inf = 2.9, T_inc = 5.2, T_hosp = 5, T_death = 32, P_
         'P_severe': P_severe,
         'P_fatal': P_fatal,
         'intervention_day': intervention_day,
+        'lockdown_removal_day' : lockdown_removal_day,
         'intervention_amount': intervention_amount,
         'N' : N
     }
