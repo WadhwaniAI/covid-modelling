@@ -2,29 +2,41 @@
 # vim: set expandtab:
 # -------------------------------------------------------------------------
 import sys
+import json
+import argparse
 import pandas as pd
 import numpy as np 
+from datetime import datetime, timedelta
+from matplotlib import pyplot as plt 
+from matplotlib.dates import DateFormatter
+
 import curvefit
 from curvefit.core.functions import *
 from curvefit.pipelines.basic_model import *
-from matplotlib import pyplot as plt 
+
 from sklearn.metrics import r2_score, mean_squared_log_error
 from sklearn.model_selection import train_test_split
-from datetime import datetime, timedelta
-from matplotlib.dates import DateFormatter
-# from curvefit.core.utils import data_translator
+
+from data import *
 
 # -------------------------------------------------------------------------
-# load data
-df = pd.read_csv('../../data/data/bbmp.csv')
-df.loc[:, 'date'] = df['Date'].apply(lambda x: datetime.strptime(x, "%d.%m.%Y"))
-df.drop("Date", axis=1, inplace=True)
-df.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
-df.rename(columns = {'Cumulative Deaths til Date':'deaths'}, inplace = True) 
-df.rename(columns = {'Cumulative Cases Til Date':'cases'}, inplace = True) 
-df.loc[:, 'group'] = pd.Series([1 for i in range(len(df))])
+# load params
 
-test_size = 5
+
+
+params_group = "karnataka"
+with open('params.json', "r") as paramsfile:
+  pargs = json.load(paramsfile)[params_group]
+
+# load data
+
+data_func = getattr(sys.modules[__name__], pargs['data_func'])
+if 'data_func_args' in pargs:
+    df = data_func(pargs['data_func_args'])
+else:
+    df = data_func()
+
+test_size = pargs['test_size']
 data, test = df[:-test_size], df[-test_size:]
 seed = 'last{}'.format(test_size)
 print ('seed: {}'.format(seed))
@@ -33,19 +45,17 @@ print ('seed: {}'.format(seed))
 # set vars
 n_data       = len(data)
 num_params   = 3 # alpha beta p
-alpha_true   = 2.0 # TODO
-beta_true    = 3.0 # TODO
-p_true       = 4.0 # TODO
+alpha_true   = pargs['alpha_true'] # TODO
+beta_true    = pargs['beta_true'] # TODO
+p_true       = pargs['p_true'] # TODO
 
-# erf, derf, expit, dderf etc
-fname = "BBMP"
-xcol = 'day'
-date = 'date'
-groupcol = 'group'
-ycols = {
-    'cases' : erf,
-    # 'deaths': erf,
-}
+fname = params_group
+date, groupcol = pargs['date'], pargs['groupcol']
+xcol, ycols = pargs['xcol'], pargs['ycols']
+for (k,v) in ycols.items():
+    ycols[k] = getattr(sys.modules[__name__], v)
+
+daysforward, daysback = pargs['daysforward'], pargs['daysback']
 # -------------------------------------------------------------------------
 
 # link functions
@@ -54,17 +64,30 @@ exp_fun = lambda x : np.exp(x)
 
 params_true       = np.array( [ alpha_true, beta_true, p_true ] )
 
-def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate):
-    
-    predictx = np.array([x+1 for x in range(len(predictdate))])
+def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, pargs=None):
+    p_args = {
+        "n_draws": 5,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [3,3], 
+        "num_smooths": 3, 
+        "exclude_groups": [], 
+        "exclude_below": 0,
+        "exp_smoothing": None, 
+        "max_last": None
+    }
+    p_args.update(pargs)
+
+    predictx = np.array([x+1 for x in range(-daysback,daysforward)])
     
     # pipeline
     pipeline.setup_pipeline()
     # TODO: all params for below. the column names for covariates need to be fixed below, and need to be in pipeline.pv.all_residuals
-    pipeline.run(n_draws=5, prediction_times=predictx, cv_threshold=1e-2,
-            smoothed_radius=[3,3], num_smooths=3, exclude_groups=[], exclude_below=0,
-            exp_smoothing=None, max_last=None)
-    
+    pipeline.run(n_draws=p_args['n_draws'], prediction_times=predictx, 
+        cv_threshold=p_args['cv_threshold'], smoothed_radius=p_args['smoothed_radius'], 
+        num_smooths=p_args['num_smooths'], exclude_groups=p_args['exclude_groups'], 
+        exclude_below=p_args['exclude_below'], exp_smoothing=p_args['exp_smoothing'], 
+        max_last=p_args['max_last']
+    )
     params_estimate = pipeline.mod.params
     print(params_estimate)
     
@@ -82,8 +105,8 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate):
     print ('test set - r2: {} msle: {}'.format(r2, msle))
 
     # evaluate overall
-    r2, msle = r2_score(data[ycol], predictions[:len(data[xcol])]), \
-        mean_squared_log_error(data[ycol], predictions[:len(data[xcol])])
+    r2, msle = r2_score(data[ycol], predictions[daysback:daysback+len(data[xcol])]), \
+        mean_squared_log_error(data[ycol], predictions[daysback:daysback+len(data[xcol])])
     print ('overall - r2: {} msle: {}'.format(r2, msle))
 
 
@@ -92,11 +115,11 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate):
     plt.gca().xaxis.set_major_formatter(DateFormatter("%d.%m"))
     plt.grid()
     plt.xlabel("Date")
-    plt.ylabel("Cases")
+    plt.ylabel(ycol)
     plt.plot(data[date], data[ycol], 'b+', label='data')
     plt.plot(test[date], test[ycol], 'g+', label='data (test)')
     plt.plot(predictdate, predictions, 'r-', label='fit: {}: {}'.format(func.__name__, params_estimate))
-    plt.title("{} Cases fit to {}".format(fname, func.__name__))
+    plt.title("{} {} fit to {}".format(fname, ycol, func.__name__))
     
     plt.legend() 
     plt.savefig('output/pipeline/{}_{}_{}_{}.png'.format(fname, ycol, func.__name__, seed))
@@ -172,8 +195,8 @@ for ycol, func in ycols.items():
         },
     )
 
-    predictdate = pd.to_datetime(pd.Series([timedelta(days=x)+data[date].iloc[0] for x in range(90)]))
-    predictions[ycol] = fit_predict_plot(pipeline, xcol, ycol, data, test, func, predictdate)
+    predictdate = pd.to_datetime(pd.Series([timedelta(days=x)+data[date].iloc[0] for x in range(-daysback,daysforward)]))
+    predictions[ycol] = fit_predict_plot(pipeline, xcol, ycol, data, test, func, predictdate, pargs=pargs)
 
 # datetime | confidence | infections lower bound | infections most likely
 
