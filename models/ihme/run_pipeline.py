@@ -2,13 +2,16 @@
 # vim: set expandtab:
 # -------------------------------------------------------------------------
 import sys
+import os
 import json
 import argparse
 import pandas as pd
 import numpy as np 
 from datetime import datetime, timedelta
 from matplotlib import pyplot as plt 
+
 from matplotlib.dates import DateFormatter
+from pandas.plotting import register_matplotlib_converters
 
 import curvefit
 from curvefit.core.functions import *
@@ -22,20 +25,24 @@ from data import *
 # -------------------------------------------------------------------------
 # load params
 
+parser = argparse.ArgumentParser() 
+parser.add_argument("-p", "--params", help="name of entry in params.json", required=True)
+args = parser.parse_args() 
 
-
-params_group = "karnataka"
 with open('params.json', "r") as paramsfile:
-  pargs = json.load(paramsfile)[params_group]
+    pargs = json.load(paramsfile)
+    if args.params not in pargs:
+        print("entry not found in params.json")
+        sys.exit(0)
+    pargs = pargs[args.params]
+
 
 # load data
-
 data_func = getattr(sys.modules[__name__], pargs['data_func'])
 if 'data_func_args' in pargs:
     df = data_func(pargs['data_func_args'])
 else:
     df = data_func()
-
 test_size = pargs['test_size']
 data, test = df[:-test_size], df[-test_size:]
 seed = 'last{}'.format(test_size)
@@ -48,21 +55,24 @@ num_params   = 3 # alpha beta p
 alpha_true   = pargs['alpha_true'] # TODO
 beta_true    = pargs['beta_true'] # TODO
 p_true       = pargs['p_true'] # TODO
+params_true       = np.array( [ alpha_true, beta_true, p_true ] )
 
-fname = params_group
+fname = args.params
+output_folder = f'output/pipeline/{fname}'
+if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 date, groupcol = pargs['date'], pargs['groupcol']
 xcol, ycols = pargs['xcol'], pargs['ycols']
 for (k,v) in ycols.items():
     ycols[k] = getattr(sys.modules[__name__], v)
 
 daysforward, daysback = pargs['daysforward'], pargs['daysback']
-# -------------------------------------------------------------------------
 
 # link functions
 identity_fun = lambda x: x
 exp_fun = lambda x : np.exp(x)
 
-params_true       = np.array( [ alpha_true, beta_true, p_true ] )
+# -------------------------------------------------------------------------
 
 def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, pargs=None):
     p_args = {
@@ -93,7 +103,7 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, par
     
     # plot draws
     pipeline.plot_results(prediction_times=predictx)
-    plt.savefig('output/pipeline/draws_{}_{}_{}_{}.png'.format(fname, ycol, func.__name__, seed))
+    plt.savefig(f'{output_folder}/draws_{fname}_{ycol}_{func.__name__}_{seed}.png')
     plt.clf()
     
     predictions = pipeline.predict(times=predictx, predict_space=func, predict_group='all')
@@ -111,6 +121,7 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, par
 
 
     # plot predictions against actual
+    register_matplotlib_converters()
     plt.yscale("log")
     plt.gca().xaxis.set_major_formatter(DateFormatter("%d.%m"))
     plt.grid()
@@ -122,7 +133,7 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, par
     plt.title("{} {} fit to {}".format(fname, ycol, func.__name__))
     
     plt.legend() 
-    plt.savefig('output/pipeline/{}_{}_{}_{}.png'.format(fname, ycol, func.__name__, seed))
+    plt.savefig(f'{output_folder}/{fname}_{ycol}_{func.__name__}_{seed}.png')
     # plt.show() 
     plt.clf()
 
@@ -150,6 +161,7 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, par
 
     return mean_fit, lower, mean, upper 
 
+# -------------------------------------------------------------------------
 predictions = {}
 for ycol, func in ycols.items():
     
@@ -198,8 +210,6 @@ for ycol, func in ycols.items():
     predictdate = pd.to_datetime(pd.Series([timedelta(days=x)+data[date].iloc[0] for x in range(-daysback,daysforward)]))
     predictions[ycol] = fit_predict_plot(pipeline, xcol, ycol, data, test, func, predictdate, pargs=pargs)
 
-# datetime | confidence | infections lower bound | infections most likely
-
 
 results = pd.concat([df[date], pd.Series(predictdate[len(df):], name=date)], axis=0)
 
@@ -214,7 +224,7 @@ for ycol, (preds, lower, mean, upper) in predictions.items():
     results = pd.concat([results, pd.Series(mean, name='mean {}'.format(ycol))], axis=1)
     results = pd.concat([results, pd.Series(upper, name='upper {}'.format(ycol))], axis=1)
 
-results.to_csv("output/pipeline/{}_{}_{}.csv".format(fname, func.__name__, seed), index=False)
+results.to_csv(f"{output_folder}/{fname}_{func.__name__}_{seed}.csv", index=False)
 
 
 

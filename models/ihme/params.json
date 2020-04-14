@@ -40,7 +40,7 @@
 		"daysback": 10,
 		"n_draws": 5,
         "cv_threshold": 1e-2,
-        "smoothed_radius": [2,2],
+        "smoothed_radius": [5,5],
         "num_smooths": 3,
         "exclude_groups": [],
         "exclude_below": 0,
@@ -96,13 +96,14 @@
 		"date": "date",
 		"groupcol": "state",
 		"ycols": {
-		    "deaths": "erf"
+		    "deaths": "erf",
+		    "cases": "erf"
 		},
 		"daysforward": 90,
 		"daysback": 10,
 		"n_draws": 5,
         "cv_threshold": 1e-2,
-        "smoothed_radius": [2,2],
+        "smoothed_radius": [5,5],
         "num_smooths": 3,
         "exclude_groups": [],
         "exclude_below": 0,
@@ -120,7 +121,7 @@
 		"date": "date",
 		"groupcol": "state",
 		"ycols": {
-		    "deaths": "log_erf"
+		    "deaths": "erf"
 		},
 		"daysforward": 90,
 		"daysback": 10,

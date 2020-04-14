@@ -23,7 +23,6 @@ def _covid19india():
 		df.columns = [df.columns[0]] + [colname + '_{}'.format(name) for colname in df.columns[1:]]
 		dfs.append(df)
 
-	# result = pd.concat(dfs, axis=1, join='outer')
 	result = dfs[0]
 	for df in dfs[1:]:
 		result = result.merge(df, on='date', how='outer')
