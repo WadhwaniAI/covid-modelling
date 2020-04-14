@@ -7,11 +7,10 @@ import pandas as pd
 import sys
 import os
 import math
-sys.path.append('..')
-os.chdir("..")
+sys.path.append('../..')
 import scipy.optimize as opt
 
-from models.opt_gaboh_single_int import SEIR
+from models.optim.gaboh_single_opt import SEIR
 
 def calculate_opt(intervention):
     R0 = 2.2 
@@ -113,3 +112,5 @@ for i in range(i1-r,i1+r):
     for j in range(i2-r,i2+r):
         obj_S[i-(i1-r),j-(i2-r)]=-calculate_opt([i, j, i3])
 ax = sns.heatmap(obj_S)
+fig = ax.get_figure()
+fig.savefig("heatmap.png")
