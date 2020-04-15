@@ -31,6 +31,10 @@ class SEIR_Testing():
             self.R0 = self.intervention_amount * self.R0
             self.T_trans = self.T_inf/self.R0
 
+        if t >= self.lockdown_removal_day:
+            self.R0 = 2.2
+            self.T_trans = self.T_inf/self.R0
+
         # Init derivative vector
         dydt = np.zeros(y.shape)
         
@@ -54,7 +58,7 @@ class SEIR_Testing():
 
         return dydt
 
-    def solve_ode(self, total_no_of_days=200, time_step=0.5, method='RK45'):
+    def solve_ode(self, total_no_of_days=200, time_step=1, method='Radau'):
         t_start = 0
         t_final = total_no_of_days
         time_steps = np.arange(t_start, total_no_of_days + time_step, time_step)
