@@ -131,6 +131,14 @@ def get_covid19india_api_data():
     return dataframes
 
 def get_rootnet_api_data():
+    """
+    This function parses multiple JSONs from api.rootnet.in
+    It then converts the data into pandas dataframes
+    It returns the following dataframes as a dict : 
+     - df_state_time_series : Time series of cases in India (statewise)
+     - df_statewise_beds : Statewise bed capacity in India
+     - df_medical_colleges : List of medical collegs in India
+    """
     dataframes = {}
      
     # Read states time series data from rootnet.in
@@ -147,4 +155,12 @@ def get_rootnet_api_data():
     df_state_time_series.columns = [x if x != 'loc' else 'state' for x in df_state_time_series.columns]
     dataframes['df_state_time_series'] = df_state_time_series
     
+    data = requests.get('https://api.rootnet.in/covid19-in/hospitals/beds').json()
+    df_statewise_beds = pd.DataFrame.from_dict(data['data']['regional'])
+    dataframes['df_statewise_beds'] = df_statewise_beds
+
+    data = requests.get('https://api.rootnet.in/covid19-in/hospitals/medical-colleges').json()
+    df_medical_colleges = pd.DataFrame.from_dict(data['data']['medicalColleges'])
+    dataframes['df_medical_colleges'] = df_medical_colleges
+
     return dataframes
