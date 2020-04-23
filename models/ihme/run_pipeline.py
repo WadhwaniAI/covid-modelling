@@ -1,4 +1,4 @@
-#! /bin/python3
+-#! /bin/python3
 # vim: set expandtab:
 # -------------------------------------------------------------------------
 import sys
@@ -15,19 +15,30 @@ from pandas.plotting import register_matplotlib_converters
 
 import curvefit
 from curvefit.core.functions import *
+from curvefit.core.utils import data_translator
 from curvefit.pipelines.basic_model import *
 
 from sklearn.metrics import r2_score, mean_squared_log_error
 from sklearn.model_selection import train_test_split
 
 from data import *
+from utils import *
 
 # -------------------------------------------------------------------------
 # load params
 
+derivs = {
+    erf: derf,
+    # gaussian_cdf: gaussian_pdf,
+    log_erf: log_derf,
+}
 parser = argparse.ArgumentParser() 
 parser.add_argument("-p", "--params", help="name of entry in params.json", required=True)
+parser.add_argument("-d", "--daily", help="whether or not to plot daily", required=False, action='store_true')
+parser.add_argument("-s", "--smoothing", help="how much to smooth, else no smoothing", required=False)
 args = parser.parse_args() 
+
+smoothing_window = args.smoothing
 
 with open('params.json', "r") as paramsfile:
     pargs = json.load(paramsfile)
@@ -36,21 +47,7 @@ with open('params.json', "r") as paramsfile:
         sys.exit(0)
     pargs = pargs[args.params]
 
-
-# load data
-data_func = getattr(sys.modules[__name__], pargs['data_func'])
-if 'data_func_args' in pargs:
-    df = data_func(pargs['data_func_args'])
-else:
-    df = data_func()
-test_size = pargs['test_size']
-data, test = df[:-test_size], df[-test_size:]
-seed = 'last{}'.format(test_size)
-print ('seed: {}'.format(seed))
-# data, test = train_test_split(df, train_size=.8, shuffle=True, random_state=seed)
-
 # set vars
-n_data       = len(data)
 num_params   = 3 # alpha beta p
 alpha_true   = pargs['alpha_true'] # TODO
 beta_true    = pargs['beta_true'] # TODO
@@ -65,16 +62,68 @@ date, groupcol = pargs['date'], pargs['groupcol']
 xcol, ycols = pargs['xcol'], pargs['ycols']
 for (k,v) in ycols.items():
     ycols[k] = getattr(sys.modules[__name__], v)
+daycol = 'day'
+
+# load data
+data_func = getattr(sys.modules[__name__], pargs['data_func'])
+if 'data_func_args' in pargs:
+    df = data_func(pargs['data_func_args'])
+else:
+    df = data_func()
+
+daily = args.daily
+if daily:
+    for ycol in ycols.keys():
+        dailycol = f"daily_{ycol}"
+        dailycol_vals = pd.Series()
+        df.sort_values(groupcol)
+        for grp in df[groupcol].unique():
+            dailycol_vals = pd.concat((dailycol_vals, df[df[groupcol] == grp][ycol] - df[df[groupcol] == grp][ycol].shift(1)))
+
+        df[dailycol] = dailycol_vals
+
+if smoothing_window:
+    def smooth(y, smoothing_window):
+        box = np.ones(smoothing_window)/smoothing_window
+        y_smooth = np.convolve(y, box, mode='same')
+        return y_smooth
+
+    def sma(y, smoothing_window):
+        return y.rolling(window=smoothing_window)
+
+    def ema(y, smoothing_window):
+        return y.ewm(span=smoothing_window, adjust=False)
+
+    new_ycols = {}
+    for ycol in ycols.keys():
+        df[f'{ycol}_smooth'] = smooth(df[ycol], 5)
+        new_ycols[f'{ycol}_smooth'] = ycols[ycol]
+    orig_ycols = ycols
+    ycols = new_ycols 
+
+
+test_size = pargs['test_size'] # in num days
+max_date = df[date].max()
+df[daycol] = (df[date] - df[date].min()).dt.days
+threshold = max_date - timedelta(days=test_size)
+data, test = df[df[date] < threshold], df[df[date] >= threshold]
+agg_df = df.groupby(date).sum().reset_index(col_fill=date)
+agg_df[daycol] = (agg_df[date] - agg_df[date].min()).dt.days
+agg_data, agg_test = agg_df[agg_df[date] < threshold], agg_df[agg_df[date] >= threshold]
+seed = 'last{}'.format(test_size)
+print ('seed: {}'.format(seed))
+# data, test = train_test_split(df, train_size=.8, shuffle=True, random_state=seed)
+
+n_data = len(data)
 
 daysforward, daysback = pargs['daysforward'], pargs['daysback']
-
+pargs['smart_init'] = pargs['smart_init'] if 'smart_init' in pargs else False
 # link functions
 identity_fun = lambda x: x
 exp_fun = lambda x : np.exp(x)
 
 # -------------------------------------------------------------------------
-
-def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, pargs=None):
+def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, pargs=None, orig_ycol=None):
     p_args = {
         "n_draws": 5,
         "cv_threshold": 1e-2,
@@ -105,20 +154,41 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, par
     pipeline.plot_results(prediction_times=predictx)
     plt.savefig(f'{output_folder}/draws_{fname}_{ycol}_{func.__name__}_{seed}.png')
     plt.clf()
-    
-    predictions = pipeline.predict(times=predictx, predict_space=func, predict_group='all')
-    
+
+    if daily:
+        plot_draws_deriv(pipeline, predictx, derivs[func], dailycol)
+        plt.savefig(f'{output_folder}/draws_{fname}_{ycol}_{derivs[func].__name__}_{seed}.png')
+        plt.clf()
+
+
+    if len(data[groupcol].unique()) > 1:
+        group_predictions = pd.DataFrame()
+        for grp in data[groupcol].unique():
+            grp_df = pd.DataFrame(columns=[daycol, date, groupcol, f'{ycol}_pred'])
+            grp_df[f'{ycol}_pred'] = pd.Series(pipeline.predict(times=predictx, predict_space=func, predict_group=grp))
+            grp_df[groupcol] = grp
+            grp_df[daycol] = predictx
+            grp_df[date] = predictdate
+            group_predictions = group_predictions.append(grp_df)
+        predictions = group_predictions.groupby(daycol).sum()[f'{ycol}_pred']
+    else:
+        predictions = pipeline.predict(times=predictx, predict_space=func, predict_group='all')
+
     # evaluate against test set
     xtest, ytest = test[xcol], test[ycol]
     predtest = pipeline.predict(times=xtest, predict_space=func, predict_group='all')
-    r2, msle = r2_score(ytest, predtest), mean_squared_log_error(ytest, predtest)
-    print ('test set - r2: {} msle: {}'.format(r2, msle))
+    r2, msle = r2_score(ytest, predtest), None
+    if 'log' not in func.__name__ :
+        msle = mean_squared_log_error(ytest, predtest)
+    maperr = mape(ytest, predtest)
+    print ('test set - mape: {} r2: {} msle: {}'.format(maperr, r2, msle))
 
     # evaluate overall
-    r2, msle = r2_score(data[ycol], predictions[daysback:daysback+len(data[xcol])]), \
-        mean_squared_log_error(data[ycol], predictions[daysback:daysback+len(data[xcol])])
-    print ('overall - r2: {} msle: {}'.format(r2, msle))
-
+    r2, msle = r2_score(agg_data[ycol], predictions[daysback:daysback+len(agg_data[ycol])]), None
+    if 'log' not in func.__name__ :
+        msle = mean_squared_log_error(agg_data[ycol], predictions[daysback:daysback+len(agg_data[ycol])])
+    maperr = mape(agg_data[ycol], predictions[daysback:daysback+len(agg_data[ycol])])
+    print ('overall - mape: {} r2: {} msle: {}'.format(maperr, r2, msle))
 
     # plot predictions against actual
     register_matplotlib_converters()
@@ -127,9 +197,20 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, par
     plt.grid()
     plt.xlabel("Date")
     plt.ylabel(ycol)
-    plt.plot(data[date], data[ycol], 'b+', label='data')
-    plt.plot(test[date], test[ycol], 'g+', label='data (test)')
+    if smoothing_window:
+        plt.plot(agg_data[date], agg_data[orig_ycol], 'k+', label='data (test)')
+        plt.plot(agg_test[date], agg_test[orig_ycol], 'k+', label='data (test)')
+    plt.plot(agg_data[date], agg_data[ycol], 'r+', label='data')
+    plt.plot(agg_test[date], agg_test[ycol], 'g+', label='data (test)')
     plt.plot(predictdate, predictions, 'r-', label='fit: {}: {}'.format(func.__name__, params_estimate))
+    plt.errorbar(predictdate[df[date].nunique():], predictions[df[date].nunique():], yerr=predictions[df[date].nunique():]*maperr, color='black', barsabove='False')
+    clrs = ['c', 'm', 'y', 'k']
+    if len(data[groupcol].unique()) > 1:
+        for i, grp in enumerate(data[groupcol].unique()):
+            plt.plot(predictdate, group_predictions[group_predictions[groupcol] == grp][f'{ycol}_pred'], f'{clrs[i]}-', label=grp)
+            plt.plot(data[data[groupcol] == grp][date], data[data[groupcol] == grp][ycol], f'{clrs[i]}+', label='data')
+            plt.plot(test[test[groupcol] == grp][date], test[test[groupcol] == grp][ycol], f'{clrs[i]}+')
+    
     plt.title("{} {} fit to {}".format(fname, ycol, func.__name__))
     
     plt.legend() 
@@ -137,6 +218,46 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, par
     # plt.show() 
     plt.clf()
 
+    if daily:
+        # predict daily numbers
+
+        if len(data[groupcol].unique()) > 1:
+            daily_group_predictions = pd.DataFrame()
+            for grp in data[groupcol].unique():
+                grp_df = pd.DataFrame(columns=[daycol, date, groupcol, f'{ycol}_pred'])
+                grp_df[f'{ycol}_pred'] = pd.Series(pipeline.predict(times=predictx, predict_space=derivs[func], predict_group=grp))
+                grp_df[groupcol] = grp
+                grp_df[daycol] = predictx
+                grp_df[date] = predictdate
+                daily_group_predictions = daily_group_predictions.append(grp_df)
+            daily_predictions = daily_group_predictions.groupby(daycol).sum()[f'{ycol}_pred']
+        else:
+            daily_predictions = pipeline.predict(times=predictx, predict_space=derivs[func], predict_group='all')
+
+        maperr = mape(agg_data[dailycol], daily_predictions[daysback:daysback+len(agg_data[dailycol])])
+        print(f"Daily MAPE: {maperr}")
+        # plot daily predictions against actual
+        register_matplotlib_converters()
+        plt.yscale("log")
+        plt.gca().xaxis.set_major_formatter(DateFormatter("%d.%m"))
+        plt.grid()
+        plt.xlabel("Date")
+        plt.ylabel(ycol)
+        plt.plot(agg_data[date], agg_data[dailycol], 'b+', label='data')
+        plt.plot(agg_test[date], agg_test[dailycol], 'g+', label='data (test)')
+        plt.plot(predictdate, daily_predictions, 'r-', label='fit: {}: {}'.format(derivs[func].__name__, params_estimate))
+        plt.errorbar(predictdate[df[date].nunique():], daily_predictions[df[date].nunique():], yerr=daily_predictions[df[date].nunique():]*maperr, color='black', barsabove='False')
+        if len(data[groupcol].unique()) > 1:
+            for i, grp in enumerate(data[groupcol].unique()):
+                plt.plot(predictdate, daily_predictions[daily_predictions[groupcol] == grp][f'{ycol}_pred'], f'{clrs[i]}-', label=grp)
+
+        plt.title("{} {} fit to {}".format(fname, ycol, derivs[func].__name__))
+        
+        plt.legend() 
+        plt.savefig(f'{output_folder}/{fname}_{ycol}_{derivs[func].__name__}_{seed}.png')
+        # plt.show() 
+        plt.clf()
+        
 
     for i, group in enumerate(pipeline.groups):
         # x = prediction_times = predictx
@@ -163,7 +284,7 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, par
 
 # -------------------------------------------------------------------------
 predictions = {}
-for ycol, func in ycols.items():
+for i, (ycol, func) in enumerate(ycols.items()):
     
     data.loc[:,'covs']            = n_data * [ 1.0 ]
     data.loc[:,'deaths_normalized']            = data['deaths']/data['deaths'].max()
@@ -192,6 +313,7 @@ for ycol, func in ycols.items():
         # predict_group='all', #: (str) which group to make predictions for
         fit_dict={ # TODO: add priors here
             'fe_init': params_true / 3.0,
+            'smart_initialize': pargs['smart_init'],
         }, #: keyword arguments to CurveModel.fit_params()
         basic_model_dict= { #: additional keyword arguments to the CurveModel class
             'col_obs_se': None,#(str) of observation standard error
@@ -208,13 +330,13 @@ for ycol, func in ycols.items():
     )
 
     predictdate = pd.to_datetime(pd.Series([timedelta(days=x)+data[date].iloc[0] for x in range(-daysback,daysforward)]))
-    predictions[ycol] = fit_predict_plot(pipeline, xcol, ycol, data, test, func, predictdate, pargs=pargs)
-
+    orig_ycol = list(orig_ycols.keys())[i] if smoothing_window else None
+    predictions[ycol] = fit_predict_plot(pipeline, xcol, ycol, data, test, func, predictdate, pargs=pargs, orig_ycol=orig_ycol)
 
 results = pd.concat([df[date], pd.Series(predictdate[len(df):], name=date)], axis=0)
 
 for ycol, (preds, lower, mean, upper) in predictions.items():
-    dummy = pd.Series(np.full((len(preds)-len(df),), fill_value=np.nan), name='observed {}'.format(ycol))
+    dummy = pd.Series(np.full((len(preds)-len(df[date].unique()),), fill_value=np.nan), name='observed {}'.format(ycol))
     observed = pd.concat(
         [pd.Series(df[ycol], name='observed {}'.format(ycol)), dummy],axis=0
     ).reset_index(drop=True)
