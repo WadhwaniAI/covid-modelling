@@ -32,7 +32,7 @@ class SEIR_Testing():
             self.T_trans = self.T_inf/self.R0
 
         if t >= self.lockdown_removal_day:
-            self.R0 = 2.2
+            self.R0 = self.R0 / self.intervention_amount
             self.T_trans = self.T_inf/self.R0
 
         # Init derivative vector

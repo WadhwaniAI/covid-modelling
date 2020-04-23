@@ -7,29 +7,23 @@ class SEIR:
   def __init__(self, params, state_init_values):
     self.params = params
     self.state_init_values = state_init_values
-    self.time_params = self.params[:-7]
-    self.p_params = self.params[-7:-4]
-    self.N = self.params[-4]
-    self.intervention_day = self.params[-3]
-    # self.intervention_amount = self.params[-3]
-    self.intervention_duration = self.params[-2]
-    self.intervention_choice = self.params[-1]
-
-  def get_impact(self, choice):
-    return(1+1*choice)
+    self.time_params = self.params[:-5]
+    self.p_params = self.params[-5:-2]
+    self.N = self.params[-2]
+    self.int_vec = self.params[-1]
 
   def get_derivative(self, t, y):
     # Init state variables
-    S, E, I, R_mild, R_severe, R_severe_hosp, R_fatal, C, D = y
+    [S, E, I, R_mild, R_severe, R_severe_hosp, R_fatal, C, D] = y
 
     # Init time parameters and probabilities
     T_trans, T_inc, T_inf, T_recov_mild, T_hosp, T_recov_severe, T_death = self.time_params
     P_mild, P_severe, P_fatal = self.p_params
     
-    # Modelling the intervention
-    for i in range(len(self.intervention_day)):
-        if (t >= self.intervention_day[i] and t<self.intervention_day[i]+self.intervention_duration[i]):
-          T_trans = self.get_impact(self.intervention_choice[i])*T_trans
+
+    for i in range(len(self.int_vec)):
+        if (t >= i and t<i+1):
+          T_trans = self.int_vec[i]*T_trans
 
     # Init derivative vector
     dydt = np.zeros(y.shape)

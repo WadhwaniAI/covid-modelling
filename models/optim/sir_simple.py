@@ -7,24 +7,22 @@ class SEIR:
   def __init__(self, params, state_init_values):
     self.params = params
     self.state_init_values = state_init_values
-    self.time_params = self.params[:-7]
-    self.p_params = self.params[-7:-4]
+    self.time_params = self.params[:-4]
     self.N = self.params[-4]
     self.intervention_day = self.params[-3]
-    # self.intervention_amount = self.params[-3]
-    self.intervention_duration = self.params[-2]
     self.intervention_choice = self.params[-1]
+    self.intervention_duration = self.params[-2]
 
   def get_impact(self, choice):
-    return(1+1*choice)
+    return(1+2*choice)
+
 
   def get_derivative(self, t, y):
     # Init state variables
-    S, E, I, R_mild, R_severe, R_severe_hosp, R_fatal, C, D = y
+    S, I, R = y
 
     # Init time parameters and probabilities
-    T_trans, T_inc, T_inf, T_recov_mild, T_hosp, T_recov_severe, T_death = self.time_params
-    P_mild, P_severe, P_fatal = self.p_params
+    T_trans, T_treat = self.time_params
     
     # Modelling the intervention
     for i in range(len(self.intervention_day)):
@@ -35,14 +33,8 @@ class SEIR:
     dydt = np.zeros(y.shape)
     # Write differential equations
     dydt[0] = -I*S/(T_trans)
-    dydt[1] = I*S/(T_trans) - E/T_inc
-    dydt[2] = E/T_inc - I/T_inf
-    dydt[3] = (P_mild*I)/T_inf - R_mild/T_recov_mild
-    dydt[4] = (P_severe*I)/T_inf - R_severe/T_hosp
-    dydt[5] = R_severe/T_hosp - R_severe_hosp/T_recov_severe
-    dydt[6] = (P_fatal*I)/T_inf - R_fatal/T_death
-    dydt[7] = R_mild/T_recov_mild + R_severe_hosp/T_recov_severe
-    dydt[8] = R_fatal/T_death
+    dydt[1] = I*S/(T_trans) - I/T_treat
+    dydt[2] = I/T_treat
 
     return dydt
 
