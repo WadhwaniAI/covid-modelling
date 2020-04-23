@@ -1,6 +1,8 @@
 from curvefit.core.utils import data_translator
 import matplotlib.pyplot as plt
 import numpy as np
+from pandas.plotting import register_matplotlib_converters
+from matplotlib.dates import DateFormatter
 
 def plot_draws_deriv(generator, prediction_times, draw_space, plot_obs, sharex=True, sharey=True, plot_uncertainty=True):
     fig, ax = plt.subplots(len(generator.groups), 1, figsize=(8, 4 * len(generator.groups)),
@@ -51,3 +53,10 @@ def smooth(y, smoothing_window):
 # def ema(y, smoothing_window):
 #     return y.ewm(span=smoothing_window, adjust=False)
 
+def setup_plt(ycol):
+    register_matplotlib_converters()
+    plt.yscale("log")
+    plt.gca().xaxis.set_major_formatter(DateFormatter("%d.%m"))
+    plt.grid()
+    plt.xlabel("Date")
+    plt.ylabel(ycol)

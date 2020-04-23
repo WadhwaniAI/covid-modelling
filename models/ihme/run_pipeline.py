@@ -1,4 +1,4 @@
--#! /bin/python3
+#! /bin/python3
 # vim: set expandtab:
 # -------------------------------------------------------------------------
 import sys
@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from matplotlib import pyplot as plt 
 
 from matplotlib.dates import DateFormatter
-from pandas.plotting import register_matplotlib_converters
 
 import curvefit
 from curvefit.core.functions import *
@@ -22,7 +21,7 @@ from sklearn.metrics import r2_score, mean_squared_log_error
 from sklearn.model_selection import train_test_split
 
 from data import *
-from utils import *
+from utils import plot_draws_deriv, mape, smooth, setup_plt
 
 # -------------------------------------------------------------------------
 # load params
@@ -83,17 +82,6 @@ if daily:
         df[dailycol] = dailycol_vals
 
 if smoothing_window:
-    def smooth(y, smoothing_window):
-        box = np.ones(smoothing_window)/smoothing_window
-        y_smooth = np.convolve(y, box, mode='same')
-        return y_smooth
-
-    def sma(y, smoothing_window):
-        return y.rolling(window=smoothing_window)
-
-    def ema(y, smoothing_window):
-        return y.ewm(span=smoothing_window, adjust=False)
-
     new_ycols = {}
     for ycol in ycols.keys():
         df[f'{ycol}_smooth'] = smooth(df[ycol], 5)
@@ -103,13 +91,16 @@ if smoothing_window:
 
 
 test_size = pargs['test_size'] # in num days
+
 max_date = df[date].max()
 df[daycol] = (df[date] - df[date].min()).dt.days
 threshold = max_date - timedelta(days=test_size)
+
 data, test = df[df[date] < threshold], df[df[date] >= threshold]
 agg_df = df.groupby(date).sum().reset_index(col_fill=date)
 agg_df[daycol] = (agg_df[date] - agg_df[date].min()).dt.days
 agg_data, agg_test = agg_df[agg_df[date] < threshold], agg_df[agg_df[date] >= threshold]
+
 seed = 'last{}'.format(test_size)
 print ('seed: {}'.format(seed))
 # data, test = train_test_split(df, train_size=.8, shuffle=True, random_state=seed)
@@ -118,6 +109,7 @@ n_data = len(data)
 
 daysforward, daysback = pargs['daysforward'], pargs['daysback']
 pargs['smart_init'] = pargs['smart_init'] if 'smart_init' in pargs else False
+
 # link functions
 identity_fun = lambda x: x
 exp_fun = lambda x : np.exp(x)
@@ -156,12 +148,17 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, par
     plt.clf()
 
     if daily:
+        # plot draws - daily data/preds
         plot_draws_deriv(pipeline, predictx, derivs[func], dailycol)
         plt.savefig(f'{output_folder}/draws_{fname}_{ycol}_{derivs[func].__name__}_{seed}.png')
         plt.clf()
 
 
+    # pipeline.predict
     if len(data[groupcol].unique()) > 1:
+        # for each groups if multiple groups, then aggregate
+        # TODO: add an option for plotting per group; then we can just predict group='all'
+            # and set a boolean check below to not plot group_predictions data when not wanted
         group_predictions = pd.DataFrame()
         for grp in data[groupcol].unique():
             grp_df = pd.DataFrame(columns=[daycol, date, groupcol, f'{ycol}_pred'])
@@ -172,56 +169,61 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, par
             group_predictions = group_predictions.append(grp_df)
         predictions = group_predictions.groupby(daycol).sum()[f'{ycol}_pred']
     else:
+        # otherwise just call predict once on all
         predictions = pipeline.predict(times=predictx, predict_space=func, predict_group='all')
 
-    # evaluate against test set
+    # evaluate against test set - this is only done overall, not per group
     xtest, ytest = test[xcol], test[ycol]
     predtest = pipeline.predict(times=xtest, predict_space=func, predict_group='all')
     r2, msle = r2_score(ytest, predtest), None
+    # this throws an error otherwise, hence the check
     if 'log' not in func.__name__ :
         msle = mean_squared_log_error(ytest, predtest)
     maperr = mape(ytest, predtest)
     print ('test set - mape: {} r2: {} msle: {}'.format(maperr, r2, msle))
 
-    # evaluate overall
+    # evaluate overall - this is only done overall, not per group
     r2, msle = r2_score(agg_data[ycol], predictions[daysback:daysback+len(agg_data[ycol])]), None
+    # this throws an error otherwise, hence the check
     if 'log' not in func.__name__ :
         msle = mean_squared_log_error(agg_data[ycol], predictions[daysback:daysback+len(agg_data[ycol])])
     maperr = mape(agg_data[ycol], predictions[daysback:daysback+len(agg_data[ycol])])
     print ('overall - mape: {} r2: {} msle: {}'.format(maperr, r2, msle))
 
     # plot predictions against actual
-    register_matplotlib_converters()
-    plt.yscale("log")
-    plt.gca().xaxis.set_major_formatter(DateFormatter("%d.%m"))
-    plt.grid()
-    plt.xlabel("Date")
-    plt.ylabel(ycol)
+    # set up the canvas
+    setup_plt(ycol)
+    plt.title("{} {} fit to {}".format(fname, ycol, func.__name__))
+    # actually plot the data
     if smoothing_window:
+        # plot original data
         plt.plot(agg_data[date], agg_data[orig_ycol], 'k+', label='data (test)')
         plt.plot(agg_test[date], agg_test[orig_ycol], 'k+', label='data (test)')
+    # plot data we fit on (smoothed if -s)
     plt.plot(agg_data[date], agg_data[ycol], 'r+', label='data')
     plt.plot(agg_test[date], agg_test[ycol], 'g+', label='data (test)')
+    # plot predictions
     plt.plot(predictdate, predictions, 'r-', label='fit: {}: {}'.format(func.__name__, params_estimate))
+    # plot error bars based on MAPE
     plt.errorbar(predictdate[df[date].nunique():], predictions[df[date].nunique():], yerr=predictions[df[date].nunique():]*maperr, color='black', barsabove='False')
+    # plot each group's curve
     clrs = ['c', 'm', 'y', 'k']
     if len(data[groupcol].unique()) > 1:
         for i, grp in enumerate(data[groupcol].unique()):
+            # plot each group's predictions
             plt.plot(predictdate, group_predictions[group_predictions[groupcol] == grp][f'{ycol}_pred'], f'{clrs[i]}-', label=grp)
+            # plot each group's actual data
             plt.plot(data[data[groupcol] == grp][date], data[data[groupcol] == grp][ycol], f'{clrs[i]}+', label='data')
             plt.plot(test[test[groupcol] == grp][date], test[test[groupcol] == grp][ycol], f'{clrs[i]}+')
     
-    plt.title("{} {} fit to {}".format(fname, ycol, func.__name__))
-    
     plt.legend() 
     plt.savefig(f'{output_folder}/{fname}_{ycol}_{func.__name__}_{seed}.png')
-    # plt.show() 
     plt.clf()
 
     if daily:
-        # predict daily numbers
-
+        # also predict daily numbers
         if len(data[groupcol].unique()) > 1:
+            # per group, and then aggregate
             daily_group_predictions = pd.DataFrame()
             for grp in data[groupcol].unique():
                 grp_df = pd.DataFrame(columns=[daycol, date, groupcol, f'{ycol}_pred'])
@@ -232,33 +234,36 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, predictdate, par
                 daily_group_predictions = daily_group_predictions.append(grp_df)
             daily_predictions = daily_group_predictions.groupby(daycol).sum()[f'{ycol}_pred']
         else:
+            # just overall
             daily_predictions = pipeline.predict(times=predictx, predict_space=derivs[func], predict_group='all')
 
+        # calculate mape for error bars
         maperr = mape(agg_data[dailycol], daily_predictions[daysback:daysback+len(agg_data[dailycol])])
         print(f"Daily MAPE: {maperr}")
+        
         # plot daily predictions against actual
-        register_matplotlib_converters()
-        plt.yscale("log")
-        plt.gca().xaxis.set_major_formatter(DateFormatter("%d.%m"))
-        plt.grid()
-        plt.xlabel("Date")
-        plt.ylabel(ycol)
+        setup_plt(ycol)
+        plt.title("{} {} fit to {}".format(fname, ycol, derivs[func].__name__))
+        # plot daily deaths
         plt.plot(agg_data[date], agg_data[dailycol], 'b+', label='data')
         plt.plot(agg_test[date], agg_test[dailycol], 'g+', label='data (test)')
+        # against predicted daily deaths
         plt.plot(predictdate, daily_predictions, 'r-', label='fit: {}: {}'.format(derivs[func].__name__, params_estimate))
+        # with error bars
         plt.errorbar(predictdate[df[date].nunique():], daily_predictions[df[date].nunique():], yerr=daily_predictions[df[date].nunique():]*maperr, color='black', barsabove='False')
+        # including per group predictions if multiple
+        # TODO: add per group observed data here
         if len(data[groupcol].unique()) > 1:
             for i, grp in enumerate(data[groupcol].unique()):
                 plt.plot(predictdate, daily_predictions[daily_predictions[groupcol] == grp][f'{ycol}_pred'], f'{clrs[i]}-', label=grp)
-
-        plt.title("{} {} fit to {}".format(fname, ycol, derivs[func].__name__))
         
         plt.legend() 
         plt.savefig(f'{output_folder}/{fname}_{ycol}_{derivs[func].__name__}_{seed}.png')
         # plt.show() 
         plt.clf()
-        
 
+# Now, all plotting is complete. Re-acquire detailed draws information for output (csv)
+# Reliability of these numbers are questionable. Uncertainty metric evalutation ongoing.
     for i, group in enumerate(pipeline.groups):
         # x = prediction_times = predictx
         draws = pipeline.draws[group].copy()
@@ -292,6 +297,7 @@ for i, (ycol, func) in enumerate(ycols.items()):
     param_names  = [ 'alpha', 'beta',       'p'     ]
     covs = ['covs', 'covs', 'covs']
     link_fun     = [ identity_fun, exp_fun, exp_fun ]
+    # link_fun     = [ exp_fun, identity_fun, exp_fun ] # According to their methods should be
     var_link_fun = link_fun
 
     # # think this could work with more death data:
