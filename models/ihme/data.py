@@ -17,7 +17,7 @@ strs = [('deceased', 'deaths'), ('confirmed', 'cases'), ('recovered', 'recovered
 def _covid19india():
 	dfs = []
 	for (name,_) in strs:
-		df = pd.read_csv('https://raw.githubusercontent.com/covid19india/api/master/states_daily_csv/{}.csv'.format(name))
+		df = pd.read_csv('http://api.covid19india.org/states_daily_csv/{}.csv'.format(name))
 		df.dropna(axis=1, how='all', inplace=True)
 		df.loc[:, 'date'] = df['date'].apply(lambda x: datetime.strptime(x, "%d-%b-%y"))
 		df.columns = [df.columns[0]] + [colname + '_{}'.format(name) for colname in df.columns[1:]]
@@ -42,7 +42,7 @@ def india_all():
 def india_all_state():
 	dfs = []
 	for (name, newname) in strs:
-		df = pd.read_csv('https://raw.githubusercontent.com/covid19india/api/master/states_daily_csv/{}.csv'.format(name))
+		df = pd.read_csv('http://api.covid19india.org/states_daily_csv/{}.csv'.format(name))
 		df.dropna(axis=1, how='all', inplace=True)
 		df.loc[:, 'date'] = df['date'].apply(lambda x: datetime.strptime(x, "%d-%b-%y"))
 		df.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
@@ -64,3 +64,9 @@ def india_state(state):
 		state[newname] = state[newname].cumsum()
 	return state
 
+def india_states(states):
+	df = india_all_state()
+	state = df[df['state'].isin(states)].reset_index()
+	for (_, newname) in strs:
+		state[newname] = state[newname].cumsum()
+	return state
