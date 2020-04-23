@@ -85,9 +85,9 @@
         "exp_smoothing": null,
         "max_last": null
 	},
-	"karnataka": {
-		"data_func": "india_state",
-		"data_func_args": "KA",
+	"KAMHGJ": {
+		"data_func": "india_states",
+		"data_func_args": ["KA", "MH", "GJ"],
 		"test_size": 5,
 		"alpha_true": 2.0,
 		"beta_true": 3.0,
@@ -96,8 +96,31 @@
 		"date": "date",
 		"groupcol": "state",
 		"ycols": {
-		    "deaths": "erf",
-		    "cases": "erf"
+		    "deaths": "erf"
+		},
+		"daysforward": 60,
+		"daysback": 10,
+		"n_draws": 5,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [2,2],
+        "num_smooths": 3,
+        "exclude_groups": [],
+        "exclude_below": 0,
+        "exp_smoothing": null,
+        "max_last": null
+	},
+	"karnataka": {
+		"data_func": "india_state",
+		"data_func_args": "KA",
+		"test_size": 5,
+		"alpha_true": 0.1,
+		"beta_true": 0.1,
+		"p_true": 0.1,
+		"xcol": "day",
+		"date": "date",
+		"groupcol": "state",
+		"ycols": {
+		    "deaths": "erf"
 		},
 		"daysforward": 90,
 		"daysback": 10,
@@ -125,10 +148,34 @@
 		},
 		"daysforward": 90,
 		"daysback": 10,
-		"n_draws": 5,
+		"n_draws": 10,
         "cv_threshold": 1e-2,
-        "smoothed_radius": [2,2],
-        "num_smooths": 3,
+        "smoothed_radius": [5,5],
+        "num_smooths": 15,
+        "exclude_groups": [],
+        "exclude_below": 0,
+        "exp_smoothing": null,
+        "max_last": null
+	},
+	"gujarat": {
+		"data_func": "india_state",
+		"data_func_args": "GJ",
+		"test_size": 0,
+		"alpha_true": 0.1,
+		"beta_true": 0.1,
+		"p_true": 0.1,
+		"xcol": "day",
+		"date": "date",
+		"groupcol": "state",
+		"ycols": {
+		    "deaths": "erf"
+		},
+		"daysforward": 90,
+		"daysback": 10,
+		"n_draws": 10,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [5,5],
+        "num_smooths": 15,
         "exclude_groups": [],
         "exclude_below": 0,
         "exp_smoothing": null,
