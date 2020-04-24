@@ -26,7 +26,7 @@
 	},
 	"india_all": {
 		"data_func": "india_all",
-		"test_size": 5,
+		"test_size": 7,
 		"alpha_true": 2.0,
 		"beta_true": 3.0,
 		"p_true": 4.0,

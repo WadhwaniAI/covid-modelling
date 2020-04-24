@@ -6,7 +6,8 @@ def bbmp():
 	df = pd.read_csv('../../data/data/bbmp.csv')
 	df.loc[:, 'date'] = df['Date'].apply(lambda x: datetime.strptime(x, "%d.%m.%Y"))
 	df.drop("Date", axis=1, inplace=True)
-	df.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
+	df.loc[:, 'day'] = (df['date'] - df['date'].min()).dt.days
+	# df.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
 	df.rename(columns = {'Cumulative Deaths til Date':'deaths'}, inplace = True) 
 	df.rename(columns = {'Cumulative Cases Til Date':'cases'}, inplace = True) 
 	df.loc[:, 'group'] = pd.Series([1 for i in range(len(df))])
@@ -26,7 +27,8 @@ def _covid19india():
 	result = dfs[0]
 	for df in dfs[1:]:
 		result = result.merge(df, on='date', how='outer')
-	result.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
+	result.loc[:, 'day'] = (result['date'] - result['date'].min()).dt.days
+	# result.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
 	result.set_index('date')
 	return result
 
@@ -45,7 +47,8 @@ def india_all_state():
 		df = pd.read_csv('http://api.covid19india.org/states_daily_csv/{}.csv'.format(name))
 		df.dropna(axis=1, how='all', inplace=True)
 		df.loc[:, 'date'] = df['date'].apply(lambda x: datetime.strptime(x, "%d-%b-%y"))
-		df.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
+		df.loc[:, 'day'] = (df['date'] - df['date'].min()).dt.days
+		# df.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
 		df = df.set_index(['date', 'day'])
 		df = df.stack().reset_index()
 		df.columns = ['date', 'day', 'state', newname]
