@@ -14,9 +14,7 @@ import datetime
 from joblib import Parallel, delayed
 
 from models.seir.seir_testing import SEIR_Testing
-from utils.plotting import create_plots
-from utils.generic import init_params
-from main.losses import Loss_Calculator
+from main.seir.losses import Loss_Calculator
 
 class Optimiser():
 
