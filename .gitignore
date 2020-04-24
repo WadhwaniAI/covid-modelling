@@ -4,6 +4,7 @@
 *.pyc
 **.ipynb_checkpoints/
 *.ipynb_checkpoints/
+*.vscode/
 
 sftp-config.json
 *__pycache__
