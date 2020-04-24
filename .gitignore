@@ -9,3 +9,4 @@ sftp-config.json
 *__pycache__
 *.DS_Store
 !data/data/*.csv
+.vscode/

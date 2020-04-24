@@ -1,49 +1,12 @@
-from curvefit.core.utils import data_translator
-import matplotlib.pyplot as plt
+import sys
+import json
 import numpy as np
 import pandas as pd
-from pandas.plotting import register_matplotlib_converters
-from matplotlib.dates import DateFormatter
+
+from datetime import timedelta
+
 import curvefit
-import data as dataloader
-from datetime import datetime, timedelta
-import json
-import sys
-
-
-def plot_draws_deriv(generator, prediction_times, draw_space, plot_obs, sharex=True, sharey=True, plot_uncertainty=True):
-    _, ax = plt.subplots(len(generator.groups), 1, figsize=(8, 4 * len(generator.groups)),
-                               sharex=sharex, sharey=sharey)
-    if len(generator.groups) == 1:
-        ax = [ax]
-    for i, group in enumerate(generator.groups):
-        draws = generator.draws[group].copy()
-        draws = data_translator(
-            data=draws,
-            input_space=generator.predict_space,
-            output_space=draw_space
-        )
-        mean_fit = generator.mean_predictions[group].copy()
-        mean_fit = data_translator(
-            data=mean_fit,
-            input_space=generator.predict_space,
-            output_space=draw_space
-        )
-        mean = draws.mean(axis=0)
-        ax[i].plot(prediction_times, mean, c='red', linestyle=':')
-        ax[i].plot(prediction_times, mean_fit, c='black')
-
-        if plot_uncertainty:
-            lower = np.quantile(draws, axis=0, q=0.025)
-            upper = np.quantile(draws, axis=0, q=0.975)
-            ax[i].plot(prediction_times, lower, c='red', linestyle=':')
-            ax[i].plot(prediction_times, upper, c='red', linestyle=':')
-
-        if plot_obs is not None:
-            df_data = generator.all_data.loc[generator.all_data[generator.col_group] == group].copy()
-            ax[i].scatter(df_data[generator.col_t], df_data[plot_obs])
-
-        ax[i].set_title(f"{group} predictions")
+from . import data as dataloader
 
 def mape(y_true, y_pred):
     y_true, y_pred = np.array(y_true), np.array(y_pred)
@@ -60,26 +23,18 @@ def smooth(y, smoothing_window):
 # def ema(y, smoothing_window):
 #     return y.ewm(span=smoothing_window, adjust=False)
 
-def setup_plt(ycol):
-    register_matplotlib_converters()
-    plt.yscale("log")
-    plt.gca().xaxis.set_major_formatter(DateFormatter("%d.%m"))
-    plt.grid()
-    plt.xlabel("Date")
-    plt.ylabel(ycol)
-
 class Params():
     def __init__(self, label):
         with open('params.json', "r") as paramsfile:
-            pargs = json.load(paramsfile)
-            if label not in pargs:
+            params = json.load(paramsfile)
+            if label not in params:
                 print("entry not found in params.json")
                 sys.exit(0)
-        pargs = pargs[label]
+        pargs = params['default']
+        pargs.update(params[label])
+        
 
         # set vars
-        self.params_true = np.array( [ pargs['alpha_true'], pargs['beta_true'], pargs['p_true'] ] )
-        
         self.date, self.groupcol, self.xcol = pargs['date'], pargs['groupcol'], 'day'
         self.xcol, self.ycols = pargs['xcol'], pargs['ycols']
         self.test_size=pargs['test_size']
@@ -96,7 +51,22 @@ class Params():
         }
 
         self.daysforward, self.daysback = pargs['daysforward'], pargs['daysback']
-        self.smart_init = pargs['smart_init'] if 'smart_init' in pargs else False
+        self.priors = pargs['priors']
+        # "priors": {
+        #     "fe_init": [2.0, 3.0, 4.0],
+		# 	  "smart_initialize": true
+		# 	  "re_init": null,
+		# 	  "fe_bounds": null,
+		# 	  "re_bounds": null,
+		# 	  "fe_gprior": null,
+		# 	  "re_gprior": null,
+		# 	  "fun_gprior": null,
+		# 	  "fixed_params": null,
+		# 	  "smart_initialize": false,
+		# 	  "fixed_params_initialize": null,
+		# 	  "options": null,
+		# 	  "smart_init_options": null
+		# }
 
         # convert str to functions
         for (k,v) in self.ycols.items():
@@ -111,7 +81,6 @@ class Params():
         
         self.multigroup = len(self.df[self.groupcol].unique()) > 1
         self.agg_df = self.df.groupby(self.date).sum().reset_index(col_fill=self.date)
-
         self.threshold = self.df[self.date].max() - timedelta(days=self.test_size)
          
     def train_test(self, df):

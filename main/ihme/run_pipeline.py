@@ -1,28 +1,20 @@
 #! /bin/python3
 # vim: set expandtab:
 # -------------------------------------------------------------------------
-import sys
 import os
-import json
+import sys
 import argparse
 import pandas as pd
 import numpy as np 
-from datetime import datetime, timedelta
-from matplotlib import pyplot as plt 
-
-from matplotlib.dates import DateFormatter
+from datetime import timedelta, datetime
 
 import curvefit
-from curvefit.core.functions import *
 from curvefit.core.utils import data_translator
-from curvefit.pipelines.basic_model import *
+from curvefit.pipelines.basic_model import BasicModel
 
-from sklearn.metrics import r2_score, mean_squared_log_error
-from sklearn.model_selection import train_test_split
-
-# from data import *
-from util import plot_draws_deriv, mape, smooth, setup_plt, Params
-from plotting import Plotter
+sys.path.append('../..')
+from models.ihme.util import Params
+from models.ihme.plotting import Plotter
 
 # -------------------------------------------------------------------------
 parser = argparse.ArgumentParser() 
@@ -50,11 +42,9 @@ seed = f'last{params.test_size}'
 print (f'seed: {seed}')
 
 # set vars
-params_true = params.params_true
 date, groupcol = params.date, params.groupcol
 xcol, ycols = params.xcol, params.ycols
 daysforward, daysback = params.daysforward, params.daysback
-smart_init = params.smart_init
 pipeline_run_args = params.pipeline_run_args
 
 # output
@@ -83,7 +73,6 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, pargs={}, orig_y
         "max_last": None
     }
     p_args.update(pargs)
-    print(p_args)
     
     # pipeline
     pipeline.setup_pipeline()
@@ -132,16 +121,14 @@ def fit_predict_plot(curve_model, xcol, ycol, data, test, func, pargs={}, orig_y
 predictions = {}
 for i, (ycol, func) in enumerate(ycols.items()):
     
-    predictions = {}
-for i, (ycol, func) in enumerate(ycols.items()):
-    
-    data.loc[:,'covs']            = len(data) * [ 1.0 ]
-    data.loc[:,'deaths_normalized']            = data['deaths']/data['deaths'].max()
+    data.loc[:,'covs'] = len(data) * [ 1.0 ]
+    data.loc[:,'sd'] = data[date].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
+    data.loc[:,f'{ycol}_normalized'] = data[ycol]/data[ycol].max()
 
-    param_names  = [ 'alpha', 'beta',       'p'     ]
+    param_names  = [ 'alpha', 'beta', 'p' ]
     covs = ['covs', 'covs', 'covs']
-    link_fun     = [ identity_fun, exp_fun, exp_fun ]
-    # link_fun     = [ exp_fun, identity_fun, exp_fun ] # According to their methods should be
+    link_fun = [ identity_fun, exp_fun, exp_fun ]
+    # link_fun = [ exp_fun, identity_fun, exp_fun ] # According to their methods should be
     var_link_fun = link_fun
 
     # # think this could work with more death data:
@@ -161,10 +148,7 @@ for i, (ycol, func) in enumerate(ycols.items()):
         predict_space=func, #TODO confirm: (callable) the space to do predictive validity in, one of curvefit.functions
         obs_se_func=None, #TODO if we wanna specify: (optional) function to get observation standard error from col_t
         # predict_group='all', #: (str) which group to make predictions for
-        fit_dict={ # TODO: add priors here
-            'fe_init': params_true / 3.0,
-            'smart_initialize': params.smart_init,
-        }, #: keyword arguments to CurveModel.fit_params()
+        fit_dict=params.priors, #: keyword arguments to CurveModel.fit_params()
         basic_model_dict= { #: additional keyword arguments to the CurveModel class
             'col_obs_se': None,#(str) of observation standard error
             # 'col_covs': num_params*[covs],#TODO: List[str] list of names of covariates to put on the parameters

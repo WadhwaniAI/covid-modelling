@@ -1,6 +1,11 @@
+import sys
 import pandas as pd
 from datetime import datetime, timedelta
 import numpy as np
+
+sys.path.append('../..')
+from data import dataloader
+
 
 def bbmp():
 	df = pd.read_csv('../../data/data/bbmp.csv')
@@ -73,3 +78,24 @@ def india_states(states):
 	for (_, newname) in strs:
 		state[newname] = state[newname].cumsum()
 	return state
+
+def jhu(country):
+	df_master = dataloader.get_jhu_data()
+	# print(df_master['Country/Region'].unique())
+	# Province/State            object
+	# Country/Region            object
+	# Lat                      float64
+	# Long                     float64
+	# Date              datetime64[ns]
+	# ConfirmedCases            object
+	# Deaths                    object
+	# RecoveredCases            object
+	# ActiveCases               object
+	df = df_master[df_master['Country/Region'] == country]
+	df.loc[:, 'day'] = (df['Date'] - df['Date'].min()).dt.days
+	df.loc[:, 'ConfirmedCases'] = pd.to_numeric(df['ConfirmedCases'])
+	df.loc[:, 'Deaths'] = pd.to_numeric(df['Deaths'])
+	df.loc[:, 'RecoveredCases'] = pd.to_numeric(df['RecoveredCases'])
+	df.loc[:, 'ActiveCases'] = pd.to_numeric(df['ActiveCases'])
+	df['Province/State'].fillna(country, inplace=True)
+	return df

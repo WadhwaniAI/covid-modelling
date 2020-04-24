@@ -1,8 +1,21 @@
 import matplotlib.pyplot as plt
-from util import plot_draws_deriv, mape, setup_plt
-from curvefit.core.functions import *
-import pandas as pd 
+from pandas.plotting import register_matplotlib_converters
+from matplotlib.dates import DateFormatter
+import pandas as pd
 from sklearn.metrics import r2_score, mean_squared_log_error
+
+from curvefit.core.functions import *
+from curvefit.core.utils import data_translator
+
+from .util import mape
+
+def setup_plt(ycol):
+    register_matplotlib_converters()
+    plt.yscale("log")
+    plt.gca().xaxis.set_major_formatter(DateFormatter("%d.%m"))
+    plt.grid()
+    plt.xlabel("Date")
+    plt.ylabel(ycol)
 
 class Plotter():
     def __init__(self, pipeline, params, predictdate, predictx, file_prefix, output_folder, ycol, func):
@@ -24,6 +37,40 @@ class Plotter():
         self.data = self.pipeline.all_data
         self.date = params.date
 
+    def _plot_draws(self, draw_space, plot_obs, sharex=True, sharey=True, plot_uncertainty=True):
+        _, ax = plt.subplots(len(self.pipeline.groups), 1, figsize=(8, 4 * len(self.pipeline.groups)),
+                                sharex=sharex, sharey=sharey)
+        if len(self.pipeline.groups) == 1:
+            ax = [ax]
+        for i, group in enumerate(self.pipeline.groups):
+            draws = self.pipeline.draws[group].copy()
+            draws = data_translator(
+                data=draws,
+                input_space=self.pipeline.predict_space,
+                output_space=draw_space
+            )
+            mean_fit = self.pipeline.mean_predictions[group].copy()
+            mean_fit = data_translator(
+                data=mean_fit,
+                input_space=self.pipeline.predict_space,
+                output_space=draw_space
+            )
+            mean = draws.mean(axis=0)
+            ax[i].plot(self.predictx, mean, c='red', linestyle=':')
+            ax[i].plot(self.predictx, mean_fit, c='black')
+
+            if plot_uncertainty:
+                lower = np.quantile(draws, axis=0, q=0.025)
+                upper = np.quantile(draws, axis=0, q=0.975)
+                ax[i].plot(self.predictx, lower, c='red', linestyle=':')
+                ax[i].plot(self.predictx, upper, c='red', linestyle=':')
+
+            if plot_obs is not None:
+                df_data = self.pipeline.all_data.loc[self.pipeline.all_data[self.pipeline.col_group] == group].copy()
+                ax[i].scatter(df_data[self.pipeline.col_t], df_data[plot_obs])
+
+            ax[i].set_title(f"{group} predictions")
+    
     def plot_draws(self, dailycolname=None):
         # plot draws
         self.pipeline.plot_results(prediction_times=self.predictx)
@@ -32,7 +79,7 @@ class Plotter():
 
         if dailycolname:
             # plot draws - daily data/preds
-            plot_draws_deriv(self.pipeline, self.predictx, self.derivs[self.func], dailycolname)
+            self._plot_draws(self.derivs[self.func], dailycolname)
             plt.savefig(f'{self.output_folder}/{self.file_prefix}_draws_{self.ycol}_{self.derivs[self.func].__name__}.png')
             plt.clf()
 
@@ -80,7 +127,7 @@ class Plotter():
     def plot_predictions(self, df, agg_data, agg_test, orig_ycol, test, daysback, smoothing_window=False, multigroup=False, dailycolname=None):
         group_predictions, predictions = self.predict(self.func, multigroup)
         maperr = self.calc_error(test, predictions, agg_data, daysback)
-        title = f'{self.file_prefix} {self.ycol}' +  'fit to {}'
+        title = f'{self.file_prefix} {self.ycol}' +  ' fit to {}'
         # plot predictions against actual
         # set up the canvas
         setup_plt(self.ycol)
@@ -133,7 +180,7 @@ class Plotter():
             # TODO: add per group observed data here
             if len(self.data[self.groupcol].unique()) > 1:
                 for i, grp in enumerate(self.data[self.groupcol].unique()):
-                    plt.plot(self.predictdate, daily_predictions[daily_predictions[self.groupcol] == grp][f'{self.ycol}_pred'], f'{clrs[i]}-', label=grp)
+                    plt.plot(self.predictdate, daily_group_predictions[daily_group_predictions[self.groupcol] == grp][f'{self.ycol}_pred'], f'{clrs[i]}-', label=grp)
             
             plt.legend() 
             plt.savefig(f'{self.output_folder}/{self.file_prefix}_{self.ycol}_{self.derivs[self.func].__name__}.png')
