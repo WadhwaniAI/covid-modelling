@@ -28,7 +28,8 @@ class Optimiser():
             end_date = df_true.iloc[-1, :]['date']
         else:
             end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
-        total_days = (params_dict['starting_date'] - end_date).days,
+#         total_days = (params_dict['starting_date'] - end_date).days,
+        total_days = len(df_true['date'])
         sol = solver.solve_ode(total_no_of_days=total_days - 1, time_step=1, method='Radau')
         df_prediction = solver.return_predictions(sol)
         return df_prediction
