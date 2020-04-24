@@ -11,7 +11,7 @@ def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru'
 
     df_district = pd.DataFrame(columns=['total_confirmed'], index=index)
     df_district['total_confirmed'] = [0]*len(index)
-    for i, row in df_raw_data_1.iterrows():
+    for _, row in df_raw_data_1.iterrows():
         df_district.loc[row['dateannounced']:, 'total_confirmed'] += 1
 
     df_district.reset_index(inplace=True)
