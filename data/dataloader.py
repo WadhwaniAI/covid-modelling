@@ -24,7 +24,6 @@ def _modify_dataframe(df, column_name='RecoveredCases'):
 def get_country_dataframe(df_master, country):
     df_country = df_master[df_master['Country/Region'] == country].loc[:, 'Date':].groupby('Date').sum().reset_index()
     df_country = df_country[df_country['ConfirmedCases'] > 0]
-    total_days = len(df_country['Date'])
     df_country.reset_index(drop=True, inplace=True)
     return df_country
 
@@ -145,7 +144,7 @@ def get_rootnet_api_data():
     data = requests.get('https://api.rootnet.in/covid19-in/stats/history').json()
     columns = ['confirmedCasesForeign', 'confirmedCasesIndian', 'deaths', 'discharged', 'loc', 'date']
     df_state_time_series = pd.DataFrame(columns=columns)
-    for i, data_json in enumerate(data['data']):
+    for i, _ in enumerate(data['data']):
         df_temp = pd.DataFrame.from_dict(data['data'][i]['regional'])
         df_temp['date'] = data['data'][i]['day']
         df_state_time_series = pd.concat([df_state_time_series, df_temp])
