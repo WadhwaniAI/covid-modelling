@@ -45,7 +45,7 @@ def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru'
             district = districtwise[districtwise['state'] == state]['district'].unique()
             state = len(district) * [state]
         district_timeseries = {}
-        for (s, d) in list(zip(state, districts)):
+        for (s, d) in list(zip(state, district)):
             district_timeseries[d] = get_district_time_series(dataframes, state=s, district=d)
         return district_timeseries
     else:    
@@ -82,7 +82,6 @@ def clean(raw_all_district_age_data):
     transposed.fillna('', inplace=True)
     new = transposed[transposed.columns[0]]
     for x in transposed.columns[1:]:
-        print (transposed[x])
         new += transposed[x] 
     all_district_age_data = raw_all_district_age_data.copy()
     all_district_age_data.columns = new.T
@@ -113,6 +112,7 @@ def get_age_band_population(age_data):
         age_band_pops[key] = pop
     return age_band_pops, total_pop
 
+
 if __name__ == "__main__":
     dataframes = get_covid19india_api_data()
 
@@ -137,7 +137,13 @@ if __name__ == "__main__":
         age_data[state_file_mapping[filename.split('.')[0]]] = df.dropna(how='all')
 
     amd = 'District - Ahmadabad (07)'
-    gj = 'State - GUJARAT (24)'
+    mumbai = 'District - Mumbai (23)'
+    mumbai2 = 'District - Mumbai Suburban (22)'
+    pune = 'District - Pune (25)'
+    delhi ='District - New Delhi (05)'
+    jaipur = 'District - Jaipur (12)'
+    bengaluru = 'District - Bangalore (18)'
+
     def standardise_age(district, state, area_name):
         data = district_timeseries[district].set_index('date')
         raw_all_district_age_data = age_data[state]
@@ -201,3 +207,5 @@ if __name__ == "__main__":
         checker['age_std'] = age_std_mortality
         checker['non_std'] = data['total_deaths']/data['total_confirmed']
         print(checker)
+
+    standardise_age('Bengaluru', 'Karnataka', bengaluru)
