@@ -28,7 +28,7 @@ class Optimiser():
             end_date = df_true.iloc[-1, :]['date']
         else:
             end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
-        total_days = (params_dict['starting_date'] - end_date).days,
+        total_days = (end_date - params_dict['starting_date']).days
         sol = solver.solve_ode(total_no_of_days=total_days - 1, time_step=1, method='Radau')
         df_prediction = solver.return_predictions(sol)
         return df_prediction
@@ -36,7 +36,7 @@ class Optimiser():
 
     # TODO add cross validation support
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, 
-                               which_compartments=['hospitalised', 'recovered', 'total', 'fatalities'], 
+                               which_compartments=['hospitalised', 'recovered', 'total_infected', 'fatalities'], 
                                loss_indices=[-20, -10], loss_method='rmse', return_dict=False):
         params_dict = {**variable_params, **default_params}
         solver = SEIR_Testing(**params_dict)
@@ -46,8 +46,8 @@ class Optimiser():
         # Choose which indices to calculate loss on
         # TODO Add slicing capabilities on the basis of date
         if loss_indices == None:
-            df_prediction_slice = df_prediction.iloc[:, :]
-            df_true_slice = df_true.iloc[:, :]
+            df_prediction_slice = df_prediction
+            df_true_slice = df_true
         else:
             df_prediction_slice = df_prediction.iloc[loss_indices[0]:loss_indices[1], :]
             df_true_slice = df_true.iloc[loss_indices[0]:loss_indices[1], :]
@@ -99,7 +99,8 @@ class Optimiser():
         list_of_param_dicts = [self._create_dict(list(variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
 
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params, df_true=df_true,
-                                                 total_days=total_days, loss_method=method, loss_indices=loss_indices)
+                                                 total_days=total_days, loss_method=method, loss_indices=loss_indices, 
+                                                 which_compartments = ['total_infected'])
         
         # If debugging is enabled the gridsearch is not parallelised
         if debug:
@@ -126,7 +127,8 @@ class Optimiser():
         total_days = len(df_true['date'])
         
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params, df_true=df_true,
-                                                 total_days=total_days, loss_method=method, loss_indices=loss_indices)
+                                                 total_days=total_days, loss_method=method, loss_indices=loss_indices, 
+                                                 which_compartments=['total_infected'])
         
         searchspace = variable_param_ranges
         
