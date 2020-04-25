@@ -35,12 +35,9 @@ class Loss_Calculator():
         return losses
 
 
-    def calc_loss(self, states_time_matrix, df, which_compartments=['hospitalised', 'recovered', 'total', 'fatalities'], method='rmse'):
+    def calc_loss(self, states_time_matrix, df, which_compartments=['hospitalised', 'recovered', 'total_infected', 'fatalities'], method='rmse'):
         losses = self.calc_loss_dict(states_time_matrix, df, method)
         loss = 0
         for compartment in which_compartments:
-            try:
-                loss += losses[compartment]
-            except Exception:
-                continue
+            loss += losses[compartment]
         return loss
