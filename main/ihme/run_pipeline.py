@@ -127,9 +127,10 @@ for i, (ycol, func) in enumerate(ycols.items()):
 
     param_names  = [ 'alpha', 'beta', 'p' ]
     covs = ['covs', 'covs', 'covs']
-    link_fun = [ identity_fun, exp_fun, exp_fun ]
-    # link_fun = [ exp_fun, identity_fun, exp_fun ] # According to their methods should be
-    var_link_fun = link_fun
+    # link_fun = [ identity_fun, exp_fun, exp_fun ]
+    link_fun = [ exp_fun, identity_fun, exp_fun ] # According to their methods should be
+    var_link_fun = [ identity_fun, identity_fun, identity_fun ]
+    # var_link_fun = link_fun
 
     # # think this could work with more death data:
     # link_fun     = [ identity_fun, identity_fun, exp_fun ]

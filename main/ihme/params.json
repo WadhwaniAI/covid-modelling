@@ -10,9 +10,9 @@
 		},
 		"daysforward": 90,
 		"daysback": 10,
-		"n_draws": 5,
+		"n_draws": 20,
         "cv_threshold": 1e-2,
-        "smoothed_radius": [2,2],
+        "smoothed_radius": [7,7],
         "num_smooths": 3,
         "exclude_groups": [],
         "exclude_below": 0,
@@ -25,11 +25,7 @@
 	},
 	"india_all": {
 		"data_func": "india_all",
-		"test_size": 5,
-		"n_draws": 7,
-        "cv_threshold": 1e-2,
-        "smoothed_radius": [5,5],
-        "num_smooths": 3
+		"test_size": 7
 	},
 	"bbmp": {
 		"data_func": "bbmp",
