@@ -58,7 +58,7 @@ class FittedQIteration(object):
             R[t], S[t+1] = self.simulator.perform(A[t])
         return S, A, R
 
-    def fit_Q(self, episodes, num_iters=100, discount=0.98):
+    def fit_Q(self, episodes, num_iters=100, discount=0.98,episode_length=200):
         """Fit and re-fit the Q function using historical data for the
         specified number of `iters` at the specified `discount` factor"""
         S1 = np.vstack([ep[0][:-1] for ep in episodes])
@@ -72,7 +72,7 @@ class FittedQIteration(object):
             targets = R + discount * self.Q(S2).max(axis=1)
             self.regressor.fit(inputs, targets)
         progress.close()
-    def fit(self, num_refits=10, num_episodes=15, save=False):
+    def fit(self, num_refits=10, num_episodes=15, episode_length=200, save=False):
         """Perform fitted-Q iteration. For `outer_iters` steps, gain
         `num_episodes` episodes worth of experience using the current policy
         (which is initially random), then fit or re-fit the Q-function. Return
@@ -82,8 +82,8 @@ class FittedQIteration(object):
         for i in range(num_refits):
             progress.update(1)
             for _ in range(num_episodes):
-                episodes.append(self.run_episode())
-            self.fit_Q(episodes)
+                episodes.append(self.run_episode(episode_length=episode_length))
+            self.fit_Q(episodes=episodes, episode_length=episode_length)
             if save:
                 with open('./fqi-regressor-iter-{}.pkl'.format(i+1), 'wb') as f:
                     pickle.dump(self.regressor, f)
@@ -101,126 +101,48 @@ class FittedQIteration(object):
 
 if __name__ == '__main__':
     print('Here goes nothing')
-    env=FittedQIteration()
-    episodes=env.fit( num_refits=10, num_episodes=30)
- 
-    with open('Result_30EP.pickle', 'wb') as f:
-                pickle.dump([env,episodes], f)
-                
-                
-                
-    # with open('Result_30EP.pickle', 'rb') as f:
-    #     X = pickle.load(f)  
-    # env=X[0]
-    # episodes=X[1]
     
-###################D1##############################
+    num_refits=10
+    num_episodes=15
+    episode_length=100
+    First_time=True
+    if First_time:
+        env=FittedQIteration()
+        episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,episode_length=episode_length)
+     
+        with open('Result_refits={}_episodes={}_episode_length={}.pickle'.format(num_refits,num_episodes,episode_length), 'wb') as f:
+                    pickle.dump([env,episodes], f)
+    else:            
+        with open('Result_refits={}_episodes={}_episode_length={}.pickle'.format(num_refits,num_episodes,episode_length), 'rb') as f:
+            X = pickle.load(f)  
+        env=X[0]
+        episodes=X[1]
     
     discount=0.98
-    real_episodes=env.run_episode(eps=0)
-    reward=real_episodes[1]
-    test_r=0
+    real_episodes=env.run_episode(eps=0,episode_length=episode_length)
+    S=real_episodes[0]
+    A=real_episodes[1]
+    R=real_episodes[2]
+    best_r=0
+    for i in range(len(R)):
+        best_r+=R[i]*(discount**i)
     
+
+    random_action_episodes=env.run_episode(eps=1,episode_length=episode_length)
+    S_r=random_action_episodes[0]
+    A_r=random_action_episodes[1]
+    R_r=random_action_episodes[2]
+    random_r=0
+    for i in range(len(R_r)):
+        random_r+=R_r[i]*(discount**i)
+    test_r=0    
     
-    state_t=real_episodes[0][0]
-    state=state_t[2:]
+    state=real_episodes[0][0]
     
     estimate_r=env.Q([state])[0]
-    print(state_t[:2])
-    print(estimate_r[2])
-    
-    
-    for i in range(len(reward)):
-        test_r+=reward[i]*(discount**i)
-    all_r=[]
-    for i in range(10): 
-        e_r=0
-        for j in range(30): 
-#            ep=episodes[i*10+j]
-            ep=episodes[i*10+j]
-            reward=ep[1]
-            r=0
-            for e in range(len(reward)):
-                r+=reward[e]*(discount**e)
-            e_r+=r
-        all_r.append(e_r/30)
-#        
-    all_f=[]
-    feature_num=1-1
-    f_t=np.zeros((200,150))
-    for i in range(10): 
-        for j in range(15):
-            ep=episodes[i*10+j]
-            feature=ep[0]
-            for e in range(len(reward)):
-                f_t[e][(15*i+j)]=feature[e][feature_num+2]
-
-    ff_t=np.zeros(200)
-    for i in range(1): 
-        for j in range(1):
-            ep=real_episodes
-            feature=ep[0]
-            for e in range(len(reward)):
-                
-                ff_t[e]=feature[e][feature_num+2]    
-
-###################D2##############################
-#    Eps=1
-#    feature_num=6-1
-#    
-#    real_episodes=[]
-##    for i in range(100):
-##        real_episodes.append(env.run_episode(eps=Eps))
-###        if(i>=50):
-###            real_episodes.append(env.run_episode(eps=Eps))
-##    env2=FittedQIteration()
-##    env2.fit_Q(real_episodes)
-##    with open('hw2Result_encode_'+str(Eps)+'.pickle', 'wb') as f:
-##            pickle.dump(env2, f)
-##            
-#            
-#    with open('hw2Result_encode_'+str(Eps)+'.pickle', 'rb') as f:
-#        env2 = pickle.load(f)
-#    
-#    real_episodes2=env2.run_episode(eps=0)
-#    discount=0.98
-#    reward=real_episodes2[1]
-#    state_t=real_episodes2[0][0]
-#    state=state_t[2:]
-#    test_r=0
-#    estimate_r=env2.Q([state])[0]
-#    print(state_t[:2])
-#    print(estimate_r[2])
-#    for i in range(len(reward)):
-#        test_r+=reward[i]*(discount**i)
-#    print(test_r)
-#    all_r=[]
-#    for i in range(10): 
-#        e_r=0
-#        for j in range(15): 
-#            ep=episodes[i*10+j]
-#            reward=ep[1]
-#            r=0
-#            for e in range(len(reward)):
-#                r+=reward[e]*(discount**e)
-#            e_r+=r
-#        all_r.append(e_r/15)
-##        
-#    all_f=[]
-#    
-#    f_t=np.zeros((200,150))
-#    for i in range(10): 
-#        for j in range(15):
-#            ep=episodes[i*10+j]
-#            feature=ep[0]
-#            for e in range(len(reward)):
-#                f_t[e][(15*i+j)]=feature[e][feature_num+2]
-#
-#    ff_t=np.zeros(200)
-#    for i in range(1): 
-#        for j in range(1):
-#            ep=real_episodes2
-#            feature=ep[0]
-#            for e in range(len(reward)):
-#                
-#                ff_t[e]=feature[e][feature_num+2]    
+    print("Estimate Reward(Discounted):")
+    print(max(estimate_r))
+    print("Real Reward(Discounted):")
+    print(best_r)
+    print("Random Action Reward(Discounted):")
+    print(random_r)    
