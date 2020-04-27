@@ -105,7 +105,7 @@ if __name__ == '__main__':
     num_refits=10
     num_episodes=15
     episode_length=100
-    First_time=True
+    First_time=False
     if First_time:
         env=FittedQIteration()
         episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,episode_length=episode_length)
