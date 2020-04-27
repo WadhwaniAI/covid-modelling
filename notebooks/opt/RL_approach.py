@@ -2,6 +2,7 @@ import sys
 import os
 import math
 import numpy as np
+import matplotlib.pyplot as plt
 # sys.path.append('../..')
 # from models.optim.SEIR_Discrete import SEIR_Discrete
 from SEIR_Discrete import SEIR_Discrete
@@ -145,4 +146,25 @@ if __name__ == '__main__':
     print("Real Reward(Discounted):")
     print(best_r)
     print("Random Action Reward(Discounted):")
-    print(random_r)    
+    print(random_r)
+    # S_=[]
+    # E=[]
+    # I=[]
+    # for i in range(len(S)):
+    #     S_.append(S[i][0])
+    #     E.append(S[i][1])
+    #     I.append(S[i][2])
+    # plt.plot(range(len(S_)),S_)
+    # plt.plot(range(len(E)),E)
+    # plt.plot(range(len(I)),I)
+    S_=[]
+    E=[]
+    I=[]
+    for i in range(len(S_r)):
+        S_.append(S_r[i][0])
+        E.append(S_r[i][1])
+        I.append(S_r[i][2])
+    plt.plot(range(len(S_)),S_)
+    plt.plot(range(len(E)),E)
+    plt.plot(range(len(I)),I)
+    
