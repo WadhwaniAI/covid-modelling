@@ -68,12 +68,10 @@ class FittedQIteration(object):
         inputs = self.encode(S1, A)
         progress = tqdm(range(num_iters), file=sys.stdout,desc='num_iters')
         for _ in range(num_iters):
-            sys.stdout.flush()
-            progress.update()
-            progress.refresh()
+            progress.update(1)
             targets = R + discount * self.Q(S2).max(axis=1)
             self.regressor.fit(inputs, targets)
-
+        progress.close()
     def fit(self, num_refits=10, num_episodes=15, save=False):
         """Perform fitted-Q iteration. For `outer_iters` steps, gain
         `num_episodes` episodes worth of experience using the current policy
@@ -86,11 +84,10 @@ class FittedQIteration(object):
             for _ in range(num_episodes):
                 episodes.append(self.run_episode())
             self.fit_Q(episodes)
-
             if save:
                 with open('./fqi-regressor-iter-{}.pkl'.format(i+1), 'wb') as f:
                     pickle.dump(self.regressor, f)
-
+        progress.close()
         return episodes
 
     def encode(self, states, actions):
