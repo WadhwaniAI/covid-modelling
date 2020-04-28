@@ -61,24 +61,22 @@ class SEIR_Discrete(object):
     def perform(self,ACTION):
         STATE_=self.STATE.copy()
         if self.is_action_legal(ACTION)==False:
-            # print("Exceed Budget")
-            r=0
-        else:
-            # 0:S, 1:E, 2:I, 3:R_mild, 4:R_severe, 5:R_severe_hosp, 6:R_fatal, 7:C, 8:D, 9:B
-            T_trans=self.get_action_T(ACTION)
-            STATE_[0] = self.STATE[0]-self.STATE[2]*self.STATE[0]/(T_trans)
-            STATE_[1] = self.STATE[1]+self.STATE[2]*self.STATE[0]/(T_trans) - self.STATE[1]/self.T_inc
-            STATE_[2] = self.STATE[2]+self.STATE[1]/self.T_inc - self.STATE[2]/self.T_inf
-            STATE_[3] = self.STATE[3]+(self.P_mild*self.STATE[2])/self.T_inf - self.STATE[3]/self.T_recov_mild
-            STATE_[4] = self.STATE[4]+(self.P_severe*self.STATE[2])/self.T_inf - self.STATE[4]/self.T_hosp
-            STATE_[5] = self.STATE[5]+self.STATE[4]/self.T_hosp - self.STATE[5]/self.T_recov_severe
-            STATE_[6] = self.STATE[6]+(self.P_fatal*self.STATE[2])/self.T_inf - self.STATE[6]/self.T_death
-            STATE_[7] = self.STATE[7]+self.STATE[3]/self.T_recov_mild + self.STATE[5]/self.T_recov_severe
-            STATE_[8] = self.STATE[8]+self.STATE[6]/self.T_death
-            STATE_[9] = self.STATE[9]-self.get_action_cost(ACTION)
-            self.STATE=STATE_.copy()
-            self.t+=1
-            r=self.calc_reward()
+            ACTION=0
+        # 0:S, 1:E, 2:I, 3:R_mild, 4:R_severe, 5:R_severe_hosp, 6:R_fatal, 7:C, 8:D, 9:B
+        T_trans=self.get_action_T(ACTION)
+        STATE_[0] = self.STATE[0]-self.STATE[2]*self.STATE[0]/(T_trans)
+        STATE_[1] = self.STATE[1]+self.STATE[2]*self.STATE[0]/(T_trans) - self.STATE[1]/self.T_inc
+        STATE_[2] = self.STATE[2]+self.STATE[1]/self.T_inc - self.STATE[2]/self.T_inf
+        STATE_[3] = self.STATE[3]+(self.P_mild*self.STATE[2])/self.T_inf - self.STATE[3]/self.T_recov_mild
+        STATE_[4] = self.STATE[4]+(self.P_severe*self.STATE[2])/self.T_inf - self.STATE[4]/self.T_hosp
+        STATE_[5] = self.STATE[5]+self.STATE[4]/self.T_hosp - self.STATE[5]/self.T_recov_severe
+        STATE_[6] = self.STATE[6]+(self.P_fatal*self.STATE[2])/self.T_inf - self.STATE[6]/self.T_death
+        STATE_[7] = self.STATE[7]+self.STATE[3]/self.T_recov_mild + self.STATE[5]/self.T_recov_severe
+        STATE_[8] = self.STATE[8]+self.STATE[6]/self.T_death
+        STATE_[9] = self.STATE[9]-self.get_action_cost(ACTION)
+        self.STATE=STATE_.copy()
+        self.t+=1
+        r=self.calc_reward()
         return r, self.STATE
 
     def calc_reward(self):
@@ -113,3 +111,8 @@ if __name__ == '__main__':
     plt.plot(range(len(S)),S)
     plt.plot(range(len(E)),E)
     plt.plot(range(len(I)),I)
+    random_r=0
+    discount=0.98
+    for i in range(len(S)):
+        random_r+=S[i]*(discount**i)
+    print(random_r)

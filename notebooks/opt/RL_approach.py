@@ -44,11 +44,12 @@ class FittedQIteration(object):
             return self.Q([state]).argmax()
 
     def run_episode(self, eps=0.1, episode_length=200):
-        """Run a single episode on the HIV simulator using the current policy.
+        """Run a single episode on the SEIR_Discrete using the current policy.
         Can pass a custom `eps` to test out varying levels of randomness.
         Return the states visited, actions taken, and rewards received."""
         S = np.zeros((episode_length+1, self.simulator.num_states))
         A = np.zeros(episode_length)
+        # A = 4*np.ones(episode_length)
         R = np.zeros(episode_length)
 
         self.simulator.reset()
@@ -56,6 +57,9 @@ class FittedQIteration(object):
 
         for t in range(episode_length):
             A[t] = self.policy(S[t], eps=eps)
+            
+            
+            
             R[t], S[t+1] = self.simulator.perform(A[t])
         return S, A, R
 
@@ -147,24 +151,24 @@ if __name__ == '__main__':
     print(best_r)
     print("Random Action Reward(Discounted):")
     print(random_r)
-    # S_=[]
-    # E=[]
-    # I=[]
-    # for i in range(len(S)):
-    #     S_.append(S[i][0])
-    #     E.append(S[i][1])
-    #     I.append(S[i][2])
-    # plt.plot(range(len(S_)),S_)
-    # plt.plot(range(len(E)),E)
-    # plt.plot(range(len(I)),I)
     S_=[]
     E=[]
     I=[]
-    for i in range(len(S_r)):
-        S_.append(S_r[i][0])
-        E.append(S_r[i][1])
-        I.append(S_r[i][2])
+    for i in range(len(S)):
+        S_.append(S[i][0])
+        E.append(S[i][1])
+        I.append(S[i][2])
     plt.plot(range(len(S_)),S_)
     plt.plot(range(len(E)),E)
     plt.plot(range(len(I)),I)
+    # S_=[]
+    # E=[]
+    # I=[]
+    # for i in range(len(S_r)):
+    #     S_.append(S_r[i][0])
+    #     E.append(S_r[i][1])
+    #     I.append(S_r[i][2])
+    # plt.plot(range(len(S_)),S_)
+    # plt.plot(range(len(E)),E)
+    # plt.plot(range(len(I)),I)
     
