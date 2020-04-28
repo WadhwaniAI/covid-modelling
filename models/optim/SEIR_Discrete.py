@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 class SEIR_Discrete(object):
     def __init__(self, S=0.99, E=0, I=0.01, R_mild=0, R_severe=0, R_severe_hosp=0, R_fatal=0, C=0, D=0,B=50):
-        self.STATE=[S, E, I, R_mild, R_severe, R_severe_hosp, R_fatal, C, D,B]
+        self.STATE=np.array([S, E, I, R_mild, R_severe, R_severe_hosp, R_fatal, C, D,B])
         self.R0 = 2.2 
         self.T_inf = 2.9
         self.T_trans = self.T_inf/self.R0
@@ -21,8 +21,9 @@ class SEIR_Discrete(object):
         self.t=0
         '''Intervention Relateted'''
         self.num_actions=5
+        self.num_states=10
     def reset(self):
-        self.STATE=[0.99, 0, 0.01, 0, 0, 0, 0, 0, 0,50]
+        self.STATE=np.array([0.99, 0, 0.01, 0, 0, 0, 0, 0, 0,50])
         self.t=0
     
     def is_action_legal(self,ACTION):
@@ -58,10 +59,9 @@ class SEIR_Discrete(object):
         return T_trans_c*self.T_inf/self.R0    
     
     def perform(self,ACTION):
-        if self.is_action_legal(ACTION):
-            STATE_=self.STATE.copy()
-        else:
-            print("Exceed Budget")
+        STATE_=self.STATE.copy()
+        if self.is_action_legal(ACTION)==False:
+            ACTION=0
         # 0:S, 1:E, 2:I, 3:R_mild, 4:R_severe, 5:R_severe_hosp, 6:R_fatal, 7:C, 8:D, 9:B
         T_trans=self.get_action_T(ACTION)
         STATE_[0] = self.STATE[0]-self.STATE[2]*self.STATE[0]/(T_trans)
@@ -76,6 +76,8 @@ class SEIR_Discrete(object):
         STATE_[9] = self.STATE[9]-self.get_action_cost(ACTION)
         self.STATE=STATE_.copy()
         self.t+=1
+        r=self.calc_reward()
+        return r, self.STATE
 
     def calc_reward(self):
         S_coeficeint=1
@@ -87,7 +89,8 @@ class SEIR_Discrete(object):
         R_R_fatal_coeficeint=0
         C_coeficeint=1
         D_coeficeint=0
-        coeficeint=[S_coeficeint,E_coeficeint,I_coeficeint,R_mild_coeficeint,R_severe_coeficeint,R_severe_home_coeficeint,R_severe_home_coeficeint,R_R_fatal_coeficeint,C_coeficeint,D_coeficeint]
+        B_coeficeint=0
+        coeficeint=np.array([S_coeficeint,E_coeficeint,I_coeficeint,R_mild_coeficeint,R_severe_coeficeint,R_severe_home_coeficeint,R_R_fatal_coeficeint,C_coeficeint,D_coeficeint,B_coeficeint])
         reward=sum(coeficeint[:]*self.STATE[:])
         return reward
     
@@ -109,3 +112,8 @@ if __name__ == '__main__':
     plt.plot(range(len(S)),S)
     plt.plot(range(len(E)),E)
     plt.plot(range(len(I)),I)
+    random_r=0
+    discount=0.98
+    for i in range(len(S)):
+        random_r+=S[i]*(discount**i)
+    print(random_r)

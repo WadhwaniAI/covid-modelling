@@ -3,9 +3,9 @@ import os
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-# sys.path.append('../..')
-# from models.optim.SEIR_Discrete import SEIR_Discrete
-from SEIR_Discrete import SEIR_Discrete
+sys.path.append('../..')
+from models.optim.SEIR_Discrete import SEIR_Discrete
+# from SEIR_Discrete import SEIR_Discrete
 from sklearn.ensemble import ExtraTreesRegressor
 import pickle
 import time
@@ -49,14 +49,14 @@ class FittedQIteration(object):
         Return the states visited, actions taken, and rewards received."""
         S = np.zeros((episode_length+1, self.simulator.num_states))
         A = np.zeros(episode_length)
-        # A = 4*np.ones(episode_length)
+        A = 4*np.ones(episode_length)
         R = np.zeros(episode_length)
 
         self.simulator.reset()
         S[0] = self.simulator.STATE
 
         for t in range(episode_length):
-            A[t] = self.policy(S[t], eps=eps)
+            # A[t] = self.policy(S[t], eps=eps)
             
             
             
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     num_refits=10
     num_episodes=15
     episode_length=100
-    First_time=False
+    First_time=True
     if First_time:
         env=FittedQIteration()
         episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,episode_length=episode_length)
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     R=real_episodes[2]
     best_r=0
     for i in range(len(R)):
-        best_r+=R[i]*(discount**i)
+        best_r+=R[i]
     
 
     random_action_episodes=env.run_episode(eps=1,episode_length=episode_length)
@@ -139,7 +139,7 @@ if __name__ == '__main__':
     R_r=random_action_episodes[2]
     random_r=0
     for i in range(len(R_r)):
-        random_r+=R_r[i]*(discount**i)
+        random_r+=R_r[i]
     test_r=0    
     
     state=real_episodes[0][0]
