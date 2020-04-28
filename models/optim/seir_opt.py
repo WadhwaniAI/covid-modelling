@@ -31,6 +31,7 @@ class SEIR:
     # Init derivative vector
     dydt = np.zeros(y.shape)
     # Write differential equations
+    # 0:S, 1:E, 2:I, 3:R_mild, 4:R_severe, 5:R_severe_hosp, 6:R_fatal, 7:C, 8:D,
     dydt[0] = -I*S/(T_trans)
     dydt[1] = I*S/(T_trans) - E/T_inc
     dydt[2] = E/T_inc - I/T_inf
