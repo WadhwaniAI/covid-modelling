@@ -3,9 +3,9 @@ import os
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-# sys.path.append('../..')
-# from models.optim.SEIR_Discrete import SEIR_Discrete
-from SEIR_Discrete import SEIR_Discrete
+sys.path.append('../..')
+from models.optim.SEIR_Discrete_2 import SEIR_Discrete
+# from SEIR_Discrete import SEIR_Discrete
 from sklearn.ensemble import ExtraTreesRegressor
 import pickle
 import time
