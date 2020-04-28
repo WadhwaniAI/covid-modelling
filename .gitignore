@@ -1,10 +1,14 @@
 *.csv
+*.pdf
 *.png
 *.pyc
 **.ipynb_checkpoints/
 *.ipynb_checkpoints/
+*.vscode/
 
 sftp-config.json
 *__pycache__
 *.DS_Store
 !data/data/*.csv
+.vscode/
+notebooks/opt/Result_refits=10_episodes=15_episode_length=100.pickle

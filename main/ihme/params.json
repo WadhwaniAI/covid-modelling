@@ -1,0 +1,95 @@
+{
+	"default": {
+		"data_func": "india_all",
+		"test_size": 5,
+		"xcol": "day",
+		"date": "date",
+		"groupcol": "state",
+		"ycols": {
+		    "deaths": "erf"
+		},
+		"daysforward": 90,
+		"daysback": 10,
+		"n_draws": 20,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [7,7],
+        "num_smooths": 3,
+        "exclude_groups": [],
+        "exclude_below": 0,
+        "exp_smoothing": null,
+		"max_last": null,
+		"priors": {
+            "fe_init": [0.33, 0.5, 0.66],
+			"fe_bounds": [[0, 1], [1, 100], [1, 10000]]
+		}
+	},
+	"india_all": {
+		"data_func": "india_all",
+		"test_size": 7
+	},
+	"bbmp": {
+		"data_func": "bbmp",
+		"ycols": {
+		    "cases": "erf"
+		},
+		"daysback": 0
+	},
+	"india_all_state": {
+		"data_func": "india_all_state",
+		"ycols": {
+		    "cases": "erf"
+		},
+		"n_draws": 5,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [2,2],
+        "num_smooths": 3
+	},
+	"KAMHGJ": {
+		"data_func": "india_states",
+		"data_func_args": ["KA", "MH", "GJ"],
+		"daysforward": 60,
+		"n_draws": 7,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [2,2],
+		"num_smooths": 3
+	},
+	"karnataka": {
+		"data_func": "india_state",
+		"data_func_args": "KA",
+		"n_draws": 5,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [5,5],
+        "num_smooths": 3
+	},
+	"maharashtra": {
+		"data_func": "india_state",
+		"data_func_args": "MH",
+		"n_draws": 10,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [5,5],
+        "num_smooths": 15
+	},
+	"gujarat": {
+		"data_func": "india_state",
+		"data_func_args": "GJ",
+		"test_size": 0,
+		"n_draws": 10,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [5,5],
+        "num_smooths": 15
+	},
+	"italy": {
+		"data_func": "jhu",
+		"data_func_args": "Italy",
+		"date": "Date",
+		"groupcol": "Province/State",
+		"ycols": {
+		    "Deaths": "erf"
+		},
+		"test_size": 5,
+		"n_draws": 7,
+        "cv_threshold": 1e-2,
+        "smoothed_radius": [5,5],
+        "num_smooths": 3
+	}
+}

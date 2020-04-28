@@ -21,8 +21,14 @@ def _modify_dataframe(df, column_name='RecoveredCases'):
     df['Date'] = pd.to_datetime(df['Date'])
     return df
 
+def get_country_dataframe(df_master, country):
+    df_country = df_master[df_master['Country/Region'] == country].loc[:, 'Date':].groupby('Date').sum().reset_index()
+    df_country = df_country[df_country['ConfirmedCases'] > 0]
+    df_country.reset_index(drop=True, inplace=True)
+    return df_country
+
 # Loads time series case data for every country (and all provinces within certain countries) from JHU's github repo
-def get_global_data():
+def get_jhu_data():
     """
     This function parses the confirmed, death and recovered CSVs on JHU's github repo and converts them to pandas dataframes
     Columns of returned dataframe : 
@@ -43,35 +49,40 @@ def get_global_data():
 
 # ---------FUNCTIONS FOR GETTING INDIAN DATA----------
 
-def get_indian_data():
+def get_covid19india_api_data():
     """
-    This function parses 5 JSONs : 4 JSONs from covid19india.org, and 1 JSON from rootnet.in
+    This function parses multiple JSONs from covid19india.org
     It then converts the data into pandas dataframes
-    It returns 7 dataframes : 
+    It returns the following dataframes as a dict : 
      - df_tested : Time series of people tested in India
      - df_statewise : Today's snapshot of cases in India, statewise
-     - df_state_time_series : Time series of statewise cases in India
      - df_india_time_series : Time series of cases in India (nationwide)
-     - df_districtwise : Today's snapshot of cases in India, districtwise (Unofficial)
-     - df_raw_data : (Lots of) information about every patient (where they were detected, current status, 
-       who all did they infect, etc). (Unofficial : from newsarticles, twitter, etc)
-     - df_travel_history : Travel history of some patients (Unofficial : from newsarticles, twitter, etc)
+     - df_districtwise : Today's snapshot of cases in India, districtwise
+     - df_raw_data : Patient level information of cases
+     - df_raw_data_2 : Patient level information of deaths and recoveries
+     - [NOT UPDATED ANYMORE] df_travel_history : Travel history of some patients (Unofficial : from newsarticles, twitter, etc)
+     - df_resources : Repository of testing labs, fundraising orgs, government helplines, etc
     """
+
+    # List of dataframes to return
+    dataframes = {}
+
     # Parse data.json file
     data = requests.get('https://api.covid19india.org/data.json').json()
 
     # Create dataframe for testing data
     df_tested = pd.DataFrame.from_dict(data['tested'])
-    df_tested = df_tested[np.logical_not(df_tested['source'] == '')]
-    df_tested.reset_index(inplace=True, drop=True)
+    dataframes['df_tested'] = df_tested
 
     # Create dataframe for statewise data
     df_statewise = pd.DataFrame.from_dict(data['statewise'])
+    dataframes['df_statewise'] = df_statewise
 
     # Create dataframe for time series data
     df_india_time_series = pd.DataFrame.from_dict(data['cases_time_series'])
     df_india_time_series['date'] = pd.to_datetime([datetime.datetime.strptime(x[:6]+ ' 2020', '%d %b %Y') for x in df_india_time_series['date']])
-    
+    dataframes['df_india_time_series'] = df_india_time_series
+
     # Parse state_district_wise.json file
     data = requests.get('https://api.covid19india.org/state_district_wise.json').json()
     states = data.keys()
@@ -81,31 +92,59 @@ def get_indian_data():
             data[state]['districtData'][district].update(delta_dict)
             del data[state]['districtData'][district]['delta']
 
-    columns = ['state', 'district', 'confirmed', 'delta_confirmed', 'lastupdatedtime']
+    columns = ['state', 'district', 'active', 'confirmed', 'deceased', 'recovered', 'delta_confirmed', 'delta_deceased', 'delta_recovered']
     df_districtwise = pd.DataFrame(columns=columns)
     for state in states:
         df = pd.DataFrame.from_dict(data[state]['districtData']).T.reset_index()
-        df.columns = ['district', 'confirmed', 'delta_confirmed', 'lastupdatedtime']
+        del df['notes']
+        df.columns = columns[1:]
         df['state'] = state
         df = df[columns]
         df_districtwise = pd.concat([df_districtwise, df], ignore_index=True)
+    dataframes['df_districtwise'] = df_districtwise
         
     # Parse raw_data.json file
     # Create dataframe for raw history
     data = requests.get('https://api.covid19india.org/raw_data.json').json()
     df_raw_data = pd.DataFrame.from_dict(data['raw_data'])
-    df_raw_data = df_raw_data[np.logical_not(df_raw_data['source1'] == '')]
+    dataframes['df_raw_data'] = df_raw_data
+
+    # Parse deaths_recoveries.json file
+    data = requests.get('https://api.covid19india.org/deaths_recoveries.json').json()
+    df_raw_data_2 = pd.DataFrame.from_dict(data['deaths_recoveries'])
+    dataframes['df_raw_data_2'] = df_raw_data_2
 
     # Parse travel_history.json file
     # Create dataframe for travel history
+    """
+    !!!! TRAVEL HISTORY HAS BEEN DEPRECATED !!!!
+    """
     data = requests.get('https://api.covid19india.org/travel_history.json').json()
     df_travel_history = pd.DataFrame.from_dict(data['travel_history'])
+    dataframes['df_travel_history'] = df_travel_history
 
+    data = requests.get('https://api.covid19india.org/resources/resources.json').json()
+    df_resources = pd.DataFrame.from_dict(data['resources'])
+    dataframes['df_resources'] = df_resources
+
+    return dataframes
+
+def get_rootnet_api_data():
+    """
+    This function parses multiple JSONs from api.rootnet.in
+    It then converts the data into pandas dataframes
+    It returns the following dataframes as a dict : 
+     - df_state_time_series : Time series of cases in India (statewise)
+     - df_statewise_beds : Statewise bed capacity in India
+     - df_medical_colleges : List of medical collegs in India
+    """
+    dataframes = {}
+     
     # Read states time series data from rootnet.in
     data = requests.get('https://api.rootnet.in/covid19-in/stats/history').json()
     columns = ['confirmedCasesForeign', 'confirmedCasesIndian', 'deaths', 'discharged', 'loc', 'date']
     df_state_time_series = pd.DataFrame(columns=columns)
-    for i, data_json in enumerate(data['data']):
+    for i, _ in enumerate(data['data']):
         df_temp = pd.DataFrame.from_dict(data['data'][i]['regional'])
         df_temp['date'] = data['data'][i]['day']
         df_state_time_series = pd.concat([df_state_time_series, df_temp])
@@ -113,5 +152,14 @@ def get_indian_data():
     df_state_time_series['confirmedCases'] = df_state_time_series['confirmedCasesForeign'] + df_state_time_series['confirmedCasesIndian']
     df_state_time_series['date'] = pd.to_datetime(df_state_time_series['date'])
     df_state_time_series.columns = [x if x != 'loc' else 'state' for x in df_state_time_series.columns]
+    dataframes['df_state_time_series'] = df_state_time_series
     
-    return df_tested, df_statewise, df_state_time_series, df_india_time_series, df_districtwise, df_raw_data, df_travel_history
+    data = requests.get('https://api.rootnet.in/covid19-in/hospitals/beds').json()
+    df_statewise_beds = pd.DataFrame.from_dict(data['data']['regional'])
+    dataframes['df_statewise_beds'] = df_statewise_beds
+
+    data = requests.get('https://api.rootnet.in/covid19-in/hospitals/medical-colleges').json()
+    df_medical_colleges = pd.DataFrame.from_dict(data['data']['medicalColleges'])
+    dataframes['df_medical_colleges'] = df_medical_colleges
+
+    return dataframes
