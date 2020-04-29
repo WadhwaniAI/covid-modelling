@@ -1,8 +1,6 @@
 import sys
-from configparser import ConfigParser
 from argparse import ArgumentParser
 
-import numpy as np
 import pandas as pd
 
 arguments = ArgumentParser()

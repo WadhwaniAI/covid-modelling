@@ -1,9 +1,7 @@
 import sys
 import csv
-import collections as cl
 from pathlib import Path
 from argparse import ArgumentParser
-from configparser import ConfigParser
 from multiprocessing import Pool
 
 import numpy as np
@@ -119,7 +117,7 @@ def func(args):
     index_col = 'date'
     df = pd.read_csv(data, index_col=index_col, parse_dates=[index_col])
     (theta, sigma) = [ x.from_config(config) for x in (Theta, Sigma) ]
-    optimizer = OptimizationContainer(*ttsplit(df, outlook - 1))
+    optimizer = OptimizationContainer(*dsplit(df, outlook - 1))
     metropolis = LogAcceptor(theta, sigma, optimizer)
 
     return list(each(metropolis, steps, i))

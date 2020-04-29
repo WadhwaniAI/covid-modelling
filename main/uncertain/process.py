@@ -6,14 +6,12 @@ from multiprocessing import Pool, Queue
 
 import pandas as pd
 
-from util import Parameter, Logger
+from util import Parameter, Logger, dsplit
 from optimiser import Optimiser
 
 class Producer:
     def __init__(self, data):
-        index_col = 'date'
-        df = pd.read_csv(data, index_col=index_col, parse_dates=[index_col])
-        self.opt = Optimiser(df)
+        self.opt = Optimiser(data)
 
     def __call__(self, df):
         for i in df.itertuples(index=False):
@@ -21,8 +19,14 @@ class Producer:
             df = self.opt.solve(row)
             yield df['total_infected'].to_dict()
 
-def func(incoming, outgoing, data):
-    producer = Producer(data)
+def func(incoming, outgoing, data, outlook):
+    index_col = 'date'
+    df = pd.read_csv(data,
+                     index_col=index_col,
+                     parse_dates=[index_col])
+    splits = dsplit(df, outlook)
+    producer = Producer(splits.train)
+
     while True:
         (name, group) = incoming.get()
         Logger.info(name)
@@ -31,6 +35,7 @@ def func(incoming, outgoing, data):
 arguments = ArgumentParser()
 arguments.add_argument('--data', type=Path)
 arguments.add_argument('--parameters', type=Path)
+arguments.add_argument('--outlook', type=int)
 arguments.add_argument('--burn-in', type=int)
 arguments.add_argument('--workers', type=int)
 args = arguments.parse_args()
