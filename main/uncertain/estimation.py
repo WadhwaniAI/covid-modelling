@@ -100,7 +100,12 @@ class LogAcceptor(Metropolis):
         return decision
 
 def each(metropolis, steps, order):
+    every = int(10 ** (np.floor(np.log10(steps)) - 1))
+
     for (i, j) in zip(range(steps), metropolis):
+        if not i or i % every == 0:
+            Logger.info('{} {}'.format(order, i))
+
         yield {
             'order': order,
             'step': i,
@@ -112,7 +117,6 @@ def each(metropolis, steps, order):
 #
 def func(args):
     (i, data, config, outlook, steps) = args
-    Logger.info(i)
 
     index_col = 'date'
     df = pd.read_csv(data, index_col=index_col, parse_dates=[index_col])
