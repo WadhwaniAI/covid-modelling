@@ -46,6 +46,7 @@ initargs = (
     outgoing,
     incoming,
     args.data,
+    args.outlook,
 )
 
 with Pool(args.workers, func, initargs):
