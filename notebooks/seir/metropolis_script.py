@@ -4,9 +4,9 @@
 # In[1]:
 
 
-get_ipython().run_line_magic('load_ext', 'autoreload')
-get_ipython().run_line_magic('autoreload', '2')
-get_ipython().run_line_magic('matplotlib', 'inline')
+#get_ipython().run_line_magic('load_ext', 'autoreload')
+#get_ipython().run_line_magic('autoreload', '2')
+#get_ipython().run_line_magic('matplotlib', 'inline')
 
 
 # In[2]:
@@ -18,6 +18,7 @@ import pandas as pd
 from tqdm import tqdm
 import multiprocessing as mp
 import matplotlib.pyplot as plt
+import pickle
 matplotlib.rcParams.update({'font.size': 18})
 from joblib import delayed, Parallel
 from collections import defaultdict, OrderedDict
@@ -254,7 +255,7 @@ def get_PI(pred_dfs, date, key, multiplier=1.96):
 
 
 n_chains = 50
-mcmc = Parallel(n_jobs=mp.cpu_count())(delayed(metropolis)(prior_ranges, proposal_sigmas, df_train, iter=10000) for run in range(n_chains))
+mcmc = Parallel(n_jobs=mp.cpu_count())(delayed(metropolis)(prior_ranges, proposal_sigmas, df_train, iter=100000) for run in range(n_chains))
 pickle.dump(mcmc, open("mcmc.pkl","wb"))
 
 
