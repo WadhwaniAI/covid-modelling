@@ -10,7 +10,7 @@ URL=https://api.covid19india.org/csv/latest/raw_data.csv
 # echo $tmp
 tmp=a.csv
 wget --output-document=- $URL | \
-    python get-data.py --state Maharashtra --district pune > $tmp
+    python get-c19i.py --state Maharashtra --district pune > $tmp
 
 python estimation.py \
        --outlook $OUTLOOK \
@@ -20,5 +20,10 @@ python estimation.py \
        --starts `nproc` > \
        b.csv
 
-python process.py --data a.csv --parameters b.csv --burn-in 1000 > c.csv
-python viz-seaborn.py --output c.png --outlook $OUTLOOK < c.csv
+python process.py \
+       --data a.csv \
+       --parameters b.csv \
+       --burn-in 1000 \
+       --outlook $OUTLOOK > \
+       c.csv
+python viz-seaborn.py --output c.png < c.csv
