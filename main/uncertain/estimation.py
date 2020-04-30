@@ -97,7 +97,7 @@ class LogAcceptor(Metropolis):
 
     def prior(self, theta):
         # return np.log(bool(theta))
-        return int(bool(theta))
+        return 0 if theta else -np.inf
 
     def accept(self, proposed):
         (old, new) = map(self, (self.theta, proposed))
