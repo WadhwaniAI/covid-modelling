@@ -1,17 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
-#get_ipython().run_line_magic('load_ext', 'autoreload')
-#get_ipython().run_line_magic('autoreload', '2')
-#get_ipython().run_line_magic('matplotlib', 'inline')
-
-
-# In[2]:
-
-
 import matplotlib
 import numpy as np
 import pandas as pd
@@ -30,109 +16,27 @@ from data.processing import get_district_time_series
 from data.dataloader import get_covid19india_api_data
 
 
-# ## Load covid19 data
+def get_data(district, state):
+    dataframes = get_covid19india_api_data()
+    df_district = get_district_time_series(dataframes, state=state, district=district)
 
-# In[3]:
+    df_train = df_district.iloc[:-5, :]
+    df_val = df_district.iloc[-5:, :]
 
+    return df_district, df_train, df_val
 
-dataframes = get_covid19india_api_data()
+def get_prior_ranges():
+    ## assuming uniform priors, following dictionary contains the ranges
+    prior_ranges = OrderedDict()
+    prior_ranges['R0'] = (1, 3)#(1.6, 3)
+    prior_ranges['T_inc'] = (1, 5) #(4, 5)
+    prior_ranges['T_inf'] = (1, 4) #(3, 4)
+    prior_ranges['T_recov_severe'] = (9, 20)
+    prior_ranges['P_severe'] = (0.3, 0.99)
+    prior_ranges['intervention_amount'] = (0.3, 1)
+    prior_ranges['sigma'] = (0, 1)
 
-
-# In[4]:
-
-
-dataframes.keys()
-
-
-# In[5]:
-
-
-regions = [('Delhi', ''), ('Karnataka', 'Bengaluru'), ('Maharashtra', 'Mumbai'), ('Maharashtra', 'Pune'), ('Gujarat', 'Ahmadabad'), ('Rajasthan', 'Jaipur')]
-state, district = regions[1]
-df_district = get_district_time_series(dataframes, state=state, district=district)
-
-
-# ## Create train-val splits
-
-# In[6]:
-
-
-df_train = df_district.iloc[:-5, :]
-df_val = df_district.iloc[-5:, :]
-
-
-# In[7]:
-
-
-df_train, df_val
-
-
-# ## Loss Calculation Functions
-
-# In[8]:
-
-
-def _calc_rmse(y_pred, y_true, log=True):
-    if log:
-        y_true = np.log(y_true)
-        y_pred = np.log(y_pred)
-    loss = np.sqrt(np.mean((y_true - y_pred)**2))
-    return loss
-
-def _calc_mape(y_pred, y_true):
-    y_pred = y_pred[y_true > 0]
-    y_true = y_true[y_true > 0]
-
-    ape = np.abs((y_true - y_pred + 0) / y_true) *  100
-    loss = np.mean(ape)
-    return loss
-
-def calc_loss_dict(states_time_matrix, df, method='rmse', rmse_log=False):
-    pred_hospitalisations = states_time_matrix[6] + states_time_matrix[7] + states_time_matrix[8]
-    pred_recoveries = states_time_matrix[9]
-    pred_fatalities = states_time_matrix[10]
-    pred_infectious_unknown = states_time_matrix[2] + states_time_matrix[4]
-    pred_total_cases = pred_hospitalisations + pred_recoveries + pred_fatalities
-    
-    if method == 'rmse':
-        if rmse_log:
-            calculate = lambda x, y : _calc_rmse(x, y)
-        else:
-            calculate = lambda x, y : _calc_rmse(x, y, log=False)
-    
-    if method == 'mape':
-            calculate = lambda x, y : _calc_mape(x, y)
-    
-    losses = {}
-#     losses['hospitalised'] = calculate(pred_hospitalisations, df['Hospitalised'])
-#     losses['recovered'] = calculate(pred_recoveries, df['Recovered'])
-#     losses['fatalities'] = calculate(pred_fatalities, df['Fatalities'])
-#     losses['active_infections'] = calculate(pred_infectious_unknown, df['Active Infections (Unknown)'])
-    losses['total'] = calculate(pred_total_cases, df['total_infected'])
-    
-    return losses
-
-def calc_loss(states_time_matrix, df, method='rmse', rmse_log=False):
-    losses = calc_loss_dict(states_time_matrix, df, method, rmse_log)
-#     loss = losses['hospitalised'] + losses['recovered'] + losses['total'] + losses['active_infections']
-    loss = losses['total']
-    return loss
-
-
-# ## Set priors for parameters of interest
-
-# In[9]:
-
-
-## assuming uniform priors, following dictionary contains the ranges
-prior_ranges = OrderedDict()
-prior_ranges['R0'] = (1, 3)#(1.6, 3)
-prior_ranges['T_inc'] = (1, 5) #(4, 5)
-prior_ranges['T_inf'] = (1, 4) #(3, 4)
-prior_ranges['T_recov_severe'] = (9, 20)
-prior_ranges['P_severe'] = (0.3, 0.99)
-prior_ranges['intervention_amount'] = (0.3, 1)
-prior_ranges['sigma'] = (0, 1)
+    return prior_ranges
 
 def param_init(prior_ranges):
     theta = defaultdict()
@@ -141,32 +45,25 @@ def param_init(prior_ranges):
         
     return theta
 
+def get_proposal_sigmas(prior_ranges):
+    proposal_sigmas = OrderedDict()
+    for key in prior_ranges:
+        proposal_sigmas[key] = 0.025 * (prior_ranges[key][1] - prior_ranges[key][0])
 
-# ## Proposal function to sample theta_new given theta_old
-
-# In[10]:
-
-
-proposal_sigmas = OrderedDict()
-for key in prior_ranges:
-    proposal_sigmas[key] = 0.025 * (prior_ranges[key][1] - prior_ranges[key][0])
+    return proposal_sigmas
 
 def proposal(theta_old, proposal_sigmas):
     theta_new = np.random.normal(loc=[*theta_old.values()], scale=[*proposal_sigmas.values()])
     return dict(zip(theta_old.keys(), theta_new))
 
-
-# ## Log Likelihood and Prior
-
-# In[11]:
-
-
 def log_likelihood(theta, df_train, fit_days=10):
     if (np.array([*theta.values()]) < 0).any():
         return -np.inf
+    theta_model = theta.copy()
+    del theta_model['sigma']
     optimiser = Optimiser()
     default_params = optimiser.init_default_params(df_train)
-    df_prediction = optimiser.solve(theta, default_params, df_train)
+    df_prediction = optimiser.solve(theta_model, default_params, df_train)
     pred = np.array(df_prediction['total_infected'])[-fit_days:]
     true = np.array(df_train['total_infected'])[-fit_days:]
     sigma = theta['sigma']
@@ -185,12 +82,6 @@ def log_prior(theta):
 def in_valid_range(key, value):
     return (value <= prior_ranges[key][1]) and (value >= prior_ranges[key][0])
 
-
-# ## Acceptance function
-
-# In[12]:
-
-
 def accept(theta_old, theta_new, df_train):    
     x_new = log_likelihood(theta_new, df_train) + log_prior(theta_new)
     x_old = log_likelihood(theta_old, df_train) + log_prior(theta_old)
@@ -206,13 +97,11 @@ def anneal_accept(iter):
     x = np.random.uniform(0, 1)
     return (x < prob)
 
+def metropolis(district, state, iter=1000):
+    prior_ranges = get_prior_ranges()
+    proposal_sigmas = get_proposal_sigmas(prior_ranges)
+    _, df_train, _ = get_data(district, state)
 
-# ## Metropolis loop
-
-# In[16]:
-
-
-def metropolis(prior_ranges, proposal_sigmas, df_train, iter=1000):
     theta = param_init(prior_ranges)
     accepted = [theta]
     rejected = list()
@@ -231,12 +120,6 @@ def metropolis(prior_ranges, proposal_sigmas, df_train, iter=1000):
     
     return accepted, rejected
 
-
-# ## Prediction Interval calculator
-
-# In[14]:
-
-
 def get_PI(pred_dfs, date, key, multiplier=1.96):
     pred_samples = list()
     for df in pred_dfs:
@@ -248,23 +131,13 @@ def get_PI(pred_dfs, date, key, multiplier=1.96):
     high = mu + multiplier*sigma
     return mu, low, high
 
+def run_mcmc(district, state, n_chains=50, iters=100000):
+    mcmc = Parallel(n_jobs=mp.cpu_count())(delayed(metropolis)(district, state, iters) for run in range(n_chains))
+    pickle.dump(mcmc, open("mcmc_runs.pkl","wb"))
+    return mcmc
 
-# ## Run multiple chains in parallel
-
-# In[17]:
-
-
-n_chains = 50
-mcmc = Parallel(n_jobs=mp.cpu_count())(delayed(metropolis)(prior_ranges, proposal_sigmas, df_train, iter=100000) for run in range(n_chains))
-pickle.dump(mcmc, open("mcmc.pkl","wb"))
-
-
-# ## Visualize the samples and intervals
-
-# In[19]:
-
-
-def visualize(): 
+def visualize(mcmc, district, state): 
+    df_district, df_train, df_val = get_data(district, state)
     data_split = df_district.copy()
     optimiser = Optimiser()
     default_params = optimiser.init_default_params(data_split)
@@ -279,7 +152,9 @@ def visualize():
 
     pred_dfs = list()
     for i in tqdm(sample_indices):
-        pred_dfs.append(optimiser.solve(combined_acc[int(i)], default_params, data_split))
+        params = combined_acc[int(i)].copy()
+        del params['sigma']
+        pred_dfs.append(optimiser.solve(params, default_params, data_split))
 
     for df in pred_dfs:
         df.set_index('date', inplace=True)
@@ -307,90 +182,93 @@ def visualize():
     plt.title("95% confidence intervals for {}, {}".format(district, state))
     
     plt.savefig('./mcmc_confidence_intervals_{}_{}.png'.format(district, state))
-    plt.show()
 
+def analyse_runs(mcmc, district, state):
+    plt.figure(figsize=(30, 50))
+    df_district, df_train, df_val = get_data(district, state)
 
-# In[20]:
-
-
-visualize()
-
-
-# ## Visualize all runs separately
-
-# In[21]:
-
-
-plt.figure(figsize=(30, 50))
-    
-for k, run in enumerate(mcmc):
-    data_split = df_district.copy()
-    optimiser = Optimiser()
-    default_params = optimiser.init_default_params(data_split)
-    
-    acc, rej = run[0], run[1]
-    df_samples = pd.DataFrame(acc)
-    
-    plt.subplot(len(mcmc), 3, 3*k + 1)
-    for param in df_samples.columns:
-        plt.plot(list(range(len(df_samples[param]))), df_samples[param], label=param)
-    plt.xlabel("iterations")
-    plt.legend()
-    plt.title("Accepted samples from run {}".format(k+1))
-    
-    rej_samples = pd.DataFrame(rej)
-    
-    plt.subplot(len(mcmc), 3, 3*k + 2)
-    for param in rej_samples.columns:
-        plt.scatter(list(range(len(rej_samples[param]))), rej_samples[param], label=param, s=2)
-    plt.xlabel("iterations")
-    plt.legend()
-    plt.title("Rejected samples from run {}".format(k+1))
-    
-    burn_in = int(len(acc) / 2)
-    n_samples = 1000
-    posterior_samples = acc[burn_in:]
-    sample_indices = np.random.uniform(0, len(posterior_samples), n_samples)
-
-    pred_dfs = list()
-    for i in tqdm(sample_indices):
-        pred_dfs.append(optimiser.solve(posterior_samples[int(i)], default_params, data_split))
+    for k, run in enumerate(mcmc):
+        data_split = df_district.copy()
+        optimiser = Optimiser()
+        default_params = optimiser.init_default_params(data_split)
         
-    for df in pred_dfs:
-        df.set_index('date', inplace=True)
+        acc, rej = run[0], run[1]
+        df_samples = pd.DataFrame(acc)
         
-    result = pred_dfs[0].copy()
-    for col in result.columns:
-        result["{}_low".format(col)] = ''
-        result["{}_high".format(col)] = ''
+        plt.subplot(len(mcmc), 3, 3*k + 1)
+        for param in df_samples.columns:
+            plt.plot(list(range(len(df_samples[param]))), df_samples[param], label=param)
+        plt.xlabel("iterations")
+        plt.legend()
+        plt.title("Accepted samples from run {}".format(k+1))
         
-    for date in tqdm(pred_dfs[0].index):
-        for key in pred_dfs[0]:
-            result.loc[date, key], result.loc[date, "{}_low".format(key)], result.loc[date, "{}_high".format(key)] = get_PI(pred_dfs, date, key)
+        rej_samples = pd.DataFrame(rej)
+        
+        plt.subplot(len(mcmc), 3, 3*k + 2)
+        for param in rej_samples.columns:
+            plt.scatter(list(range(len(rej_samples[param]))), rej_samples[param], label=param, s=2)
+        plt.xlabel("iterations")
+        plt.legend()
+        plt.title("Rejected samples from run {}".format(k+1))
+        
+        burn_in = int(len(acc) / 2)
+        n_samples = 1000
+        posterior_samples = acc[burn_in:]
+        sample_indices = np.random.uniform(0, len(posterior_samples), n_samples)
+
+        pred_dfs = list()
+        for i in tqdm(sample_indices):
+            params = posterior_samples[int(i)].copy()
+            del params['sigma']
+            pred_dfs.append(optimiser.solve(params, default_params, data_split))
             
-    data_split.set_index("date", inplace=True)
+        for df in pred_dfs:
+            df.set_index('date', inplace=True)
+            
+        result = pred_dfs[0].copy()
+        for col in result.columns:
+            result["{}_low".format(col)] = ''
+            result["{}_high".format(col)] = ''
+            
+        for date in tqdm(pred_dfs[0].index):
+            for key in pred_dfs[0]:
+                result.loc[date, key], result.loc[date, "{}_low".format(key)], result.loc[date, "{}_high".format(key)] = get_PI(pred_dfs, date, key)
+                
+        data_split.set_index("date", inplace=True)
 
-    plt.subplot(len(mcmc), 3, 3*k + 3)
-    plt.plot(data_split['total_infected'].tolist(), c='g', label='Actual')
-    plt.plot(result['total_infected'].tolist(), c='r', label='Estimated')
-    plt.plot(result['total_infected_low'].tolist(), c='r', linestyle='dashdot')
-    plt.plot(result['total_infected_high'].tolist(), c='r', linestyle='dashdot')
-    plt.axvline(x=len(df_train), c='b', linestyle='dashed')
-    plt.xlabel("Day")
-    plt.ylabel("Total infected")
-    plt.legend()
-    plt.title("95% CIs for {}, {} from run {}".format(district, state, k+1))
-    
-plt.savefig("./mcmc_runs_{}_{}.png".format(district, state))
-plt.show()
+        plt.subplot(len(mcmc), 3, 3*k + 3)
+        plt.plot(data_split['total_infected'].tolist(), c='g', label='Actual')
+        plt.plot(result['total_infected'].tolist(), c='r', label='Estimated')
+        plt.plot(result['total_infected_low'].tolist(), c='r', linestyle='dashdot')
+        plt.plot(result['total_infected_high'].tolist(), c='r', linestyle='dashdot')
+        plt.axvline(x=len(df_train), c='b', linestyle='dashed')
+        plt.xlabel("Day")
+        plt.ylabel("Total infected")
+        plt.legend()
+        plt.title("95% CIs for {}, {} from run {}".format(district, state, k+1))
+        
+    plt.savefig("./mcmc_runs_{}_{}.png".format(district, state))
 
 
-# 
+
+def main():
+    regions = [('Delhi', ''), ('Karnataka', 'Bengaluru'), ('Maharashtra', 'Mumbai'), ('Maharashtra', 'Pune'), ('Gujarat', 'Ahmadabad'), ('Rajasthan', 'Jaipur')]
+    state, district = regions[1]
+
+    mcmc = run_mcmc(district, state, n_chains=50, iters=10000)
+    visualize(mcmc, district, state)
+    analyse_runs(mcmc, district, state)
+    import pdb; pdb.set_trace()
+
+if __name__=='__main__':
+    main()
+
+
+####################################################
 # ## Checking validity with Gelman-Rubin statistics
 
 # Check Section 4.2 [here](http://www.columbia.edu/~mh2078/MachineLearningORFE/MCMC_Bayes.pdf)
-
-# In[46]:
+####################################################
 
 
 def accumulate(dict_list):
@@ -440,53 +318,53 @@ def divide_dict(d1, d2):
     return accumulator
 
 
-# In[21]:
+# # In[21]:
 
 
-burn_in = int(len(mcmc[0][0]) / 2)
-chains = [mcmc_chain[0] for mcmc_chain in mcmc]
-burn_in = int(len(chains[0]) / 2)
-sampled_chains = [chain[:burn_in] for chain in chains]
-split_chains = [sampled_chain[int(burn_in/2):] for sampled_chain in sampled_chains]             + [sampled_chain[:int(burn_in/2)] for sampled_chain in sampled_chains]
+# burn_in = int(len(mcmc[0][0]) / 2)
+# chains = [mcmc_chain[0] for mcmc_chain in mcmc]
+# burn_in = int(len(chains[0]) / 2)
+# sampled_chains = [chain[:burn_in] for chain in chains]
+# split_chains = [sampled_chain[int(burn_in/2):] for sampled_chain in sampled_chains]             + [sampled_chain[:int(burn_in/2)] for sampled_chain in sampled_chains]
 
 
-# In[22]:
+# # In[22]:
 
 
-chain_sums_avg = []
-for chain in split_chains:
-    chain_sums_avg.append(avg_sum_chain(chain))
-multiple_chain_sums_avg = avg_sum_multiple_chains(chain_sums_avg) 
+# chain_sums_avg = []
+# for chain in split_chains:
+#     chain_sums_avg.append(avg_sum_chain(chain))
+# multiple_chain_sums_avg = avg_sum_multiple_chains(chain_sums_avg) 
 
 
-# In[24]:
+# # In[24]:
 
 
-multiple_chain_sums_avg
+# multiple_chain_sums_avg
 
 
-# In[56]:
+# # In[56]:
 
 
-m = len(split_chains)
-n = len(split_chains[0])
-W =  compute_W(split_chains, chain_sums_avg, n, m)
-B =  compute_B(multiple_chain_sums_avg, chain_sums_avg, n, m)
-var_hat = accumulate([divide(W, n/(n-1)), divide(B, n) ])
-R_hat_sq = divide_dict(var_hat, W)
-R_hat = {key:np.sqrt(value) for key, value in R_hat_sq.items()}
-neff = divide_dict(var_hat, B)
-neff = {key: m*n*value for key, value in neff.items()}
+# m = len(split_chains)
+# n = len(split_chains[0])
+# W =  compute_W(split_chains, chain_sums_avg, n, m)
+# B =  compute_B(multiple_chain_sums_avg, chain_sums_avg, n, m)
+# var_hat = accumulate([divide(W, n/(n-1)), divide(B, n) ])
+# R_hat_sq = divide_dict(var_hat, W)
+# R_hat = {key:np.sqrt(value) for key, value in R_hat_sq.items()}
+# neff = divide_dict(var_hat, B)
+# neff = {key: m*n*value for key, value in neff.items()}
 
 
-# In[57]:
+# # In[57]:
 
 
-neff
+# neff
 
 
-# In[53]:
+# # In[53]:
 
 
-R_hat
+# R_hat
 
