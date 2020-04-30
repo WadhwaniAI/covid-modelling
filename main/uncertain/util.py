@@ -11,6 +11,7 @@ fmt = '[ %(asctime)s %(levelname)s %(process)d ] %(message)s'
 logging.basicConfig(format=fmt,
                     datefmt="%d %H:%M:%S",
                     level=lvl)
+logging.captureWarnings(True)
 logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 Logger = logging.getLogger(__name__)
 
