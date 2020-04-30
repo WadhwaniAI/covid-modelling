@@ -57,15 +57,12 @@ class Metropolis:
         return self
 
     def __next__(self):
-        theta = self.propose()
+        theta = self.theta + self.sigma
         accepted = self.accept(theta)
         if accepted:
             self.theta = theta
 
         return { 'accept': accepted, **self.theta._asdict() }
-
-    def propose(self):
-        return self.theta.sample(self.sigma)
 
     def accept(self, proposed):
         raise NotImplementedError()

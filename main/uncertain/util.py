@@ -43,8 +43,8 @@ class Parameter(cl.namedtuple('Parameter', [
     def get(x, y):
         raise NotImplementedError()
 
-    def sample(self, sigma):
-        return type(self)(*np.random.normal(loc=self, scale=sigma))
+    def __add__(self, other):
+        return type(self)(*np.random.normal(loc=self, scale=other))
 
     def __bool__(self):
         return all(x >= 0 for x in self)
