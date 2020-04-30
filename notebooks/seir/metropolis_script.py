@@ -1,3 +1,4 @@
+import os
 import matplotlib
 import numpy as np
 import pandas as pd
@@ -97,7 +98,7 @@ def anneal_accept(iter):
     x = np.random.uniform(0, 1)
     return (x < prob)
 
-def metropolis(district, state, iter=1000):
+def metropolis(district, state, run, iter=1000):
     prior_ranges = get_prior_ranges()
     proposal_sigmas = get_proposal_sigmas(prior_ranges)
     _, df_train, _ = get_data(district, state)
@@ -106,6 +107,9 @@ def metropolis(district, state, iter=1000):
     accepted = [theta]
     rejected = list()
     
+    if not os.path.exists('./mcmc/'):
+        os.makedirs('./mcmc/')
+
     for i in tqdm(range(iter)):
         
         theta_new = proposal(theta, proposal_sigmas)
@@ -117,6 +121,9 @@ def metropolis(district, state, iter=1000):
             else:
                 rejected.append(theta_new)
         accepted.append(theta)
+
+        if (i==0) or ((i + 1) % 1000 == 0):
+            np.save('./mcmc/run_{}_iter_{}.npy'.format(run, i), {"accepted":accepted, "rejected":rejected})
     
     return accepted, rejected
 
@@ -132,11 +139,11 @@ def get_PI(pred_dfs, date, key, multiplier=1.96):
     return mu, low, high
 
 def run_mcmc(district, state, n_chains=50, iters=100000):
-    mcmc = Parallel(n_jobs=mp.cpu_count())(delayed(metropolis)(district, state, iters) for run in range(n_chains))
-    pickle.dump(mcmc, open("mcmc_runs.pkl","wb"))
+    mcmc = Parallel(n_jobs=mp.cpu_count())(delayed(metropolis)(district, state, run, iters) for run in range(n_chains))
     return mcmc
 
-def visualize(mcmc, district, state): 
+def visualize(mcmc, district, state):
+    print("\nCalculating and plotting confidence intervals")
     df_district, df_train, df_val = get_data(district, state)
     data_split = df_district.copy()
     optimiser = Optimiser()
@@ -179,12 +186,13 @@ def visualize(mcmc, district, state):
     plt.xlabel("Day")
     plt.ylabel("Total infected")
     plt.legend()
-    plt.title("95% confidence intervals for {}, {}".format(district, state))
+    plt.title(r"95% confidence intervals for {}, {}".format(district, state))
     
     plt.savefig('./mcmc_confidence_intervals_{}_{}.png'.format(district, state))
 
 def analyse_runs(mcmc, district, state):
-    plt.figure(figsize=(30, 50))
+    print("\nPlotting all runs separately")
+    plt.figure(figsize=(30, len(mcmc)*10))
     df_district, df_train, df_val = get_data(district, state)
 
     for k, run in enumerate(mcmc):
@@ -255,7 +263,7 @@ def main():
     regions = [('Delhi', ''), ('Karnataka', 'Bengaluru'), ('Maharashtra', 'Mumbai'), ('Maharashtra', 'Pune'), ('Gujarat', 'Ahmadabad'), ('Rajasthan', 'Jaipur')]
     state, district = regions[1]
 
-    mcmc = run_mcmc(district, state, n_chains=50, iters=10000)
+    mcmc = run_mcmc(district, state, n_chains=50, iters=100000)
     visualize(mcmc, district, state)
     analyse_runs(mcmc, district, state)
     import pdb; pdb.set_trace()
