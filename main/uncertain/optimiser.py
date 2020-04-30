@@ -13,7 +13,7 @@ def offset(df, dates):
         diff = i - zero
         yield diff.total_seconds() / constants.day
 
-class Optimiser():
+class Optimiser:
     def __init__(self,
                  infected,
                  N=1e7,
@@ -29,11 +29,11 @@ class Optimiser():
 
         self.defaults = {
             'N': N,
-            'init_infected' : self.infected.iloc[0].to_numpy().item(),
-            'intervention_day' : day,
+            'init_infected': self.infected.iloc[0].to_numpy().item(),
+            'intervention_day': day,
             'intervention_removal_day': removal,
-            'T_hosp' : T_hosp,
-            'P_fatal' : P_fatal,
+            'T_hosp': T_hosp,
+            'P_fatal': P_fatal,
             'starting_date': self.infected.index.min(),
         }
 
