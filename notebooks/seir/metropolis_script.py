@@ -112,7 +112,7 @@ def metropolis(district, state, run, iter=1000):
     accepted = [theta]
     rejected = list()
 
-    for i in tqdm(range(iter)):
+    for i in tqdm(range(iter+1)):
         
         theta_new = proposal(theta, proposal_sigmas)
         if anneal_accept(i):
@@ -124,11 +124,11 @@ def metropolis(district, state, run, iter=1000):
                 rejected.append(theta_new)
         accepted.append(theta)
 
-        if (i==0) or ((i + 1) % 1000 == 0):
+        if i % 1000 == 0:
             new_name = './mcmc/{}_{}_run_{}_iter_{}.npy'.format(state, district, run, i)
             np.save(new_name, {"accepted":accepted, "rejected":rejected})
             if i != 0:
-                old_name = './mcmc/{}_{}_run_{}_iter_{}.npy'.format(state, district, run, i-999)
+                old_name = './mcmc/{}_{}_run_{}_iter_{}.npy'.format(state, district, run, i - 1000)
                 os.remove(old_name)
     
     return accepted, rejected
