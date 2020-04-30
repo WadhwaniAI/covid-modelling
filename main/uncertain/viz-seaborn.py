@@ -17,8 +17,8 @@ arguments = ArgumentParser()
 arguments.add_argument('--output', type=Path, required=True)
 args = arguments.parse_args()
 
-df = (pd.
-      read_csv(sys.stdin)
+df = (pd
+      .read_csv(sys.stdin)
       .melt()
       .assign(days=relative))
 sns.lineplot(x='days',
