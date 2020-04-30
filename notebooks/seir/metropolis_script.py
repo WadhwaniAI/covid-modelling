@@ -58,7 +58,7 @@ def proposal(theta_old, proposal_sigmas):
     return dict(zip(theta_old.keys(), theta_new))
 
 def log_likelihood(theta, df_train, fit_days=10):
-    if (np.array([*theta.values()]) < 0).any():
+    if any(value < 0 for value in theta.values()):
         return -np.inf
     theta_model = theta.copy()
     del theta_model['sigma']
@@ -69,11 +69,16 @@ def log_likelihood(theta, df_train, fit_days=10):
     true = np.array(df_train['total_infected'])[-fit_days:]
     sigma = theta['sigma']
     N = len(true)
-    ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (np.sum(((true - pred) ** 2) / (2 * sigma ** 2)))
+    try:
+        ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (np.sum(((true - pred) ** 2) / (2 * sigma ** 2)))
+    except ValueError:
+        print("ValueError at params: ", theta_model)
+        return -np.inf
+
     return ll
 
 def log_prior(theta):
-    if (np.array([*theta.values()]) < 0).any():
+    if any(value < 0 for value in theta.values()):
         prior = 0
     else:
         prior = 1
@@ -106,9 +111,6 @@ def metropolis(district, state, run, iter=1000):
     theta = param_init(prior_ranges)
     accepted = [theta]
     rejected = list()
-    
-    if not os.path.exists('./mcmc/'):
-        os.makedirs('./mcmc/')
 
     for i in tqdm(range(iter)):
         
@@ -123,7 +125,11 @@ def metropolis(district, state, run, iter=1000):
         accepted.append(theta)
 
         if (i==0) or ((i + 1) % 1000 == 0):
-            np.save('./mcmc/run_{}_iter_{}.npy'.format(run, i), {"accepted":accepted, "rejected":rejected})
+            new_name = './mcmc/{}_{}_run_{}_iter_{}.npy'.format(state, district, run, i)
+            np.save(new_name, {"accepted":accepted, "rejected":rejected})
+            if i != 0:
+                old_name = './mcmc/{}_{}_run_{}_iter_{}.npy'.format(state, district, run, i-999)
+                os.remove(old_name)
     
     return accepted, rejected
 
@@ -139,6 +145,8 @@ def get_PI(pred_dfs, date, key, multiplier=1.96):
     return mu, low, high
 
 def run_mcmc(district, state, n_chains=50, iters=100000):
+    if not os.path.exists('./mcmc/'):
+        os.makedirs('./mcmc/')
     mcmc = Parallel(n_jobs=mp.cpu_count())(delayed(metropolis)(district, state, run, iters) for run in range(n_chains))
     return mcmc
 
@@ -257,11 +265,9 @@ def analyse_runs(mcmc, district, state):
         
     plt.savefig("./mcmc_runs_{}_{}.png".format(district, state))
 
-
-
 def main():
     regions = [('Delhi', ''), ('Karnataka', 'Bengaluru'), ('Maharashtra', 'Mumbai'), ('Maharashtra', 'Pune'), ('Gujarat', 'Ahmadabad'), ('Rajasthan', 'Jaipur')]
-    state, district = regions[1]
+    state, district = regions[0]
 
     mcmc = run_mcmc(district, state, n_chains=50, iters=100000)
     visualize(mcmc, district, state)
