@@ -24,15 +24,26 @@ class Sigma(Parameter):
 #
 #
 class OptimizationContainer:
-    def __init__(self, train, test):
+    def __init__(self, train, days=None):
         self.train = train
-        self.test = test
+        self.fdays = days
+
         self.optimiser = Optimiser(self.train)
+        if self.fdays is not None:
+            self.fdays = pd.Timedelta(days=days)
 
     def __call__(self, theta):
         if not theta:
             raise ValueError()
-        return self.optimiser.solve(theta._asdict(), self.train)
+        params = theta._asmodel()._asdict()
+        return self.optimiser.solve(params)
+
+    def fwin(self, df):
+        if self.fdays is not None:
+            marker = df.index.max() - self.fdays
+            df = df.loc[str(marker):]
+
+        return df['total_infected']
 
 #
 #
@@ -63,10 +74,9 @@ class Metropolis:
 #
 #
 class LogAcceptor(Metropolis):
-    infected = 'total_infected'
-
     def __init__(self, theta, sigma, optimizer):
         super().__init__(theta, sigma)
+
         self.optimizer = optimizer
         self.pi = np.sqrt(2 * np.pi)
 
@@ -78,9 +88,8 @@ class LogAcceptor(Metropolis):
             pred = self.optimizer(theta)
         except ValueError:
             return -np.inf
-        pred = pred[self.infected]
-        train = self.optimizer.train[self.infected]
 
+        (pred, train) = map(self.optimizer.fwin, (pred, self.optimizer.train))
         a = len(train) * np.log(self.pi * theta.sigma)
         b = np.sum(((train - pred) ** 2) / (2 * theta.sigma ** 2))
 
@@ -116,18 +125,23 @@ def each(metropolis, steps, order):
 #
 #
 def func(args):
-    (i, data, config, outlook, steps) = args
+    (i, opts) = args
 
     index_col = 'date'
-    df = pd.read_csv(data, index_col=index_col, parse_dates=[index_col])
-    (theta, sigma) = [ x.from_config(config) for x in (Theta, Sigma) ]
-    optimizer = OptimizationContainer(*dsplit(df, outlook - 1))
+    df = pd.read_csv(opts.data,
+                     index_col=index_col,
+                     parse_dates=[index_col])
+    (theta, sigma) = [ x.from_config(opts.config) for x in (Theta, Sigma) ]
+
+    split = dsplit(df, opts.outlook - 1)
+    optimizer = OptimizationContainer(split.train, opts.fit_days)
     metropolis = LogAcceptor(theta, sigma, optimizer)
 
-    return list(each(metropolis, steps, i))
+    return list(each(metropolis, opts.steps, i))
 
 arguments = ArgumentParser()
 arguments.add_argument('--outlook', type=int)
+arguments.add_argument('--fit-days', type=int)
 arguments.add_argument('--steps', type=int)
 arguments.add_argument('--starts', type=int)
 arguments.add_argument('--data', type=Path)
@@ -137,16 +151,10 @@ args = arguments.parse_args()
 
 with Pool(args.workers) as pool:
     writer = None
-    opts = (
-        args.data,
-        args.config,
-        args.outlook,
-        args.steps,
-    )
     starts = args.workers if args.starts is None else args.starts
     assert starts
 
-    iterable = map(lambda x: (x, *opts), range(starts))
+    iterable = map(lambda x: (x, args), range(starts))
     for i in pool.imap_unordered(func, iterable):
         if writer is None:
             head = i[0]
