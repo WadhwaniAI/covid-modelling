@@ -99,8 +99,8 @@ class LogAcceptor(Metropolis):
         # return np.log(bool(theta))
         return 0 if theta else -np.inf
 
-    def accept(self, proposed):
-        (old, new) = map(self, (self.theta, proposed))
+    def accept(self, theta):
+        (old, new) = map(self, (self.theta, theta))
         decision = new > old
         if not decision:
             x = np.random.uniform(0, 1)
