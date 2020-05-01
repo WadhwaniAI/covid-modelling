@@ -3,7 +3,7 @@ import random
 import matplotlib.pyplot as plt
 
 class SIR_Discrete(object):
-    def __init__(self, S=0.99, I=0.01, R=0, B=30,days_last=0,switch_budgets=6,pAction=0):
+    def __init__(self, S=0.99, I=0.01, R=0, B=100,days_last=0,switch_budgets=6,pAction=0):
         self.STATE=np.array([S, I, R, B,days_last,switch_budgets,pAction])
         self.R0 = 2.2 
         self.T_inf = 2.9
@@ -16,7 +16,7 @@ class SIR_Discrete(object):
         self.num_actions=5
         self.num_states=7
     def reset(self):
-        self.STATE=np.array([0.99, 0.01, 0, 30,0,6,0])
+        self.STATE=np.array([0.99, 0.01, 0, 100,0,6,0])
         self.t=0
     
     def is_action_legal(self,ACTION):
@@ -56,13 +56,13 @@ class SIR_Discrete(object):
         if self.is_action_legal(ACTION)==False:
             ACTION=0
         if ACTION!=0:
-            if self.STATE[4]<10: #10 days duration
+            if self.STATE[4]>0 and self.STATE[4]<10: #10 days duration
                 ACTION=self.STATE[6]
                 STATE_[5]=self.STATE[5]
                 STATE_[4]=self.STATE[4]+1
             else: #After 10 days
                 if ACTION!=self.STATE[6]: #different action
-                    if STATE_[5]>0: #has switching budget
+                    if self.STATE[5]>0: #has switching budget
                         STATE_[5]=self.STATE[5]-1
                         STATE_[4]=0
                     else: #out of switching budget
