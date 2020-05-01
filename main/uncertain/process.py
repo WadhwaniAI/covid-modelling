@@ -47,15 +47,18 @@ initargs = (
 )
 
 with Pool(args.workers, func, initargs):
+    jobs = 0
     stream = pd.read_csv(args.parameters, chunksize=args.chunk_size)
     for i in stream:
         outgoing.put(i)
+        jobs += 1
 
     writer = None
-    for i in range(groups.ngroups):
+    while jobs:
         results = incoming.get()
         if writer is None:
             head = results[0]
             writer = csv.DictWriter(sys.stdout, fieldnames=head.keys())
             writer.writeheader()
         writer.writerows(results)
+        jobs -= 1
