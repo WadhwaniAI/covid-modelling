@@ -1,5 +1,6 @@
 import sys
 import csv
+import warnings
 from pathlib import Path
 from argparse import ArgumentParser
 from multiprocessing import Pool
@@ -36,7 +37,18 @@ class OptimizationContainer:
         if not theta:
             raise ValueError()
         params = theta._asmodel()._asdict()
-        return self.optimiser.solve(params)
+        # return self.optimiser.solve(params)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('default', RuntimeWarning)
+            solution = self.optimiser.solve(params)
+            if w:
+                msg = '[{}] {} | {}'.format(w[0].message,
+                                            repr(self.optimiser),
+                                            Optimiser.dict2str(params))
+                Logger.warning(msg)
+
+        return solution
 
     def fwin(self, df):
         if self.fdays is not None:
