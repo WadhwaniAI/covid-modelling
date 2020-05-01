@@ -18,7 +18,7 @@ def func(args):
 
 arguments = ArgumentParser()
 arguments.add_argument('--estimates', type=Path)
-arguments.add_argument('--burn-in', type=int)
+arguments.add_argument('--burn-in', type=int, default=0)
 arguments.add_argument('--with-rejects', action='store_true')
 arguments.add_argument('--workers', type=int)
 args = arguments.parse_args()
