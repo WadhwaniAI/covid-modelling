@@ -13,7 +13,8 @@ def func(args):
     if not reject:
         df = df.query('accept == 1')
 
-    return df
+    if not df.empty:
+        return df
 
 arguments = ArgumentParser()
 arguments.add_argument('--estimates', type=Path)
@@ -25,5 +26,5 @@ args = arguments.parse_args()
 with Pool(args.workers) as pool:
     estimates = args.estimates.iterdir()
     iterable = map(lambda x: (x, args.burn_in, args.with_rejects), estimates)
-    records = pool.imap_unordered(func, iterable)
+    records = filter(None, pool.imap_unordered(func, iterable))
     pd.concat(records).to_csv(sys.stdout, index=False)
