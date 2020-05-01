@@ -27,14 +27,14 @@ def func(incoming, outgoing, data):
     producer = Producer(df)
 
     while True:
-        (name, group) = incoming.get()
-        Logger.info(name)
-        outgoing.put(list(producer(group)))
+        df = incoming.get()
+        Logger.info(len(df))
+        outgoing.put(list(producer(df)))
 
 arguments = ArgumentParser()
 arguments.add_argument('--data', type=Path)
 arguments.add_argument('--parameters', type=Path)
-arguments.add_argument('--burn-in', type=int)
+arguments.add_argument('--chunk-size', type=int, default=100)
 arguments.add_argument('--workers', type=int)
 args = arguments.parse_args()
 
@@ -47,15 +47,8 @@ initargs = (
 )
 
 with Pool(args.workers, func, initargs):
-    query = [
-        'accept == 1',
-        'step > {}'.format(args.burn_in),
-    ]
-    groups = (pd
-              .read_csv(args.parameters)
-              .query(' and '.join(query))
-              .groupby('order', sort=False))
-    for i in groups:
+    stream = pd.read_csv(args.parameters, chunksize=args.chunk_size)
+    for i in stream:
         outgoing.put(i)
 
     writer = None

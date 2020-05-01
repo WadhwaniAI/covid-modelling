@@ -1,3 +1,4 @@
+import itertools as it
 import collections as cl
 
 import pandas as pd
@@ -14,6 +15,10 @@ def offset(df, dates):
         yield diff.total_seconds() / constants.day
 
 class Optimiser:
+    @staticmethod
+    def dict2str(d):
+        return ', '.join([ ': '.join(map(str, x)) for x in d.items() ])
+
     def __init__(self,
                  infected,
                  N=1e7,
@@ -36,6 +41,9 @@ class Optimiser:
             'P_fatal': P_fatal,
             'starting_date': self.infected.index.min(),
         }
+
+    def __repr__(self):
+        return self.dict2str(self.defaults)
 
     def solve(self, parameters, infected=None, end=None):
         if infected is None:

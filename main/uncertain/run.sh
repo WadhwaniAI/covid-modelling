@@ -4,28 +4,34 @@ export PYTHONPATH=`git rev-parse --show-toplevel`:$PYTHONPATH
 export PYTHONLOGLEVEL=debug
 
 OUTLOOK=5
-FITDAYS=7
+FITDAYS="--fit-days 7"
 STEPS=10000
+RUNS=20
+BURN=2000
 URL=https://api.covid19india.org/csv/latest/raw_data.csv
 
-# tmp=`mktemp`
-# echo $tmp
-tmp=a.csv
+_data=`mktemp`
 wget --output-document=- $URL | \
-    python get-c19i.py --state Maharashtra --district pune > $tmp
+    python get-c19i.py --state Maharashtra --district pune > $_data
 
-python estimation.py \
+estimates=`mktemp --directory`
+for i in `seq $RUNS`; do
+    out=`mktemp --tmpdir=$estimates`
+    cat <<EOF
+python estimation.py $FITDAYS \
        --outlook $OUTLOOK \
-       --fit-days $FITDAYS \
        --config config.ini \
-       --data $tmp \
-       --steps $STEPS \
-       --starts `nproc` > \
-       b.csv
+       --data $_data \
+       --steps $STEPS > \
+       $out
+EOF
+done | parallel --will-cite --line-buffer
 
-python process.py \
-       --data a.csv \
-       --parameters b.csv \
-       --burn-in 1000 > \
-       c.csv
-python viz-seaborn.py --output c.png < c.csv
+_parameters=`mktemp`
+python collate.py --burn-in $BURN --estimates $estimates > $_parameters
+if [ `stat --format="%s" $_parameters` -gt 0 ]; then
+    python process.py \
+	   --data $_data \
+	   --parameters $_parameters | \
+	python viz-seaborn.py --output estimate.png
+fi

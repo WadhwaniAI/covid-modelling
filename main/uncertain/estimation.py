@@ -3,7 +3,6 @@ import csv
 import warnings
 from pathlib import Path
 from argparse import ArgumentParser
-from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
@@ -74,7 +73,12 @@ class Metropolis:
         if accepted:
             self.theta = theta
 
-        return { 'accept': accepted, **self.theta._asdict() }
+        result = {
+            'accept': int(accepted),
+            **self.theta._asdict(),
+        }
+
+        return result
 
     def accept(self, proposed):
         raise NotImplementedError()
@@ -117,56 +121,31 @@ class LogAcceptor(Metropolis):
 
         return decision
 
-def each(metropolis, steps, order):
-    every = int(10 ** (np.floor(np.log10(steps)) - 1))
-
-    for (i, j) in zip(range(steps), metropolis):
-        if not i or i % every == 0:
-            Logger.info('{} {}'.format(order, i))
-
-        yield {
-            'order': order,
-            'step': i,
-            **j,
-        }
-
-#
-#
-#
-def func(args):
-    (i, opts) = args
-
-    index_col = 'date'
-    df = pd.read_csv(opts.data,
-                     index_col=index_col,
-                     parse_dates=[index_col])
-    (theta, sigma) = [ x.from_config(opts.config) for x in (Theta, Sigma) ]
-
-    split = dsplit(df, opts.outlook - 1)
-    optimizer = OptimizationContainer(split.train, opts.fit_days)
-    metropolis = LogAcceptor(theta, sigma, optimizer)
-
-    return list(each(metropolis, opts.steps, i))
-
 arguments = ArgumentParser()
 arguments.add_argument('--outlook', type=int)
 arguments.add_argument('--fit-days', type=int)
 arguments.add_argument('--steps', type=int)
-arguments.add_argument('--starts', type=int)
 arguments.add_argument('--data', type=Path)
 arguments.add_argument('--config', type=Path)
-arguments.add_argument('--workers', type=int)
 args = arguments.parse_args()
 
-with Pool(args.workers) as pool:
-    writer = None
-    starts = args.workers if args.starts is None else args.starts
-    assert starts
+index_col = 'date'
+df = pd.read_csv(args.data,
+                 index_col=index_col,
+                 parse_dates=[index_col])
+(theta, sigma) = [ x.from_config(args.config) for x in (Theta, Sigma) ]
 
-    iterable = map(lambda x: (x, args), range(starts))
-    for i in pool.imap_unordered(func, iterable):
-        if writer is None:
-            head = i[0]
-            writer = csv.DictWriter(sys.stdout, fieldnames=head.keys())
-            writer.writeheader()
-        writer.writerows(i)
+split = dsplit(df, args.outlook - 1)
+optimizer = OptimizationContainer(split.train, args.fit_days)
+metropolis = LogAcceptor(theta, sigma, optimizer)
+
+writer = None
+every = int(10 ** (np.floor(np.log10(args.steps)) - 1))
+for (i, row) in zip(range(args.steps), metropolis):
+    if not i or i % every == 0:
+        Logger.info(i)
+
+    if writer is None:
+        writer = csv.DictWriter(sys.stdout, fieldnames=row.keys())
+        writer.writeheader()
+    writer.writerow(row)

@@ -6,13 +6,24 @@ from multiprocessing import Pool
 import pandas as pd
 
 def func(args):
-    return pd.read_csv(args)
+    (path, burn, reject) = args
+
+    df = pd.read_csv(args)
+    df = df.iloc[burn:]
+    if not reject:
+        df = df.query('accept == 1')
+
+    return df
 
 arguments = ArgumentParser()
 arguments.add_argument('--estimates', type=Path)
+arguments.add_argument('--burn-in', type=int)
+arguments.add_argument('--with-rejects', action='store_true')
 arguments.add_argument('--workers', type=int)
 args = arguments.parse_args()
 
 with Pool(args.workers) as pool:
-    records = pool.imap_unordered(func, args.estimates.iterdir())
+    estimates = args.estimates.iterdir()
+    iterable = map(lambda x: (x, args.burn_in, args.with_rejects), estimates)
+    records = pool.imap_unordered(func, iterable)
     pd.concat(records).to_csv(sys.stdout, index=False)
