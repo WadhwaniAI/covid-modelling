@@ -8,7 +8,7 @@ import pandas as pd
 def func(args):
     (path, burn, reject) = args
 
-    df = pd.read_csv(args)
+    df = pd.read_csv(path)
     df = df.iloc[burn:]
     if not reject:
         df = df.query('accept == 1')
