@@ -1,5 +1,6 @@
 import os
 import pdb
+import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,7 +9,7 @@ import seaborn as sns
 from hyperopt import hp, tpe, fmin, Trials
 from tqdm import tqdm
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import itertools
 from functools import partial
 from datetime import datetime
@@ -27,6 +28,7 @@ from utils.plotting import create_plots
 now = str(datetime.now())
 
 def train_val_split(df_district, val_rollingmean=False, val_size=5):
+    print("splitting data ..")
     df_true_fitting = copy.copy(df_district)
     df_true_fitting['total_infected'] = df_true_fitting['total_infected'].rolling(5, center=True).mean()
     df_true_fitting = df_true_fitting[np.logical_not(df_true_fitting['total_infected'].isna())]
@@ -45,6 +47,7 @@ def train_val_split(df_district, val_rollingmean=False, val_size=5):
     return df_train, df_val, df_true_fitting
 
 def fit_district(dataframes, state, district, train_period=10, val_period=5, train_on_val=False):
+    print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
     if not os.path.exists('./plots'):
         os.makedirs('./plots')
 
@@ -149,7 +152,6 @@ def change_mumbai_df(predictions_dict):
     return predictions_dict
 
 def create_classification_report(predictions_dict, predictions_dict_val_train=None):
-    
     df_result = pd.DataFrame(columns=['state', 'district', 'train_rmse', 'train_mape', 'pre_intervention_r0', 'post_intervention_r0',
                                       'val_rmse_observed', 'val_mape_observed', 'val_rmse_rolling', 'val_mape_rolling'])
     
@@ -204,7 +206,7 @@ def create_classification_report(predictions_dict, predictions_dict_val_train=No
             
             df_district.set_index('date', inplace=True)
             df_prediction.set_index('date', inplace=True)
-            loss = loss_calculator._calc_mape(df_prediction.iloc[-10:, :]['total_infected'], df_district.iloc[-10:, :]['total_infected'])
+            loss = loss_calculator._calc_mape(np.array(df_prediction.iloc[-10:, :]['total_infected']), np.array(df_district.iloc[-10:, :]['total_infected']))
             df_result.loc[i, 'second_train_mape'] = loss
             df_district.reset_index(inplace=True)
             df_prediction.reset_index(inplace=True)
@@ -212,6 +214,7 @@ def create_classification_report(predictions_dict, predictions_dict_val_train=No
     return df_result
     
 def create_full_plots(predictions_dict):
+    print("creating and saving plots ..")
     for i, key in enumerate(predictions_dict.keys()):
         
         df_district = predictions_dict[key]['df_district']
@@ -247,9 +250,10 @@ def create_full_plots(predictions_dict):
         plt.legend()
         plt.title('Total Confirmed Cases Extrapolated ({})'.format(key))
         plt.grid()
-        plt.savefig('./plots/{}_full_plot_{}.png',format(now, str(key)))
+        plt.savefig('./plots/{}_full_plot_{}_{}.png'.format(now, key[0], key[1]))
 
-def save_regional_params(predictions_dict_val_train):
+def save_regional_params(predictions_dict_val_train, df_result):
+    print("saving best found parameters ..")
     params = {}
     regional_model_params_array = []
 
@@ -278,13 +282,14 @@ def save_regional_params(predictions_dict_val_train):
     params['regional_model_params'] = regional_model_params_array
 
     if not os.path.exists('./params'):
-        os.makedirs('./params', mode=777)
+        os.makedirs('./params')
     with open('./params/model_params_seir_t.json', 'w') as fp:
         json.dump(params, fp)
 
 def get_forecasts(predictions_dict_val_train: dict):
+    print("getting forecasts ..")
     new_lockdown_removal_date = "2020-06-15"
-    new_lockdown_removal_date = datetime.datetime.strptime(new_lockdown_removal_date, '%Y-%m-%d')
+    new_lockdown_removal_date = datetime.strptime(new_lockdown_removal_date, '%Y-%m-%d')
     end_date = "2020-06-30"
     forecasts = defaultdict(dict)
     for region in predictions_dict_val_train:
@@ -295,8 +300,9 @@ def get_forecasts(predictions_dict_val_train: dict):
         forecasts[region] = optimiser.solve(city['best'], city['default_params'], df_val, end_date=end_date)
     return forecasts
 
-def create_csv_data(forecasts: dict, predictions_dict_val_train: dict, end_date: str):
-    simulate_till = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+def create_csv_data(forecasts: dict, predictions_dict_val_train: dict, df_result: pd.DataFrame, end_date: str):
+    print("compiling csv data ..")
+    simulate_till = datetime.strptime(end_date, '%Y-%m-%d')
     dfs = defaultdict()
     for region in forecasts:
         state, district = region
@@ -316,7 +322,7 @@ def create_csv_data(forecasts: dict, predictions_dict_val_train: dict, end_date:
         no_of_predictions = len(prediction_daterange)
         
         df_output['predictionDate'] = prediction_daterange
-        df_output['forecastRunDate'] = [datetime.datetime.today().date()]*no_of_predictions
+        df_output['forecastRunDate'] = [datetime.today().date()]*no_of_predictions
         
         df_output['regionType'] = ['city']*no_of_predictions
         
@@ -373,7 +379,8 @@ def create_csv_data(forecasts: dict, predictions_dict_val_train: dict, end_date:
     return dfs
 
 def write_csv(dfs: dict):
-    df_final = pd.DataFrame(columns=dfs[('Maharashtra','Mumbai')].columns)
+    print("dumping csv ..")
+    df_final = pd.DataFrame(columns=dfs[('Delhi', None)].columns)
     for key in dfs.keys():
         df_final = pd.concat([df_final, dfs[key]], ignore_index=True)
 
@@ -382,13 +389,14 @@ def write_csv(dfs: dict):
     df_final.to_csv('./csv_output/{}_final_output.csv'.format(now), index=False)
 
 def main():
+    print("all files will be saved with prefix {}.".format(now))
     dataframes = get_covid19india_api_data()
     district_to_plot = [['Delhi', None],
                         ['Rajasthan', 'Jaipur'], 
                         ['Maharashtra', 'Mumbai'], 
-                        ['Maharashtra', 'Pune']
-                        # ['Gujarat', 'Ahmadabad'],
-                        # ['Karnataka', 'Bengaluru']
+                        ['Maharashtra', 'Pune'],
+                        ['Gujarat', 'Ahmedabad'],
+                        ['Karnataka', 'Bengaluru Urban']
                        ]
 
     predictions_dict = predict(dataframes, district_to_plot)
@@ -400,9 +408,10 @@ def main():
     if not os.path.exists('./results'):
         os.makedirs('./results')
     df_result.to_csv('./results/{}_df_result.csv'.format(now))
-    save_regional_params(predictions_dict_val_train)
+    save_regional_params(predictions_dict_val_train, df_result)
     forecasts = get_forecasts(predictions_dict_val_train)
-    csv_data = create_csv_data(forecasts, predictions_dict_val_train, end_date="2020-06-30")
+    csv_data = create_csv_data(forecasts, predictions_dict_val_train, df_result, end_date="2020-06-30")
+    write_csv(csv_data)
 
     
 
