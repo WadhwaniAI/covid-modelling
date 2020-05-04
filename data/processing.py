@@ -18,10 +18,10 @@ def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru'
     df_district = pd.DataFrame(columns=['total_infected'], index=index)
     df_district['total_infected'] = [0]*len(index)
     for _, row in df_raw_data_1.iterrows():
-        if pd.isna(row['numcases']):
-            df_district.loc[row['dateannounced']:, 'total_infected'] += 1
-        else:
+        try:
             df_district.loc[row['dateannounced']:, 'total_infected'] += 1*int(row['numcases'])
+        except Exception:
+            df_district.loc[row['dateannounced']:, 'total_infected'] += 1
 
     df_district.reset_index(inplace=True)
     df_district.columns = ['date', 'total_infected']
