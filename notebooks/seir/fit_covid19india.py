@@ -22,7 +22,6 @@ from data.processing import get_district_time_series
 from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
 from main.seir.losses import Loss_Calculator
-from utils.plotting import create_plots
 
 
 now = str(datetime.now())
