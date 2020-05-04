@@ -2,6 +2,9 @@
 *.pdf
 *.png
 *.pyc
+*.pkl
+*temp/
+*mcmc/
 **.ipynb_checkpoints/
 *.ipynb_checkpoints/
 *.vscode/
