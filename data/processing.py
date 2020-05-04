@@ -3,7 +3,10 @@ import numpy as np
 import copy
 
 def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru'):
-    df_raw_data_1 = copy.copy(dataframes['df_raw_data'])
+    if type(dataframes) is dict:
+        df_raw_data_1 = copy.copy(dataframes['df_raw_data'])
+    else:
+        df_raw_data_1 = copy.copy(dataframes)
     if state != None:
         df_raw_data_1 = df_raw_data_1[df_raw_data_1['detectedstate'] == state]
     if district != None:
@@ -15,7 +18,10 @@ def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru'
     df_district = pd.DataFrame(columns=['total_infected'], index=index)
     df_district['total_infected'] = [0]*len(index)
     for _, row in df_raw_data_1.iterrows():
-        df_district.loc[row['dateannounced']:, 'total_infected'] += 1
+        if pd.isna(row['numcases']):
+            df_district.loc[row['dateannounced']:, 'total_infected'] += 1
+        else:
+            df_district.loc[row['dateannounced']:, 'total_infected'] += 1*int(row['numcases'])
 
     df_district.reset_index(inplace=True)
     df_district.columns = ['date', 'total_infected']
