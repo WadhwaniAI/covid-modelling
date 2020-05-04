@@ -49,7 +49,7 @@ def fit_district(dataframes, state, district, train_period=10, val_period=5, tra
         os.makedirs('./plots')
 
     df_district = get_district_time_series(dataframes, state=state, district=district)
-    if district == None:
+    if district is None:
         district = ''
         
     # Get train val split
@@ -251,10 +251,10 @@ def create_full_plots(predictions_dict):
 
 def main():
     dataframes = get_covid19india_api_data()
-    district_to_plot = [['Rajasthan', 'Jaipur'], 
+    district_to_plot = [['Delhi', None],
+                        ['Rajasthan', 'Jaipur'], 
                         ['Maharashtra', 'Mumbai'], 
                         ['Maharashtra', 'Pune'], 
-                        ['Delhi', None], 
                         ['Karnataka', 'Bengaluru'], 
                         ['Gujarat', 'Ahmadabad']
                        ]
