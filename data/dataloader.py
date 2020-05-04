@@ -107,7 +107,17 @@ def get_covid19india_api_data():
     # Create dataframe for raw history
     data = requests.get('https://api.covid19india.org/raw_data.json').json()
     df_raw_data = pd.DataFrame.from_dict(data['raw_data'])
-    dataframes['df_raw_data'] = df_raw_data
+
+    data = requests.get('https://api.covid19india.org/raw_data1.json').json()
+    df_raw_data_1 = pd.DataFrame.from_dict(data['raw_data'])
+
+    data = requests.get('https://api.covid19india.org/raw_data2.json').json()
+    df_raw_data_2 = pd.DataFrame.from_dict(data['raw_data'])
+
+    data = requests.get('https://api.covid19india.org/raw_data3.json').json()
+    df_raw_data_3 = pd.DataFrame.from_dict(data['raw_data'])
+
+    dataframes['df_raw_data'] = pd.concat([df_raw_data_1, df_raw_data_2, df_raw_data_3], ignore_index=True)
 
     # Parse deaths_recoveries.json file
     data = requests.get('https://api.covid19india.org/deaths_recoveries.json').json()
