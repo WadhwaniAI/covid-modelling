@@ -1,7 +1,10 @@
 *.csv
 *.pdf
 *.png
+*.pkl
 *.pyc
+*mcmc/
+*temp/
 **.ipynb_checkpoints/
 *.ipynb_checkpoints/
 *.vscode/
