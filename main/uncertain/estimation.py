@@ -83,18 +83,36 @@ class Metropolis:
     def accept(self, proposed):
         raise NotImplementedError()
 
+class Cache(dict):
+    def __init__(self, maxsize=2):
+        self.maxsize = maxsize
+
+    def __setitem__(self, key, value):
+        if len(self) > self.maxsize:
+            for i in self:
+                self.pop(i)
+                break
+        super().__setitem__(key, value)
+
 #
 #
 #
 class LogAcceptor(Metropolis):
-    def __init__(self, theta, sigma, optimizer):
+    def __init__(self, theta, sigma, optimizer, cache=None):
         super().__init__(theta, sigma)
 
         self.optimizer = optimizer
+        self.cache = cache
         self.pi = np.sqrt(2 * np.pi)
 
     def __call__(self, theta):
-        return self.likelihood(theta) + self.prior(theta)
+        if self.cache is not None and theta in self.cache:
+            result = self.cache[theta]
+        else:
+            result = self.likelihood(theta) + self.prior(theta)
+            self.cache[theta] = result
+
+        return result
 
     def likelihood(self, theta):
         try:
@@ -137,7 +155,8 @@ df = pd.read_csv(args.data,
 
 split = dsplit(df, args.outlook - 1)
 optimizer = OptimizationContainer(split.train, args.fit_days)
-metropolis = LogAcceptor(theta, sigma, optimizer)
+cache = Cache(5)
+metropolis = LogAcceptor(theta, sigma, optimizer, cache)
 
 writer = None
 every = int(10 ** (np.floor(np.log10(args.steps)) - 1))
