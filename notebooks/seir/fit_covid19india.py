@@ -247,16 +247,148 @@ def create_full_plots(predictions_dict):
         plt.legend()
         plt.title('Total Confirmed Cases Extrapolated ({})'.format(key))
         plt.grid()
-        plt.savefig('./plots/{}_full_plot_{}.png',format(now, key))
+        plt.savefig('./plots/{}_full_plot_{}.png',format(now, str(key)))
+
+def save_regional_params(predictions_dict_val_train):
+    params = {}
+    regional_model_params_array = []
+
+    for key in predictions_dict_val_train.keys():
+        district_dict = {}
+        state, district = key[0], key[1]
+        try:
+            district_dict['region_name'] = district.lower()
+            district_dict['region_type'] = 'district'
+        except Exception as e:
+            district_dict['region_name'] = state.lower()
+            district_dict['region_type'] = 'state'
+        district_dict['model_name'] = 'SEIR'
+        
+        district_dict['model_parameters'] = {**copy.deepcopy(predictions_dict_val_train[key]['best']), **copy.deepcopy(predictions_dict_val_train[key]['default_params'])}
+        district_dict['model_parameters']['starting_date'] = district_dict['model_parameters']['starting_date'].strftime("%Y-%m-%d") 
+        
+        if state == 'Delhi':
+            error = df_result.loc[np.logical_and(df_result['state'] == state, 1), 'val_mape_observed'].tolist()[0]
+        else:
+            error = df_result.loc[np.logical_and(df_result['state'] == state, df_result['district'] == district), 'val_mape_observed'].tolist()[0]
+        district_dict['val_error'] = error
+        
+        regional_model_params_array.append(district_dict)
+        
+    params['regional_model_params'] = regional_model_params_array
+
+    if not os.path.exists('./params'):
+        os.makedirs('./params', mode=777)
+    with open('./params/model_params_seir_t.json', 'w') as fp:
+        json.dump(params, fp)
+
+def get_forecasts(predictions_dict_val_train: dict):
+    new_lockdown_removal_date = "2020-06-15"
+    new_lockdown_removal_date = datetime.datetime.strptime(new_lockdown_removal_date, '%Y-%m-%d')
+    end_date = "2020-06-30"
+    forecasts = defaultdict(dict)
+    for region in predictions_dict_val_train:
+        city = predictions_dict_val_train[region].copy()
+        city['default_params']['intervention_removal_day'] = (new_lockdown_removal_date - city['default_params']['starting_date']).days
+        df_train, df_val, df_true_fitting = train_val_split(city['df_district'], val_rollingmean=False, val_size=5)
+        optimiser = city['optimiser']
+        forecasts[region] = optimiser.solve(city['best'], city['default_params'], df_val, end_date=end_date)
+    return forecasts
+
+def create_csv_data(forecasts: dict, predictions_dict_val_train: dict, end_date: str):
+    simulate_till = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    dfs = defaultdict()
+    for region in forecasts:
+        state, district = region
+        
+        columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value', 'current_total', 'current_active', 'current_recovered', 
+               'current_deceased', 'current_hosptialized', 'current_icu', 'current_ventilator', 'predictionDate', 'active_mean', 'active_min', 
+               'active_max', 'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 'icu_max', 'deceased_mean', 
+               'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 'recovered_max', 'total_mean', 'total_min', 'total_max']
+
+        df_output = pd.DataFrame(columns = columns)
+        
+        city = predictions_dict_val_train[region].copy()
+        df_train, df_val, df_true_fitting = train_val_split(city['df_district'], val_rollingmean=False, val_size=5)
+        start_date = df_train.iloc[0, 0]
+        
+        prediction_daterange = pd.date_range(start=start_date, end=simulate_till)
+        no_of_predictions = len(prediction_daterange)
+        
+        df_output['predictionDate'] = prediction_daterange
+        df_output['forecastRunDate'] = [datetime.datetime.today().date()]*no_of_predictions
+        
+        df_output['regionType'] = ['city']*no_of_predictions
+        
+        df_output['model_name'] = ['SEIR']*no_of_predictions
+        df_output['error_function'] = ['MAPE']*no_of_predictions
+        
+        if state == 'Delhi':
+            error = df_result.loc[np.logical_and(df_result['state'] == state, 1), 'val_mape_observed'].tolist()
+        else:
+            error = df_result.loc[np.logical_and(df_result['state'] == state, df_result['district'] == district), 'val_mape_observed'].tolist()
+            
+        df_output['error_value'] = [error[0]]*no_of_predictions
+
+        pred_hospitalisations = forecasts[region]['hospitalisations']
+        df_output['active_mean'] = pred_hospitalisations
+        df_output['active_min'] = (1 - 0.01*error[0])*pred_hospitalisations
+        df_output['active_max'] = (1 + 0.01*error[0])*pred_hospitalisations
+        
+        df_output['hospitalized_mean'] = pred_hospitalisations
+        df_output['hospitalized_min'] = (1 - 0.01*error[0])*pred_hospitalisations
+        df_output['hospitalized_max'] = (1 - 0.01*error[0])*pred_hospitalisations
+        
+        df_output['icu_mean'] = 0.02*pred_hospitalisations
+        df_output['icu_min'] = (1 - 0.01*error[0])*0.02*pred_hospitalisations
+        df_output['icu_max'] = (1 - 0.01*error[0])*0.02*pred_hospitalisations
+        
+        pred_recoveries = forecasts[region]['recoveries']
+        df_output['recovered_mean'] = pred_recoveries
+        df_output['recovered_min'] = (1 - 0.01*error[0])*pred_recoveries
+        df_output['recovered_max'] = (1 - 0.01*error[0])*pred_recoveries
+        
+        pred_fatalities = forecasts[region]['fatalities']
+        df_output['deceased_mean'] = pred_fatalities
+        df_output['deceased_min'] = (1 - 0.01*error[0])*pred_fatalities
+        df_output['deceased_max'] = (1 - 0.01*error[0])*pred_fatalities
+        
+        pred_total_cases = pred_hospitalisations + pred_recoveries + pred_fatalities
+        df_output['total_mean'] = pred_total_cases
+        df_output['total_min'] = (1 - 0.01*error[0])*pred_total_cases
+        df_output['total_max'] = (1 - 0.01*error[0])*pred_total_cases
+        
+        if state == 'Delhi':
+            district = 'Delhi'
+        df_output['region'] = [district]*no_of_predictions
+        
+        df_output.set_index('predictionDate', inplace=True)
+        df_district = predictions_dict_val_train[region]['df_district']
+        df_output.loc[df_output.index.isin(df_district['date']), 'current_total'] = df_district['total_infected'].iloc[2:].to_numpy()
+        df_output.reset_index(inplace=True)
+        df_output = df_output[columns]
+        
+        dfs[region] = df_output
+
+    return dfs
+
+def write_csv(dfs: dict):
+    df_final = pd.DataFrame(columns=dfs[('Maharashtra','Mumbai')].columns)
+    for key in dfs.keys():
+        df_final = pd.concat([df_final, dfs[key]], ignore_index=True)
+
+    if not os.path.exists('./csv_output'):
+        os.makedirs('./csv_output')
+    df_final.to_csv('./csv_output/{}_final_output.csv'.format(now), index=False)
 
 def main():
     dataframes = get_covid19india_api_data()
     district_to_plot = [['Delhi', None],
                         ['Rajasthan', 'Jaipur'], 
                         ['Maharashtra', 'Mumbai'], 
-                        ['Maharashtra', 'Pune'], 
-                        ['Karnataka', 'Bengaluru'], 
-                        ['Gujarat', 'Ahmadabad']
+                        ['Maharashtra', 'Pune']
+                        # ['Gujarat', 'Ahmadabad'],
+                        # ['Karnataka', 'Bengaluru']
                        ]
 
     predictions_dict = predict(dataframes, district_to_plot)
@@ -268,6 +400,10 @@ def main():
     if not os.path.exists('./results'):
         os.makedirs('./results')
     df_result.to_csv('./results/{}_df_result.csv'.format(now))
+    save_regional_params(predictions_dict_val_train)
+    forecasts = get_forecasts(predictions_dict_val_train)
+    csv_data = create_csv_data(forecasts, predictions_dict_val_train, end_date="2020-06-30")
+
     
 
 
