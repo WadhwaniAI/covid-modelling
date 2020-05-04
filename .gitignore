@@ -3,6 +3,7 @@
 *.png
 *.pkl
 *.pyc
+*params/
 *mcmc/
 *temp/
 **.ipynb_checkpoints/
