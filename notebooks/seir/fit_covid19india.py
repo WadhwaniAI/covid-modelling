@@ -121,7 +121,9 @@ def fit_district(dataframes, state, district, train_period=10, val_period=5, tra
     plt.legend()
     plt.title('Total Confirmed Cases ({} {})'.format(state, district))
     plt.grid()
-    plt.savefig('./plots/{}_predictions_{}_{}.png'.format(now, state, district))
+    fname = './plots/{}_predictions_{}_{}.png'.format(now, state, district)
+    plt.savefig(fname)
+    print("plot saved as {}".format(fname))
     
     return best, default_params, optimiser, df_prediction, df_district
 
@@ -250,7 +252,9 @@ def create_full_plots(predictions_dict):
         plt.legend()
         plt.title('Total Confirmed Cases Extrapolated ({})'.format(key))
         plt.grid()
-        plt.savefig('./plots/{}_full_plot_{}_{}.png'.format(now, key[0], key[1]))
+        fname = './plots/{}_full_plot_{}_{}.png'.format(now, key[0], key[1])
+        plt.savefig(fname)
+        print("full plot saved as {}".format(fname))
 
 def save_regional_params(predictions_dict_val_train, df_result):
     print("saving best found parameters ..")
@@ -283,8 +287,10 @@ def save_regional_params(predictions_dict_val_train, df_result):
 
     if not os.path.exists('./params'):
         os.makedirs('./params')
-    with open('./params/model_params_seir_t.json', 'w') as fp:
+    fname = './params/model_params_seir_t.json'
+    with open(fname, 'w') as fp:
         json.dump(params, fp)
+    print("parameters saved as {}".format(fname))
 
 def get_forecasts(predictions_dict_val_train: dict):
     print("getting forecasts ..")
@@ -386,7 +392,9 @@ def write_csv(dfs: dict):
 
     if not os.path.exists('./csv_output'):
         os.makedirs('./csv_output')
-    df_final.to_csv('./csv_output/{}_final_output.csv'.format(now), index=False)
+    fname = './csv_output/{}_final_output.csv'.format(now)
+    df_final.to_csv(fname, index=False)
+    print("csv saved as {}".format(fname))
 
 def main():
     print("all files will be saved with prefix {}.".format(now))
