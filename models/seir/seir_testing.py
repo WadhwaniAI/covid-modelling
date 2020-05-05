@@ -11,7 +11,8 @@ class SEIR_Testing():
     def __init__(self, R0=2.2, T_inf=2.9, T_inc=5.2, T_hosp=5, T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14,
                  T_recov_mild=11, N=7e6, init_infected=1, intervention_day=100, intervention_amount=0.33, q=0,
                  testing_rate_for_exposed=0, positive_test_rate_for_exposed=1, testing_rate_for_infected=0,
-                 positive_test_rate_for_infected=1, intervention_removal_day=45, starting_date='2020-03-09'):
+                 positive_test_rate_for_infected=1, intervention_removal_day=45, starting_date='2020-03-09', 
+                 state_init_values=None):
 
         T_trans = T_inf/R0
         T_recov_mild = (14 - T_inf)
@@ -67,19 +68,20 @@ class SEIR_Testing():
             'positive_test_rate_for_infected': positive_test_rate_for_infected
         }
 
-        # S, E, D_E, D_I, I, R_mild, R_severe_home, R_severe_hosp, R_fatal, C, D
-        state_init_values = OrderedDict()
-        state_init_values['S'] = (N - init_infected)/N
-        state_init_values['E'] = 0
-        state_init_values['I'] = init_infected/N
-        state_init_values['D_E'] = 0
-        state_init_values['D_I'] = 0
-        state_init_values['R_mild'] = 0
-        state_init_values['R_severe_home'] = 0
-        state_init_values['R_severe_hosp'] = 0
-        state_init_values['R_fatal'] = 0
-        state_init_values['C'] = 0
-        state_init_values['D'] = 0
+        if state_init_values == None:
+            # S, E, D_E, D_I, I, R_mild, R_severe_home, R_severe_hosp, R_fatal, C, D
+            state_init_values = OrderedDict()
+            state_init_values['S'] = (N - init_infected)/N
+            state_init_values['E'] = 0
+            state_init_values['I'] = init_infected/N
+            state_init_values['D_E'] = 0
+            state_init_values['D_I'] = 0
+            state_init_values['R_mild'] = 0
+            state_init_values['R_severe_home'] = 0
+            state_init_values['R_severe_hosp'] = 0
+            state_init_values['R_fatal'] = 0
+            state_init_values['C'] = 0
+            state_init_values['D'] = 0
 
         # self.vanilla_params = vanilla_params
         # self.testing_params = testing_params
@@ -161,9 +163,9 @@ class SEIR_Testing():
         columns.remove('date')
         df_prediction = df_prediction[['date'] + columns]
 
-        df_prediction['hospitalisations'] = df_prediction['R_severe_home'] + df_prediction['R_severe_hosp'] + df_prediction['R_fatal']
-        df_prediction['recoveries'] = df_prediction['C']
-        df_prediction['fatalities'] = df_prediction['D']
+        df_prediction['hospitalised'] = df_prediction['R_severe_home'] + df_prediction['R_severe_hosp'] + df_prediction['R_fatal']
+        df_prediction['recovered'] = df_prediction['C']
+        df_prediction['deceased'] = df_prediction['D']
         df_prediction['infectious_unknown'] = df_prediction['I'] + df_prediction['D_I']
-        df_prediction['total_infected'] = df_prediction['hospitalisations'] + df_prediction['recoveries'] + df_prediction['fatalities']
+        df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction

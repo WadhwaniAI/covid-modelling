@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 
 def create_plots(sol, states_time_matrices, labels, last_time=100, savefig=False, filenames=None):
     ind = sol.t[:last_time]

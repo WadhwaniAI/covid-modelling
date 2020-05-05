@@ -3,7 +3,7 @@ from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 import pdb
 
-class SEIR:
+class SIR:
   def __init__(self, params, state_init_values):
     self.params = params
     self.state_init_values = state_init_values
@@ -14,7 +14,7 @@ class SEIR:
     self.intervention_duration = self.params[-2]
 
   def get_impact(self, choice):
-    return(1+2*choice)
+    return(1+1*choice)
 
 
   def get_derivative(self, t, y):
