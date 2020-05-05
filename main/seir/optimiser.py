@@ -60,7 +60,9 @@ class Optimiser():
             df_prediction_slice = df_prediction.iloc[loss_indices[0]:loss_indices[1], :]
             df_true_slice = df_true.iloc[loss_indices[0]:loss_indices[1], :]
 
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
+        df_prediction_slice.reset_index(inplace=True, drop=True)
+        df_true_slice.reset_index(inplace=True, drop=True)
         if return_dict:
             loss = self.loss_calculator.calc_loss_dict(df_prediction_slice, df_true_slice, method=loss_method)
         else:
@@ -128,7 +130,7 @@ class Optimiser():
                     
         return loss_array, list_of_param_dicts
 
-    def bayes_opt(self, df_true, default_params, variable_param_ranges, method='rmse', num_evals=3500, 
+    def bayes_opt(self, df_true, default_params, variable_param_ranges, total_days=None, method='rmse', num_evals=3500, 
                   loss_indices=[-20, -10], which_compartments=['total_infected']):
         """
         What variable_param_ramges is supposed to look like : 
@@ -141,7 +143,8 @@ class Optimiser():
             'intervention_amount' : hp.uniform('intervention_amount', 0.3, 1)
         }
         """
-        total_days = len(df_true['date'])
+        if total_days == None:
+            total_days = len(df_true['date'])
         
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params, df_true=df_true,
                                                  total_days=total_days, loss_method=method, loss_indices=loss_indices, 
