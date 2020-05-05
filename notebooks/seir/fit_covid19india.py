@@ -420,8 +420,6 @@ def main():
     csv_data = create_csv_data(forecasts, predictions_dict_val_train, df_result, end_date="2020-06-30")
     write_csv(csv_data)
 
-    
-
-
 if __name__ == "__main__":
     main()
+
