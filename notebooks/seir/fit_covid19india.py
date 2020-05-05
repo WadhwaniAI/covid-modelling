@@ -26,7 +26,7 @@ from main.seir.losses import Loss_Calculator
 
 now = str(datetime.now())
 
-def train_val_split(df_district, val_rollingmean=False, val_size=5):
+def train_val_split(df_district, val_rollingmean=False, val_size=7):
     print("splitting data ..")
     df_true_fitting = copy.copy(df_district)
     df_true_fitting['total_infected'] = df_true_fitting['total_infected'].rolling(5, center=True).mean()
@@ -45,15 +45,21 @@ def train_val_split(df_district, val_rollingmean=False, val_size=5):
     df_val.reset_index(inplace=True, drop=True)
     return df_train, df_val, df_true_fitting
 
-def fit_district(dataframes, state, district, train_period=10, val_period=5, train_on_val=False, plot_fit=True):
-    print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
+def fit_district(dataframes, state, district, train_period=7, val_period=7, train_on_val=False, plot_fit=True, pre_lockdown=False):
     if not os.path.exists('./plots'):
         os.makedirs('./plots')
 
     df_district = get_district_time_series(dataframes, state=state, district=district)
     if district is None:
         district = ''
-        
+    
+    if pre_lockdown:
+        lockdown_index = df_district.index[df_district['date'] == "2020-03-24"][0]
+        df_district = df_district.loc[:lockdown_index, :]
+        train_on_val = True
+
+    print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
+
     # Get train val split
     if train_on_val:
         df_train, df_val, df_true_fitting = train_val_split(df_district, val_rollingmean=False, val_size=0)
@@ -129,12 +135,13 @@ def create_fitting_plots(df_prediction, df_district, df_train, df_val, df_true_f
     plt.savefig(fname)
     print("plot saved as {}".format(fname))
 
-def predict(dataframes, district_to_plot, train_on_val=False, plot_fit=True):
+def predict(dataframes, district_to_plot, train_on_val=False, plot_fit=True, pre_lockdown=False):
     predictions_dict = {}
 
     for state, district in district_to_plot:
         print('state - {}, district - {}'.format(state, district))
-        best, default_params, optimiser, df_prediction, df_district = fit_district(dataframes, state, district, train_on_val, plot_fit)
+        best, default_params, optimiser, df_prediction, df_district = fit_district(dataframes, state, district, train_on_val=train_on_val, 
+                                                                                    plot_fit=plot_fit, pre_lockdown=pre_lockdown)
         predictions_dict[(state, district)] = {}
         for name in ['best', 'default_params', 'optimiser', 'df_prediction', 'df_district']:
             predictions_dict[(state, district)][name] = eval(name)
@@ -171,10 +178,8 @@ def create_classification_report(predictions_dict, predictions_dict_val_train=No
         
         df_train, df_val, df_true_fitting = train_val_split(df_district, val_rollingmean=False, val_size=5)
 
-        loss = loss_calculator._calc_mape(df_prediction.iloc[-10:, :]['total_infected'], df_train.iloc[-10:, :]['total_infected'])
+        loss = loss_calculator._calc_mape(np.array(df_prediction.iloc[-10:, :]['total_infected']), np.array(df_train.iloc[-10:, :]['total_infected']))
         df_result.loc[i, 'train_mape'] = loss
-        loss = loss_calculator._calc_rmse(df_prediction.iloc[-10:, :]['total_infected'], df_train.iloc[-10:, :]['total_infected'])
-        df_result.loc[i, 'train_rmse'] = loss
 
         df_result.loc[i, 'pre_intervention_r0'] = best['R0']
         df_result.loc[i, 'post_intervention_r0'] = best['R0']*best['intervention_amount']
@@ -303,7 +308,7 @@ def get_forecasts(predictions_dict_val_train: dict):
     for region in predictions_dict_val_train:
         city = predictions_dict_val_train[region].copy()
         city['default_params']['intervention_removal_day'] = (new_lockdown_removal_date - city['default_params']['starting_date']).days
-        df_train, df_val, df_true_fitting = train_val_split(city['df_district'], val_rollingmean=False, val_size=5)
+        df_train, df_val, df_true_fitting = train_val_split(city['df_district'], val_rollingmean=False, val_size=7)
         optimiser = city['optimiser']
         forecasts[region] = optimiser.solve(city['best'], city['default_params'], df_val, end_date=end_date)
     return forecasts
@@ -398,6 +403,15 @@ def write_csv(dfs: dict):
     df_final.to_csv(fname, index=False)
     print("csv saved as {}".format(fname))
 
+def pre_lockdown_R0(dataframes, regions):
+    print("calculating pre-lockdown R0s")
+    r0 = defaultdict()
+    predictions_dict = predict(dataframes, regions, plot_fit=False, pre_lockdown=True)
+    for region in predictions_dict:
+        r0[region] = predictions_dict[region]['best']['R0']
+
+    return r0
+
 def main():
     print("all files will be saved with prefix {}.".format(now))
     dataframes = get_covid19india_api_data()
@@ -409,6 +423,7 @@ def main():
                         ['Karnataka', 'Bengaluru Urban']
                        ]
 
+    old_r0 = pre_lockdown_R0(dataframes, district_to_plot)
     predictions_dict = predict(dataframes, district_to_plot)
     predictions_dict = change_mumbai_df(predictions_dict)
     predictions_dict_final = copy.deepcopy(predictions_dict)
