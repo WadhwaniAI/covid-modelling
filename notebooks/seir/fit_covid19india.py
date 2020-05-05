@@ -45,7 +45,7 @@ def train_val_split(df_district, val_rollingmean=False, val_size=5):
     df_val.reset_index(inplace=True, drop=True)
     return df_train, df_val, df_true_fitting
 
-def fit_district(dataframes, state, district, train_period=10, val_period=5, train_on_val=False):
+def fit_district(dataframes, state, district, train_period=10, val_period=5, train_on_val=False, plot_fit=True):
     print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
     if not os.path.exists('./plots'):
         os.makedirs('./plots')
@@ -87,7 +87,12 @@ def fit_district(dataframes, state, district, train_period=10, val_period=5, tra
     # Get Predictions dataframe
     df_prediction = optimiser.solve(best, default_params, df_train)
 
-    # Create plots
+    if plot_fit:
+        create_fitting_plots(df_prediction, df_district, df_train, df_val, df_true_fitting, train_period, state, district, train_on_val)
+
+    return best, default_params, optimiser, df_prediction, df_district
+
+def create_fitting_plots(df_prediction, df_district, df_train, df_val, df_true_fitting, train_period, state, district, train_on_val):
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.plot(df_district['date'], df_district['total_infected'], label='Confirmed Cases (Observed)')
     ax.plot(df_true_fitting['date'], df_true_fitting['total_infected'], label='Confirmed Cases (Rolling Avg(5))')
@@ -123,15 +128,13 @@ def fit_district(dataframes, state, district, train_period=10, val_period=5, tra
     fname = './plots/{}_predictions_{}_{}.png'.format(now, state, district)
     plt.savefig(fname)
     print("plot saved as {}".format(fname))
-    
-    return best, default_params, optimiser, df_prediction, df_district
 
-def predict(dataframes, district_to_plot, train_on_val=False):
+def predict(dataframes, district_to_plot, train_on_val=False, plot_fit=True):
     predictions_dict = {}
 
     for state, district in district_to_plot:
         print('state - {}, district - {}'.format(state, district))
-        best, default_params, optimiser, df_prediction, df_district = fit_district(dataframes, state, district, train_on_val)
+        best, default_params, optimiser, df_prediction, df_district = fit_district(dataframes, state, district, train_on_val, plot_fit)
         predictions_dict[(state, district)] = {}
         for name in ['best', 'default_params', 'optimiser', 'df_prediction', 'df_district']:
             predictions_dict[(state, district)][name] = eval(name)
@@ -398,10 +401,10 @@ def write_csv(dfs: dict):
 def main():
     print("all files will be saved with prefix {}.".format(now))
     dataframes = get_covid19india_api_data()
-    district_to_plot = [['Delhi', None],
+    district_to_plot = [['Maharashtra', 'Pune'],
+                        ['Delhi', None],
                         ['Rajasthan', 'Jaipur'], 
-                        ['Maharashtra', 'Mumbai'], 
-                        ['Maharashtra', 'Pune'],
+                        ['Maharashtra', 'Mumbai'],
                         ['Gujarat', 'Ahmedabad'],
                         ['Karnataka', 'Bengaluru Urban']
                        ]
