@@ -1,14 +1,21 @@
 import pandas as pd
 import numpy as np
 import copy
+import datetime
 
 def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru', use_dataframe='raw_data'):
     if use_dataframe == 'districts_daily':
         df_districts = copy.copy(dataframes['df_districts'])
         df_district = df_districts[np.logical_and(df_districts['state'] == state, df_districts['district'] == district)]
         del df_district['notes']
+        df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
+        df_district = df_district.loc[df_district['date'] >= '2020-04-24', :]
+        df_district = df_district.loc[df_district['date'] < datetime.date.today().strftime("%Y-%m-%d"), :]
+        df_district.columns = [x if x != 'active' else 'hospitalised' for x in df_district.columns]
+        df_district.columns = [x if x != 'confirmed' else 'total_infected' for x in df_district.columns]
         df_district.reset_index(inplace=True, drop=True)
         return df_district
+
     if use_dataframe == 'raw_data':
         if type(dataframes) is dict:
             df_raw_data_1 = copy.copy(dataframes['df_raw_data'])
