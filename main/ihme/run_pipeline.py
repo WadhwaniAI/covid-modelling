@@ -25,7 +25,7 @@ args = parser.parse_args()
 
 # load params
 daily, smoothing_window = args.daily, args.smoothing
-params = Params(args.params)
+params = Params.fromjson(args.params)
 
 # assign data
 df, agg_df = params.df, params.agg_df
@@ -49,7 +49,8 @@ pipeline_run_args = params.pipeline_run_args
 
 # output
 fname = args.params
-output_folder = f'output/pipeline/{fname}'
+today = datetime.today()
+output_folder = f'output/pipeline/{fname}/{today}'
 if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
@@ -135,8 +136,9 @@ for i, (ycol, func) in enumerate(ycols.items()):
     # # think this could work with more death data:
     # link_fun     = [ identity_fun, identity_fun, exp_fun ]
     # covs = ['covs', 'deaths_normalized', 'covs']
-    
-    #
+
+    # python3 run_pipeline.py -p pune -d -s 3;python3 run_pipeline.py -p amd -d -s 3;python3 run_pipeline.py -p mumbai -d;python3 run_pipeline.py -p jaipur -d -s 3;python3 run_pipeline.py -p bengaluru -d -s 3;python3 run_pipeline.py -p delhi -d -s 3
+
     pipeline = BasicModel(
         all_data=data, #: (pd.DataFrame) of *all* the data that will go into this modeling pipeline
         col_t=xcol, #: (str) name of the column with time

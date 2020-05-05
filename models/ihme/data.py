@@ -2,10 +2,11 @@ import sys
 import pandas as pd
 from datetime import datetime, timedelta
 import numpy as np
+import pickle
 
 sys.path.append('../..')
-from data import dataloader
-
+from data.dataloader import get_covid19india_api_data, get_rootnet_api_data, get_jhu_data
+from utils.age_standardisation import get_district_time_series
 
 def bbmp():
 	df = pd.read_csv('../../data/data/bbmp.csv')
@@ -80,7 +81,7 @@ def india_states(states):
 	return state
 
 def jhu(country):
-	df_master = dataloader.get_jhu_data()
+	df_master = get_jhu_data()
 	# print(df_master['Country/Region'].unique())
 	# Province/State            object
 	# Country/Region            object
@@ -99,3 +100,36 @@ def jhu(country):
 	df.loc[:, 'ActiveCases'] = pd.to_numeric(df['ActiveCases'])
 	df['Province/State'].fillna(country, inplace=True)
 	return df
+
+def districtwise(district_state_tuple):
+	district, state = district_state_tuple[0], district_state_tuple[1]
+	today = datetime.today().strftime('%Y%m%d')
+	filename = f'data/{district}_{today}.csv'
+	try:
+		districtdf = pd.read_csv(filename)
+	except:
+		print("Didnt find CSV, pulling from source")
+		dataframes = get_covid19india_api_data()
+		districtdf = get_district_time_series(dataframes, state=state, district=district)
+		districtdf.to_csv(filename, index=False)
+
+	districtdf.loc[:, 'date'] = pd.to_datetime(districtdf['date'])
+	districtdf.columns = ['date', 'cases', 'deaths']
+	districtdf.loc[:, 'group'] = district
+	districtdf.loc[:, 'day'] = (districtdf['date'] - districtdf['date'].min()).dt.days
+	
+	return districtdf
+	
+def get_district_timeseries_cached(districts, states):
+	picklefn = "district_ts_{}.pkl".format(datetime.today().strftime("%d%m%Y"))
+	try:
+		print(picklefn)
+		with open(picklefn, 'rb') as pickle_file:
+			district_timeseries = pickle.load(pickle_file)
+	except:
+		print("pulling from source")
+		dataframes = get_covid19india_api_data()
+		district_timeseries = get_district_time_series(dataframes, state=states, district=districts)
+		with open(picklefn, 'wb') as pickle_file:
+			pickle.dump(district_timeseries, pickle_file)
+	return district_timeseries

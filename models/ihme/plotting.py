@@ -40,6 +40,8 @@ class Plotter():
     def _plot_draws(self, draw_space, plot_obs, sharex=True, sharey=True, plot_uncertainty=True):
         _, ax = plt.subplots(len(self.pipeline.groups), 1, figsize=(8, 4 * len(self.pipeline.groups)),
                                 sharex=sharex, sharey=sharey)
+        setup_plt(plot_obs)
+        plt.yscale("linear")
         if len(self.pipeline.groups) == 1:
             ax = [ax]
         for i, group in enumerate(self.pipeline.groups):
@@ -56,24 +58,27 @@ class Plotter():
                 output_space=draw_space
             )
             mean = draws.mean(axis=0)
-            ax[i].plot(self.predictx, mean, c='red', linestyle=':')
-            ax[i].plot(self.predictx, mean_fit, c='black')
+            ax[i].plot(self.predictdate, mean, c='red', linestyle=':')
+            ax[i].plot(self.predictdate, mean_fit, c='black')
 
             if plot_uncertainty:
                 lower = np.quantile(draws, axis=0, q=0.025)
                 upper = np.quantile(draws, axis=0, q=0.975)
-                ax[i].plot(self.predictx, lower, c='red', linestyle=':')
-                ax[i].plot(self.predictx, upper, c='red', linestyle=':')
+                lower_nonneg = lower.copy()
+                lower_nonneg[lower_nonneg < 0] = 0
+                ax[i].plot(self.predictdate, lower_nonneg, c='red', linestyle=':')
+                ax[i].plot(self.predictdate, upper, c='red', linestyle=':')
 
             if plot_obs is not None:
                 df_data = self.pipeline.all_data.loc[self.pipeline.all_data[self.pipeline.col_group] == group].copy()
-                ax[i].scatter(df_data[self.pipeline.col_t], df_data[plot_obs])
+                ax[i].scatter(df_data[self.date], df_data[plot_obs])
 
             ax[i].set_title(f"{group} predictions")
     
     def plot_draws(self, dailycolname=None):
         # plot draws
-        self.pipeline.plot_results(prediction_times=self.predictx)
+        # self.pipeline.plot_results(prediction_times=self.predictx)
+        self._plot_draws(self.func, self.pipeline.col_obs_compare)
         plt.savefig(f'{self.output_folder}/{self.file_prefix}_draws_{self.ycol}_{self.func.__name__}.png')
         plt.clf()
 
