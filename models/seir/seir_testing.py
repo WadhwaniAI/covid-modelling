@@ -167,5 +167,5 @@ class SEIR_Testing():
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
         df_prediction['infectious_unknown'] = df_prediction['I'] + df_prediction['D_I']
-        df_prediction['total_infected'] = df_prediction['hospitalisations'] + df_prediction['recoveries'] + df_prediction['fatalities']
+        df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction
