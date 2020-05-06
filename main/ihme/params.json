@@ -29,6 +29,12 @@
 			"fe_bounds": [[0, 1], [1, 100], [0, 1]]
 		}
 	},
+	"log_age_std": {
+		"priors": {
+			"fe_init": [0.01, 1.4, -500],
+			"fe_bounds": [[0, 1], [1, 100], [-20, -1]]
+		}
+	},
 	"india_all": {
 		"data_func": "india_all",
 		"test_size": 4
