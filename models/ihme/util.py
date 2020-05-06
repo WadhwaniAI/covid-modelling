@@ -72,10 +72,11 @@ class Params():
         return cls(df, pargs)
 
     @classmethod
-    def fromdefault(cls, df, custom):
+    def fromdefault(cls, df, custom, default_label='default'):
         with open('params.json', "r") as paramsfile:
             params = json.load(paramsfile)
         pargs = params['default']
+        pargs.update(params[default_label])
         pargs.update(custom)
         return cls(df, pargs)
 

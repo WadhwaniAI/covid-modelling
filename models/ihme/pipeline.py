@@ -123,16 +123,17 @@ class WAIPipeline():
 
         return predictions, group_predictions
     
-    def calc_error(self, predictions):
+    def calc_error(self, predictions, ycol=None):
+        ycol = self.ycol if ycol is None else ycol
         # evaluate against test set - this is only done overall, not per group
-        ytest = self.test[self.pipeline.col_obs]
+        ytest = self.test[ycol]
         ypred = self._predict_test(self.pipeline.fun)
         r2_test, msle_test, maperr_test = self._calc_error(ytest, ypred)
         print ('test set - mape: {} r2: {} msle: {}'.format(maperr_test, r2_test, msle_test))
 
         # evaluate overall - this is only done overall, not per group
-        pred = predictions[self.daysback:self.daysback+len(self.agg_data[self.pipeline.col_obs])]
-        r2_overall, msle_overall, maperr_overall = self._calc_error(self.agg_data[self.ycol], pred)
+        pred = predictions[self.daysback:self.daysback+len(self.agg_data[ycol])]
+        r2_overall, msle_overall, maperr_overall = self._calc_error(self.agg_data[ycol], pred)
         print ('overall - mape: {} r2: {} msle: {}'.format(maperr_overall, r2_overall, msle_overall))
         
         return {
@@ -150,7 +151,7 @@ class WAIPipeline():
 
     def plot_results(self, predictions, group_predictions=None, ycol=None):
         ycol = ycol if ycol else self.ycol
-        maperr = self.calc_error(predictions)['test']['mape']
+        maperr = self.calc_error(predictions, ycol=ycol)['test']['mape']
         title = f'{self.file_prefix} {ycol}' +  ' fit to {}'
         # plot predictions against actual
         setup_plt(ycol)
@@ -207,32 +208,22 @@ class WAIPipeline():
     def lograte_to_cumulative(self, predictions, population, output_folder, 
                 group_predictions=None):
         predicted_cumulative_deaths = np.exp(predictions) * population
-        self.df.loc[:, 'cumulative_deaths'] = np.exp(self.df[self.ycol]) * population
-        self.data.loc[:, 'cumulative_deaths'] = np.exp(self.data[self.ycol]) * population
-        self.agg_data.loc[:, 'cumulative_deaths'] = np.exp(self.agg_data[self.ycol]) * population
-        self.test.loc[:, 'cumulative_deaths'] = np.exp(self.test[self.ycol]) * population
-        self.agg_test.loc[:, 'cumulative_deaths'] = np.exp(self.agg_test[self.ycol]) * population
-        # if group_predictions is not None:
-        #     cumulative_group_predictions = np.exp(group_predictions) * population
-        # predicted_daily_deaths = pd.DataFrame(get_daily_vals(predicted_cumulative_deaths, predicted_cumulative_deaths.columns[0]))
-        self.all_plots(output_folder, predicted_cumulative_deaths, ycol='cumulative_deaths', group_predictions=group_predictions)
-        # self.plot_results(predicted_cumulative_deaths, group_predictions=cumulative_group_predictions, ycol=predicted_cumulative_deaths.name)
-        # self.plot_results(predicted_daily_deaths, group_predictions=None, ycol=predicted_daily_deaths.name)
+        self.df.loc[:, 'cumulative'] = np.exp(self.df[self.ycol]) * population
+        self.data.loc[:, 'cumulative'] = np.exp(self.data[self.ycol]) * population
+        self.agg_data.loc[:, 'cumulative'] = np.exp(self.agg_data[self.ycol]) * population
+        self.test.loc[:, 'cumulative'] = np.exp(self.test[self.ycol]) * population
+        self.agg_test.loc[:, 'cumulative'] = np.exp(self.agg_test[self.ycol]) * population
+        return predicted_cumulative_deaths
 
     def rate_to_cumulative(self, predictions, population, output_folder, 
                 group_predictions=None):
-        predicted_cumulative_deaths = np.exp(predictions) * population
-        self.df.loc[:, 'cumulative_deaths'] = self.df[self.ycol] * population
-        self.data.loc[:, 'cumulative_deaths'] = self.data[self.ycol] * population
-        self.agg_data.loc[:, 'cumulative_deaths'] = self.agg_data[self.ycol] * population
-        self.test.loc[:, 'cumulative_deaths'] = self.test[self.ycol] * population
-        self.agg_test.loc[:, 'cumulative_deaths'] = self.agg_test[self.ycol] * population
-        # if group_predictions is not None:
-        #     cumulative_group_predictions = np.exp(group_predictions) * population
-        # predicted_daily_deaths = pd.DataFrame(get_daily_vals(predicted_cumulative_deaths, predicted_cumulative_deaths.columns[0]))
-        self.all_plots(output_folder, predicted_cumulative_deaths, ycol='cumulative_deaths', group_predictions=group_predictions)
-        # self.plot_results(predicted_cumulative_deaths, group_predictions=cumulative_group_predictions, ycol=predicted_cumulative_deaths.name)
-        # self.plot_results(predicted_daily_deaths, group_predictions=None, ycol=predicted_daily_deaths.name)
+        predicted_cumulative_deaths = predictions * population
+        self.df.loc[:, 'cumulative'] = self.df[self.ycol] * population
+        self.data.loc[:, 'cumulative'] = self.data[self.ycol] * population
+        self.agg_data.loc[:, 'cumulative'] = self.agg_data[self.ycol] * population
+        self.test.loc[:, 'cumulative'] = self.test[self.ycol] * population
+        self.agg_test.loc[:, 'cumulative'] = self.agg_test[self.ycol] * population
+        return predicted_cumulative_deaths
 
     def _plot_draws(self, draw_space):
         _, ax = plt.subplots(len(self.pipeline.groups), 1, figsize=(8, 4 * len(self.pipeline.groups)),

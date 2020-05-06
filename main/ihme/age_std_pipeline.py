@@ -69,7 +69,7 @@ params = Params.fromdefault(df, {
     'ycols': {
         ycol: func,
     }
-})
+}, default_label='age_std')
 
 # set vars
 fname = 'age_std_mumbai_deaths'
@@ -103,7 +103,7 @@ else:
 pipeline._plot_draws(pipeline.pipeline.fun)
 plt.savefig(f'{output_folder}/{pipeline.file_prefix}_{pipeline.pipeline.col_obs}_{pipeline.func.__name__}_draws.png')
 plt.clf()
-pipeline.plot_results(predicted_cumulative_deaths)
+pipeline.plot_results(predicted_cumulative_deaths, ycol='cumulative')
 if obs != ycol:
     plt.plot(df['date'], df[obs], 'b+', label='observed (non-standardized)')
 plt.savefig(f'{output_folder}/{pipeline.file_prefix}_{pipeline.pipeline.col_obs}_{pipeline.func.__name__}.png')

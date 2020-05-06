@@ -11,8 +11,8 @@ import sys
 sys.path.append('../..')
 from data.dataloader import get_covid19india_api_data, get_rootnet_api_data
 
-def get_district_death_df(df_raw_data_2, state, district):
-    deceased = df_raw_data_2[df_raw_data_2['patientstatus'] == 'Deceased']
+def get_district_death_df(df_deaths_recoveries, state, district):
+    deceased = df_deaths_recoveries[df_deaths_recoveries['patientstatus'] == 'Deceased']
     statedf = deceased[deceased['state'] == state]
     unknown = statedf[statedf['district'] == '']
     print(f'{len(unknown)} deaths in {state} with unknown district')
@@ -59,7 +59,8 @@ def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru'
             df_district.loc[row['dateannounced']:, 'total_confirmed'] += 1
 
         # Deaths calculation
-        deathsdf = get_district_death_df(dataframes['df_raw_data_2'], state, district)
+        print(dataframes.keys())
+        deathsdf = get_district_death_df(dataframes['df_deaths_recoveries'], state, district)
         deathsdf = deathsdf[deathsdf['state'] == state]
         deathsdf = deathsdf[deathsdf['district'] == district]
         deathsdf['date'] = pd.to_datetime(deathsdf['date'], format='%d/%m/%Y')
@@ -211,5 +212,5 @@ if __name__ == "__main__":
     jaipur = 'District - Jaipur (12)'
     bengaluru = 'District - Bangalore (18)'
 
-    df = standardise_age('Bengaluru', 'Karnataka', bengaluru)
+    df = standardise_age(district_timeseries, age_data, 'Bengaluru', 'Karnataka', area_names=[bengaluru])
     print(df)
