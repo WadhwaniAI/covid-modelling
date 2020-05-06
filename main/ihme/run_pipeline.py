@@ -1,13 +1,15 @@
+import os
 import sys
+import json
+import argparse
+import numpy as np
+import pandas as pd
+from datetime import datetime
+
 sys.path.append('../..')
 from models.ihme.pipeline import WAIPipeline
 from models.ihme.util import Params
-import pandas as pd
-import numpy as np
-import argparse
-from datetime import datetime
-import os
-import json
+
 
 parser = argparse.ArgumentParser() 
 parser.add_argument("-p", "--params", help="name of entry in params.json", required=True)

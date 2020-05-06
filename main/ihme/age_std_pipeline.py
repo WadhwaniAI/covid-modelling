@@ -1,24 +1,20 @@
-import pandas as pd
-import numpy as np
-import requests
-from datetime import timedelta, datetime
 import os
 import sys
+import argparse
+import pandas as pd
+import numpy as np
+from datetime import datetime
 import matplotlib.pyplot as plt
+
+import curvefit
+from curvefit.core.functions import *
 
 sys.path.append('../..')
 from utils.age_standardisation import standardise_age, census_age
 from models.ihme.pipeline import WAIPipeline
-
-import curvefit
-from curvefit.pipelines.basic_model import BasicModel
-from curvefit.core.functions import *
-from sklearn.metrics import r2_score, mean_squared_log_error
-from models.ihme.plotting import setup_plt
-from models.ihme.util import mape, Params
+from models.ihme.util import Params
 from models.ihme.data import get_district_timeseries_cached
 
-import argparse
 
 parser = argparse.ArgumentParser() 
 parser.add_argument("-l", "--log", help="fit on log", required=False, action='store_true')
