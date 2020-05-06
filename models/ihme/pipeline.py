@@ -39,6 +39,7 @@ class WAIPipeline():
 
         self.df = df
         self.agg_df = self.df.groupby(self.date).sum().reset_index(col_fill=self.date)
+        # todo, low priority: change this to handle all timestamps in milliseconds
         threshold = self.df[self.date].max() - timedelta(days=test_size)
         
         self.deriv_col = f'daily_{self.ycol}'
