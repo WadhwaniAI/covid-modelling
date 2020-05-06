@@ -156,18 +156,18 @@ class WAIPipeline():
         # plot predictions against actual
         setup_plt(ycol)
         plt.title(title.format(self.func.__name__))
-        # plot data we fit on
-        plt.plot(self.agg_data[self.date], self.agg_data[ycol], 'r+', label='data')
-        plt.plot(self.agg_test[self.date], self.agg_test[ycol], 'g+', label='data (test)')
-        if self.smoothing:
-            plt.plot(self.agg_df[self.date], self.agg_df[self.orig_ycol], 'k+', label='unsmoothed data')
         # plot predictions
-        plt.plot(self.predictdate, predictions, 'r-', 
+        plt.plot(self.predictdate, predictions, ls='-', c='dodgerblue', 
             label='fit: {}: {}'.format(self.func.__name__, self.pipeline.mod.params))
         # plot error bars based on MAPE
         plt.errorbar(self.predictdate[self.df[self.date].nunique():], 
             predictions[self.df[self.date].nunique():], 
-            yerr=predictions[self.df[self.date].nunique():]*maperr, lw=1, color='black', barsabove='False')
+            yerr=predictions[self.df[self.date].nunique():]*maperr, lw=0.5, color='palegoldenrod', barsabove='False')
+        # plot data we fit on
+        plt.axvline(self.data[self.date].max(), ls=':', c='slategrey', label='train/test boundary')
+        plt.scatter(self.agg_df[self.date], self.agg_df[ycol], c='crimson', marker='+', label='data')
+        if self.smoothing:
+            plt.plot(self.agg_df[self.date], self.agg_df[self.orig_ycol], c='k', marker='+', label='unsmoothed data')
         
         # plot per group
         clrs = ['c', 'm', 'y', 'k']
@@ -210,6 +210,7 @@ class WAIPipeline():
         predicted_cumulative_deaths = np.exp(predictions) * population
         self.df.loc[:, 'cumulative'] = np.exp(self.df[self.ycol]) * population
         self.data.loc[:, 'cumulative'] = np.exp(self.data[self.ycol]) * population
+        self.agg_df.loc[:, 'cumulative'] = np.exp(self.agg_df[self.ycol]) * population
         self.agg_data.loc[:, 'cumulative'] = np.exp(self.agg_data[self.ycol]) * population
         self.test.loc[:, 'cumulative'] = np.exp(self.test[self.ycol]) * population
         self.agg_test.loc[:, 'cumulative'] = np.exp(self.agg_test[self.ycol]) * population
@@ -220,6 +221,7 @@ class WAIPipeline():
         predicted_cumulative_deaths = predictions * population
         self.df.loc[:, 'cumulative'] = self.df[self.ycol] * population
         self.data.loc[:, 'cumulative'] = self.data[self.ycol] * population
+        self.agg_df.loc[:, 'cumulative'] = self.agg_df[self.ycol] * population
         self.agg_data.loc[:, 'cumulative'] = self.agg_data[self.ycol] * population
         self.test.loc[:, 'cumulative'] = self.test[self.ycol] * population
         self.agg_test.loc[:, 'cumulative'] = self.agg_test[self.ycol] * population
@@ -268,7 +270,7 @@ class WAIPipeline():
         self.df[self.deriv_col] = pd.concat(dailycol_dfs)
 
     def _train_test_split(self, df, threshold):
-            return df[df[self.date] < threshold], df[df[self.date] >= threshold]
+            return df[df[self.date] <= threshold], df[df[self.date] > threshold]
 
     def _predict_test(self, predict_space=None):
             predict_space = predict_space if predict_space else self.pipeline.predict_space
