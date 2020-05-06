@@ -94,11 +94,21 @@ else:
 pipeline = WAIPipeline(df, ycol, params, covs, fname)
 pipeline.run()
 p, _ = pipeline.predict()
-# pipeline.all_plots(output_folder, p)
+
 if args.log:
-    pipeline.lograte_to_cumulative(p, dtp, output_folder)
+    predicted_cumulative_deaths = pipeline.lograte_to_cumulative(p, dtp, output_folder)
 else:
-    pipeline.rate_to_cumulative(p, dtp, output_folder)
+    predicted_cumulative_deaths = pipeline.rate_to_cumulative(p, dtp, output_folder)
+
+pipeline._plot_draws(pipeline.pipeline.fun)
+plt.savefig(f'{output_folder}/{pipeline.file_prefix}_{pipeline.pipeline.col_obs}_{pipeline.func.__name__}_draws.png')
+plt.clf()
+pipeline.plot_results(predicted_cumulative_deaths)
+if obs != ycol:
+    plt.plot(df['date'], df[obs], 'b+', label='observed (non-standardized)')
+plt.savefig(f'{output_folder}/{pipeline.file_prefix}_{pipeline.pipeline.col_obs}_{pipeline.func.__name__}.png')
+plt.clf()
+
 
 #
 # pipeline = BasicModel(
