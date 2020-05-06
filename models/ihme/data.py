@@ -121,7 +121,9 @@ def districtwise(district_state_tuple):
 	return districtdf
 	
 def get_district_timeseries_cached(districts, states):
-	picklefn = "district_ts_{}.pkl".format(datetime.today().strftime("%d%m%Y"))
+	picklefn = "data/{district}_ts_{today}.pkl".format(
+		district=districts, today=datetime.today().strftime("%d%m%Y")
+	)
 	try:
 		print(picklefn)
 		with open(picklefn, 'rb') as pickle_file:

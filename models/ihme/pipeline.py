@@ -167,7 +167,7 @@ class WAIPipeline():
         # plot error bars based on MAPE
         plt.errorbar(self.predictdate[self.df[self.date].nunique():], 
             predictions[self.df[self.date].nunique():], 
-            yerr=predictions[self.df[self.date].nunique():]*maperr, color='black', barsabove='False')
+            yerr=predictions[self.df[self.date].nunique():]*maperr, lw=1, color='black', barsabove='False')
         
         # plot per group
         clrs = ['c', 'm', 'y', 'k']

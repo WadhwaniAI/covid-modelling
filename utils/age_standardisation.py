@@ -16,65 +16,67 @@ def get_district_death_df(df_deaths_recoveries, state, district):
     statedf = deceased[deceased['state'] == state]
     unknown = statedf[statedf['district'] == '']
     print(f'{len(unknown)} deaths in {state} with unknown district')
-    if district == 'Ahmadabad':
-        print(f'adding {len(unknown)} deaths to Ahmadabad count')
-        statedf['district'][statedf['district'] == ''] = district
-        districtdf = statedf[statedf['district'] == district]
+    if state == 'Gujarat':
+        print(f'adding {len(unknown)} deaths to Ahmedabad count')
+        print(len(statedf[statedf['district'].isin(district)]))
+        statedf.loc[statedf['district'] == '', 'district'] = 'Ahmedabad'
+        print(len(statedf[statedf['district'].isin(district)]))
+        districtdf = statedf[statedf['district'].isin(district)]
     elif state == 'Maharashtra':
         num_unknown = len(unknown)
         thirds = num_unknown//3
         print(f'adding {thirds} deaths to Mumbai/Pune each')
-        print(len(statedf[statedf['district'] == district]))
+        print(len(statedf[statedf['district'].isin(district)]))
         unknown_index = statedf['district'][statedf['district'] == ''].index
         statedf.loc[statedf[statedf['district'] == ''].index[:thirds]] = 'Mumbai'
         statedf.loc[statedf[statedf['district'] == ''].index[thirds:]] = 'Pune'
-        print(len(statedf[statedf['district'] == district]))
-        districtdf = statedf[statedf['district'] == district]
+        print(len(statedf[statedf['district'].isin(district)]))
+        districtdf = statedf[statedf['district'].isin(district)]
     elif state == 'Rajasthan':
-        districtdf = statedf[statedf['district'] == district]
+        districtdf = statedf[statedf['district'].isin(district)]
     elif state == 'Karnataka':
-        districtdf = statedf[statedf['district'] == district]
+        districtdf = statedf[statedf['district'].isin(district)]
     elif state == 'Delhi':
-        districtdf = statedf[statedf['district'] == district]
+        num_unknown = len(unknown)
+        print(f'adding {num_unknown} deaths to New Delhi')
+        print(len(statedf[statedf['district'].isin(district)]))
+        statedf.loc[statedf['district'] == '', 'district'] = 'New Delhi'
+        print(len(statedf[statedf['district'].isin(district)]))
+        districtdf = statedf[statedf['district'].isin(district)]
     return districtdf
 
 def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru'):
-    if district == 'all' or type(district) == list:
-        if district == 'all':
-            districtwise = dataframes['df_districtwise']
-            district = districtwise[districtwise['state'] == state]['district'].unique()
-            state = len(district) * [state]
-        district_timeseries = {}
-        for (s, d) in list(zip(state, district)):
-            district_timeseries[d] = get_district_time_series(dataframes, state=s, district=d)
-        return district_timeseries
-    else:
-        df_raw_data_1 = dataframes['df_raw_data'][dataframes['df_raw_data']['detectedstate'] == state]
-        df_raw_data_1 = df_raw_data_1[df_raw_data_1['detecteddistrict'] == district]
-        df_raw_data_1['dateannounced'] = pd.to_datetime(df_raw_data_1['dateannounced'], format='%d/%m/%Y')
-        index = pd.date_range(np.min(df_raw_data_1['dateannounced']), np.max(df_raw_data_1['dateannounced']))
-        df_district = pd.DataFrame(columns=['total_confirmed'], index=index)
-        df_district['total_confirmed'] = [0]*len(index)
-        for _, row in df_raw_data_1.iterrows():
-            df_district.loc[row['dateannounced']:, 'total_confirmed'] += 1
+    if district == 'all':
+        districtwise = dataframes['df_districtwise']
+        district = districtwise[districtwise['state'] == state]['district'].unique().tolist()
+    elif type(district) != list:
+        district = [district]
+    df_raw_data_1 = dataframes['df_raw_data'][dataframes['df_raw_data']['detectedstate'] == state]
+    df_raw_data_1 = df_raw_data_1[df_raw_data_1['detecteddistrict'].isin(district)]
+    if len(df_raw_data_1) == 0:
+        return None
+    df_raw_data_1['dateannounced'] = pd.to_datetime(df_raw_data_1['dateannounced'], format='%d/%m/%Y')
+    index = pd.date_range(np.min(df_raw_data_1['dateannounced']), np.max(df_raw_data_1['dateannounced']))
+    df_district = pd.DataFrame(columns=['total_confirmed'], index=index)
+    df_district['total_confirmed'] = [0]*len(index)
+    for _, row in df_raw_data_1.iterrows():
+        df_district.loc[row['dateannounced']:, 'total_confirmed'] += 1
 
-        # Deaths calculation
-        print(dataframes.keys())
-        deathsdf = get_district_death_df(dataframes['df_deaths_recoveries'], state, district)
-        deathsdf = deathsdf[deathsdf['state'] == state]
-        deathsdf = deathsdf[deathsdf['district'] == district]
-        deathsdf['date'] = pd.to_datetime(deathsdf['date'], format='%d/%m/%Y')
+    # Deaths calculation
+    deathsdf = get_district_death_df(dataframes['df_deaths_recoveries'], state, district)
+    deathsdf = deathsdf[deathsdf['state'] == state]
+    deathsdf = deathsdf[deathsdf['district'].isin(district)]
+    deathsdf['date'] = pd.to_datetime(deathsdf['date'], format='%d/%m/%Y')
+    df_district['total_deaths'] = [0]*len(index)
+    
+    for _, row in deathsdf.iterrows():
+        if row['patientstatus'] == 'Deceased':
+            date = pd.to_datetime(row['date'], format='%d/%m/%Y')
+            df_district.loc[date:, 'total_deaths'] += 1
 
-        df_district['total_deaths'] = [0]*len(index)
-        for _, row in deathsdf.iterrows():
-            if row['patientstatus'] == 'Deceased':
-                date = pd.to_datetime(row['date'], format='%d/%m/%Y')
-                df_district.loc[date:, 'total_deaths'] += 1
-
-
-        df_district.reset_index(inplace=True)
-        df_district.columns = ['date', 'total_confirmed', 'total_deaths']
-        return df_district
+    df_district.reset_index(inplace=True)
+    df_district.columns = ['date', 'total_confirmed', 'total_deaths']
+    return df_district
 
 def clean(raw_all_district_age_data):
     transposed = raw_all_district_age_data.head(3).T
@@ -192,7 +194,7 @@ def standardise_age(district_timeseries, age_data, district, state, area_names):
     checker['age_std'] = age_std_mortality
     checker['non_std'] = daily_observed_mortality
     # print(checker)
-    return checker
+    return checker, district_total_pop
 
 if __name__ == "__main__":
     dataframes = get_covid19india_api_data()
