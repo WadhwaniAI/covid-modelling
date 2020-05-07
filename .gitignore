@@ -1,7 +1,11 @@
 *.csv
 *.pdf
 *.png
+*.pkl
 *.pyc
+*params/
+*mcmc/
+*temp/
 **.ipynb_checkpoints/
 *.ipynb_checkpoints/
 *.vscode/
@@ -12,3 +16,5 @@ sftp-config.json
 !data/data/*.csv
 .vscode/
 notebooks/opt/Result_refits=10_episodes=15_episode_length=100.pickle
+*.pickle
+**/output
