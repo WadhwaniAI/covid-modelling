@@ -10,10 +10,6 @@ class SIR:
     self.time_params = self.params[:-2]
     self.N = self.params[-2]
     self.int_vec = self.params[-1]
- 
-
-  def get_impact(self, choice):
-    return(1+1*choice)
 
 
   def get_derivative(self, t, y):

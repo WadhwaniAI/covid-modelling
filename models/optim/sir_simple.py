@@ -14,7 +14,7 @@ class SIR:
     self.intervention_duration = self.params[-2]
 
   def get_impact(self, choice):
-    return(1+1*choice)
+    return(1+2*choice)
 
 
   def get_derivative(self, t, y):
