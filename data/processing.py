@@ -3,6 +3,17 @@ import numpy as np
 import copy
 import datetime
 
+def get_data(dataframes, state, district, use_dataframe='districts_daily', disable_tracker=False, filename=None):
+    if disable_tracker:
+        df_district = pd.read_csv(filename)
+        df_district['date'] = pd.to_datetime(df_district['date'])
+        #TODO add support of adding 0s column for the ones which don't exist
+        return df_district
+
+    df_district = get_district_time_series(
+        dataframes, state=state, district=district, use_dataframe=use_dataframe)
+    return df_district
+
 def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru', use_dataframe='raw_data'):
     if use_dataframe == 'districts_daily':
         df_districts = copy.copy(dataframes['df_districts'])
@@ -40,4 +51,7 @@ def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru'
 
         df_district.reset_index(inplace=True)
         df_district.columns = ['date', 'total_infected']
+        df_district['hospitalised'] = [0]*len(df_district)
+        df_district['deceased'] = [0]*len(df_district)
+        df_district['recovered'] = [0]*len(df_district)
         return df_district
