@@ -55,17 +55,16 @@ class SIR_Discrete(object):
         STATE_=self.STATE.copy()
         if self.is_action_legal(ACTION)==False:
             # print("Exceed Budget")
-            r=0
-        else:
-            # 0:S, 1:E, 2:I, 3:R_mild, 4:R_severe, 5:R_severe_hosp, 6:R_fatal, 7:C, 8:D, 9:B
-            T_trans=self.get_action_T(ACTION)
-            STATE_[0] = self.STATE[0]-self.STATE[1]*self.STATE[0]/(T_trans)
-            STATE_[1] = self.STATE[1]+self.STATE[1]*self.STATE[0]/(T_trans) - self.STATE[1]/self.T_treat
-            STATE_[2] = self.STATE[2]+self.STATE[1]/self.T_treat
-            STATE_[3] = self.STATE[3]-self.get_action_cost(ACTION)
-            self.STATE=STATE_.copy()
-            self.t+=1
-            r=self.calc_reward()
+            ACTION=0
+        # 0:S, 1:E, 2:I, 3:R_mild, 4:R_severe, 5:R_severe_hosp, 6:R_fatal, 7:C, 8:D, 9:B
+        T_trans=self.get_action_T(ACTION)
+        STATE_[0] = self.STATE[0]-self.STATE[1]*self.STATE[0]/(T_trans)
+        STATE_[1] = self.STATE[1]+self.STATE[1]*self.STATE[0]/(T_trans) - self.STATE[1]/self.T_treat
+        STATE_[2] = self.STATE[2]+self.STATE[1]/self.T_treat
+        STATE_[3] = self.STATE[3]-self.get_action_cost(ACTION)
+        self.STATE=STATE_.copy()
+        self.t+=1
+        r=self.calc_reward()
         return r, self.STATE
 
     def calc_reward(self):
