@@ -112,7 +112,7 @@ class SEIR_Testing():
 
         # Modelling the intervention
         if t >= self.intervention_removal_day:
-            self.R0 = self.R0 / self.intervention_amount
+            self.R0 = 1.2 * self.R0
             self.T_trans = self.T_inf/self.R0
 
         # Init derivative vector
@@ -163,9 +163,9 @@ class SEIR_Testing():
         columns.remove('date')
         df_prediction = df_prediction[['date'] + columns]
 
-        df_prediction['hospitalisations'] = df_prediction['R_severe_home'] + df_prediction['R_severe_hosp'] + df_prediction['R_fatal']
-        df_prediction['recoveries'] = df_prediction['C']
-        df_prediction['fatalities'] = df_prediction['D']
+        df_prediction['hospitalised'] = df_prediction['R_severe_home'] + df_prediction['R_severe_hosp'] + df_prediction['R_fatal']
+        df_prediction['recovered'] = df_prediction['C']
+        df_prediction['deceased'] = df_prediction['D']
         df_prediction['infectious_unknown'] = df_prediction['I'] + df_prediction['D_I']
-        df_prediction['total_infected'] = df_prediction['hospitalisations'] + df_prediction['recoveries'] + df_prediction['fatalities']
+        df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction
