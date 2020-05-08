@@ -4,7 +4,8 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append('../..')
-from models.optim.SEIR_Discrete import SEIR_Discrete
+# from models.optim.SEIR_Discrete import SEIR_Discrete
+from models.optim.sir_discrete import SIR_Discrete
 # from SEIR_Discrete import SEIR_Discrete
 from sklearn.ensemble import ExtraTreesRegressor
 import pickle
@@ -22,7 +23,8 @@ class FittedQIteration(object):
         """Initialize simulator and regressor. Can optionally pass a custom
         `regressor` model (which must implement `fit` and `predict` -- you can
         use this to try different models like linear regression or NNs)"""
-        self.simulator = SEIR_Discrete()
+        # self.simulator = SEIR_Discrete()
+        self.simulator = SIR_Discrete()
         self.regressor = regressor or ExtraTreesRegressor()
 
     def Q(self, states):
@@ -49,21 +51,19 @@ class FittedQIteration(object):
         Return the states visited, actions taken, and rewards received."""
         S = np.zeros((episode_length+1, self.simulator.num_states))
         A = np.zeros(episode_length)
-        A = 4*np.ones(episode_length)
         R = np.zeros(episode_length)
 
         self.simulator.reset()
         S[0] = self.simulator.STATE
 
         for t in range(episode_length):
-            # A[t] = self.policy(S[t], eps=eps)
-            
-            
-            
+            A[t] = self.policy(S[t], eps=eps)
             R[t], S[t+1] = self.simulator.perform(A[t])
+            # if self.simulator.is_action_legal(A[t])==False:
+            #     A[t]=0
         return S, A, R
 
-    def fit_Q(self, episodes, num_iters=100, discount=0.98,episode_length=200):
+    def fit_Q(self, episodes, num_iters=100, discount=0.9999,episode_length=500):
         """Fit and re-fit the Q function using historical data for the
         specified number of `iters` at the specified `discount` factor"""
         S1 = np.vstack([ep[0][:-1] for ep in episodes])
@@ -74,10 +74,16 @@ class FittedQIteration(object):
         progress = tqdm(range(num_iters), file=sys.stdout,desc='num_iters')
         for _ in range(num_iters):
             progress.update(1)
-            targets = R + discount * self.Q(S2).max(axis=1)
+            # targets = R + discount * self.Q(S2).max(axis=1)
+            alpha=1
+            targets = self.Q(S1).max(axis=1)+alpha*(R + discount * self.Q(S2).max(axis=1)-self.Q(S1).max(axis=1))
+            
             self.regressor.fit(inputs, targets)
         progress.close()
-    def fit(self, num_refits=10, num_episodes=15, episode_length=200, save=False):
+        
+        
+        
+    def fit(self, num_refits=10, num_episodes=15, episode_length=500, discount=0.9999, save=False):
         """Perform fitted-Q iteration. For `outer_iters` steps, gain
         `num_episodes` episodes worth of experience using the current policy
         (which is initially random), then fit or re-fit the Q-function. Return
@@ -88,11 +94,20 @@ class FittedQIteration(object):
             progress.update(1)
             for _ in range(num_episodes):
                 episodes.append(self.run_episode(episode_length=episode_length))
-            self.fit_Q(episodes=episodes, episode_length=episode_length)
+            self.fit_Q(episodes=episodes, discount=discount, episode_length=episode_length)
             if save:
                 with open('./fqi-regressor-iter-{}.pkl'.format(i+1), 'wb') as f:
                     pickle.dump(self.regressor, f)
         progress.close()
+        # S=episodes[0]
+        # R=episodes[2]
+        # best_r=0
+        # best_r2=0
+        # for i in range(len(R)):
+        #     best_r2+=R[i]*discount**i
+        #     best_r+=S[i][1]
+        # print(best_r)
+        # print(best_r2)
         return episodes
 
     def encode(self, states, actions):
@@ -106,32 +121,33 @@ class FittedQIteration(object):
 
 if __name__ == '__main__':
     print('Here goes nothing')
-    
+    discount=0.9999
     num_refits=10
-    num_episodes=15
-    episode_length=100
+    num_episodes=100
+    episode_length=500
     First_time=True
     if First_time:
         env=FittedQIteration()
-        episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,episode_length=episode_length)
+        episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,episode_length=episode_length,discount=discount)
      
-        with open('Result_refits={}_episodes={}_episode_length={}.pickle'.format(num_refits,num_episodes,episode_length), 'wb') as f:
+        with open('Result_UC_SIR_refits={}_episodes={}_episode_length={}.pickle'.format(num_refits,num_episodes,episode_length), 'wb') as f:
                     pickle.dump([env,episodes], f)
     else:            
-        with open('Result_refits={}_episodes={}_episode_length={}.pickle'.format(num_refits,num_episodes,episode_length), 'rb') as f:
+        with open('Result_UC_SIR_refits={}_episodes={}_episode_length={}.pickle'.format(num_refits,num_episodes,episode_length), 'rb') as f:
             X = pickle.load(f)  
         env=X[0]
         episodes=X[1]
     
-    discount=0.98
+    
     real_episodes=env.run_episode(eps=0,episode_length=episode_length)
     S=real_episodes[0]
     A=real_episodes[1]
     R=real_episodes[2]
     best_r=0
     for i in range(len(R)):
-        best_r+=R[i]
-    
+        # best_r+=R[i]*discount**i
+        # best_r+=S[i][0]+S[i][2]
+        best_r+=S[i][1]
 
     random_action_episodes=env.run_episode(eps=1,episode_length=episode_length)
     S_r=random_action_episodes[0]
@@ -139,8 +155,9 @@ if __name__ == '__main__':
     R_r=random_action_episodes[2]
     random_r=0
     for i in range(len(R_r)):
-        random_r+=R_r[i]
-    test_r=0    
+        # random_r+=R_r[i]*discount**i
+        # random_r+=S_r[i][0]+S_r[i][2]
+        random_r+=S_r[i][1]
     
     state=real_episodes[0][0]
     
@@ -151,24 +168,13 @@ if __name__ == '__main__':
     print(best_r)
     print("Random Action Reward(Discounted):")
     print(random_r)
-    S_=[]
-    E=[]
     I=[]
+    
     for i in range(len(S)):
-        S_.append(S[i][0])
-        E.append(S[i][1])
-        I.append(S[i][2])
-    plt.plot(range(len(S_)),S_)
-    plt.plot(range(len(E)),E)
+        I.append(S[i][1])
     plt.plot(range(len(I)),I)
-    # S_=[]
-    # E=[]
-    # I=[]
-    # for i in range(len(S_r)):
-    #     S_.append(S_r[i][0])
-    #     E.append(S_r[i][1])
-    #     I.append(S_r[i][2])
-    # plt.plot(range(len(S_)),S_)
-    # plt.plot(range(len(E)),E)
-    # plt.plot(range(len(I)),I)
+    I_r=[]
+    for i in range(len(S_r)):
+        I_r.append(S_r[i][1])
+    plt.plot(range(len(I_r)),I_r)
     
