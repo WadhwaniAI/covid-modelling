@@ -142,6 +142,9 @@ def get_covid19india_api_data():
     df_districts = df_districts[['state', 'district', 'date', 'active', 'confirmed', 'deceased', 'recovered', 'notes']]
     df_districts.loc[df_districts['district'] == 'Bengaluru', 'district'] = 'Bengaluru Urban'
     df_districts.loc[df_districts['district'] == 'Ahmadabad', 'district'] = 'Ahmedabad'
+    
+    numeric_cols = ['active', 'confirmed', 'deceased', 'recovered']
+    df_districts[numeric_cols] = df_districts[numeric_cols].apply(pd.to_numeric)
     dataframes['df_districts'] = df_districts
 
     # Parse travel_history.json file
