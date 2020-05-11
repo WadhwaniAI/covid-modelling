@@ -123,17 +123,18 @@ if __name__ == '__main__':
     print('Here goes nothing')
     discount=0.9999
     num_refits=10
-    num_episodes=100
+    num_episodes=10
     episode_length=500
     First_time=True
+    lam=0.13
     if First_time:
         env=FittedQIteration()
         episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,episode_length=episode_length,discount=discount)
      
-        with open('Result_UC_SIR_refits={}_episodes={}_episode_length={}.pickle'.format(num_refits,num_episodes,episode_length), 'wb') as f:
+        with open('Result_{}_SIR_refits={}_episodes={}_episode_length={}.pickle'.format(lam,num_refits,num_episodes,episode_length), 'wb') as f:
                     pickle.dump([env,episodes], f)
     else:            
-        with open('Result_UC_SIR_refits={}_episodes={}_episode_length={}.pickle'.format(num_refits,num_episodes,episode_length), 'rb') as f:
+        with open('Result_{}_SIR_refits={}_episodes={}_episode_length={}.pickle'.format(lam,num_refits,num_episodes,episode_length), 'rb') as f:
             X = pickle.load(f)  
         env=X[0]
         episodes=X[1]

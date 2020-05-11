@@ -52,8 +52,6 @@ class SIR_Discrete2(object):
         STATE_=self.STATE.copy()
         if self.is_action_legal(ACTION)==False:
             ACTION=0
-            # 0:S, 1:E, 2:I, 3:R_mild, 4:R_severe, 5:R_severe_hosp, 6:R_fatal, 7:C, 8:D, 9:B,
-            # 10:days_last, 11:switch_budgets,12:pAction
         # 0:S, 1:E, 2:I, 3:B 4.days_last 5.switch_budgets 6.pAction
         if (ACTION!=0 or self.STATE[6]!=0) and self.is_action_legal(ACTION)==True:
             if self.STATE[6]==0:
