@@ -46,6 +46,7 @@ class OptimizationContainer:
                                             repr(self.optimiser),
                                             Optimiser.dict2str(params))
                 Logger.warning(msg)
+            raise ValueError()
 
         return solution
 

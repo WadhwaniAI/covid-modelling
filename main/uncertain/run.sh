@@ -5,9 +5,9 @@ export PYTHONLOGLEVEL=debug
 
 OUTLOOK=5
 FITDAYS="--fit-days 7"
-STEPS=10000
-RUNS=20
-BURN=2000
+STEPS=50000
+RUNS=600
+BURN=2500
 URL=https://api.covid19india.org/csv/latest/raw_data.csv
 
 _data=`mktemp`
