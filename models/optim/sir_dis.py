@@ -1,6 +1,4 @@
 import numpy as np
-from scipy.integrate import solve_ivp
-import matplotlib.pyplot as plt
 import pdb
 
 class SIR:
@@ -14,20 +12,19 @@ class SIR:
 
     def get_derivative(self, t, y):
         # Init state variables
-        S, I, R = y
+        [S, I, R] = y
 
         # Init time parameters and probabilities
         T_base, T_treat = self.time_params
         
         # Modelling the intervention
-
         try:
-            T_trans = self.int_vec[int(t)]*T_base
+            T_trans = self.int_vec[t]*T_base
         except:
             T_trans = T_base
 
         # Init derivative vector
-        dydt = np.zeros(y.shape)
+        dydt = np.zeros(len(y))
         # Write differential equations
         dydt[0] = -I*S/(T_trans)
         dydt[1] = I*S/(T_trans) - I/T_treat
@@ -36,12 +33,24 @@ class SIR:
 
         return dydt
 
-    def solve_ode(self, total_no_of_days=200, time_step=2):
+    def solve_ode(self, total_no_of_days=200, time_step=1):
         t_start = 0
         t_final = total_no_of_days
-        time_steps = np.arange(t_start, total_no_of_days + time_step, time_step)
+        time_steps = np.arange(t_start, total_no_of_days, time_step)
 
-        sol = solve_ivp(self.get_derivative, [t_start, t_final], 
-                        self.state_init_values, method='RK45', t_eval=time_steps)
+        S_array = np.ones(len(time_steps))
+        I_array = np.ones(len(time_steps))
+        R_array = np.ones(len(time_steps))
+
+        [S,I,R] = self.state_init_values
+
+        for i in range(len(time_steps)):
+            S_array[i], I_array[i], R_array[i] = S, I, R
+            t = time_steps[i]
+            dydt = self.get_derivative(t,[S,I,R])
+            S += dydt[0]
+            I += dydt[1]
+            R += dydt[2]
+        sol = np.array([S_array, I_array, R_array])
         
         return sol
