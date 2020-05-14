@@ -10,6 +10,8 @@
 *.ipynb_checkpoints/
 *plots/
 **plots/
+*outputs/
+**outputs/
 *.vscode/
 
 sftp-config.json
