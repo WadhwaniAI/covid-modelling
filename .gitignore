@@ -8,6 +8,8 @@
 *temp/
 **.ipynb_checkpoints/
 *.ipynb_checkpoints/
+*plots/
+**plots/
 *.vscode/
 
 sftp-config.json
