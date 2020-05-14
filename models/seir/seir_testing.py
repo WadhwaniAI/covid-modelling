@@ -12,7 +12,7 @@ class SEIR_Testing():
                  T_recov_mild=11, N=7e6, init_infected=1, intervention_day=100, intervention_amount=0.33, q=0,
                  testing_rate_for_exposed=0, positive_test_rate_for_exposed=1, testing_rate_for_infected=0,
                  positive_test_rate_for_infected=1, intervention_removal_day=45, starting_date='2020-03-09', 
-                 state_init_values=None):
+                 state_init_values=None, **kwargs):
 
         T_trans = T_inf/R0
         T_recov_mild = (14 - T_inf)
@@ -111,9 +111,9 @@ class SEIR_Testing():
             self.T_trans = self.T_inf/self.R0
 
         # Modelling the intervention
-        if t >= self.intervention_removal_day:
-            self.R0 = 1.2 * self.R0
-            self.T_trans = self.T_inf/self.R0
+        # if t >= self.intervention_removal_day:
+        #     self.R0 = 1.2 * self.R0
+        #     self.T_trans = self.T_inf/self.R0
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
@@ -124,17 +124,17 @@ class SEIR_Testing():
         psi_I = self.positive_test_rate_for_infected
 
         # Write differential equations
-        dydt[0] = - I * S / (self.T_trans) - (self.q / self.T_trans_D) * (S * D_I)
-        dydt[1] = I * S / (self.T_trans) + (self.q / self.T_trans_D) * (S * D_I) - (E/ self.T_inc) - (theta_E * psi_E * E)
-        dydt[2] = E / self.T_inc - I / self.T_inf - (theta_I * psi_I * I)
-        dydt[3] = (theta_E * psi_E * E) - (1 / self.T_inc_D) * D_E
-        dydt[4] = (theta_I * psi_I * I) + (1 / self.T_inc_D) * D_E - (1 / self.T_inf_D) * D_I
-        dydt[5] = (1/self.T_inf)*(self.P_mild*I) + (1/self.T_inf_D)*(self.P_mild_D*D_I) - R_mild/self.T_recov_mild
-        dydt[6] = (1/self.T_inf)*(self.P_severe*I) + (1/self.T_inf_D)*(self.P_severe_D*D_I) - R_severe_home/self.T_hosp 
-        dydt[7] = R_severe_home/self.T_hosp - R_severe_hosp/self.T_recov_severe
-        dydt[8] = (1/self.T_inf)*(self.P_fatal*I) + (1/self.T_inf_D)*(self.P_fatal_D*D_I) - R_fatal/self.T_death
-        dydt[9] = R_mild/self.T_recov_mild + R_severe_hosp/self.T_recov_severe
-        dydt[10] = R_fatal/self.T_death
+        dydt[0] = - I * S / (self.T_trans) - (self.q / self.T_trans_D) * (S * D_I) # S
+        dydt[1] = I * S / (self.T_trans) + (self.q / self.T_trans_D) * (S * D_I) - (E/ self.T_inc) - (theta_E * psi_E * E) # E
+        dydt[2] = E / self.T_inc - I / self.T_inf - (theta_I * psi_I * I) # I
+        dydt[3] = (theta_E * psi_E * E) - (1 / self.T_inc_D) * D_E # D_E
+        dydt[4] = (theta_I * psi_I * I) + (1 / self.T_inc_D) * D_E - (1 / self.T_inf_D) * D_I # D_I 
+        dydt[5] = (1/self.T_inf)*(self.P_mild*I) + (1/self.T_inf_D)*(self.P_mild_D*D_I) - R_mild/self.T_recov_mild # R_mild
+        dydt[6] = (1/self.T_inf)*(self.P_severe*I) + (1/self.T_inf_D)*(self.P_severe_D*D_I) - R_severe_home/self.T_hosp # R_severe_home
+        dydt[7] = R_severe_home/self.T_hosp - R_severe_hosp/self.T_recov_severe # R_severe_hosp
+        dydt[8] = (1/self.T_inf)*(self.P_fatal*I) + (1/self.T_inf_D)*(self.P_fatal_D*D_I) - R_fatal/self.T_death # R_fatal
+        dydt[9] = R_mild/self.T_recov_mild + R_severe_hosp/self.T_recov_severe # C
+        dydt[10] = R_fatal/self.T_death # D
 
         return dydt
 
@@ -157,7 +157,6 @@ class SEIR_Testing():
             dataframe_dict[key] = states_time_matrix[i]
         
         df_prediction = pd.DataFrame.from_dict(dataframe_dict)
-        # import pdb; pdb.set_trace()
         df_prediction['date'] = pd.date_range(self.starting_date, self.starting_date + datetime.timedelta(days=df_prediction.shape[0] - 1))
         columns = list(df_prediction.columns)
         columns.remove('date')

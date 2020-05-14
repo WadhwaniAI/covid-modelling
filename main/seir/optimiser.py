@@ -9,7 +9,7 @@ from tqdm.notebook import tqdm
 
 from collections import OrderedDict
 import itertools
-from functools import partial
+from functools import partial, reduce
 import datetime
 from joblib import Parallel, delayed
 
@@ -21,9 +21,31 @@ class Optimiser():
     def __init__(self):
         self.loss_calculator = Loss_Calculator()
 
-    def solve(self, variable_params, default_params, df_true, start_date=None, end_date=None, state_init_values=None):
+    def solve(self, variable_params, default_params, df_true, start_date=None, end_date=None, 
+              state_init_values=None, initialisation='starting', loss_indices=[-20, -10]):
         params_dict = {**variable_params, **default_params}
-        params_dict['state_init_values'] = state_init_values
+        if initialisation == 'intermediate':
+            row = df_true.iloc[loss_indices[0], :]
+            
+            state_init_values = OrderedDict()
+            key_order = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
+            for key in key_order:
+                state_init_values[key] = 0
+
+            state_init_values['R_severe_hosp'] = params_dict['P_severe'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
+            state_init_values['R_fatal'] = params_dict['P_fatal'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
+            state_init_values['C'] = row['recovered']
+            state_init_values['D'] = row['deceased']
+
+            state_init_values['E'] = params_dict['E_hosp_ratio'] * row['hospitalised']
+            state_init_values['I'] = params_dict['I_hosp_ratio'] * row['hospitalised']
+            
+            nonSsum = sum(state_init_values.values())
+            state_init_values['S'] = (params_dict['N'] - nonSsum)
+            for key in state_init_values.keys():
+                state_init_values[key] = state_init_values[key]/params_dict['N']
+
+            params_dict['state_init_values'] = state_init_values
         
         if end_date == None:
             end_date = df_true.iloc[-1, :]['date']
@@ -45,8 +67,37 @@ class Optimiser():
     # TODO add cross validation support
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, 
                                which_compartments=['hospitalised', 'recovered', 'total_infected', 'deceased'], 
-                               loss_indices=[-20, -10], loss_method='rmse', return_dict=False):
+                               loss_indices=[-20, -10], loss_method='rmse', return_dict=False, 
+                               initialisation='starting'):
         params_dict = {**variable_params, **default_params}
+        
+        # Returning a very high loss value for the cases where the sampled values of P_severe and P_fatal are > 1
+        if params_dict['P_severe'] + params_dict['P_fatal'] > 1:
+            return 1e10
+
+        if initialisation == 'intermediate':
+            row = df_true.iloc[loss_indices[0], :]
+            
+            state_init_values = OrderedDict()
+            key_order = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
+            for key in key_order:
+                state_init_values[key] = 0
+
+            state_init_values['R_severe_hosp'] = params_dict['P_severe'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
+            state_init_values['R_fatal'] = params_dict['P_fatal'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
+            state_init_values['C'] = row['recovered']
+            state_init_values['D'] = row['deceased']
+
+            state_init_values['E'] = params_dict['E_hosp_ratio'] * row['hospitalised']
+            state_init_values['I'] = params_dict['I_hosp_ratio'] * row['hospitalised']
+            
+            nonSsum = sum(state_init_values.values())
+            state_init_values['S'] = (params_dict['N'] - nonSsum)
+            for key in state_init_values.keys():
+                state_init_values[key] = state_init_values[key]/params_dict['N']
+
+            params_dict['state_init_values'] = state_init_values
+
         solver = SEIR_Testing(**params_dict)
         sol = solver.solve_ode(total_no_of_days=total_days - 1, time_step=1, method='Radau')
         df_prediction = solver.return_predictions(sol)
@@ -60,7 +111,6 @@ class Optimiser():
             df_prediction_slice = df_prediction.iloc[loss_indices[0]:loss_indices[1], :]
             df_true_slice = df_true.iloc[loss_indices[0]:loss_indices[1], :]
 
-        # import pdb; pdb.set_trace()
         df_prediction_slice.reset_index(inplace=True, drop=True)
         df_true_slice.reset_index(inplace=True, drop=True)
         if return_dict:
@@ -68,10 +118,6 @@ class Optimiser():
         else:
             loss = self.loss_calculator.calc_loss(df_prediction_slice, df_true_slice, 
                                                   which_compartments=which_compartments, method=loss_method)
-            # df_prediction_slice = df_prediction_slice.diff().iloc[1:, :]
-            # df_true_slice = df_true_slice.diff().iloc[1:, :]
-            # loss += self.loss_calculator.calc_loss(df_prediction_slice, df_true_slice,
-            #                                       which_compartments=which_compartments, method=loss_method)
         return loss
 
     def _create_dict(self, param_names, values):
@@ -131,7 +177,7 @@ class Optimiser():
         return loss_array, list_of_param_dicts
 
     def bayes_opt(self, df_true, default_params, variable_param_ranges, total_days=None, method='rmse', num_evals=3500, 
-                  loss_indices=[-20, -10], which_compartments=['total_infected']):
+                  loss_indices=[-20, -10], which_compartments=['total_infected'], initialisation='starting'):
         """
         What variable_param_ramges is supposed to look like : 
         variable_param_ranges = {
@@ -148,7 +194,7 @@ class Optimiser():
         
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params, df_true=df_true,
                                                  total_days=total_days, loss_method=method, loss_indices=loss_indices, 
-                                                 which_compartments=which_compartments)
+                                                 which_compartments=which_compartments, initialisation=initialisation)
         
         searchspace = variable_param_ranges
         
