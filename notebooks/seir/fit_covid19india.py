@@ -24,6 +24,7 @@ from main.seir.optimiser import Optimiser
 from main.seir.losses import Loss_Calculator
 
 
+np.random.seed(42)
 now = str(datetime.now())
 
 def train_val_split(df_district, val_rollingmean=False, val_size=7):
@@ -410,6 +411,7 @@ def pre_lockdown_R0(dataframes, regions):
     for region in predictions_dict:
         r0[region] = predictions_dict[region]['best']['R0']
 
+    print("pre-lockdown R0s are", r0)
     return r0
 
 def main():
