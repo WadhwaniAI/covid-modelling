@@ -3,6 +3,30 @@ import numpy as np
 import copy
 import datetime
 
+from data.dataloader import get_rootnet_api_data
+
+def get_data(dataframes, state, district, use_dataframe='districts_daily', disable_tracker=False, filename=None):
+    if disable_tracker:
+        df_result = pd.read_csv(filename)
+        df_result['date'] = pd.to_datetime(df_result['date'])
+        #TODO add support of adding 0s column for the ones which don't exist
+        return df_result
+    if district != None:
+        df_result = get_district_time_series(
+            dataframes, state=state, district=district, use_dataframe=use_dataframe)
+    else:
+        df_result = get_state_time_series(state=state)
+    return df_result
+
+def get_state_time_series(state='Delhi'):
+    rootnet_dataframes = get_rootnet_api_data()
+    df_states = rootnet_dataframes['df_state_time_series']
+    df_state = df_states[df_states['state'] == state]
+    df_state = df_state.loc[df_state['date'] >= '2020-04-24', :]
+    df_state = df_state.loc[df_state['date'] < datetime.date.today().strftime("%Y-%m-%d"), :]
+    df_state.reset_index(inplace=True, drop=True)
+    return df_state
+
 def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru', use_dataframe='raw_data'):
     if use_dataframe == 'districts_daily':
         df_districts = copy.copy(dataframes['df_districts'])
@@ -40,4 +64,7 @@ def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru'
 
         df_district.reset_index(inplace=True)
         df_district.columns = ['date', 'total_infected']
+        df_district['hospitalised'] = [0]*len(df_district)
+        df_district['deceased'] = [0]*len(df_district)
+        df_district['recovered'] = [0]*len(df_district)
         return df_district

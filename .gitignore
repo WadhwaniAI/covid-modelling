@@ -8,6 +8,10 @@
 *temp/
 **.ipynb_checkpoints/
 *.ipynb_checkpoints/
+*plots/
+**plots/
+*outputs/
+**outputs/
 *.vscode/
 
 sftp-config.json
@@ -17,3 +21,4 @@ sftp-config.json
 .vscode/
 notebooks/opt/Result_refits=10_episodes=15_episode_length=100.pickle
 *.pickle
+**/output
