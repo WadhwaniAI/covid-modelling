@@ -106,13 +106,43 @@ def get_covid19india_api_data():
     # Parse raw_data.json file
     # Create dataframe for raw history
     data = requests.get('https://api.covid19india.org/raw_data.json').json()
-    df_raw_data = pd.DataFrame.from_dict(data['raw_data'])
-    dataframes['df_raw_data'] = df_raw_data
+    df_raw_data_old = pd.DataFrame.from_dict(data['raw_data'])
+    dataframes['df_raw_data_old'] = df_raw_data_old
+
+    data = requests.get('https://api.covid19india.org/raw_data1.json').json()
+    df_raw_data_1 = pd.DataFrame.from_dict(data['raw_data'])
+    # dataframes['df_raw_data_1'] = df_raw_data_1
+
+    data = requests.get('https://api.covid19india.org/raw_data2.json').json()
+    df_raw_data_2 = pd.DataFrame.from_dict(data['raw_data'])
+    # dataframes['df_raw_data_2'] = df_raw_data_2
+
+    data = requests.get('https://api.covid19india.org/raw_data3.json').json()
+    df_raw_data_3 = pd.DataFrame.from_dict(data['raw_data'])
+    df_raw_data_3 = df_raw_data_3[np.logical_and(df_raw_data_3['dateannounced'] != '', df_raw_data_3['numcases'] != '')]
+    # dataframes['df_raw_data_3'] = df_raw_data_3
+
+    dataframes['df_raw_data'] = pd.concat([df_raw_data_1, df_raw_data_2, df_raw_data_3], ignore_index=True)
 
     # Parse deaths_recoveries.json file
     data = requests.get('https://api.covid19india.org/deaths_recoveries.json').json()
     df_raw_data_2 = pd.DataFrame.from_dict(data['deaths_recoveries'])
-    dataframes['df_raw_data_2'] = df_raw_data_2
+    dataframes['df_deaths_recoveries'] = df_raw_data_2
+
+    data = requests.get('https://api.covid19india.org/districts_daily.json').json()
+
+    df_districts = pd.DataFrame(columns=['notes', 'active', 'confirmed', 'deceased', 'recovered', 'date', 'state', 'district'])
+    for state in data['districtsDaily'].keys():
+        for dist in data['districtsDaily'][state].keys():
+            df = pd.DataFrame.from_dict(data['districtsDaily'][state][dist])
+            df['state'] = state
+            df['district'] = dist
+            df_districts = pd.concat([df_districts, df], ignore_index=True)
+            
+    df_districts = df_districts[['state', 'district', 'date', 'active', 'confirmed', 'deceased', 'recovered', 'notes']]
+    df_districts.loc[df_districts['district'] == 'Bengaluru', 'district'] = 'Bengaluru Urban'
+    df_districts.loc[df_districts['district'] == 'Ahmadabad', 'district'] = 'Ahmedabad'
+    dataframes['df_districts'] = df_districts
 
     # Parse travel_history.json file
     # Create dataframe for travel history
@@ -152,6 +182,13 @@ def get_rootnet_api_data():
     df_state_time_series['confirmedCases'] = df_state_time_series['confirmedCasesForeign'] + df_state_time_series['confirmedCasesIndian']
     df_state_time_series['date'] = pd.to_datetime(df_state_time_series['date'])
     df_state_time_series.columns = [x if x != 'loc' else 'state' for x in df_state_time_series.columns]
+    del df_state_time_series['confirmedCasesIndian']
+    del df_state_time_series['confirmedCasesForeign']
+    del df_state_time_series['totalConfirmed']
+    df_state_time_series['hospitalised'] = df_state_time_series['confirmedCases'] - \
+        df_state_time_series['deaths'] - df_state_time_series['discharged']
+    df_state_time_series.columns = ['deceased', 'recovered', 'state', 'date', 'total_infected', 'hospitalised']
+    df_state_time_series = df_state_time_series[['state', 'date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
     dataframes['df_state_time_series'] = df_state_time_series
     
     data = requests.get('https://api.rootnet.in/covid19-in/hospitals/beds').json()

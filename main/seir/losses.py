@@ -27,20 +27,16 @@ class Loss_Calculator():
             calculate = lambda x, y : self._calc_mape(x, y)
         
         losses = {}
-        for compartment in ['hospitalised', 'recovered', 'fatalities', 'infectious_unknown', 'total_infected']:
+        for compartment in ['hospitalised', 'recovered', 'deceased', 'infectious_unknown', 'total_infected']:
             try:
                 losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
             except Exception:
                 continue
         return losses
 
-
-    def calc_loss(self, states_time_matrix, df, which_compartments=['hospitalised', 'recovered', 'total', 'fatalities'], method='rmse'):
+    def calc_loss(self, states_time_matrix, df, which_compartments=['hospitalised', 'recovered', 'total_infected', 'deceased'], method='rmse'):
         losses = self.calc_loss_dict(states_time_matrix, df, method)
         loss = 0
         for compartment in which_compartments:
-            try:
-                loss += losses[compartment]
-            except Exception:
-                continue
+            loss += losses[compartment]
         return loss
