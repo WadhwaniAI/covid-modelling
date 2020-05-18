@@ -5,6 +5,7 @@
 *.pkl
 *temp/
 *mcmc/
+*.json
 **.ipynb_checkpoints/
 *.ipynb_checkpoints/
 *.vscode/
