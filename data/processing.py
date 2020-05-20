@@ -154,6 +154,9 @@ def concat_sources(from_df_raw_data, from_df_deaths_recoveries, from_df_district
     out = copy.copy(from_df_raw_data)
     out.loc[from_df_deaths_recoveries.index,from_df_deaths_recoveries.columns] = from_df_deaths_recoveries
     # use df_districtwise data starting from when it starts
+    for idx in from_df_districtwise.index:
+        if idx not in out.index:
+            out = out.append(pd.Series(name=idx))
     out.loc[from_df_districtwise.index,from_df_districtwise.columns] = from_df_districtwise
     # only as up to date as df_districtwise
     out = out.loc[:np.max(from_df_districtwise.index)]
@@ -166,26 +169,38 @@ def concat_sources(from_df_raw_data, from_df_deaths_recoveries, from_df_district
     out.index.name = datecol
     return out.reset_index()
 
-def get_concat_data(dataframes, state, district, new_district_name=None):
-    if type(district) == list:
-        assert new_district_name != None, "must provide new_district_name"
-        all_dfs = defaultdict(list)
-        for dist in district:
-            raw = get_district_time_series(dataframes, state, dist, use_dataframe='raw_data')
-            if len(raw) != 0:
-                all_dfs['from_df_raw_data'].append(raw)
-            dr = get_district_time_series(dataframes, state, dist, use_dataframe='deaths_recovs')
-            if len(dr) != 0:
-                all_dfs['from_df_deaths_recoveries'].append(dr)
-            dwise = get_district_time_series(dataframes, state, dist, use_dataframe='districts_daily')
-            if len(dwise) != 0:
-                all_dfs['from_df_districtwise'].append(dwise)
-        from_df_raw_data = combine_districts(all_dfs['from_df_raw_data'], new_district=new_district_name)
-        from_df_deaths_recoveries = combine_districts(all_dfs['from_df_deaths_recoveries'], new_district=new_district_name)
-        from_df_districtwise = combine_districts(all_dfs['from_df_districtwise'], new_district=new_district_name)
+def get_concat_data(dataframes, state, district, new_district_name=None, concat=False):
+    if concat:
+        if type(district) == list:
+            assert new_district_name != None, "must provide new_district_name"
+            all_dfs = defaultdict(list)
+            for dist in district:
+                raw = get_district_time_series(dataframes, state, dist, use_dataframe='raw_data')
+                if len(raw) != 0:
+                    all_dfs['from_df_raw_data'].append(raw)
+                dr = get_district_time_series(dataframes, state, dist, use_dataframe='deaths_recovs')
+                if len(dr) != 0:
+                    all_dfs['from_df_deaths_recoveries'].append(dr)
+                dwise = get_district_time_series(dataframes, state, dist, use_dataframe='districts_daily')
+                if len(dwise) != 0:
+                    all_dfs['from_df_districtwise'].append(dwise)
+            from_df_raw_data = combine_districts(all_dfs['from_df_raw_data'], new_district=new_district_name)
+            from_df_deaths_recoveries = combine_districts(all_dfs['from_df_deaths_recoveries'], new_district=new_district_name)
+            from_df_districtwise = combine_districts(all_dfs['from_df_districtwise'], new_district=new_district_name)
+        else:
+            from_df_raw_data = get_district_time_series(dataframes, state, district, use_dataframe='raw_data')
+            from_df_deaths_recoveries = get_district_time_series(dataframes, state, district, use_dataframe='deaths_recovs')
+            from_df_districtwise = get_district_time_series(dataframes, state, district, use_dataframe='districts_daily')
+        return concat_sources(from_df_raw_data, from_df_deaths_recoveries, from_df_districtwise)
     else:
-        from_df_raw_data = get_district_time_series(dataframes, state, district, use_dataframe='raw_data')
-        from_df_deaths_recoveries = get_district_time_series(dataframes, state, district, use_dataframe='deaths_recovs')
-        from_df_districtwise = get_district_time_series(dataframes, state, district, use_dataframe='districts_daily')
-    return concat_sources(from_df_raw_data, from_df_deaths_recoveries, from_df_districtwise)
-
+        if type(district) == list:
+            assert new_district_name != None, "must provide new_district_name"
+            all_dfs = []
+            for dist in district:
+                dwise = get_district_time_series(dataframes, state, dist, use_dataframe='districts_daily')
+                if len(dwise) != 0:
+                    all_dfs.append(dwise)
+            from_df_districtwise = combine_districts(all_dfs, new_district=new_district_name)
+        else:
+            from_df_districtwise = get_district_time_series(dataframes, state, district, use_dataframe='districts_daily')
+        return from_df_districtwise
