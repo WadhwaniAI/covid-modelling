@@ -8,21 +8,20 @@ import datetime
 
 class SEIR_Testing():
 
-    def __init__(self, R0=2.2, T_inf=2.9, T_inc=5.2, T_hosp=5, T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14,
-                 T_recov_mild=11, N=7e6, init_infected=1, intervention_day=100, intervention_amount=0.33, q=0,
-                 testing_rate_for_exposed=0, positive_test_rate_for_exposed=1, testing_rate_for_infected=0,
-                 positive_test_rate_for_infected=1, intervention_removal_day=45, starting_date='2020-03-09', 
-                 state_init_values=None, **kwargs):
+    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_hosp=5, 
+                 T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6, init_infected=1,
+                 intervention_day=10, q=0, testing_rate_for_exposed=0, positive_test_rate_for_exposed=1, 
+                 testing_rate_for_infected=0, positive_test_rate_for_infected=1, intervention_removal_day=75, 
+                 starting_date='2020-03-09', state_init_values=None, **kwargs):
 
-        T_trans = T_inf/R0
-        T_recov_mild = (14 - T_inf)
-        T_recov_severe = (31.5 - T_inf)
+        # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
+        if post_lockdown_R0 == None:
+           post_lockdown_R0 = lockdown_R0
 
         P_mild = 1 - P_severe - P_fatal
 
         # define testing related parameters
         T_inf_detected = T_inf
-        T_trans_detected = T_trans
         T_inc_detected = T_inc
 
         P_mild_detected = P_mild
@@ -30,30 +29,34 @@ class SEIR_Testing():
         P_fatal_detected = P_fatal
 
         vanilla_params = {
+            # R0 values
+            'pre_lockdown_R0': pre_lockdown_R0, # R0 value pre-lockdown
+            'lockdown_R0': lockdown_R0,  # R0 value during lockdown
+            'post_lockdown_R0': post_lockdown_R0,  # R0 value post-lockdown
 
-            'R0': R0,
+            # Transmission parameters
+            'T_inc': T_inc,  # The incubation time of the infection
+            'T_inf': T_inf,  # The duration for which an individual is infectious
 
-            'T_trans': T_trans,
-            'T_inc': T_inc,
-            'T_inf': T_inf,
+            # Probability of contracting different types of infections
+            'P_mild': P_mild,  # Probability of contracting a mild infection
+            'P_severe': P_severe,  # Probability of contracting a severe infection
+            'P_fatal': P_fatal,  # Probability of contracting a fatal infection
 
-            'T_recov_mild': T_recov_mild,
-            'T_recov_severe': T_recov_severe,
-            'T_hosp': T_hosp,
-            'T_death': T_death,
+            # Clinical time parameters
+            'T_recov_mild': T_recov_mild, # Time it takes for an individual with a mild infection to recover
+            'T_recov_severe': T_recov_severe, # Time it takes for an individual with a severe infection to recover
+            'T_hosp': T_hosp, # Time it takes for an individual to get hospitalised, after they have been diagnosed
+            'T_death': T_death, #Time it takes for an individual with a fatal infection to die
 
-            'P_mild': P_mild,
-            'P_severe': P_severe,
-            'P_fatal': P_fatal,
-            'intervention_day': intervention_day,
-            'intervention_removal_day': intervention_removal_day,
-            'intervention_amount': intervention_amount,
-            'starting_date': starting_date,
+            # Lockdown parameters
+            'starting_date': starting_date,  # Datetime value that corresponds to Day 0 of modelling
+            'intervention_day': intervention_day, # Number of days from the starting_date, after which lockdown is initiated
+            'intervention_removal_day': intervention_removal_day, # Number of days from the starting_date, after which lockdown is removed
             'N': N
         }
 
         testing_params = {
-            'T_trans': T_trans_detected,
             'T_inc': T_inc_detected,
             'T_inf': T_inf_detected,
 
@@ -61,11 +64,12 @@ class SEIR_Testing():
             'P_severe': P_severe_detected,
             'P_fatal': P_fatal_detected,
 
-            'q': q,
-            'testing_rate_for_exposed': testing_rate_for_exposed,
-            'positive_test_rate_for_exposed': positive_test_rate_for_exposed,
-            'testing_rate_for_infected': testing_rate_for_infected,
-            'positive_test_rate_for_infected': positive_test_rate_for_infected
+            # Testing Parameters
+            'q': q, # Perfection of quarantining : If q = 0, quarantining is perfect. q = 1. quarantining is absolutely imperfect
+            'testing_rate_for_exposed': testing_rate_for_exposed, # Percentage of people in the Exposed bucket that are tested daily
+            'sensitivity_rate_for_exposed': positive_test_rate_for_exposed, # Sensitivity of test that Exposed people undergo
+            'testing_rate_for_infected': testing_rate_for_infected, # Percentage of people in the Infected bucket that are tested daily
+            'sensitivity_rate_for_infected': positive_test_rate_for_infected # Sensitivity of test that Infected people undergo
         }
 
         if state_init_values == None:
@@ -83,19 +87,8 @@ class SEIR_Testing():
             state_init_values['C'] = 0
             state_init_values['D'] = 0
 
-        # self.vanilla_params = vanilla_params
-        # self.testing_params = testing_params
-        # self.state_init_values = state_init_values
         for param_dict_name in ['vanilla_params', 'testing_params', 'state_init_values']:
             setattr(self, param_dict_name, eval(param_dict_name))
-
-
-    def get_derivative(self, t, y):
-
-        # Init state variables
-        for i, _ in enumerate(y):
-            y[i] = max(y[i], 0)
-        S, E, I, D_E, D_I, R_mild, R_severe_home, R_severe_hosp, R_fatal, C, D = y
 
         # Init time parameters and probabilities
         for key in self.vanilla_params:
@@ -105,30 +98,41 @@ class SEIR_Testing():
             suffix = '_D' if key in self.vanilla_params else ''
             setattr(self, key + suffix, self.testing_params[key])
 
-        # Modelling the intervention
-        if t >= self.intervention_day:
-            self.R0 = self.intervention_amount * self.R0
-            self.T_trans = self.T_inf/self.R0
 
-        # Modelling the intervention
-        # if t >= self.intervention_removal_day:
-        #     self.R0 = 1.2 * self.R0
-        #     self.T_trans = self.T_inf/self.R0
+    def get_derivative(self, t, y):
+
+        # Init state variables
+        for i, _ in enumerate(y):
+            y[i] = max(y[i], 0)
+        S, E, I, D_E, D_I, R_mild, R_severe_home, R_severe_hosp, R_fatal, C, D = y
+
+        # Modelling the behaviour post-lockdown
+        if t >= self.intervention_removal_day:
+            self.R0 = self.post_lockdown_R0
+        # Modelling the behaviour lockdown
+        elif t >= self.intervention_day:
+            self.R0 = self.lockdown_R0
+        # Modelling the behaviour pre-lockdown
+        else:
+            self.R0 = self.pre_lockdown_R0
+
+        self.T_trans = self.T_inf/self.R0
+        self.T_trans_D = self.T_inf_D/self.R0
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
         
-        theta_E = self.testing_rate_for_exposed
-        psi_E = self.positive_test_rate_for_exposed
-        theta_I = self.testing_rate_for_infected
-        psi_I = self.positive_test_rate_for_infected
+        self.theta_E = self.testing_rate_for_exposed
+        self.psi_E = self.sensitivity_rate_for_exposed
+        self.theta_I = self.testing_rate_for_infected
+        self.psi_I = self.sensitivity_rate_for_infected
 
         # Write differential equations
         dydt[0] = - I * S / (self.T_trans) - (self.q / self.T_trans_D) * (S * D_I) # S
-        dydt[1] = I * S / (self.T_trans) + (self.q / self.T_trans_D) * (S * D_I) - (E/ self.T_inc) - (theta_E * psi_E * E) # E
-        dydt[2] = E / self.T_inc - I / self.T_inf - (theta_I * psi_I * I) # I
-        dydt[3] = (theta_E * psi_E * E) - (1 / self.T_inc_D) * D_E # D_E
-        dydt[4] = (theta_I * psi_I * I) + (1 / self.T_inc_D) * D_E - (1 / self.T_inf_D) * D_I # D_I 
+        dydt[1] = I * S / (self.T_trans) + (self.q / self.T_trans_D) * (S * D_I) - (E/ self.T_inc) - (self.theta_E * self.psi_E * E) # E
+        dydt[2] = E / self.T_inc - I / self.T_inf - (self.theta_I * self.psi_I * I) # I
+        dydt[3] = (self.theta_E * self.psi_E * E) - (1 / self.T_inc_D) * D_E # D_E
+        dydt[4] = (self.theta_I * self.psi_I * I) + (1 / self.T_inc_D) * D_E - (1 / self.T_inf_D) * D_I # D_I 
         dydt[5] = (1/self.T_inf)*(self.P_mild*I) + (1/self.T_inf_D)*(self.P_mild_D*D_I) - R_mild/self.T_recov_mild # R_mild
         dydt[6] = (1/self.T_inf)*(self.P_severe*I) + (1/self.T_inf_D)*(self.P_severe_D*D_I) - R_severe_home/self.T_hosp # R_severe_home
         dydt[7] = R_severe_home/self.T_hosp - R_severe_hosp/self.T_recov_severe # R_severe_hosp
