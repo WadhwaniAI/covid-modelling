@@ -8,7 +8,6 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
-from sigfig import round
 import curvefit
 from curvefit.core.functions import *
 
