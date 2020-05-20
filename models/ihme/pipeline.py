@@ -8,7 +8,6 @@ from datetime import timedelta, datetime
 import matplotlib.pyplot as plt
 from pandas.plotting import register_matplotlib_converters
 from matplotlib.dates import DateFormatter
-import pandas as pd
 from sklearn.metrics import r2_score, mean_squared_log_error
 
 import curvefit
@@ -16,17 +15,18 @@ from curvefit.pipelines.basic_model import BasicModel
 from curvefit.core.functions import *
 from curvefit.core.utils import data_translator
 
-from models.ihme.util import mape, smooth, get_daily_vals
-from models.ihme.plotting import setup_plt
+from models.ihme.util import mape, rmse, rmsle, smooth, get_daily_vals, setup_plt
 
 class WAIPipeline():
-    def __init__(self, df, ycol, params, covs, file_prefix, smoothing=None, predict_space=None):
+    def __init__(self, df, ycol, params, covs, file_prefix, smoothing=None, predict_space=None, priors=None):
         # get from params object
         self.file_prefix = file_prefix
         self.xcol, self.ycol, self.func = params.xcol, ycol, params.ycols[ycol]
         self.date, self.groupcol = params.date, params.groupcol
         test_size =  params.test_size
-        priors, self.pipeline_args = params.priors, params.pipeline_run_args
+        if priors is None:
+            priors = params.priors
+        self.pipeline_args = params.pipeline_run_args
         self.smoothing = smoothing
         param_names  = [ 'alpha', 'beta', 'p' ]
         predict_space = predict_space if predict_space else self.func
@@ -56,7 +56,7 @@ class WAIPipeline():
         self.data, self.test = self._train_test_split(self.df, threshold)
         self.agg_data, self.agg_test = self._train_test_split(self.agg_df, threshold)
         self.multigroup = len(df[self.groupcol].unique()) > 1
-        self.daysback, self.daysforward = params.daysback, params.daysforward
+        self.daysback, self.daysforward = params.daysback, params.daysforward + test_size
         self.predictdate = pd.to_datetime(pd.Series([timedelta(days=x)+self.data[self.date].iloc[0] for x in range(-self.daysback,self.daysforward)]))
         self.predictx = np.array([x+1 for x in range(-self.daysback,self.daysforward)])
 
@@ -129,41 +129,51 @@ class WAIPipeline():
         # evaluate against test set - this is only done overall, not per group
         ytest = self.test[ycol]
         ypred = self._predict_test(self.pipeline.fun)
-        r2_test, msle_test, maperr_test = self._calc_error(ytest, ypred)
-        print ('test set - mape: {} r2: {} msle: {}'.format(maperr_test, r2_test, msle_test))
+        r2_test, rmse_test, rmsle_test, maperr_test = self._calc_error(ytest, ypred)
+        # print ('test set - mape: {} r2: {} rmsle: {} rmse: {}'.format(maperr_test, r2_test, rmsle_test, rmse_test))
 
-        # evaluate overall - this is only done overall, not per group
+        # evaluate train - this is only done overall, not per group
         pred = predictions[self.daysback:self.daysback+len(self.agg_data[ycol])]
-        r2_overall, msle_overall, maperr_overall = self._calc_error(self.agg_data[ycol], pred)
-        print ('overall - mape: {} r2: {} msle: {}'.format(maperr_overall, r2_overall, msle_overall))
-        
-        return {
+        r2_train, rmse_train, rmsle_train, maperr_train = self._calc_error(self.agg_data[ycol], pred)
+        # print ('train - mape: {} r2: {} rmsle: {} rmse: {}'.format(maperr_train, r2_train, rmsle_train, rmse_train))
+        err_dict = {
             "test": {
                 "r2": r2_test,
                 "mape": maperr_test,
-                "msle": msle_test
+                "rmsle": rmsle_test,
+                "rmse": rmse_test,
             },
-            "overall": {
-                "r2": r2_overall,
-                "mape": maperr_overall,
-                "msle": msle_overall
+            "train": {
+                "r2": r2_train,
+                "mape": maperr_train,
+                "rmsle": rmsle_train,
+                "rmse": rmse_train,
             }
         }
+        return err_dict
 
-    def plot_results(self, predictions, group_predictions=None, ycol=None):
+    def plot_results(self, predictions, group_predictions=None, ycol=None, draws=None):
         ycol = ycol if ycol else self.ycol
-        maperr = self.calc_error(predictions, ycol=ycol)['test']['mape']
+        err = self.calc_error(predictions, ycol=ycol)
+        print(err)
+        maperr = err['test']['mape']
         title = f'{self.file_prefix} {ycol}' +  ' fit to {}'
         # plot predictions against actual
         setup_plt(ycol)
+        plt.yscale("linear")
         plt.title(title.format(self.func.__name__))
         # plot predictions
         plt.plot(self.predictdate, predictions, ls='-', c='dodgerblue', 
             label='fit: {}: {}'.format(self.func.__name__, self.pipeline.mod.params))
         # plot error bars based on MAPE
-        plt.errorbar(self.predictdate[self.df[self.date].nunique():], 
-            predictions[self.df[self.date].nunique():], 
-            yerr=predictions[self.df[self.date].nunique():]*maperr, lw=0.5, color='palegoldenrod', barsabove='False')
+        plt.errorbar(self.predictdate[self.daysback + self.df[self.date].nunique():], 
+            predictions[self.daysback + self.df[self.date].nunique():], 
+            yerr=predictions[self.daysback + self.df[self.date].nunique():]*maperr, lw=0.5, color='palegoldenrod', barsabove='False', label='mape')
+        if draws is not None:
+            # plot error bars based on draws
+            plt.errorbar(self.predictdate[self.daysback + self.df[self.date].nunique():], 
+                predictions[self.daysback + self.df[self.date].nunique():], 
+                yerr=draws[:,self.daysback + self.df[self.date].nunique():], lw=0.5, color='lightcoral', barsabove='False', label='draws')
         # plot data we fit on
         plt.axvline(self.data[self.date].max(), ls=':', c='slategrey', label='train/test boundary')
         plt.scatter(self.agg_df[self.date], self.agg_df[ycol], c='crimson', marker='+', label='data')
@@ -185,29 +195,31 @@ class WAIPipeline():
         plt.legend()
         return
 
-    def plot_derivative(self):
+    def plot_derivative(self, draws=None):
         predictions, group_predictions = self.predict(predict_space=self.derivs[self.pipeline.fun])
-        self.plot_results(predictions, group_predictions=group_predictions, ycol=self.deriv_col)
+        self.plot_results(predictions, group_predictions=group_predictions, ycol=self.deriv_col, draws=draws)
         return     
     
     def all_plots(self, output_folder, predictions, 
-                ycol=None, group_predictions=None, deriv=False):
-        self._plot_draws(self.pipeline.fun)
+                ycol=None, group_predictions=None, deriv=False, draws=True):
+        low, up = self._plot_draws(self.pipeline.fun)
+        draws = np.vstack((low, up)) if draws else None
         plt.savefig(f'{output_folder}/{self.file_prefix}_{self.pipeline.col_obs}_{self.func.__name__}_draws.png')
         plt.clf()
-        self.plot_results(predictions, group_predictions=None, ycol=ycol)
+        self.plot_results(predictions, group_predictions=None, ycol=ycol, draws=draws)
         plt.savefig(f'{output_folder}/{self.file_prefix}_{self.pipeline.col_obs}_{self.func.__name__}.png')
         plt.clf()
         if deriv:
-            self._plot_draws(self.derivs[self.pipeline.fun])
+            low, up = self._plot_draws(self.derivs[self.pipeline.fun])
+            draws = np.vstack((low, up)) if draws else None
             plt.savefig(f'{output_folder}/{self.file_prefix}_{self.pipeline.col_obs}_deriv_{self.derivs[self.func].__name__}_draws.png')
             plt.clf()
-            self.plot_derivative()
+            self.plot_derivative(draws=draws)
             plt.savefig(f'{output_folder}/{self.file_prefix}_{self.pipeline.col_obs}_deriv_{self.derivs[self.func].__name__}.png')
             plt.clf()
 
-    def lograte_to_cumulative(self, predictions, population, output_folder, 
-                group_predictions=None):
+    def lograte_to_cumulative(self, predictions, population, 
+                group_predictions=None, draws=None):
         predicted_cumulative_deaths = np.exp(predictions) * population
         self.df.loc[:, 'cumulative'] = np.exp(self.df[self.ycol]) * population
         self.data.loc[:, 'cumulative'] = np.exp(self.data[self.ycol]) * population
@@ -215,10 +227,12 @@ class WAIPipeline():
         self.agg_data.loc[:, 'cumulative'] = np.exp(self.agg_data[self.ycol]) * population
         self.test.loc[:, 'cumulative'] = np.exp(self.test[self.ycol]) * population
         self.agg_test.loc[:, 'cumulative'] = np.exp(self.agg_test[self.ycol]) * population
-        return predicted_cumulative_deaths
+        if draws is not None:
+            draws = population * np.exp(draws)
+        return predicted_cumulative_deaths, draws
 
-    def rate_to_cumulative(self, predictions, population, output_folder, 
-                group_predictions=None):
+    def rate_to_cumulative(self, predictions, population, 
+                group_predictions=None, draws=None):
         predicted_cumulative_deaths = predictions * population
         self.df.loc[:, 'cumulative'] = self.df[self.ycol] * population
         self.data.loc[:, 'cumulative'] = self.data[self.ycol] * population
@@ -226,7 +240,9 @@ class WAIPipeline():
         self.agg_data.loc[:, 'cumulative'] = self.agg_data[self.ycol] * population
         self.test.loc[:, 'cumulative'] = self.test[self.ycol] * population
         self.agg_test.loc[:, 'cumulative'] = self.agg_test[self.ycol] * population
-        return predicted_cumulative_deaths
+        if draws is not None:
+            draws = population * draws
+        return predicted_cumulative_deaths, draws
 
     def _plot_draws(self, draw_space):
         _, ax = plt.subplots(len(self.pipeline.groups), 1, figsize=(8, 4 * len(self.pipeline.groups)),
@@ -254,21 +270,25 @@ class WAIPipeline():
 
             lower = np.quantile(draws, axis=0, q=0.025)
             upper = np.quantile(draws, axis=0, q=0.975)
-            lower_nonneg = lower.copy()
-            lower_nonneg[lower_nonneg < 0] = 0
-            ax[i].plot(self.predictdate, lower_nonneg, c='red', linestyle=':')
+            if 'log' not in draw_space.__name__:
+                lower_nonneg = lower.copy()
+                lower_nonneg[lower_nonneg < 0] = 0
+                ax[i].plot(self.predictdate, lower_nonneg, c='red', linestyle=':')
+            else:
+                ax[i].plot(self.predictdate, lower, c='red', linestyle=':')
             ax[i].plot(self.predictdate, upper, c='red', linestyle=':')
 
             df_data = self.pipeline.all_data.loc[self.pipeline.all_data[self.pipeline.col_group] == group].copy()
             ax[i].scatter(df_data[self.date], df_data[self.pipeline.col_obs])
 
             ax[i].set_title(f"{group} predictions")
+            return lower, upper
 
     def _daily_init(self):
         self.df.sort_values(self.groupcol)
         self.agg_df[self.deriv_col] = get_daily_vals(self.agg_df, self.ycol)
         dailycol_dfs = [get_daily_vals(self.df[self.df[self.groupcol] == grp], self.ycol) for grp in self.df[self.groupcol].unique()]
-        self.df[self.deriv_col] = pd.concat(dailycol_dfs)
+        self.df.loc[:, self.deriv_col] = pd.concat(dailycol_dfs)
 
     def _train_test_split(self, df, threshold):
             return df[df[self.date] <= threshold], df[df[self.date] > threshold]
@@ -280,10 +300,18 @@ class WAIPipeline():
     def _calc_error(self, actual, pred):
         r2 = r2_score(actual, pred)
         try:
-            msle = mean_squared_log_error(actual, pred)
+            rmserr = rmse(actual, pred)
         except Exception as e:
-            msle = None
-            print("Could not compute MSLE: {}".format(e))
+            rmserr = np.inf
+            print("Could not compute RMSE: {}".format(e))
+        try:
+            rmslerr = rmsle(actual, pred)
+        except Exception as e:
+            try: 
+                rmslerr = rmsle(np.exp(actual), np.exp(pred))
+            except Exception as e:
+                rmslerr = np.inf
+                print("Could not compute RMSLE: {}".format(e))
         maperr = mape(actual, pred)
-        return r2, msle, maperr
+        return r2, rmserr, rmslerr, maperr
         
