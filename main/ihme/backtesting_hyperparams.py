@@ -20,7 +20,8 @@ def backtesting(model: IHME, data, start, end, future_days=10, hyperopt_val_size
         # # OPTIMIZE HYPERPARAMS
         if optimize is not None:
             n_days, best_init = optimize_hyperparameters(incremental_model, fit_data,
-                incremental_model.priors['fe_bounds'], (0.5, 5, 0.5), iterations=optimize, val_size=5)
+                incremental_model.priors['fe_bounds'], (0.1, 2, 0.5), iterations=optimize, val_size=5)
+                # incremental_model.priors['fe_bounds'], (0.5, 5, 0.5), iterations=optimize, val_size=5)
             fit_data = fit_data[-n_days:]
             fit_data.loc[:, 'day'] = (fit_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
             val_data.loc[:, 'day'] = (val_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
@@ -38,7 +39,6 @@ def backtesting(model: IHME, data, start, end, future_days=10, hyperopt_val_size
         # print (predictions)
         err = evaluate(val_data[model.ycol], predictions[len(fit_data):])
         results[run_day] = {
-            'error': err,
             'error': err,
             'predictions': {
                 'start': start,
@@ -76,7 +76,6 @@ def random_search(model: IHME, data: pd.DataFrame, bounds: list,
     if seed is None:
         seed = datetime.today().timestamp()
     random.seed(seed)
-    print (len(data), val_size)
     indices = random.sample(range(len(all_inits)), iterations)
     
     threshold = data[model.date].max() - timedelta(days=val_size)
@@ -104,32 +103,6 @@ def random_search(model: IHME, data: pd.DataFrame, bounds: list,
             best_init = all_inits[idx]
     return min_err, best_init
 
-def best_train_set(model: IHME, data: pd.DataFrame, scoring='mape', val_size=7):
-    '''
-    fe_init
-    n_days_training
-    '''
-    model = model.generate()
-    data = copy(data)
-    threshold = data[model.date].max() - timedelta(days=val_size)
-    train, val = train_test_split(data, threshold, threshold_col=model.date)
-    min_err = np.inf
-    best_n_days = 'test'
-    for n_days in range(7, len(data) - val_size):
-        test_model = model.generate()
-        # fit the the most recent n days
-        fit_data = train[-n_days:]
-        test_model.fit(fit_data)
-        # evaluate on val set
-        predictions = test_model.predict(val[model.date].min(), val[model.date].max())
-        err = evaluate(val[model.ycol], predictions)
-        print(err[scoring])
-        if err[scoring] < min_err:
-            print('less!')
-            min_err = err[scoring]
-            best_n_days = n_days
-    return min_err, best_n_days
-
 def optimize_hyperparameters(model: IHME, data: pd.DataFrame, bounds: list, 
         steps: list, iterations: int, scoring='mape', seed=None, val_size=7):
     model = model.generate()
@@ -151,6 +124,7 @@ def rate_to_cumulative(to_transform, population):
 
 from models.ihme.util import setup_plt
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from pandas.plotting import register_matplotlib_converters
 from matplotlib.dates import DateFormatter
 import pandas as pd
@@ -203,7 +177,9 @@ def plot_backtesting_results(model, df, results, future_days, file_prefix, trans
         df[model.ycol] = transform_y(df[model.ycol], dtp)
 
     # plot predictions
-    for run_day in results.keys():
+    
+    cmap = mpl.cm.get_cmap('winter')
+    for i, run_day in enumerate(results.keys()):
         pred_dict = results[run_day]['predictions']
         if transform_y is not None:
             val_preds = transform_y(pred_dict['val_preds'], dtp)
@@ -214,9 +190,11 @@ def plot_backtesting_results(model, df, results, future_days, file_prefix, trans
             fit_preds = pred_dict['fit_preds']#[-14:]
         val_dates = pred_dict['val_dates']
         fit_dates = pred_dict['fit_dates']#[-14:]
-        plt.plot(val_dates, val_preds, ls='-', c='dodgerblue',
+        
+        color = cmap(i/len(results.keys()))
+        plt.plot(val_dates, val_preds, ls='-', c=color,
             label=f'run day: {run_day}')
-        plt.plot(fit_dates, fit_preds, ls='-', c='darkorchid',
+        plt.plot(fit_dates, fit_preds, ls='-', c=color,
             label=f'run day: {run_day}')
         plt.errorbar(val_dates, val_preds,
             yerr=val_preds*results[run_day]['error']['mape'], lw=0.5,
