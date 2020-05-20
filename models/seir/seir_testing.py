@@ -10,8 +10,7 @@ class SEIR_Testing():
 
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_hosp=5, 
                  T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6, init_infected=1,
-                 intervention_day=10, q=0, testing_rate_for_exposed=0, positive_test_rate_for_exposed=1, 
-                 testing_rate_for_infected=0, positive_test_rate_for_infected=1, intervention_removal_day=75, 
+                 q=0, theta_E=0, psi_E=1, theta_I=0, psi_I=1, lockdown_day=10, lockdown_removal_day=75,
                  starting_date='2020-03-09', state_init_values=None, **kwargs):
 
         # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
@@ -51,8 +50,8 @@ class SEIR_Testing():
 
             # Lockdown parameters
             'starting_date': starting_date,  # Datetime value that corresponds to Day 0 of modelling
-            'intervention_day': intervention_day, # Number of days from the starting_date, after which lockdown is initiated
-            'intervention_removal_day': intervention_removal_day, # Number of days from the starting_date, after which lockdown is removed
+            'lockdown_day': lockdown_day, # Number of days from the starting_date, after which lockdown is initiated
+            'lockdown_removal_day': lockdown_removal_day, # Number of days from the starting_date, after which lockdown is removed
             'N': N
         }
 
@@ -66,10 +65,10 @@ class SEIR_Testing():
 
             # Testing Parameters
             'q': q, # Perfection of quarantining : If q = 0, quarantining is perfect. q = 1. quarantining is absolutely imperfect
-            'testing_rate_for_exposed': testing_rate_for_exposed, # Percentage of people in the Exposed bucket that are tested daily
-            'sensitivity_rate_for_exposed': positive_test_rate_for_exposed, # Sensitivity of test that Exposed people undergo
-            'testing_rate_for_infected': testing_rate_for_infected, # Percentage of people in the Infected bucket that are tested daily
-            'sensitivity_rate_for_infected': positive_test_rate_for_infected # Sensitivity of test that Infected people undergo
+            'theta_E': theta_E, # Percentage of people in the Exposed bucket that are tested daily
+            'psi_E': psi_E, # Sensitivity of test that Exposed people undergo
+            'theta_I': theta_I, # Percentage of people in the Infected bucket that are tested daily
+            'psi_I': psi_I # Sensitivity of test that Infected people undergo
         }
 
         if state_init_values == None:
@@ -87,10 +86,11 @@ class SEIR_Testing():
             state_init_values['C'] = 0
             state_init_values['D'] = 0
 
+        # Set all dicts as attributes of self
         for param_dict_name in ['vanilla_params', 'testing_params', 'state_init_values']:
             setattr(self, param_dict_name, eval(param_dict_name))
 
-        # Init time parameters and probabilities
+        # Set all variables as attributes of self
         for key in self.vanilla_params:
             setattr(self, key, self.vanilla_params[key])
 
@@ -107,10 +107,10 @@ class SEIR_Testing():
         S, E, I, D_E, D_I, R_mild, R_severe_home, R_severe_hosp, R_fatal, C, D = y
 
         # Modelling the behaviour post-lockdown
-        if t >= self.intervention_removal_day:
+        if t >= self.lockdown_removal_day:
             self.R0 = self.post_lockdown_R0
         # Modelling the behaviour lockdown
-        elif t >= self.intervention_day:
+        elif t >= self.lockdown_day:
             self.R0 = self.lockdown_R0
         # Modelling the behaviour pre-lockdown
         else:
@@ -121,11 +121,6 @@ class SEIR_Testing():
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
-        
-        self.theta_E = self.testing_rate_for_exposed
-        self.psi_E = self.sensitivity_rate_for_exposed
-        self.theta_I = self.testing_rate_for_infected
-        self.psi_I = self.sensitivity_rate_for_infected
 
         # Write differential equations
         dydt[0] = - I * S / (self.T_trans) - (self.q / self.T_trans_D) * (S * D_I) # S
