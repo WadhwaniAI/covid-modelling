@@ -18,7 +18,7 @@ from models.ihme.util import get_mortality, evaluate
 from models.ihme.data import get_district_timeseries_cached
 from backtesting_hyperparams import optimize_hyperparameters, train_test_split, backtesting
 from backtesting_hyperparams import lograte_to_cumulative, rate_to_cumulative
-from backtesting_hyperparams import plot_results, plot_backtesting_results
+from backtesting_hyperparams import plot_results, plot_backtesting_results, plot_backtesting_errors
 pd.options.mode.chained_assignment = None
 
 # tuples: (district, state, census_area_name(s))
@@ -173,22 +173,40 @@ import pickle
 def backtest(triple, args):
     df, dtp, model_params, _, _, model, output_folder, file_prefix = setup(triple, args)
     # df = df[df[model.date] > datetime(year=2020, month=4, day=14)]
+    increment = 3
     future_days = 7
+    val_size = 7
+    xform = lograte_to_cumulative if args.log else rate_to_cumulative
     search_iterations = int(args.search) if args.search is not None else None
     results = backtesting(model, df, df[model_params['date']].min(), 
         df[model_params['date']].max(), future_days=future_days, 
-        hyperopt_val_size=7, optimize=search_iterations)
+        hyperopt_val_size=val_size, optimize=search_iterations,
+        increment=increment, xform_func=xform, dtp=dtp)
     # print (results)
     picklefn = f'{output_folder}/backtesting.pkl'
     with open(picklefn, 'wb') as pickle_file:
             pickle.dump(results, pickle_file)
-    plot_backtesting_results(model, results['df'], results['results'], results['future_days'], file_prefix, transform_y=lograte_to_cumulative, dtp=dtp)
-    
+    plot_backtesting_results(model, results['df'], results['results'],
+        results['future_days'], file_prefix, transform_y=xform, dtp=dtp,
+            axis_name='cumulative deaths')    
     # picklefn = f'../../main/ihme/output/mortality/Mumbai_deaths/big_run/backtesting.pkl'
     # with open(picklefn, 'rb') as pickle_file:
     #     results = pickle.load(pickle_file)
     # plot_backtesting_results(model, df, results, increment, future_days, file_prefix)
     plt.savefig(f'{output_folder}/backtesting.png')
+    plt.clf()
+    plot_backtesting_errors(model, df, df[model_params['date']].min(),
+        results['results'], file_prefix, scoring='mape', use_xform=True)
+    plt.savefig(f'{output_folder}/backtesting_mape.png')
+    plt.clf()
+    plot_backtesting_errors(model, df, df[model_params['date']].min(),
+        results['results'], file_prefix, scoring='rmse', use_xform=True)
+    plt.savefig(f'{output_folder}/backtesting_rmse.png')
+    plt.clf()
+    plot_backtesting_errors(model, df, df[model_params['date']].min(),
+        results['results'], file_prefix, scoring='rmsle', use_xform=True)
+    plt.savefig(f'{output_folder}/backtesting_rmsle.png')
+    plt.clf()
 
     # SAVE PARAMS INFO
     with open(f'{output_folder}/params.json', 'w') as pfile:
@@ -200,6 +218,9 @@ def backtest(triple, args):
         pargs['sd'] = args.sd
         pargs['smoothing'] = args.smoothing
         pargs['log'] = args.log
+        pargs['increment'] = increment
+        pargs['future_days'] = future_days
+        pargs['hyperopt_val_size'] = val_size
         json.dump(pargs, pfile)
     
 # -------------------

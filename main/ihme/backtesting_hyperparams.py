@@ -7,11 +7,11 @@ from datetime import datetime, timedelta
 import random
 from copy import copy
 
-def backtesting(model: IHME, data, start, end, future_days=10, hyperopt_val_size=7, optimize=None):
+def backtesting(model: IHME, data, start, end, increment=5, future_days=10, hyperopt_val_size=7, optimize=None, xform_func=None, dtp=None):
     n_days = (end - start).days + 1 - future_days
     model = model.generate()
     results = {}
-    for run_day in range(2*hyperopt_val_size, n_days, 2):
+    for run_day in range(2*hyperopt_val_size, n_days, increment):
         incremental_model = model.generate()
         fit_data = data[(data[model.date] <= start + timedelta(days=run_day))]
         val_data = data[(data[model.date] > start + timedelta(days=run_day)) \
@@ -20,8 +20,8 @@ def backtesting(model: IHME, data, start, end, future_days=10, hyperopt_val_size
         # # OPTIMIZE HYPERPARAMS
         if optimize is not None:
             n_days, best_init = optimize_hyperparameters(incremental_model, fit_data,
-                incremental_model.priors['fe_bounds'], (0.1, 2, 0.5), iterations=optimize, val_size=5)
-                # incremental_model.priors['fe_bounds'], (0.5, 5, 0.5), iterations=optimize, val_size=5)
+                incremental_model.priors['fe_bounds'], (0.5, 5, 0.5), iterations=optimize, val_size=5)
+                # incremental_model.priors['fe_bounds'], (0.1, 2, 0.5), iterations=optimize, val_size=5)
             fit_data = fit_data[-n_days:]
             fit_data.loc[:, 'day'] = (fit_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
             val_data.loc[:, 'day'] = (val_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
@@ -38,8 +38,13 @@ def backtesting(model: IHME, data, start, end, future_days=10, hyperopt_val_size
             val_data[model.date].max())
         # print (predictions)
         err = evaluate(val_data[model.ycol], predictions[len(fit_data):])
+        xform_err = None
+        if xform_func is not None:
+            xform_err = evaluate(xform_func(val_data[model.ycol], dtp),
+                xform_func(predictions[len(fit_data):], dtp))
         results[run_day] = {
             'error': err,
+            'xform_error': xform_err,
             'predictions': {
                 'start': start,
                 'fit_dates': fit_data[model.date],
@@ -165,11 +170,14 @@ def plot_results(model, train, test, predictions, predictdate, testerr,
     plt.legend()
     return
 
-def plot_backtesting_results(model, df, results, future_days, file_prefix, transform_y=None, dtp=None):
+def plot_backtesting_results(model, df, results, future_days, file_prefix, transform_y=None, dtp=None, axis_name=None):
     ycol = model.ycol
     title = f'{file_prefix} {ycol}' +  ' backtesting'
     # plot predictions against actual
-    setup_plt(ycol)
+    if axis_name is not None:
+        setup_plt(axis_name)
+    else:
+        setup_plt(ycol)
     plt.yscale("linear")
     plt.title(title.format(model.func.__name__))
 
@@ -207,4 +215,22 @@ def plot_backtesting_results(model, df, results, future_days, file_prefix, trans
     plt.scatter(df[model.date], df[ycol], c='crimson', marker='+', label='data')
 
     # plt.legend()
+    return
+
+def plot_backtesting_errors(model, df, start_date, results, file_prefix,
+                            scoring='mape', use_xform=True, axis_name=None):
+    ycol = model.ycol
+    title = f'{file_prefix} {ycol}' +  ' backtesting errors'
+    errkey = 'xform_error' if use_xform else 'error'
+
+    setup_plt(scoring)
+    plt.yscale("linear")
+    plt.title(title)
+
+    # plot error
+    dates = [start_date + timedelta(days=run_day) for run_day in results.keys()]
+    errs = [results[run_day][errkey][scoring] for run_day in results.keys()]
+    plt.plot(dates, errs, ls='-', c='crimson',
+        label=scoring)
+    plt.legend()
     return

@@ -165,7 +165,7 @@ def plot_results(model, train, test, predictions, predictdate, testerr,
     plt.legend()
     return
 
-def plot_results(model, df, results, future_days, file_prefix, transform_y=None, dtp=None):
+def plot_backtesting_results(model, df, results, future_days, file_prefix, transform_y=None, dtp=None):
     ycol = model.ycol
     title = f'{file_prefix} {ycol}' +  ' backtesting'
     # plot predictions against actual
