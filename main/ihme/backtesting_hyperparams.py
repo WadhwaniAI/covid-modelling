@@ -57,10 +57,9 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10,
                 hyperopt_runs[err] = (best_init, n_days)
             best_init, n_days = hyperopt_runs[min(hyperopt_runs.keys())]
             
-            fit_data_cut = fit_data[-n_days:]
-            val_data_cut = val_data[:]
-            fit_data_cut.loc[:, 'day'] = (fit_data_cut['date'] - np.min(fit_data_cut['date'])).apply(lambda x: x.days)
-            val_data_cut.loc[:, 'day'] = (val_data_cut['date'] - np.min(fit_data_cut['date'])).apply(lambda x: x.days)
+            fit_data = fit_data[-n_days:]
+            fit_data.loc[:, 'day'] = (fit_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
+            val_data.loc[:, 'day'] = (val_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
             incremental_model.priors['fe_init'] = best_init
         else:
             n_days, best_init = len(fit_data), incremental_model.priors['fe_init']
