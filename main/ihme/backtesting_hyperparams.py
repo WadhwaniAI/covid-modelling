@@ -6,14 +6,40 @@ import pandas as pd
 from datetime import datetime, timedelta
 import random
 from copy import copy
+import multiprocessing
+import time
+
+import dill
+from pathos.multiprocessing import ProcessingPool as Pool
+
+def run_dill_encoded(payload):
+    fun, args = dill.loads(payload)
+    return fun(*args)
+
+def apply_async(pool, fun, args):
+    payload = dill.dumps((fun, args))
+    return pool.apply_async(run_dill_encoded, (payload,))
+
+import os, sys
+class HiddenPrints:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout
+
 
 def backtesting(model: IHME, data, start, end, increment=5, future_days=10, 
         hyperopt_val_size=7, optimize_runs=3, max_evals=100, xform_func=None, dtp=None, min_days=14):
+    runtime_s = time.time()
     n_days = (end - start).days + 1 - future_days
     model = model.generate()
     results = {}
     seed = datetime.today().timestamp()
     for run_day in range(min_days + hyperopt_val_size, n_days, increment):
+        print ("\rbacktesting for", run_day, end="")
         incremental_model = model.generate()
         fit_data = data[(data[model.date] <= start + timedelta(days=run_day))]
         val_data = data[(data[model.date] > start + timedelta(days=run_day)) \
@@ -26,12 +52,33 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10,
             #     # incremental_model.priors['fe_bounds'], (0.1, 2, 0.5), iterations=optimize, val_size=5)
             
             hyperopt_runs = {}
-            for _ in range(optimize_runs):
-                (best_init, n_days), err = optimize(incremental_model, fit_data,
-                    incremental_model.priors['fe_bounds'],
-                    iterations=max_evals, val_size=5, min_days=14)
+            pool = Pool(processes=4)
+            o = Optimize((incremental_model, fit_data,
+                    incremental_model.priors['fe_bounds'], max_evals, 'mape', 
+                    hyperopt_val_size, min_days))
+            for (best_init, n_days), err in pool.map(o.optimizestar, list(range(optimize_runs))):
                 hyperopt_runs[err] = (best_init, n_days)
             best_init, n_days = hyperopt_runs[min(hyperopt_runs.keys())]
+            
+            # results = [apply_async(pool, optimize,
+            #     (incremental_model, fit_data,
+            #         incremental_model.priors['fe_bounds'], max_evals, 'mape', 
+            #         hyperopt_val_size, min_days))
+            #     for _ in range(optimize_runs)]
+            # for r in results:
+            #     out = r.get()
+            #     outputs.append(out)
+            # print(outputs)
+            # for (best_init, n_days), err in outputs:
+            #     hyperopt_runs[err] = (best_init, n_days)
+            # best_init, n_days = hyperopt_runs[min(hyperopt_runs.keys())]
+
+            # for _ in range(optimize_runs):
+            #     (best_init, n_days), err = optimize(incremental_model, fit_data,
+            #         incremental_model.priors['fe_bounds'],
+            #         iterations=max_evals, val_size=5, min_days=14)
+            #     hyperopt_runs[err] = (best_init, n_days)
+            # best_init, n_days = hyperopt_runs[min(hyperopt_runs.keys())]
             
             fit_data = fit_data[-n_days:]
             fit_data.loc[:, 'day'] = (fit_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
@@ -68,10 +115,13 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10,
                 'val_preds': predictions[len(fit_data):],
             }
         }
+    runtime = time.time() - runtime_s
+    print (runtime)
     out = {
         'results': results,
         'df': data,
         'future_days': future_days,
+        'runtime': runtime,
     }
     return out
 
@@ -97,9 +147,10 @@ def optimize(model: IHME, data: pd.DataFrame, bounds: list,
         val_cut = val[:]
         train_cut.loc[:, 'day'] = (train_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
         val_cut.loc[:, 'day'] = (val_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
-            
-        test_model.fit(train_cut)
-        predictions = test_model.predict(val_cut[model.date].min(), val_cut[model.date].max())
+        
+        with HiddenPrints():
+            test_model.fit(train_cut)
+            predictions = test_model.predict(val_cut[model.date].min(), val_cut[model.date].max())
         err = evaluate(val_cut[model.ycol], predictions)
         return {
             'loss': err[scoring],
@@ -129,8 +180,14 @@ def optimize(model: IHME, data: pd.DataFrame, bounds: list,
     best['n'] = n_days_range[best['n']]
     
     min_loss = min(trials.losses())
-    print (best, min_loss)
+    # print (best, min_loss)
     return (fe_init, best['n']), min_loss
+
+class Optimize():
+    def __init__(self, args):
+        self.args = args
+    def optimizestar(self, _):
+        return optimize(*self.args)
 
 def random_search(model: IHME, data: pd.DataFrame, bounds: list,
         steps: list, iterations: int, scoring='mape', seed=None, val_size=7, min_days=7):
