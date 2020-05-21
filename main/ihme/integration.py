@@ -6,19 +6,26 @@ import random
 import argparse
 import pandas as pd
 import numpy as np
+import pickle
+import time
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
+
 import curvefit
 from curvefit.core.functions import *
 
+
 sys.path.append('../..')
 from models.ihme.new_model import IHME
-from models.ihme.util import get_mortality, evaluate
-from models.ihme.data import get_district_timeseries_cached
-from backtesting_hyperparams import optimize, train_test_split, backtesting
-from backtesting_hyperparams import lograte_to_cumulative, rate_to_cumulative
-from backtesting_hyperparams import plot_results, plot_backtesting_results, plot_backtesting_errors
+from models.ihme.util import get_mortality
+from models.ihme.dataloader import get_district_timeseries_cached
+from backtesting_hyperparams import optimize, backtesting
+from utils.util import train_test_split, rollingavg
+from utils.loss import evaluate
+from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
+from plotting import plot_results, plot_backtesting_results, plot_backtesting_errors
 pd.options.mode.chained_assignment = None
+
 
 # tuples: (district, state, census_area_name(s))
 mumbai = 'Mumbai', 'Maharashtra', ['District - Mumbai (23)', 'District - Mumbai Suburban (22)']
@@ -70,7 +77,7 @@ def setup(triple, args):
     if args.smoothing:
         print(f'smoothing {args.smoothing}')
         smoothedcol = f'{model_params["ycol"]}_smoothed'
-        df[smoothedcol] = df[model_params['ycol']].rolling(args.smoothing).mean()
+        df[smoothedcol] = rollingavg(df[model_params['ycol']], args.smoothing)
         model_params['ycol'] = smoothedcol
     
     covs = ['covs', 'sd', 'covs'] if args.sd else ['covs', 'covs', 'covs']
@@ -99,6 +106,7 @@ def setup(triple, args):
 
 def run_pipeline(triple, args):
     df, dtp, model_params, train, test, model, output_folder, file_prefix = setup(triple, args)
+    start_time = time.time()
     # HYPER PARAM TUNING
     if args.hyperopt:
         bounds = model.priors['fe_bounds']
@@ -117,8 +125,8 @@ def run_pipeline(triple, args):
     n_days = (test[model_params['date']].max() - train[model_params['date']].min() + timedelta(days=1+model_params['daysforward'])).days
     all_preds_dates = pd.to_datetime(pd.Series([timedelta(days=x)+train[model_params['date']].min() for x in range(n_days)]))
     all_preds = model.predict(train[model_params['date']].min(), test[model_params['date']].max() + timedelta(days=model_params['daysforward']))
+    
     train_pred = all_preds[:len(train)]
-
     trainerr = evaluate(train[model_params['ycol']], train_pred)
     test_pred = all_preds[len(train):len(train) + len(test)]
     testerr = evaluate(test[model_params['ycol']], test_pred)
@@ -128,6 +136,17 @@ def run_pipeline(triple, args):
         "test": testerr
     }
 
+    xform_err = None
+    xform_func = lograte_to_cumulative if args.log else rate_to_cumulative
+    xform_trainerr = evaluate(xform_func(train[model_params['ycol']], dtp),
+        xform_func(train_pred, dtp))
+    xform_testerr = evaluate(xform_func(test[model_params['ycol']], dtp),
+        xform_func(test_pred, dtp))
+    xform_err = {
+        'train': xform_trainerr,
+        "test": xform_testerr
+    }  
+
     # UNCERTAINTY
     draws_dict = model.calc_draws()
     for k in draws_dict.keys():
@@ -136,18 +155,11 @@ def run_pipeline(triple, args):
         # TODO: group handling
         draws = np.vstack((low, up))   
 
-    if args.log:
-        plot_train, plot_test = copy(train), copy(test)
-        plot_train[model_params['ycol']] = lograte_to_cumulative(plot_train[model_params['ycol']], dtp)
-        plot_test[model_params['ycol']] = lograte_to_cumulative(plot_test[model_params['ycol']], dtp)
-        predicted_cumulative_deaths = lograte_to_cumulative(all_preds, dtp)
-        draws = lograte_to_cumulative(draws, dtp)
-    else:
-        plot_train, plot_test = copy(train), copy(test)
-        plot_train[model_params['ycol']] = rate_to_cumulative(plot_train[model_params['ycol']], dtp)
-        plot_test[model_params['ycol']] = rate_to_cumulative(plot_test[model_params['ycol']], dtp)
-        predicted_cumulative_deaths = rate_to_cumulative(all_preds, dtp)
-        draws = rate_to_cumulative(draws, dtp)
+    plot_train, plot_test = copy(train), copy(test)
+    plot_train[model_params['ycol']] = xform_func(plot_train[model_params['ycol']], dtp)
+    plot_test[model_params['ycol']] = xform_func(plot_test[model_params['ycol']], dtp)
+    predicted_cumulative_deaths = xform_func(all_preds, dtp)
+    draws = xform_func(draws, dtp)
 
     # ADD PLOTTING CODE HERE
     plot_results(model, plot_train, plot_test, predicted_cumulative_deaths, all_preds_dates, testerr, f'new_{file_prefix}', draws=draws)
@@ -157,6 +169,9 @@ def run_pipeline(triple, args):
     # plt.savefig(f'{output_folder}/results_notransform.png')
     # plt.clf()
     
+    runtime = time.time() - start_time
+    print('time:', runtime)
+
     # SAVE PARAMS INFO
     with open(f'{output_folder}/params.json', 'w') as pfile:
         pargs = copy(model_params)
@@ -167,14 +182,30 @@ def run_pipeline(triple, args):
         pargs['sd'] = args.sd
         pargs['smoothing'] = args.smoothing
         pargs['log'] = args.log
-        pargs['priors']['fe_init'] = fe_init
-        pargs['n_days_train'] = n_days_train
+        pargs['priors']['fe_init'] = [int(i) for i in fe_init]
+        pargs['n_days_train'] = int(n_days_train)
         pargs['error'] = err
+        pargs['xform_error'] = xform_err
+        pargs['runtime'] = runtime
         json.dump(pargs, pfile)
 
-import pickle
+    # SAVE DATA, PREDICTIONS
+    picklefn = f'{output_folder}/data.pkl'
+    with open(picklefn, 'wb') as pickle_file:
+        data = {
+            'data': df,
+            'train': train,
+            'test': test,
+            'dates': all_preds_dates,
+            'predictions': all_preds,
+            'cumulative_predictions': predicted_cumulative_deaths
+        }
+        pickle.dump(data, pickle_file)
+    
+
 def backtest(triple, args):
     df, dtp, model_params, _, _, model, output_folder, file_prefix = setup(triple, args)
+    start_time = time.time()
     # df = df[df[model.date] > datetime(year=2020, month=4, day=14)]
     increment = 3
     future_days = 7
@@ -212,6 +243,9 @@ def backtest(triple, args):
     plt.savefig(f'{output_folder}/backtesting_rmsle.png')
     plt.clf()
 
+    runtime = time.time() - start_time
+    print('time:', runtime)
+
     # SAVE PARAMS INFO
     with open(f'{output_folder}/params.json', 'w') as pfile:
         pargs = copy(model_params)
@@ -226,6 +260,7 @@ def backtest(triple, args):
         pargs['future_days'] = future_days
         pargs['min_days'] = min_days
         pargs['hyperopt_val_size'] = val_size
+        pargs['runtime'] = runtime
         json.dump(pargs, pfile)
     
 # -------------------

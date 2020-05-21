@@ -18,7 +18,8 @@ from curvefit.core.functions import *
 from curvefit.core.utils import data_translator
 
 # from models.ihme.util import smooth, get_daily_vals
-from models.ihme.util import smooth, get_daily_vals
+from models.ihme.util import get_daily_vals
+from utils.util import smooth, rollingavg
 
 # class IHME(ModelWrapperBase):
 class IHME():
@@ -56,7 +57,7 @@ class IHME():
         #     self.df[:, self.orig_ycol] = self.df[self.ycol]
             
         #     self.ycol = f'{self.ycol}_smooth'
-        #     self.df[:, self.ycol] = smooth(self.df[self.ycol], self.smoothing)
+        #     self.df[:, self.ycol] = rollingavg(self.df[self.ycol], self.smoothing)
         
         # self.predictdate = pd.to_datetime(pd.Series([timedelta(days=x)+self.data[self.date].iloc[0] for x in range(-self.daysback,self.daysforward)]))
         # self.predictx = np.array([x+1 for x in range(-self.daysback,self.daysforward)])
@@ -129,7 +130,7 @@ class IHME():
 
     def calc_draws(self):
         draws_dict = {}
-        for i, group in enumerate(self.pipeline.groups):
+        for group in self.pipeline.groups:
             draws = self.pipeline.draws[group].copy()
             draws = data_translator(
                 data=draws,
@@ -142,7 +143,7 @@ class IHME():
                 input_space=self.pipeline.predict_space,
                 output_space=self.predict_space
             )
-            mean = draws.mean(axis=0)
+            # mean = draws.mean(axis=0)
 
             lower = np.quantile(draws, axis=0, q=0.025)
             upper = np.quantile(draws, axis=0, q=0.975)
