@@ -1,20 +1,14 @@
 import numpy as np
-import pandas as pd
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 
-from collections import OrderedDict
-import datetime
-
-class SEIR_Testing():
-
+class SEIR:
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_hosp=5, 
-                 T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6, init_infected=1,
-                 q=0, theta_E=0, psi_E=1, theta_I=0, psi_I=1, lockdown_day=10, lockdown_removal_day=75,
-                 starting_date='2020-03-09', initialisation='intermediate', observed_values=None, 
-                 E_hosp_ratio=0.5, I_hosp_ratio=0.5, ** kwargs):
+                T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6, init_infected=1,
+                 lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', initialisation='intermediate', 
+                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
         """
-        This class implements SEIR + Hospitalisation + Severity Levels + Testing 
+        This class implements SEIR + Hospitalisation + Severity Levels 
         The model further implements 
         - pre, post, and during lockdown behaviour 
         - different initialisations : intermediate and starting 
@@ -24,8 +18,6 @@ class SEIR_Testing():
         S : No of susceptible people
         E : No of exposed people
         I : No of infected people
-        D_E : No of exposed people (detected)
-        D_I : No of infected people (detected)
         R_mild : No of people recovering from a mild version of the infection
         R_severe_home : No of people recovering from a severe version of the infection (at home)
         R_severe_hosp : No of people recovering from a fatal version of the infection (at hospital)
@@ -60,14 +52,6 @@ class SEIR_Testing():
         T_hosp: Time it takes for an individual to get hospitalised, after they have been diagnosed (float)
         T_death: Time it takes for an individual with a fatal infection to die (float)
 
-        Testing Parameters - 
-        'q': Perfection of quarantining 
-        If q = 0, quarantining is perfect. q = 1. quarantining is absolutely imperfect
-        'theta_E': Percentage of people in the Exposed bucket that are tested daily
-        'psi_E': Sensitivity of test that Exposed people undergo
-        'theta_I': Percentage of people in the Infected bucket that are tested daily
-        'psi_I': Sensitivity of test that Infected people undergo
-
         Lockdown parameters - 
         starting_date: Datetime value that corresponds to Day 0 of modelling (datetime/str)
         lockdown_day: Number of days from the starting_date, after which lockdown is initiated (int)
@@ -76,8 +60,6 @@ class SEIR_Testing():
         Misc - 
         N: Total population
         initialisation : method of initialisation ('intermediate'/'starting')
-        E_hosp_ratio : Ratio for Exposed to hospitalised for initialisation
-        I_hosp_ratio : Ratio for Infected to hospitalised for initialisation
         """
 
         # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
@@ -120,46 +102,17 @@ class SEIR_Testing():
             'lockdown_day': lockdown_day, # Number of days from the starting_date, after which lockdown is initiated
             'lockdown_removal_day': lockdown_removal_day, # Number of days from the starting_date, after which lockdown is removed
             'N': N
-
-            #Initialisation Params
-            'E_hosp_ratio' : E_hosp_ratio # Ratio for Exposed to hospitalised for initialisation
-            'I_hosp_ratio' : I_hosp_ratio # Ratio for Infected to hospitalised for initialisation
         }
-
-        testing_params = {
-            'T_inc': T_inc_detected,
-            'T_inf': T_inf_detected,
-
-            'P_mild': P_mild_detected,
-            'P_severe': P_severe_detected,
-            'P_fatal': P_fatal_detected,
-
-            # Testing Parameters
-            'q': q, # Perfection of quarantining : If q = 0, quarantining is perfect. q = 1. quarantining is absolutely imperfect
-            'theta_E': theta_E, # Percentage of people in the Exposed bucket that are tested daily
-            'psi_E': psi_E, # Sensitivity of test that Exposed people undergo
-            'theta_I': theta_I, # Percentage of people in the Infected bucket that are tested daily
-            'psi_I': psi_I # Sensitivity of test that Infected people undergo
-        }
-
-         # Set all dicts as attributes of self
-        for param_dict_name in ['vanilla_params', 'testing_params']:
-            setattr(self, param_dict_name, eval(param_dict_name))
 
         # Set all variables as attributes of self
         for key in self.vanilla_params:
             setattr(self, key, self.vanilla_params[key])
 
-        for key in self.testing_params:
-            suffix = '_D' if key in self.vanilla_params else ''
-            setattr(self, key + suffix, self.testing_params[key])
-
         # Initialisation
         state_init_values = OrderedDict()
-        key_order = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
+        key_order = ['S', 'E', 'I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
             for key in key_order:
                 state_init_values[key] = 0
-        
         if intialisation == 'starting':
             state_init_values['S'] = (self.N - observed_values['init_infected'])/self.N
             state_init_values['I'] = observed_values['init_infected']/self.N
@@ -180,15 +133,12 @@ class SEIR_Testing():
 
         self.state_init_values = state_init_values
 
-    def get_derivative(self, t, y):
-        """
-        Calculates derivative at time t
-        """
 
+    def get_derivative(self, t, y):
         # Init state variables
         for i, _ in enumerate(y):
             y[i] = max(y[i], 0)
-        S, E, I, D_E, D_I, R_mild, R_severe_home, R_severe_hosp, R_fatal, C, D = y
+        S, E, I, R_mild, R_severe_home, R_severe_hosp, R_fatal, C, D = y
 
         # Modelling the behaviour post-lockdown
         if t >= self.lockdown_removal_day:
@@ -201,23 +151,20 @@ class SEIR_Testing():
             self.R0 = self.pre_lockdown_R0
 
         self.T_trans = self.T_inf/self.R0
-        self.T_trans_D = self.T_inf_D/self.R0
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
 
         # Write differential equations
-        dydt[0] = - I * S / (self.T_trans) - (self.q / self.T_trans_D) * (S * D_I) # S
-        dydt[1] = I * S / (self.T_trans) + (self.q / self.T_trans_D) * (S * D_I) - (E/ self.T_inc) - (self.theta_E * self.psi_E * E) # E
-        dydt[2] = E / self.T_inc - I / self.T_inf - (self.theta_I * self.psi_I * I) # I
-        dydt[3] = (self.theta_E * self.psi_E * E) - (1 / self.T_inc_D) * D_E # D_E
-        dydt[4] = (self.theta_I * self.psi_I * I) + (1 / self.T_inc_D) * D_E - (1 / self.T_inf_D) * D_I # D_I 
-        dydt[5] = (1/self.T_inf)*(self.P_mild*I) + (1/self.T_inf_D)*(self.P_mild_D*D_I) - R_mild/self.T_recov_mild # R_mild
-        dydt[6] = (1/self.T_inf)*(self.P_severe*I) + (1/self.T_inf_D)*(self.P_severe_D*D_I) - R_severe_home/self.T_hosp # R_severe_home
-        dydt[7] = R_severe_home/self.T_hosp - R_severe_hosp/self.T_recov_severe # R_severe_hosp
-        dydt[8] = (1/self.T_inf)*(self.P_fatal*I) + (1/self.T_inf_D)*(self.P_fatal_D*D_I) - R_fatal/self.T_death # R_fatal
-        dydt[9] = R_mild/self.T_recov_mild + R_severe_hosp/self.T_recov_severe # C
-        dydt[10] = R_fatal/self.T_death # D
+        dydt[0] = - I * S / (self.T_trans)  # S
+        dydt[1] = I * S / (self.T_trans) - (E/ self.T_inc)  # E
+        dydt[2] = E / self.T_inc - I / self.T_inf  # I
+        dydt[3] = (1/self.T_inf)*(self.P_mild*I) - R_mild/self.T_recov_mild # R_mild
+        dydt[4] = (1/self.T_inf)*(self.P_severe*I) - R_severe_home/self.T_hosp # R_severe_home
+        dydt[5] = R_severe_home/self.T_hosp - R_severe_hosp/self.T_recov_severe # R_severe_hosp
+        dydt[6] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_death # R_fatal
+        dydt[7] = R_mild/self.T_recov_mild + R_severe_hosp/self.T_recov_severe # C
+        dydt[8] = R_fatal/self.T_death # D
 
         return dydt
 
@@ -255,6 +202,6 @@ class SEIR_Testing():
         df_prediction['hospitalised'] = df_prediction['R_severe_home'] + df_prediction['R_severe_hosp'] + df_prediction['R_fatal']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['infectious_unknown'] = df_prediction['I'] + df_prediction['D_I']
+        df_prediction['infectious_unknown'] = df_prediction['I']
         df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction
