@@ -52,7 +52,7 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10,
             #     # incremental_model.priors['fe_bounds'], (0.1, 2, 0.5), iterations=optimize, val_size=5)
             
             hyperopt_runs = {}
-            pool = Pool(processes=4)
+            pool = Pool(processes=5)
             o = Optimize((incremental_model, fit_data,
                     incremental_model.priors['fe_bounds'], max_evals, 'mape', 
                     hyperopt_val_size, min_days))
