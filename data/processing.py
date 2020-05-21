@@ -5,20 +5,41 @@ import datetime
 
 from data.dataloader import get_rootnet_api_data
 
-def get_data(dataframes, state, district, use_dataframe='districts_daily', disable_tracker=False, filename=None):
+def get_data(dataframes=None, state=None, district=None, use_dataframe='districts_daily', disable_tracker=False,
+             filename=None, data_format='new'):
     if disable_tracker:
+        df_result = get_custom_data(filename, data_format=data_format)
+    elif district != None:
+        df_result = get_district_time_series(dataframes, state=state, district=district, use_dataframe=use_dataframe)
+    else:
+        df_result = get_state_time_series(state=state)
+    return df_result
+    
+#TODO add support of adding 0s column for the ones which don't exist
+def get_custom_data(filename, data_format='new'):
+    if data_format == 'new':
+        df = pd.read_csv(filename)
+        del df['Ward/block name']
+        del df['Ward number (if applicable)']
+        del df['Mild cases (isolated)']
+        del df['Moderate cases (hospitalized)']
+        del df['Severe cases (In ICU)']
+        del df['Critical cases (ventilated patients)']
+        df.columns = ['state', 'district', 'date', 'total_infected', 'hospitalised', 'recovered', 'deceased']
+        df.drop(np.arange(3), inplace=True)
+        df['date'] = pd.to_datetime(df['date'], format='%m-%d-%Y')
+        df = df[np.logical_not(df['state'].isna())]
+        df.reset_index(inplace=True, drop=True)
+        df.loc[:, ['total_infected', 'hospitalised', 'recovered', 'deceased']] = df[[
+            'total_infected', 'hospitalised', 'recovered', 'deceased']].apply(pd.to_numeric)
+        df = df[['date', 'state', 'district', 'total_infected', 'hospitalised', 'recovered', 'deceased']]
+        return df
+    if data_format == 'old':
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]
         df_result.columns = [x if x != 'confirmed' else 'total_infected' for x in df_result.columns]
-        #TODO add support of adding 0s column for the ones which don't exist
-        return df_result
-    if district != None:
-        df_result = get_district_time_series(
-            dataframes, state=state, district=district, use_dataframe=use_dataframe)
-    else:
-        df_result = get_state_time_series(state=state)
-    return df_result
+        
 
 def get_state_time_series(state='Delhi'):
     rootnet_dataframes = get_rootnet_api_data()
