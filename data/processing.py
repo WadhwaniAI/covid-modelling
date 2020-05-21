@@ -9,6 +9,8 @@ def get_data(dataframes, state, district, use_dataframe='districts_daily', disab
     if disable_tracker:
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
+        df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]
+        df_result.columns = [x if x != 'confirmed' else 'total_infected' for x in df_result.columns]
         #TODO add support of adding 0s column for the ones which don't exist
         return df_result
     if district != None:
