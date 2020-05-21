@@ -7,26 +7,38 @@ from datetime import datetime, timedelta
 import random
 from copy import copy
 
-def backtesting(model: IHME, data, start, end, increment=5, future_days=10, hyperopt_val_size=7, optimize=None, xform_func=None, dtp=None):
+def backtesting(model: IHME, data, start, end, increment=5, future_days=10, 
+        hyperopt_val_size=7, optimize_runs=3, max_evals=100, xform_func=None, dtp=None, min_days=14):
     n_days = (end - start).days + 1 - future_days
     model = model.generate()
     results = {}
-    for run_day in range(2*hyperopt_val_size, n_days, increment):
+    seed = datetime.today().timestamp()
+    for run_day in range(min_days + hyperopt_val_size, n_days, increment):
         incremental_model = model.generate()
         fit_data = data[(data[model.date] <= start + timedelta(days=run_day))]
         val_data = data[(data[model.date] > start + timedelta(days=run_day)) \
             & (data[model.date] <= start + timedelta(days=run_day+future_days))]
         
         # # OPTIMIZE HYPERPARAMS
-        if optimize is not None:
-            n_days, best_init = optimize_hyperparameters(incremental_model, fit_data,
-                incremental_model.priors['fe_bounds'], (0.5, 5, 0.5), iterations=optimize, val_size=5)
-                # incremental_model.priors['fe_bounds'], (0.1, 2, 0.5), iterations=optimize, val_size=5)
+        if optimize_runs > 0:
+            # n_days, best_init = optimize_hyperparameters(incremental_model, fit_data,
+            #     incremental_model.priors['fe_bounds'], (0.1, 2, 0.5), iterations=optimize_runs, val_size=5, seed=seed)
+            #     # incremental_model.priors['fe_bounds'], (0.1, 2, 0.5), iterations=optimize, val_size=5)
+            
+            hyperopt_runs = {}
+            for _ in range(optimize_runs):
+                (best_init, n_days), err = optimize(incremental_model, fit_data,
+                    incremental_model.priors['fe_bounds'],
+                    iterations=max_evals, val_size=5, min_days=14)
+                hyperopt_runs[err] = (best_init, n_days)
+            best_init, n_days = hyperopt_runs[min(hyperopt_runs.keys())]
+            
             fit_data = fit_data[-n_days:]
             fit_data.loc[:, 'day'] = (fit_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
             val_data.loc[:, 'day'] = (val_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
-            print(incremental_model.priors['fe_init'])
             incremental_model.priors['fe_init'] = best_init
+        else:
+            n_days, best_init = len(fit_data), incremental_model.priors['fe_init']
         
         # # PRINT DATES (ENSURE CONTINUITY)
         # print (fit_data[model.date].min(), fit_data[model.date].max())
@@ -43,6 +55,9 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10, hype
             xform_err = evaluate(xform_func(val_data[model.ycol], dtp),
                 xform_func(predictions[len(fit_data):], dtp))
         results[run_day] = {
+            'fe_init': best_init,
+            'n_days': n_days,
+            'seed': seed,
             'error': err,
             'xform_error': xform_err,
             'predictions': {
@@ -62,22 +77,76 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10, hype
 
 def train_test_split(df, threshold, threshold_col='date'):
             return df[df[threshold_col] <= threshold], df[df[threshold_col] > threshold]
+
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+def optimize(model: IHME, data: pd.DataFrame, bounds: list, 
+        iterations: int, scoring='mape', val_size=7, min_days=7):
+    if len(data) - val_size < min_days:
+        raise Exception(f'len(data) - val_size must be >= {min_days}')
+    model = model.generate()
+    data = copy(data)
+    threshold = data[model.date].max() - timedelta(days=val_size)
+    train, val = train_test_split(data, threshold, threshold_col=model.date)
+
+    def objective(params):
+        test_model = model.generate()
+        test_model.priors.update({
+            'fe_init': [params['alpha'], params['beta'], params['p']],
+        })
+        train_cut = train[-params['n']:]
+        val_cut = val[:]
+        train_cut.loc[:, 'day'] = (train_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
+        val_cut.loc[:, 'day'] = (val_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
+            
+        test_model.fit(train_cut)
+        predictions = test_model.predict(val_cut[model.date].min(), val_cut[model.date].max())
+        err = evaluate(val_cut[model.ycol], predictions)
+        return {
+            'loss': err[scoring],
+            'status': STATUS_OK,
+            # -- store other results like this
+            'error': err,
+            'predictions': predictions,
+        }
+
+    space = {}
+    for i, bound in enumerate(bounds):
+        space[model.param_names[i]] = hp.uniform(model.param_names[i], bound[0], bound[1])
+    # fmin returns index for hp.choice
+    n_days_range = np.arange(min_days, 1 + len(data) - val_size, dtype=int)
+    space['n'] = hp.choice('n', n_days_range)
+
+    trials = Trials()
+    best = fmin(objective,
+        space=space,
+        algo=tpe.suggest,
+        max_evals=iterations,
+        trials=trials)
     
+    fe_init = []
+    for i, param in enumerate(model.param_names):
+        fe_init.append(best[param])
+    best['n'] = n_days_range[best['n']]
+    
+    min_loss = min(trials.losses())
+    print (best, min_loss)
+    return (fe_init, best['n']), min_loss
+
 def random_search(model: IHME, data: pd.DataFrame, bounds: list,
-        steps: list, iterations: int, scoring='mape', seed=None, val_size=7):
+        steps: list, iterations: int, scoring='mape', seed=None, val_size=7, min_days=7):
     '''
     bounds: [(l1, u1), (l2, u2), (l3, u3)]
     steps: [s1, s2, s3]
     '''
-    if len(data) - val_size < 7:
-        raise Exception('len(data) - val_size must be >= 7')
+    if len(data) - val_size < min_days:
+        raise Exception(f'len(data) - val_size must be >= {min_days}')
     data = copy(data)
     model = model.generate()
     fe_inits = [[float(i),float(j),float(k)] for i in np.arange(bounds[0][0], bounds[0][1], steps[0])
                             for j in np.arange(bounds[1][0], bounds[1][1], steps[1])
                             for k in np.arange(bounds[2][0], bounds[2][1], steps[2])]
     all_inits = [[fe_init, n] for fe_init in fe_inits
-                            for n in range(7, 1 + len(data) - val_size)]
+                            for n in range(min_days, max([1 + len(data) - val_size, 28]))]
     if seed is None:
         seed = datetime.today().timestamp()
     random.seed(seed)
@@ -99,10 +168,15 @@ def random_search(model: IHME, data: pd.DataFrame, bounds: list,
             'fe_init': all_inits[idx][0],
             'fe_bounds': bounds
         })
-        train = train[-all_inits[idx][1]:]
-        test_model.fit(train)
-        predictions = test_model.predict(val[model.date].min(), val[model.date].max())
-        err = evaluate(val[model.ycol], predictions)
+        train_cut = train[-all_inits[idx][1]:]
+        val_cut = val[:]
+        train_cut.loc[:, 'day'] = (train_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
+        val_cut.loc[:, 'day'] = (val_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
+            
+        test_model.fit(train_cut)
+        predictions = test_model.predict(val_cut[model.date].min(), val_cut[model.date].max())
+        err = evaluate(val_cut[model.ycol], predictions)
+        
         if err[scoring] < min_err:
             min_err = err[scoring]
             best_init = all_inits[idx]
@@ -183,6 +257,7 @@ def plot_backtesting_results(model, df, results, future_days, file_prefix, trans
 
     if transform_y is not None:
         df[model.ycol] = transform_y(df[model.ycol], dtp)
+    errkey = 'xform_error' if transform_y is not None else 'error'
 
     # plot predictions
     
@@ -205,10 +280,10 @@ def plot_backtesting_results(model, df, results, future_days, file_prefix, trans
         plt.plot(fit_dates, fit_preds, ls='-', c=color,
             label=f'run day: {run_day}')
         plt.errorbar(val_dates, val_preds,
-            yerr=val_preds*results[run_day]['error']['mape'], lw=0.5,
+            yerr=val_preds*results[run_day][errkey]['mape'], lw=0.5,
             color='lightcoral', barsabove='False', label='MAPE')
         plt.errorbar(fit_dates, fit_preds,
-            yerr=fit_preds*results[run_day]['error']['mape'], lw=0.5,
+            yerr=fit_preds*results[run_day][errkey]['mape'], lw=0.5,
             color='lightcoral', barsabove='False', label='MAPE')
 
     # plot data we fit on

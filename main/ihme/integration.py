@@ -15,7 +15,7 @@ sys.path.append('../..')
 from models.ihme.new_model import IHME
 from models.ihme.util import get_mortality, evaluate
 from models.ihme.data import get_district_timeseries_cached
-from backtesting_hyperparams import optimize_hyperparameters, train_test_split, backtesting
+from backtesting_hyperparams import optimize, train_test_split, backtesting
 from backtesting_hyperparams import lograte_to_cumulative, rate_to_cumulative
 from backtesting_hyperparams import plot_results, plot_backtesting_results, plot_backtesting_errors
 pd.options.mode.chained_assignment = None
@@ -100,10 +100,13 @@ def setup(triple, args):
 def run_pipeline(triple, args):
     df, dtp, model_params, train, test, model, output_folder, file_prefix = setup(triple, args)
     # HYPER PARAM TUNING
-    if args.search:
+    if args.hyperopt:
         bounds = model.priors['fe_bounds']
-        step = (0.1, 2, 0.5)
-        n_days_train, fe_init = optimize_hyperparameters(model, train, bounds, step, int(args.search))
+        best_hp = {}
+        for _ in range(args.hyperopt):
+            (fe_init, n_days_train), err = optimize(model, train, bounds, iterations=args.max_evals, scoring='mape')
+            best_hp[err] = (fe_init, n_days_train)
+        (fe_init, n_days_train) = best_hp[min(best_hp.keys())]
         train = train[-n_days_train:]
         train.loc[:, 'day'] = (train['date'] - np.min(train['date'])).apply(lambda x: x.days)
         test.loc[:, 'day'] = (test['date'] - np.min(train['date'])).apply(lambda x: x.days)
@@ -159,28 +162,28 @@ def run_pipeline(triple, args):
         pargs = copy(model_params)
         pargs['func'] = pargs['func'].__name__
         del pargs['ycols']
-        if args.search:
-            pargs['priors']['fe_init'] = fe_init
-            pargs['search_iterations'] = args.search
-        pargs['error'] = err
+        pargs['hyperopt'] = args.hyperopt
+        pargs['max_evals'] = args.max_evals
         pargs['sd'] = args.sd
         pargs['smoothing'] = args.smoothing
         pargs['log'] = args.log
+        pargs['priors']['fe_init'] = fe_init
+        pargs['n_days_train'] = n_days_train
+        pargs['error'] = err
         json.dump(pargs, pfile)
 
 import pickle
 def backtest(triple, args):
     df, dtp, model_params, _, _, model, output_folder, file_prefix = setup(triple, args)
     # df = df[df[model.date] > datetime(year=2020, month=4, day=14)]
-    increment = 3
+    increment = 5
     future_days = 7
     val_size = 7
     xform = lograte_to_cumulative if args.log else rate_to_cumulative
-    search_iterations = int(args.search) if args.search is not None else None
     results = backtesting(model, df, df[model_params['date']].min(), 
         df[model_params['date']].max(), future_days=future_days, 
-        hyperopt_val_size=val_size, optimize=search_iterations,
-        increment=increment, xform_func=xform, dtp=dtp)
+        hyperopt_val_size=val_size, optimize_runs=args.hyperopt,
+        max_evals=args.max_evals, increment=increment, xform_func=xform, dtp=dtp)
     # print (results)
     picklefn = f'{output_folder}/backtesting.pkl'
     with open(picklefn, 'wb') as pickle_file:
@@ -212,8 +215,8 @@ def backtest(triple, args):
         pargs = copy(model_params)
         pargs['func'] = pargs['func'].__name__
         del pargs['ycols']
-        if args.search:
-            pargs['search_iterations'] = args.search
+        pargs['hyperopt'] = args.hyperopt
+        pargs['max_evals'] = args.max_evals
         pargs['sd'] = args.sd
         pargs['smoothing'] = args.smoothing
         pargs['log'] = args.log
@@ -228,9 +231,10 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--district", help="district name", required=True)
     parser.add_argument("-l", "--log", help="fit on log", required=False, action='store_true')
     parser.add_argument("-sd", "--sd", help="use social distance covariate", required=False, action='store_true')
-    parser.add_argument("-s", "--smoothing", help="how much to smooth, else no smoothing", required=False)
-    parser.add_argument("-rs", "--search", help="whether to do randomsearch", required=False)
-    parser.add_argument("-b", "--backtest", help="whether to do randomsearch", required=False, action='store_true')
+    parser.add_argument("-s", "--smoothing", help="how much to smooth, else no smoothing", required=False, type=int)
+    parser.add_argument("-hp", "--hyperopt", help="number of times to do hyperparam optimization", required=False, type=int, default=0)
+    parser.add_argument("-i", "--max_evals", help="max evals on each hyperopt run", required=False, default=50, type=int)
+    parser.add_argument("-b", "--backtest", help="run backtesting", required=False, action='store_true')
     args = parser.parse_args()
 
     if args.backtest:

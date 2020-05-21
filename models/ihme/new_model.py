@@ -4,6 +4,7 @@ import argparse
 import pandas as pd
 import numpy as np 
 from datetime import timedelta, datetime
+from copy import copy
 
 import matplotlib.pyplot as plt
 from pandas.plotting import register_matplotlib_converters
@@ -158,19 +159,19 @@ class IHME():
         out.func = self.func
         out.date = self.date
         out.groupcol = self.groupcol
-        out.priors = self.priors
-        out.pipeline_args = self.pipeline_args
+        out.priors = copy(self.priors)
+        out.pipeline_args = copy(self.pipeline_args)
         out.smoothing = self.smoothing
-        out.covs = self.covs
+        out.covs = copy(self.covs)
 
-        out.param_names  = self.param_names
+        out.param_names  = copy(self.param_names)
         out.predict_space = self.predict_space
 
-        out.link_fun = self.link_fun
-        out.var_link_fun = self.var_link_fun
+        out.link_fun = copy(self.link_fun)
+        out.var_link_fun = copy(self.var_link_fun)
         
         out.deriv_col = self.deriv_col
-        out.derivs = self.derivs
+        out.derivs = copy(self.derivs)
         
         out.pipeline = None
         return out
