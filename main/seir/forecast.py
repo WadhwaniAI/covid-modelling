@@ -24,11 +24,14 @@ from main.seir.optimiser import Optimiser
 from main.seir.losses import Loss_Calculator
 
 
-def get_forecast(predictions_dict: dict, simulate_till=None, initialisation='intermediate', train_period=7, train_fit='m2'):
+def get_forecast(predictions_dict: dict, simulate_till=None, initialisation='intermediate', train_period=7, 
+                 train_fit='m2', best_params=None):
     print("getting forecasts ..")
     if simulate_till == None:
         simulate_till = datetime.datetime.today() + datetime.timedelta(days=37)
-    df_prediction = predictions_dict[train_fit]['optimiser'].solve(predictions_dict[train_fit]['best_params'],
+    if best_params == None:
+        best_params = predictions_dict[train_fit]['best_params']
+    df_prediction = predictions_dict[train_fit]['optimiser'].solve(best_params,
                                                                    predictions_dict[train_fit]['default_params'],
                                                                    predictions_dict[train_fit]['df_train'], 
                                                                    end_date=simulate_till, initialisation=initialisation, 
@@ -38,7 +41,7 @@ def get_forecast(predictions_dict: dict, simulate_till=None, initialisation='int
 
 
 def create_region_csv(predictions_dict: dict, region: str, regionType: str, initialisation='intermediate', 
-                    train_period=7, icu_fraction=0.02):
+                    train_period=7, icu_fraction=0.02, best_params=None):
     print("compiling csv data ..")
     columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value', 'current_total', 'current_active', 'current_recovered',
                'current_deceased', 'current_hospitalized', 'current_icu', 'current_ventilator', 'predictionDate', 'active_mean', 'active_min',
@@ -46,7 +49,8 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, init
                'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 'recovered_max', 'total_mean', 'total_min', 'total_max']
     df_output = pd.DataFrame(columns=columns)
 
-    df_prediction = get_forecast(predictions_dict, initialisation=initialisation, train_period=train_period)
+    df_prediction = get_forecast(predictions_dict, initialisation=initialisation, train_period=train_period, 
+                                 best_params=best_params)
     df_true = predictions_dict['m1']['df_district']
     prediction_daterange = np.union1d(df_true['date'], df_prediction['date'])
     no_of_data_points = len(prediction_daterange)
@@ -122,54 +126,76 @@ def create_all_csvs(predictions_dict: dict, initialisation='intermediate', train
 def write_csv(df_final : pd.DataFrame, filename : str):
     df_final.to_csv(filename, index=False)
 
+
+def preprocess_for_error_plot(df_prediction : pd.DataFrame, df_loss : pd.DataFrame, 
+                              which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered']):
+    df_temp = copy.copy(df_prediction)
+    df_temp.loc[:, which_compartments] = df_prediction.loc[:, which_compartments]*(1 - 0.01*df_loss['val'])
+    df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
+    df_temp = copy.copy(df_prediction)
+    df_temp.loc[:, which_compartments] = df_prediction.loc[:, which_compartments]*(1 + 0.01*df_loss['val'])
+    df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
+    return df_prediction
+
 def plot_forecast(predictions_dict : dict, region : tuple, initialisation='intermediate', train_period=7,
                   which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'], both_forecasts=False, 
-                  log_scale=False, filename=None, fileformat='eps'):
+                  log_scale=False, filename=None, fileformat='eps', error_bars=False):
     df_prediction = get_forecast(predictions_dict, initialisation=initialisation, train_period=train_period)
+    # df_prediction.loc[:, which_compartments] = df_prediction[]
     if both_forecasts:
         df_prediction_m1 = get_forecast(predictions_dict, initialisation=initialisation, train_period=train_period, 
                                         train_fit='m1')
-    df_pune_exp = pd.read_csv('../../data/data/pune-exp-fit.csv')
-    df_pune_exp['date'] = pd.to_datetime(df_pune_exp['date'])
-    df_pune_exp = df_pune_exp.loc[df_pune_exp['date'] <= '2020-06-20', :]
     df_true = predictions_dict['m1']['df_district']
+    
+    if error_bars:
+        df_prediction = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'], 
+                                                  which_compartments)
+        if both_forecasts:
+            df_prediction_m1 = preprocess_for_error_plot(df_prediction_m1, predictions_dict['m1']['df_loss'], 
+                                                        which_compartments)
 
     fig, ax = plt.subplots(figsize=(12, 12))
-    
+
     if 'total_infected' in which_compartments:
         ax.plot(df_true['date'], df_true['total_infected'],
                 '-o', color='C0', label='Confirmed Cases (Observed)')
-        ax.plot(df_prediction['date'], df_prediction['total_infected'],
-                '-', color='C0', label='Confirmed Cases (M2 Forecast)')
-        # ax.plot(df_pune_exp['date'], df_pune_exp['total_infected'],
-        #         '--', color='C0', label='Confirmed Cases (Exp Forecast)')
+        sns.lineplot(x="date", y="total_infected", data=df_prediction,
+                     ls='-', color='C0', label='Confirmed Cases (M2 Forecast)')
         if both_forecasts:
-            ax.plot(df_prediction_m1['date'], df_prediction_m1['total_infected'],
-                    '--', color='C0', label='Confirmed Cases (M1 Forecast)')
+            sns.lineplot(x="date", y="total_infected", data=df_prediction_m1,
+                         ls='--', color='C0', label='Confirmed Cases (M1 Forecast)')
+            # ax.plot(df_prediction_m1['date'], df_prediction_m1['total_infected'],
+            #         '--', color='C0', label='Confirmed Cases (M1 Forecast)')
     if 'hospitalised' in which_compartments:
         ax.plot(df_true['date'], df_true['hospitalised'],
                 '-o', color='orange', label='Active Cases (Observed)')
-        ax.plot(df_prediction['date'], df_prediction['hospitalised'],
-                '-', color='orange', label='Active Cases (M2 Forecast)')
+        sns.lineplot(x="date", y="hospitalised", data=df_prediction,
+                     ls='-', color='orange', label='Active Cases (M2 Forecast)')
         if both_forecasts:
-            ax.plot(df_prediction_m1['date'], df_prediction_m1['hospitalised'],
-                    '--', color='orange', label='Active Cases (M1 Forecast)')
+            sns.lineplot(x="date", y="hospitalised", data=df_prediction_m1,
+                         ls='--', color='orange', label='Active Cases (M1 Forecast)')
+            # ax.plot(df_prediction_m1['date'], df_prediction_m1['hospitalised'],
+            #         '--', color='orange', label='Active Cases (M1 Forecast)')
     if 'recovered' in which_compartments:
         ax.plot(df_true['date'], df_true['recovered'],
                 '-o', color='green', label='Recovered Cases (Observed)')
-        ax.plot(df_prediction['date'], df_prediction['recovered'],
-                '-', color='green', label='Recovered Cases (M2 Forecast)')
+        sns.lineplot(x="date", y="recovered", data=df_prediction,
+                     ls='-', color='green', label='Recovered Cases (M2 Forecast)')
         if both_forecasts:
-            ax.plot(df_prediction_m1['date'], df_prediction_m1['recovered'],
-                    '--', color='green', label='Recovered Cases (M1 Forecast)')
+            sns.lineplot(x="date", y="recovered", data=df_prediction_m1,
+                         ls='--', color='green', label='Recovered Cases (M1 Forecast)')
+            # ax.plot(df_prediction_m1['date'], df_prediction_m1['recovered'],
+            #         '--', color='green', label='Recovered Cases (M1 Forecast)')
     if 'deceased' in which_compartments:
         ax.plot(df_true['date'], df_true['deceased'],
                 '-o', color='red', label='Deceased Cases (Observed)')
-        ax.plot(df_prediction['date'], df_prediction['deceased'],
-                '-', color='red', label='Deceased Cases (M2 Forecast)')
+        sns.lineplot(x="date", y="deceased", data=df_prediction,
+                     ls='-', color='red', label='Deceased Cases (M2 Forecast)')
         if both_forecasts:
-            ax.plot(df_prediction_m1['date'], df_prediction_m1['deceased'],
-                    '--', color='red', label='Deceased Cases (M1 Forecast)')
+            sns.lineplot(x="date", y="deceased", data=df_prediction_m1,
+                         ls='--', color='red', label='Deceased Cases (M1 Forecast)')
+            # ax.plot(df_prediction_m1['date'], df_prediction_m1['deceased'],
+            #         '--', color='red', label='Deceased Cases (M1 Forecast)')
     
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
