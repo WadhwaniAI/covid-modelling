@@ -59,8 +59,8 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     return df_train, df_val, df_true_fitting
 
 
-def single_fitting_cycle(dataframes, state, district, train_period=7, val_period=7, train_on_val=False,
-                         data_from_tracker=True, filename=None, pre_lockdown=False, N=1e7, num_evals=1500,
+def single_fitting_cycle(dataframes, state, district, train_period=7, val_period=7, train_on_val=False, num_evals=1500,
+                         data_from_tracker=True, filename=None, data_format='new', pre_lockdown=False, N=1e7, 
                          which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
 
     print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
@@ -68,7 +68,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
     if data_from_tracker:
         df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
     else:
-        df_district = get_data(dataframes, state, district, disable_tracker=True, filename=filename)
+        df_district = get_data(disable_tracker=True, filename=filename, data_format=data_format)
     
     df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
     df_district_raw_data = df_district_raw_data[df_district_raw_data['date'] <= '2020-03-25']
