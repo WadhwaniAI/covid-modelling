@@ -176,7 +176,7 @@ import pickle
 def backtest(triple, args):
     df, dtp, model_params, _, _, model, output_folder, file_prefix = setup(triple, args)
     # df = df[df[model.date] > datetime(year=2020, month=4, day=14)]
-    increment = 5
+    increment = 3
     future_days = 7
     val_size = 7
     min_days = 7
