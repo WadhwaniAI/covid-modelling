@@ -32,7 +32,8 @@ class HiddenPrints:
 
 
 def backtesting(model: IHME, data, start, end, increment=5, future_days=10, 
-        hyperopt_val_size=7, optimize_runs=3, max_evals=100, xform_func=None, dtp=None, min_days=14):
+        hyperopt_val_size=7, optimize_runs=3, max_evals=100, xform_func=None,
+        dtp=None, min_days=14):
     runtime_s = time.time()
     n_days = (end - start).days + 1 - future_days
     model = model.generate()
@@ -47,10 +48,6 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10,
         
         # # OPTIMIZE HYPERPARAMS
         if optimize_runs > 0:
-            # n_days, best_init = optimize_hyperparameters(incremental_model, fit_data,
-            #     incremental_model.priors['fe_bounds'], (0.1, 2, 0.5), iterations=optimize_runs, val_size=5, seed=seed)
-            #     # incremental_model.priors['fe_bounds'], (0.1, 2, 0.5), iterations=optimize, val_size=5)
-            
             hyperopt_runs = {}
             pool = Pool(processes=5)
             o = Optimize((incremental_model, fit_data,
@@ -60,29 +57,10 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10,
                 hyperopt_runs[err] = (best_init, n_days)
             best_init, n_days = hyperopt_runs[min(hyperopt_runs.keys())]
             
-            # results = [apply_async(pool, optimize,
-            #     (incremental_model, fit_data,
-            #         incremental_model.priors['fe_bounds'], max_evals, 'mape', 
-            #         hyperopt_val_size, min_days))
-            #     for _ in range(optimize_runs)]
-            # for r in results:
-            #     out = r.get()
-            #     outputs.append(out)
-            # print(outputs)
-            # for (best_init, n_days), err in outputs:
-            #     hyperopt_runs[err] = (best_init, n_days)
-            # best_init, n_days = hyperopt_runs[min(hyperopt_runs.keys())]
-
-            # for _ in range(optimize_runs):
-            #     (best_init, n_days), err = optimize(incremental_model, fit_data,
-            #         incremental_model.priors['fe_bounds'],
-            #         iterations=max_evals, val_size=5, min_days=14)
-            #     hyperopt_runs[err] = (best_init, n_days)
-            # best_init, n_days = hyperopt_runs[min(hyperopt_runs.keys())]
-            
-            fit_data = fit_data[-n_days:]
-            fit_data.loc[:, 'day'] = (fit_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
-            val_data.loc[:, 'day'] = (val_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
+            fit_data_cut = fit_data[-n_days:]
+            val_data_cut = val_data[:]
+            fit_data_cut.loc[:, 'day'] = (fit_data_cut['date'] - np.min(fit_data_cut['date'])).apply(lambda x: x.days)
+            val_data_cut.loc[:, 'day'] = (val_data_cut['date'] - np.min(fit_data_cut['date'])).apply(lambda x: x.days)
             incremental_model.priors['fe_init'] = best_init
         else:
             n_days, best_init = len(fit_data), incremental_model.priors['fe_init']

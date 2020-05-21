@@ -179,11 +179,13 @@ def backtest(triple, args):
     increment = 5
     future_days = 7
     val_size = 7
+    min_days = 7
     xform = lograte_to_cumulative if args.log else rate_to_cumulative
     results = backtesting(model, df, df[model_params['date']].min(), 
         df[model_params['date']].max(), future_days=future_days, 
         hyperopt_val_size=val_size, optimize_runs=args.hyperopt,
-        max_evals=args.max_evals, increment=increment, xform_func=xform, dtp=dtp)
+        max_evals=args.max_evals, increment=increment, xform_func=xform,
+        dtp=dtp, min_days=min_days)
     # print (results)
     picklefn = f'{output_folder}/backtesting.pkl'
     with open(picklefn, 'wb') as pickle_file:
@@ -222,6 +224,7 @@ def backtest(triple, args):
         pargs['log'] = args.log
         pargs['increment'] = increment
         pargs['future_days'] = future_days
+        pargs['min_days'] = min_days
         pargs['hyperopt_val_size'] = val_size
         json.dump(pargs, pfile)
     
