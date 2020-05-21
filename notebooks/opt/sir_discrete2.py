@@ -50,35 +50,42 @@ class SIR_Discrete(object):
     
     def perform(self,ACTION):
         STATE_=self.STATE.copy()
-        # if self.is_action_legal(ACTION)==False:
-        #     ACTION=0
-        # 0:S, 1:E, 2:I, 3:B 4:days_last 5:switch_budgets 6:pAction
+        if self.is_action_legal(ACTION)==False:
+            ACTION=0
+            # 0:S, 1:E, 2:I, 3:R_mild, 4:R_severe, 5:R_severe_hosp, 6:R_fatal, 7:C, 8:D, 9:B,
+            # 10:days_last, 11:switch_budgets,12:pAction
+        # 0:S, 1:E, 2:I, 3:B 4.days_last 5.switch_budgets 6.pAction
+        if (ACTION!=0 or self.STATE[6]!=0) and self.is_action_legal(ACTION)==True:
+            if self.STATE[6]==0:
+                STATE_[4]=1
+                STATE_[5]=self.STATE[5]-1
+            else:
+                if self.STATE[4]<11 or ACTION==self.STATE[6]: #10 days duration or same action
+                    STATE_[4]=self.STATE[4]+1
+                    STATE_[5]=self.STATE[5]
+                    ACTION=self.STATE[6]
+                else: #After 10 days and different action
+                    if self.STATE[5]>0: #has switching budget
+                        STATE_[4]=1
+                        STATE_[5]=self.STATE[5]-1
+                    else: #out of switching budget
+                        STATE_[4]=0
+                        STATE_[5]=self.STATE[5]
+                        ACTION=0
+        else: #no intervention
+            STATE_[4]=0
+            STATE_[5]=self.STATE[5]
+            ACTION=0
+        # 0:S, 1:E, 2:I, 3:B 4.days_last 5.switch_budgets 6.pAction
         T_trans=self.get_action_T(ACTION)
         STATE_[0] = self.STATE[0]-self.STATE[1]*self.STATE[0]/(T_trans)
         STATE_[1] = self.STATE[1]+self.STATE[1]*self.STATE[0]/(T_trans) - self.STATE[1]/self.T_treat
         STATE_[2] = self.STATE[2]+self.STATE[1]/self.T_treat
         STATE_[3] = self.STATE[3]-self.get_action_cost(ACTION)
-        
-        panelty=0
         STATE_[6]=ACTION
-        # if ACTION!=0:
-        #     if self.STATE[4]<11:
-        #         if ACTION!=self.STATE[6]:
-        #             panelty=100
-        #         else:
-        #             STATE_[4]+=1
-        #     else:
-        #         if ACTION!=self.STATE[6]:
-        #             STATE_[5]-=1 
-        #             STATE_[4]=1
-        #         else:
-        #             STATE_[4]+=1
         self.STATE=STATE_.copy()
         self.t+=1
-        if self.STATE[3]<0 or self.STATE[4]<0:
-            panelty=100
-        # r=self.calc_reward()-panelty
-        r=self.calc_reward()-0.13*self.get_action_cost(ACTION)
+        r=self.calc_reward()
         return r, self.STATE
 
     def calc_reward(self):
@@ -112,3 +119,5 @@ if __name__ == '__main__':
     for i in range(len(I)):
         reward+=I[i]
     print(reward)
+    
+    

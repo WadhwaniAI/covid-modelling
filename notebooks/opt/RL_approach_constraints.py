@@ -4,14 +4,16 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-# sys.path.append('../..')
-# from models.optim.sir_discrete2 import SIR_Discrete
-# sys.path.pop(-1)
+sys.path.append('../..')
+# from models.optim.SEIR_Discrete_2 import SEIR_Discrete
 from sir_discrete2 import SIR_Discrete
+sys.path.pop(-1)
+# from sir_discrete2 import SIR_Discrete
 from sklearn.ensemble import ExtraTreesRegressor
 import pickle
 import time
 from tqdm import tqdm, trange
+
 
 def is_fitted(sklearn_regressor):
     """Helper function to determine if a regression model from scikit-learn has
@@ -45,7 +47,7 @@ class FittedQIteration(object):
         else:
             return self.Q([state]).argmax()
 
-    def run_episode(self, eps=0.1, episode_length=200):
+    def run_episode(self, eps=0.1, episode_length=400):
         """Run a single episode on the SEIR_Discrete using the current policy.
         Can pass a custom `eps` to test out varying levels of randomness.
         Return the states visited, actions taken, and rewards received."""
@@ -54,17 +56,27 @@ class FittedQIteration(object):
         R = np.zeros(episode_length)
 
         self.simulator.reset()
-        S[0] = self.simulator.STATE
-
+        S[0] = self.simulator.STATE        
         for t in range(episode_length):
             A[t] = self.policy(S[t], eps=eps)
-            ACTION=int(A[t])
+            ACTION=int(A[t])  
+            if self.simulator.is_action_legal(ACTION)==False:
+                ACTION=0
+            # 0:S, 1:E, 2:I, 3:R_mild, 4:R_severe, 5:R_severe_hosp, 6:R_fatal, 7:C, 8:D, 9:B,
+            # 10:days_last, 11:switch_budgets,12:pAction
+            # if ACTION!=0:
+            #     if S[t][12]!=0:
+            #         if S[t][10]<11 or ACTION==S[t][12]: #10 days duration or same action
+            #             ACTION=S[t][12]
+            #         elif S[t][11]==0: #no switching budget
+            #             ACTION=0
+            #0:S, 1:I, 2:R, 3:B, 4:days_last, 5: switch_budgets, 6:pAction            
             if ACTION!=0:
-                if S[t][4]>0 and S[t][4]<10: #10 days duration
-                    ACTION=S[t][6]
-                else: #After 10 days
-                    if ACTION!=S[t][6] and S[t][5]==0: #different action and out of switching budget
-                        ACTION=S[t][6]   
+                if S[t][6]!=0:
+                    if S[t][4]<11 or ACTION==S[t][6]: #10 days duration or same action
+                        ACTION=S[t][6]
+                    elif S[t][5]==0: #no switching budget
+                        ACTION=0        
             A[t] = int(ACTION)
             R[t], S[t+1] = self.simulator.perform(A[t])
         return S, A, R
@@ -113,10 +125,10 @@ class FittedQIteration(object):
 if __name__ == '__main__':
     print('Here goes nothing')
     
-    num_refits=10
-    num_episodes=15
-    episode_length=400
-    First_time=True
+    num_refits=1
+    num_episodes=1
+    episode_length=500
+    First_time=False
     if First_time:
         env=FittedQIteration()
         episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,episode_length=episode_length)
@@ -137,8 +149,8 @@ if __name__ == '__main__':
     R=real_episodes[2]
     best_r=0
     for i in range(len(R)):
-        best_r+=R[i]*discount**(i)
-    
+        # best_r+=R[i]*discount**i
+        best_r+=S[i][1]
 
     random_action_episodes=env.run_episode(eps=1,episode_length=episode_length)
     S_r=random_action_episodes[0]
@@ -146,7 +158,8 @@ if __name__ == '__main__':
     R_r=random_action_episodes[2]
     random_r=0
     for i in range(len(R_r)):
-        random_r+=R_r[i]*discount**(i)
+        # random_r+=R_r[i]*discount**i
+        random_r+=S_r[i][1]
     test_r=0    
     
     state=real_episodes[0][0]
@@ -161,13 +174,14 @@ if __name__ == '__main__':
     S_=[]
     I=[]
     R=[]
+    
     for i in range(len(S)):
         S_.append(S[i][0])
         I.append(S[i][1])
         R.append(S[i][2])
-    plt.plot(range(len(S_)),S_)
+    # plt.plot(range(len(S_)),S_)
     plt.plot(range(len(I)),I)
-    plt.plot(range(len(R)),R)
+    # plt.plot(range(len(R)),R)
     S_=[]
     I_=[]
     R_=[]
@@ -175,7 +189,6 @@ if __name__ == '__main__':
         S_.append(S_r[i][0])
         I_.append(S_r[i][1])
         R_.append(S_r[i][2])
-    plt.plot(range(len(S_)),S_)
+    # plt.plot(range(len(S_)),S_)
     plt.plot(range(len(I_)),I_)
-    plt.plot(range(len(R_)),R_)
-    
+    # plt.plot(range(len(R_)),R_)
