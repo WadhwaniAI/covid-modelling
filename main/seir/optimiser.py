@@ -124,7 +124,7 @@ class Optimiser():
         params_dict = {param_names[i]: values[i] for i in range(len(values))}
         return params_dict
 
-    def init_default_params(self, df_true, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-05-18', 
+    def init_default_params(self, df_true, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-05-31', 
                             T_hosp=0.001, init_infected=None, start_date=None):
         if (init_infected == None) and (start_date == None):
             init_infected = max(df_true.iloc[0, :]['total_infected'], 1)
@@ -136,8 +136,8 @@ class Optimiser():
         default_params = {
             'N' : N,
             'init_infected' : init_infected,
-            'intervention_day' : (intervention_date - start_date).days,
-            'intervention_removal_day': (lockdown_removal_date - start_date).days,
+            'lockdown_day' : (intervention_date - start_date).days,
+            'lockdown_removal_day': (lockdown_removal_date - start_date).days,
             'T_hosp' : T_hosp,
             'starting_date' : start_date
         }

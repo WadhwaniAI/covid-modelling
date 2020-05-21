@@ -60,7 +60,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
 
 
 def single_fitting_cycle(dataframes, state, district, train_period=7, val_period=7, train_on_val=False,
-                         data_from_tracker=True, filename=None, pre_lockdown=False, N=1e7, 
+                         data_from_tracker=True, filename=None, pre_lockdown=False, N=1e7, num_evals=1500,
                          which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
 
     print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
@@ -110,13 +110,12 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
 
     # Create searchspace of variable params
     variable_param_ranges = {
-        'R0': hp.uniform('R0', 1.6, 5),
+        'lockdown_R0': hp.uniform('lockdown_R0', 1, 1.5),
         'T_inc': hp.uniform('T_inc', 4, 5),
         'T_inf': hp.uniform('T_inf', 3, 4),
-        'T_recov_severe': hp.uniform('T_recov_severe', 9, 20),
-        'P_severe': hp.uniform('P_severe', 0.3, 0.9),
-        'P_fatal': hp.uniform('P_fatal', 0, 0.3),
-        'intervention_amount': hp.uniform('intervention_amount', 0, 1)
+        'T_recov_severe': hp.uniform('T_recov_severe', 5, 60),
+        'P_severe': hp.uniform('P_severe', 0.3, 0.99),
+        'P_fatal': hp.uniform('P_fatal', 0, 0.3)
     }
     if initialisation == 'intermediate':
         extra_params = {
@@ -128,7 +127,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
     # Perform Bayesian Optimisation
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days + 1
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, method='mape', 
-                                              num_evals=1500, loss_indices=[-train_period, None],
+                                              num_evals=num_evals, loss_indices=[-train_period, None],
                                               total_days=total_days, which_compartments=which_compartments, 
                                               initialisation=initialisation)
 
@@ -150,7 +149,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
 
     results_dict = {}
     for name in ['best_params', 'default_params', 'optimiser', 'df_prediction', 'df_district', 'df_train', \
-        'df_val', 'df_loss', 'ax']:
+        'df_val', 'df_loss', 'ax', 'trials']:
         results_dict[name] = eval(name)
 
     return results_dict
