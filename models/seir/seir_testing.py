@@ -12,7 +12,7 @@ class SEIR_Testing():
                  T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6, init_infected=1,
                  q=0, theta_E=0, psi_E=1, theta_I=0, psi_I=1, lockdown_day=10, lockdown_removal_day=75,
                  starting_date='2020-03-09', initialisation='intermediate', observed_values=None, 
-                 E_hosp_ratio=0.5, I_hosp_ratio=0.5, ** kwargs):
+                 state_init_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, ** kwargs):
         """
         This class implements SEIR + Hospitalisation + Severity Levels + Testing 
         The model further implements 
@@ -119,10 +119,10 @@ class SEIR_Testing():
             'starting_date': starting_date,  # Datetime value that corresponds to Day 0 of modelling
             'lockdown_day': lockdown_day, # Number of days from the starting_date, after which lockdown is initiated
             'lockdown_removal_day': lockdown_removal_day, # Number of days from the starting_date, after which lockdown is removed
-            'N': N
+            'N': N,
 
             #Initialisation Params
-            'E_hosp_ratio' : E_hosp_ratio # Ratio for Exposed to hospitalised for initialisation
+            'E_hosp_ratio' : E_hosp_ratio, # Ratio for Exposed to hospitalised for initialisation
             'I_hosp_ratio' : I_hosp_ratio # Ratio for Infected to hospitalised for initialisation
         }
 
@@ -155,28 +155,29 @@ class SEIR_Testing():
             setattr(self, key + suffix, self.testing_params[key])
 
         # Initialisation
-        state_init_values = OrderedDict()
-        key_order = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
+        if state_init_values == None:
+            state_init_values = OrderedDict()
+            key_order = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
             for key in key_order:
                 state_init_values[key] = 0
-        
-        if intialisation == 'starting':
-            state_init_values['S'] = (self.N - observed_values['init_infected'])/self.N
-            state_init_values['I'] = observed_values['init_infected']/self.N
-
-        if intialisation == 'intermediate':
-            state_init_values['R_severe_hosp'] = self.P_severe / (self.P_severe + self.P_fatal) * observed_values['hospitalised']
-            state_init_values['R_fatal'] = self.P_fatal / (self.P_severe + self.P_fatal) * observed_values['hospitalised']
-            state_init_values['C'] = observed_values['recovered']
-            state_init_values['D'] = observed_values['deceased']
-
-            state_init_values['E'] = self.E_hosp_ratio * observed_values['hospitalised']
-            state_init_values['I'] = self.I_hosp_ratio * observed_values['hospitalised']
             
-            nonSsum = sum(state_init_values.values())
-            state_init_values['S'] = (self.N - nonSsum)
-            for key in state_init_values.keys():
-                state_init_values[key] = state_init_values[key]/self.N
+            if intialisation == 'starting':
+                state_init_values['S'] = (self.N - observed_values['init_infected'])/self.N
+                state_init_values['I'] = observed_values['init_infected']/self.N
+
+            if intialisation == 'intermediate':
+                state_init_values['R_severe_hosp'] = self.P_severe / (self.P_severe + self.P_fatal) * observed_values['hospitalised']
+                state_init_values['R_fatal'] = self.P_fatal / (self.P_severe + self.P_fatal) * observed_values['hospitalised']
+                state_init_values['C'] = observed_values['recovered']
+                state_init_values['D'] = observed_values['deceased']
+
+                state_init_values['E'] = self.E_hosp_ratio * observed_values['hospitalised']
+                state_init_values['I'] = self.I_hosp_ratio * observed_values['hospitalised']
+                
+                nonSsum = sum(state_init_values.values())
+                state_init_values['S'] = (self.N - nonSsum)
+                for key in state_init_values.keys():
+                    state_init_values[key] = state_init_values[key]/self.N
 
         self.state_init_values = state_init_values
 
