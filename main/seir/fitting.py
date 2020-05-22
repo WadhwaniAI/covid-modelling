@@ -25,6 +25,27 @@ from main.seir.losses import Loss_Calculator
 
 now = str(datetime.now())
 
+def get_variable_param_ranges(as_str=False):
+    if as_str:
+        return {
+            'lockdown_R0': "hp.uniform('lockdown_R0', 1, 1.5)",
+            'T_inc': "hp.uniform('T_inc', 4, 5)",
+            'T_inf': "hp.uniform('T_inf', 3, 4)",
+            'T_recov_severe': "hp.uniform('T_recov_severe', 5, 60)",
+            'P_severe': "hp.uniform('P_severe', 0.3, 0.99)",
+            'P_fatal': "hp.uniform('P_fatal', 0, 0.3)"
+        }
+    variable_param_ranges = {
+        'lockdown_R0': hp.uniform('lockdown_R0', 1, 1.5),
+        'T_inc': hp.uniform('T_inc', 4, 5),
+        'T_inf': hp.uniform('T_inf', 3, 4),
+        'T_recov_severe': hp.uniform('T_recov_severe', 5, 60),
+        'P_severe': hp.uniform('P_severe', 0.3, 0.99),
+        'P_fatal': hp.uniform('P_fatal', 0, 0.3)
+    }
+    return variable_param_ranges
+    
+
 def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5,
                     which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
     print("splitting data ..")
@@ -109,14 +130,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
                                                        start_date=start_date)
 
     # Create searchspace of variable params
-    variable_param_ranges = {
-        'lockdown_R0': hp.uniform('lockdown_R0', 1, 1.5),
-        'T_inc': hp.uniform('T_inc', 4, 5),
-        'T_inf': hp.uniform('T_inf', 3, 4),
-        'T_recov_severe': hp.uniform('T_recov_severe', 5, 60),
-        'P_severe': hp.uniform('P_severe', 0.3, 0.99),
-        'P_fatal': hp.uniform('P_fatal', 0, 0.3)
-    }
+    variable_param_ranges = get_variable_param_ranges()
     if initialisation == 'intermediate':
         extra_params = {
             'E_hosp_ratio': hp.uniform('E_hosp_ratio', 0, 2),
