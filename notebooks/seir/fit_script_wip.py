@@ -123,4 +123,4 @@ for region in predictions_dict.keys():
     create_report(path=region_folder, **model_report[region])
 
 df_output = create_all_csvs(predictions_dict, initialisation='intermediate', train_period=7, icu_fraction=0.02)
-write_csv(df_output, os.path.join(output_folder, 'output.csv'.format(today)))
+write_csv(df_output, os.path.join(output_folder, 'output.csv'))
