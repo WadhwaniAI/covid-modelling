@@ -6,7 +6,7 @@ import random
 import argparse
 import pandas as pd
 import numpy as np
-import pickle
+import dill as pickle
 import time
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
@@ -14,16 +14,18 @@ import matplotlib.pyplot as plt
 import curvefit
 from curvefit.core.functions import *
 
+from pathos.multiprocessing import ProcessingPool as Pool
 
 sys.path.append('../..')
 from models.ihme.new_model import IHME
 from models.ihme.util import get_mortality
 from models.ihme.dataloader import get_district_timeseries_cached
-from backtesting_hyperparams import optimize, backtesting
+from backtesting_hyperparams import Optimize, backtesting
 from utils.util import train_test_split, rollingavg
 from utils.loss import evaluate
 from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
 from plotting import plot_results, plot_backtesting_results, plot_backtesting_errors
+from plotting import plot
 pd.options.mode.chained_assignment = None
 
 
@@ -43,6 +45,11 @@ cities = {
     'delhi': delhi,
     'bengaluru': bengaluru,
 }
+
+increment = 3
+future_days = 7
+val_size = 7
+min_days = 7
 
 # -------------------
 def setup(triple, args):
@@ -79,6 +86,7 @@ def setup(triple, args):
         smoothedcol = f'{model_params["ycol"]}_smoothed'
         df[smoothedcol] = rollingavg(df[model_params['ycol']], args.smoothing)
         model_params['ycol'] = smoothedcol
+        df = df.dropna(subset=[smoothedcol])
     
     covs = ['covs', 'sd', 'covs'] if args.sd else ['covs', 'covs', 'covs']
     model_params['covs'] = covs
@@ -110,11 +118,18 @@ def run_pipeline(triple, args):
     # HYPER PARAM TUNING
     if args.hyperopt:
         bounds = model.priors['fe_bounds']
-        best_hp = {}
-        for _ in range(args.hyperopt):
-            (fe_init, n_days_train), err = optimize(model, train, bounds, iterations=args.max_evals, scoring='mape')
-            best_hp[err] = (fe_init, n_days_train)
-        (fe_init, n_days_train) = best_hp[min(best_hp.keys())]
+        
+        hyperopt_runs = {}
+        trials_dict = {}
+        pool = Pool(processes=5)
+        o = Optimize((model, train,
+                bounds, args.max_evals, 'mape', 
+                val_size, min_days))
+        for i, ((best_init, n_days), err, trials) in enumerate(pool.map(o.optimizestar, list(range(args.hyperopt)))):
+            hyperopt_runs[err] = (best_init, n_days)
+            trials_dict[i] = trials
+        (fe_init, n_days_train) = hyperopt_runs[min(hyperopt_runs.keys())]
+        
         train = train[-n_days_train:]
         train.loc[:, 'day'] = (train['date'] - np.min(train['date'])).apply(lambda x: x.days)
         test.loc[:, 'day'] = (test['date'] - np.min(train['date'])).apply(lambda x: x.days)
@@ -155,19 +170,21 @@ def run_pipeline(triple, args):
         # TODO: group handling
         draws = np.vstack((low, up))   
 
-    plot_train, plot_test = copy(train), copy(test)
-    plot_train[model_params['ycol']] = xform_func(plot_train[model_params['ycol']], dtp)
+    plot_df, plot_test = copy(df), copy(test)
+    plot_df[model_params['ycol']] = xform_func(plot_df[model_params['ycol']], dtp)
     plot_test[model_params['ycol']] = xform_func(plot_test[model_params['ycol']], dtp)
     predicted_cumulative_deaths = xform_func(all_preds, dtp)
-    draws = xform_func(draws, dtp)
+    xform_draws = xform_func(draws, dtp)
 
     # ADD PLOTTING CODE HERE
-    plot_results(model, plot_train, plot_test, predicted_cumulative_deaths, all_preds_dates, testerr, f'new_{file_prefix}', draws=draws)
+    plot_results(model, plot_df, len(train), plot_test, predicted_cumulative_deaths, 
+        all_preds_dates, xform_testerr, f'new_{file_prefix}', val_size, draws=xform_draws, yaxis_name='cumulative deaths')
     plt.savefig(f'{output_folder}/results.png')
     plt.clf()
-    # plot_results(model, train, test, all_preds, all_preds_dates, testerr, f'new_{file_prefix}', draws=draws)
-    # plt.savefig(f'{output_folder}/results_notransform.png')
-    # plt.clf()
+    plot_results(model, df, len(train), test, all_preds, 
+        all_preds_dates, testerr, f'new_{file_prefix}', val_size, draws=draws)
+    plt.savefig(f'{output_folder}/results_notransform.png')
+    plt.clf()
     
     runtime = time.time() - start_time
     print('time:', runtime)
@@ -198,19 +215,15 @@ def run_pipeline(triple, args):
             'test': test,
             'dates': all_preds_dates,
             'predictions': all_preds,
-            'cumulative_predictions': predicted_cumulative_deaths
+            'cumulative_predictions': predicted_cumulative_deaths,
+            'trials': trials_dict
         }
         pickle.dump(data, pickle_file)
     
-
 def backtest(triple, args):
     df, dtp, model_params, _, _, model, output_folder, file_prefix = setup(triple, args)
     start_time = time.time()
     # df = df[df[model.date] > datetime(year=2020, month=4, day=14)]
-    increment = 3
-    future_days = 7
-    val_size = 7
-    min_days = 7
     xform = lograte_to_cumulative if args.log else rate_to_cumulative
     results = backtesting(model, df, df[model_params['date']].min(), 
         df[model_params['date']].max(), future_days=future_days, 
@@ -243,6 +256,11 @@ def backtest(triple, args):
     plt.savefig(f'{output_folder}/backtesting_rmsle.png')
     plt.clf()
 
+    dates = pd.Series(list(results['results'].keys())).apply(lambda x: results['df']['date'].min() + timedelta(days=x))
+    plot(dates, [d['n_days'] for d in results['results'].values()], 'n_days_train', 'n_days')
+    plt.savefig(f'{output_folder}/backtesting_ndays.png')
+    plt.clf()
+
     runtime = time.time() - start_time
     print('time:', runtime)
 
@@ -262,7 +280,59 @@ def backtest(triple, args):
         pargs['hyperopt_val_size'] = val_size
         pargs['runtime'] = runtime
         json.dump(pargs, pfile)
+
+def replot_backtest(triple, folder, args):
+    dist, _, _ = triple
+    output_folder = folder + '/replotted'
+    file_prefix = f'{dist}_deaths'
     
+    _, dtp, _, _, _, model, _, _ = setup(triple, args)
+    with open(f'{output_folder}/params.json', 'r') as pfile:
+        pargs = json.load(pfile)
+        args.hyperopt = pargs['hyperopt']
+        args.max_evals = pargs['max_evals']
+        args.sd = pargs['sd']
+        args.smoothing = pargs['smoothing']
+        args.log = pargs['log']
+        increment = pargs['increment']
+        future_days = pargs['future_days']
+        min_days = pargs['min_days']
+        val_size = pargs['hyperopt_val_size']
+        increment = 3
+        future_days = 7
+        val_size = 7
+        min_days = 7
+    # df = df[df[model.date] > datetime(year=2020, month=4, day=14)]
+    
+    xform = lograte_to_cumulative if args.log else rate_to_cumulative 
+    
+    picklefn = f'../../main/ihme/output/mortality/Mumbai_deaths/big_run/backtesting.pkl'
+    with open(picklefn, 'rb') as pickle_file:
+        pkl = pickle.load(pickle_file)
+        results = pkl['results']
+        df = pkl['df']
+        # dtp = pkl['dtp']
+        # model = pkl['model']
+
+    plot_backtesting_results(model, results['df'], results['results'],
+        results['future_days'], file_prefix, transform_y=xform, dtp=dtp,
+            axis_name='cumulative deaths') 
+    # plot_backtesting_results(model, df, results, increment, future_days, file_prefix)
+    plt.savefig(f'{output_folder}/replotted/backtesting.png')
+    plt.clf()
+    plot_backtesting_errors(model, df, df[model.date].min(),
+        results['results'], file_prefix, scoring='mape', use_xform=True)
+    plt.savefig(f'{output_folder}/replotted/backtesting_mape.png')
+    plt.clf()
+    plot_backtesting_errors(model, df, df[model.date].min(),
+        results['results'], file_prefix, scoring='rmse', use_xform=True)
+    plt.savefig(f'{output_folder}/replotted/backtesting_rmse.png')
+    plt.clf()
+    plot_backtesting_errors(model, df, df[model.date].min(),
+        results['results'], file_prefix, scoring='rmsle', use_xform=True)
+    plt.savefig(f'{output_folder}/replotted/backtesting_rmsle.png')
+    plt.clf()
+
 # -------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser() 

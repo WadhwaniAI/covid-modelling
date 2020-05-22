@@ -33,12 +33,14 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10,
         # # OPTIMIZE HYPERPARAMS
         if optimize_runs > 0:
             hyperopt_runs = {}
+            trials_dict = {}
             pool = Pool(processes=5)
             o = Optimize((incremental_model, fit_data,
                     incremental_model.priors['fe_bounds'], max_evals, 'mape', 
                     hyperopt_val_size, min_days))
-            for (best_init, n_days), err in pool.map(o.optimizestar, list(range(optimize_runs))):
+            for i, ((best_init, n_days), err, trials) in enumerate(pool.map(o.optimizestar, list(range(optimize_runs)))):
                 hyperopt_runs[err] = (best_init, n_days)
+                trials_dict[i] = trials
             best_init, n_days = hyperopt_runs[min(hyperopt_runs.keys())]
             
             fit_data = fit_data[-n_days:]
@@ -47,6 +49,7 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10,
             incremental_model.priors['fe_init'] = best_init
         else:
             n_days, best_init = len(fit_data), incremental_model.priors['fe_init']
+            trials_dict = None
         
         # # PRINT DATES (ENSURE CONTINUITY)
         # print (fit_data[model.date].min(), fit_data[model.date].max())
@@ -81,8 +84,11 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10,
     out = {
         'results': results,
         'df': data,
+        'dtp': dtp,
         'future_days': future_days,
         'runtime': runtime,
+        'model': model,
+        'trials': trials_dict,
     }
     return out
 
@@ -123,6 +129,10 @@ def optimize(model: IHME, data: pd.DataFrame, bounds: list,
         space[model.param_names[i]] = hp.uniform(model.param_names[i], bound[0], bound[1])
     # fmin returns index for hp.choice
     n_days_range = np.arange(min_days, 1 + len(data) - val_size, dtype=int)
+    
+    # force only min_days for n
+    # n_days_range = np.arange(min_days, 1 + min_days, dtype=int)
+    
     space['n'] = hp.choice('n', n_days_range)
 
     trials = Trials()
@@ -139,7 +149,7 @@ def optimize(model: IHME, data: pd.DataFrame, bounds: list,
     
     min_loss = min(trials.losses())
     # print (best, min_loss)
-    return (fe_init, best['n']), min_loss
+    return (fe_init, best['n']), min_loss, trials
 
 # to make pool.map work
 class Optimize():

@@ -7,16 +7,17 @@ from matplotlib.dates import DateFormatter
 import pandas as pd
 from datetime import timedelta
 
-def plot_results(model, train, test, predictions, predictdate, testerr,
-        file_prefix, draws=None):
+def plot_results(model, df, train_size, test, predictions, predictdate, testerr,
+        file_prefix, val_size, draws=None, yaxis_name=None):
     ycol = model.ycol
     maperr = testerr['mape']
     title = f'{file_prefix} {ycol}' +  ' fit to {}'
     # plot predictions against actual
-    setup_plt(ycol)
+    yaxis_name = yaxis_name if yaxis_name is not None else ycol
+    setup_plt(yaxis_name)
     plt.yscale("linear")
     plt.title(title.format(model.func.__name__))
-    n_data = len(train) + len(test)
+    n_data = train_size + len(test)
     # plot predictions
     plt.plot(predictdate, predictions, ls='-', c='dodgerblue', 
         label='fit: {}: {}'.format(model.func.__name__, model.pipeline.mod.params))
@@ -31,14 +32,11 @@ def plot_results(model, train, test, predictions, predictdate, testerr,
         plt.errorbar(future_x, 
             future_y, 
             yerr=draws[:,n_data:], lw=0.5, color='lightcoral', barsabove='False', label='draws')
-    # plot train test boundary
-    plt.axvline(train[model.date].max(), ls=':', c='slategrey', label='train/test boundary')
+    # plot boundaries
+    plt.axvline(test[model.date].min() - timedelta(days=val_size), ls=':', c='darkorchid', label='train/val + boundary')
+    plt.axvline(test[model.date].min(), ls=':', c='slategrey', label='train/test boundary')
     # plot data we fit on
-    plt.scatter(train[model.date], train[ycol], c='crimson', marker='+', label='data')
-    plt.scatter(test[model.date], test[ycol], c='crimson', marker='+')
-    if model.smoothing:
-        plt.plot(train[model.date], train[model.ycol.split('_smoothed')[0]], c='k', marker='+', label='unsmoothed data')
-        plt.plot(test[model.date], test[model.ycol.split('_smoothed')[0]], c='k', marker='+')
+    plt.scatter(df[model.date], df[ycol], c='crimson', marker='+', label='data')
     
     plt.legend()
     return
@@ -74,9 +72,9 @@ def plot_backtesting_results(model, df, results, future_days, file_prefix, trans
         fit_dates = pred_dict['fit_dates']#[-14:]
         
         color = cmap(i/len(results.keys()))
-        plt.plot(val_dates, val_preds, ls='-', c=color,
+        plt.plot(val_dates, val_preds, ls='dashed', c=color,
             label=f'run day: {run_day}')
-        plt.plot(fit_dates, fit_preds, ls='-', c=color,
+        plt.plot(fit_dates, fit_preds, ls='solid', c=color,
             label=f'run day: {run_day}')
         plt.errorbar(val_dates, val_preds,
             yerr=val_preds*results[run_day][errkey]['mape'], lw=0.5,
@@ -107,4 +105,17 @@ def plot_backtesting_errors(model, df, start_date, results, file_prefix,
     plt.plot(dates, errs, ls='-', c='crimson',
         label=scoring)
     plt.legend()
+    return
+
+def plot(x, y, title, yaxis_name=None, log=False, scatter=False):
+    plt.title(title)
+    setup_plt(yaxis_name)
+    yscale = 'log' if log else "linear"
+    plt.yscale(yscale)
+
+    # plot error
+    if scatter:
+        plt.scatter(x,y,c='dodgerblue', marker='+')
+    else:
+        plt.plot(x, y, ls='-', c='crimson')
     return
