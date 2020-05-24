@@ -1,32 +1,55 @@
-from models.ihme.util import evaluate
+from utils.loss import evaluate
 from copy import copy
 from models.ihme.new_model import IHME
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
-import random
 from copy import copy
+import multiprocessing
+import time
 
-def backtesting(model: IHME, data, start, end, increment=5, future_days=10, hyperopt_val_size=7, optimize=None, xform_func=None, dtp=None):
+import dill
+from pathos.multiprocessing import ProcessingPool as Pool
+
+import sys
+sys.path.append('../..')
+from utils.util import HidePrints, train_test_split
+
+def backtesting(model: IHME, data, start, end, increment=5, future_days=10, 
+        hyperopt_val_size=7, optimize_runs=3, max_evals=100, xform_func=None,
+        dtp=None, min_days=14):
+    runtime_s = time.time()
     n_days = (end - start).days + 1 - future_days
     model = model.generate()
     results = {}
-    for run_day in range(2*hyperopt_val_size, n_days, increment):
+    seed = datetime.today().timestamp()
+    for run_day in range(min_days + hyperopt_val_size, n_days, increment):
+        print ("\rbacktesting for", run_day, end="")
         incremental_model = model.generate()
         fit_data = data[(data[model.date] <= start + timedelta(days=run_day))]
         val_data = data[(data[model.date] > start + timedelta(days=run_day)) \
             & (data[model.date] <= start + timedelta(days=run_day+future_days))]
         
         # # OPTIMIZE HYPERPARAMS
-        if optimize is not None:
-            n_days, best_init = optimize_hyperparameters(incremental_model, fit_data,
-                incremental_model.priors['fe_bounds'], (0.5, 5, 0.5), iterations=optimize, val_size=5)
-                # incremental_model.priors['fe_bounds'], (0.1, 2, 0.5), iterations=optimize, val_size=5)
+        if optimize_runs > 0:
+            hyperopt_runs = {}
+            trials_dict = {}
+            pool = Pool(processes=5)
+            o = Optimize((incremental_model, fit_data,
+                    incremental_model.priors['fe_bounds'], max_evals, 'mape', 
+                    hyperopt_val_size, min_days))
+            for i, ((best_init, n_days), err, trials) in enumerate(pool.map(o.optimizestar, list(range(optimize_runs)))):
+                hyperopt_runs[err] = (best_init, n_days)
+                trials_dict[i] = trials
+            best_init, n_days = hyperopt_runs[min(hyperopt_runs.keys())]
+            
             fit_data = fit_data[-n_days:]
             fit_data.loc[:, 'day'] = (fit_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
             val_data.loc[:, 'day'] = (val_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
-            print(incremental_model.priors['fe_init'])
             incremental_model.priors['fe_init'] = best_init
+        else:
+            n_days, best_init = len(fit_data), incremental_model.priors['fe_init']
+            trials_dict = None
         
         # # PRINT DATES (ENSURE CONTINUITY)
         # print (fit_data[model.date].min(), fit_data[model.date].max())
@@ -43,6 +66,9 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10, hype
             xform_err = evaluate(xform_func(val_data[model.ycol], dtp),
                 xform_func(predictions[len(fit_data):], dtp))
         results[run_day] = {
+            'fe_init': best_init,
+            'n_days': n_days,
+            'seed': seed,
             'error': err,
             'xform_error': xform_err,
             'predictions': {
@@ -53,184 +79,81 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10, hype
                 'val_preds': predictions[len(fit_data):],
             }
         }
+    runtime = time.time() - runtime_s
+    print (runtime)
     out = {
         'results': results,
         'df': data,
+        'dtp': dtp,
         'future_days': future_days,
+        'runtime': runtime,
+        'model': model,
+        'trials': trials_dict,
     }
     return out
 
-def train_test_split(df, threshold, threshold_col='date'):
-            return df[df[threshold_col] <= threshold], df[df[threshold_col] > threshold]
-    
-def random_search(model: IHME, data: pd.DataFrame, bounds: list,
-        steps: list, iterations: int, scoring='mape', seed=None, val_size=7):
-    '''
-    bounds: [(l1, u1), (l2, u2), (l3, u3)]
-    steps: [s1, s2, s3]
-    '''
-    if len(data) - val_size < 7:
-        raise Exception('len(data) - val_size must be >= 7')
-    data = copy(data)
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+def optimize(model: IHME, data: pd.DataFrame, bounds: list, 
+        iterations: int, scoring='mape', val_size=7, min_days=7):
+    if len(data) - val_size < min_days:
+        raise Exception(f'len(data) - val_size must be >= {min_days}')
     model = model.generate()
-    fe_inits = [[float(i),float(j),float(k)] for i in np.arange(bounds[0][0], bounds[0][1], steps[0])
-                            for j in np.arange(bounds[1][0], bounds[1][1], steps[1])
-                            for k in np.arange(bounds[2][0], bounds[2][1], steps[2])]
-    all_inits = [[fe_init, n] for fe_init in fe_inits
-                            for n in range(7, 1 + len(data) - val_size)]
-    if seed is None:
-        seed = datetime.today().timestamp()
-    random.seed(seed)
-    indices = random.sample(range(len(all_inits)), iterations)
-    
+    data = copy(data)
     threshold = data[model.date].max() - timedelta(days=val_size)
     train, val = train_test_split(data, threshold, threshold_col=model.date)
 
-    # set baseline
-    model.fit(train)
-    predictions = model.predict(val[model.date].min(), val[model.date].max())
-    err = evaluate(val[model.ycol], predictions)
-    min_err = err[scoring]
-    best_init = [model.priors['fe_init'], len(train)]
-
-    for idx in indices:
+    def objective(params):
         test_model = model.generate()
         test_model.priors.update({
-            'fe_init': all_inits[idx][0],
-            'fe_bounds': bounds
+            'fe_init': [params['alpha'], params['beta'], params['p']],
         })
-        train = train[-all_inits[idx][1]:]
-        test_model.fit(train)
-        predictions = test_model.predict(val[model.date].min(), val[model.date].max())
-        err = evaluate(val[model.ycol], predictions)
-        if err[scoring] < min_err:
-            min_err = err[scoring]
-            best_init = all_inits[idx]
-    return min_err, best_init
-
-def optimize_hyperparameters(model: IHME, data: pd.DataFrame, bounds: list, 
-        steps: list, iterations: int, scoring='mape', seed=None, val_size=7):
-    model = model.generate()
-    data = copy(data)
-    _, (fe_init, n_days) = random_search(model, data, bounds, steps, iterations,
-        scoring=scoring, seed=seed, val_size=val_size)
-    # model.priors['fe_init'] = fe_init
-    # _, n_days = best_train_set(model, data, scoring=scoring, val_size=val_size)
-    return n_days, fe_init
-
-import numpy as np
-def lograte_to_cumulative(to_transform, population):
-    cumulative = np.exp(to_transform) * population
-    return cumulative
-
-def rate_to_cumulative(to_transform, population):
-    cumulative = to_transform * population
-    return cumulative
-
-from models.ihme.util import setup_plt
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-from pandas.plotting import register_matplotlib_converters
-from matplotlib.dates import DateFormatter
-import pandas as pd
-
-def plot_results(model, train, test, predictions, predictdate, testerr,
-        file_prefix, draws=None):
-    ycol = model.ycol
-    maperr = testerr['mape']
-    title = f'{file_prefix} {ycol}' +  ' fit to {}'
-    # plot predictions against actual
-    setup_plt(ycol)
-    plt.yscale("linear")
-    plt.title(title.format(model.func.__name__))
-    n_data = len(train) + len(test)
-    # plot predictions
-    plt.plot(predictdate, predictions, ls='-', c='dodgerblue', 
-        label='fit: {}: {}'.format(model.func.__name__, model.pipeline.mod.params))
-    # plot error bars based on MAPE
-    future_x = predictdate[n_data:]
-    future_y = predictions[n_data:]
-    plt.errorbar(future_x, 
-        future_y,
-        yerr=future_y*maperr, lw=0.5, color='palegoldenrod', barsabove='False', label='mape')
-    if draws is not None:
-        # plot error bars based on draws
-        plt.errorbar(future_x, 
-            future_y, 
-            yerr=draws[:,n_data:], lw=0.5, color='lightcoral', barsabove='False', label='draws')
-    # plot train test boundary
-    plt.axvline(train[model.date].max(), ls=':', c='slategrey', label='train/test boundary')
-    # plot data we fit on
-    plt.scatter(train[model.date], train[ycol], c='crimson', marker='+', label='data')
-    plt.scatter(test[model.date], test[ycol], c='crimson', marker='+')
-    if model.smoothing:
-        plt.plot(train[model.date], train[model.ycol.split('_smoothed')[0]], c='k', marker='+', label='unsmoothed data')
-        plt.plot(test[model.date], test[model.ycol.split('_smoothed')[0]], c='k', marker='+')
-    
-    plt.legend()
-    return
-
-def plot_backtesting_results(model, df, results, future_days, file_prefix, transform_y=None, dtp=None, axis_name=None):
-    ycol = model.ycol
-    title = f'{file_prefix} {ycol}' +  ' backtesting'
-    # plot predictions against actual
-    if axis_name is not None:
-        setup_plt(axis_name)
-    else:
-        setup_plt(ycol)
-    plt.yscale("linear")
-    plt.title(title.format(model.func.__name__))
-
-    if transform_y is not None:
-        df[model.ycol] = transform_y(df[model.ycol], dtp)
-
-    # plot predictions
-    
-    cmap = mpl.cm.get_cmap('winter')
-    for i, run_day in enumerate(results.keys()):
-        pred_dict = results[run_day]['predictions']
-        if transform_y is not None:
-            val_preds = transform_y(pred_dict['val_preds'], dtp)
-            fit_preds = transform_y(pred_dict['fit_preds'], dtp)
-            # fit_preds = transform_y(pred_dict['fit_preds'][-14:], dtp)
-        else:
-            val_preds = pred_dict['val_preds']
-            fit_preds = pred_dict['fit_preds']#[-14:]
-        val_dates = pred_dict['val_dates']
-        fit_dates = pred_dict['fit_dates']#[-14:]
+        train_cut = train[-params['n']:]
+        val_cut = val[:]
+        train_cut.loc[:, 'day'] = (train_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
+        val_cut.loc[:, 'day'] = (val_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
         
-        color = cmap(i/len(results.keys()))
-        plt.plot(val_dates, val_preds, ls='-', c=color,
-            label=f'run day: {run_day}')
-        plt.plot(fit_dates, fit_preds, ls='-', c=color,
-            label=f'run day: {run_day}')
-        plt.errorbar(val_dates, val_preds,
-            yerr=val_preds*results[run_day]['error']['mape'], lw=0.5,
-            color='lightcoral', barsabove='False', label='MAPE')
-        plt.errorbar(fit_dates, fit_preds,
-            yerr=fit_preds*results[run_day]['error']['mape'], lw=0.5,
-            color='lightcoral', barsabove='False', label='MAPE')
+        with HidePrints():
+            test_model.fit(train_cut)
+            predictions = test_model.predict(val_cut[model.date].min(), val_cut[model.date].max())
+        err = evaluate(val_cut[model.ycol], predictions)
+        return {
+            'loss': err[scoring],
+            'status': STATUS_OK,
+            # -- store other results like this
+            'error': err,
+            'predictions': predictions,
+        }
 
-    # plot data we fit on
-    plt.scatter(df[model.date], df[ycol], c='crimson', marker='+', label='data')
+    space = {}
+    for i, bound in enumerate(bounds):
+        space[model.param_names[i]] = hp.uniform(model.param_names[i], bound[0], bound[1])
+    # fmin returns index for hp.choice
+    n_days_range = np.arange(min_days, 1 + len(data) - val_size, dtype=int)
+    
+    # force only min_days for n
+    # n_days_range = np.arange(min_days, 1 + min_days, dtype=int)
+    
+    space['n'] = hp.choice('n', n_days_range)
 
-    # plt.legend()
-    return
+    trials = Trials()
+    best = fmin(objective,
+        space=space,
+        algo=tpe.suggest,
+        max_evals=iterations,
+        trials=trials)
+    
+    fe_init = []
+    for i, param in enumerate(model.param_names):
+        fe_init.append(best[param])
+    best['n'] = n_days_range[best['n']]
+    
+    min_loss = min(trials.losses())
+    # print (best, min_loss)
+    return (fe_init, best['n']), min_loss, trials
 
-def plot_backtesting_errors(model, df, start_date, results, file_prefix,
-                            scoring='mape', use_xform=True, axis_name=None):
-    ycol = model.ycol
-    title = f'{file_prefix} {ycol}' +  ' backtesting errors'
-    errkey = 'xform_error' if use_xform else 'error'
-
-    setup_plt(scoring)
-    plt.yscale("linear")
-    plt.title(title)
-
-    # plot error
-    dates = [start_date + timedelta(days=run_day) for run_day in results.keys()]
-    errs = [results[run_day][errkey][scoring] for run_day in results.keys()]
-    plt.plot(dates, errs, ls='-', c='crimson',
-        label=scoring)
-    plt.legend()
-    return
+# to make pool.map work
+class Optimize():
+    def __init__(self, args):
+        self.args = args
+    def optimizestar(self, _):
+        return optimize(*self.args)
