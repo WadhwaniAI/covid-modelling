@@ -115,13 +115,10 @@ def metropolis(district, state, run, iter=1000):
     for i in tqdm(range(iter+1)):
         
         theta_new = proposal(theta, proposal_sigmas)
-        if anneal_accept(i):
+        if accept(theta, theta_new, df_train):
             theta = theta_new
         else:
-            if accept(theta, theta_new, df_train):
-                theta = theta_new
-            else:
-                rejected.append(theta_new)
+            rejected.append(theta_new)
         accepted.append(theta)
 
         if i % 1000 == 0:
