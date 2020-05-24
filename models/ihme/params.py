@@ -5,7 +5,7 @@ import pandas as pd
 from datetime import timedelta
 from copy import deepcopy
 import curvefit
-from . import data as dataloader
+from . import dataloader
 
 class Params():
     def __init__(self, df, pargs):

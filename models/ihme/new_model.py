@@ -4,6 +4,7 @@ import argparse
 import pandas as pd
 import numpy as np 
 from datetime import timedelta, datetime
+from copy import copy
 
 import matplotlib.pyplot as plt
 from pandas.plotting import register_matplotlib_converters
@@ -17,7 +18,8 @@ from curvefit.core.functions import *
 from curvefit.core.utils import data_translator
 
 # from models.ihme.util import smooth, get_daily_vals
-from models.ihme.util import smooth, get_daily_vals
+from models.ihme.util import get_daily_vals
+from utils.util import smooth, rollingavg
 
 # class IHME(ModelWrapperBase):
 class IHME():
@@ -55,7 +57,7 @@ class IHME():
         #     self.df[:, self.orig_ycol] = self.df[self.ycol]
             
         #     self.ycol = f'{self.ycol}_smooth'
-        #     self.df[:, self.ycol] = smooth(self.df[self.ycol], self.smoothing)
+        #     self.df[:, self.ycol] = rollingavg(self.df[self.ycol], self.smoothing)
         
         # self.predictdate = pd.to_datetime(pd.Series([timedelta(days=x)+self.data[self.date].iloc[0] for x in range(-self.daysback,self.daysforward)]))
         # self.predictx = np.array([x+1 for x in range(-self.daysback,self.daysforward)])
@@ -128,7 +130,7 @@ class IHME():
 
     def calc_draws(self):
         draws_dict = {}
-        for i, group in enumerate(self.pipeline.groups):
+        for group in self.pipeline.groups:
             draws = self.pipeline.draws[group].copy()
             draws = data_translator(
                 data=draws,
@@ -141,7 +143,7 @@ class IHME():
                 input_space=self.pipeline.predict_space,
                 output_space=self.predict_space
             )
-            mean = draws.mean(axis=0)
+            # mean = draws.mean(axis=0)
 
             lower = np.quantile(draws, axis=0, q=0.025)
             upper = np.quantile(draws, axis=0, q=0.975)
@@ -158,19 +160,19 @@ class IHME():
         out.func = self.func
         out.date = self.date
         out.groupcol = self.groupcol
-        out.priors = self.priors
-        out.pipeline_args = self.pipeline_args
+        out.priors = copy(self.priors)
+        out.pipeline_args = copy(self.pipeline_args)
         out.smoothing = self.smoothing
-        out.covs = self.covs
+        out.covs = copy(self.covs)
 
-        out.param_names  = self.param_names
+        out.param_names  = copy(self.param_names)
         out.predict_space = self.predict_space
 
-        out.link_fun = self.link_fun
-        out.var_link_fun = self.var_link_fun
+        out.link_fun = copy(self.link_fun)
+        out.var_link_fun = copy(self.var_link_fun)
         
         out.deriv_col = self.deriv_col
-        out.derivs = self.derivs
+        out.derivs = copy(self.derivs)
         
         out.pipeline = None
         return out
