@@ -24,29 +24,6 @@ class Optimiser():
     def solve(self, variable_params, default_params, df_true, start_date=None, end_date=None, 
               state_init_values=None, initialisation='starting', loss_indices=[-20, -10]):
         params_dict = {**variable_params, **default_params}
-        if initialisation == 'intermediate':
-            row = df_true.iloc[loss_indices[0], :]
-            
-            state_init_values = OrderedDict()
-            key_order = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
-            for key in key_order:
-                state_init_values[key] = 0
-
-            state_init_values['R_severe_hosp'] = params_dict['P_severe'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
-            state_init_values['R_fatal'] = params_dict['P_fatal'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
-            state_init_values['C'] = row['recovered']
-            state_init_values['D'] = row['deceased']
-
-            state_init_values['E'] = params_dict['E_hosp_ratio'] * row['hospitalised']
-            state_init_values['I'] = params_dict['I_hosp_ratio'] * row['hospitalised']
-            
-            nonSsum = sum(state_init_values.values())
-            state_init_values['S'] = (params_dict['N'] - nonSsum)
-            for key in state_init_values.keys():
-                state_init_values[key] = state_init_values[key]/params_dict['N']
-
-            params_dict['state_init_values'] = state_init_values
-        
         if end_date == None:
             end_date = df_true.iloc[-1, :]['date']
         else:
@@ -75,29 +52,6 @@ class Optimiser():
         if params_dict['P_severe'] + params_dict['P_fatal'] > 1:
             return 1e10
 
-        if initialisation == 'intermediate':
-            row = df_true.iloc[loss_indices[0], :]
-            
-            state_init_values = OrderedDict()
-            key_order = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
-            for key in key_order:
-                state_init_values[key] = 0
-
-            state_init_values['R_severe_hosp'] = params_dict['P_severe'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
-            state_init_values['R_fatal'] = params_dict['P_fatal'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
-            state_init_values['C'] = row['recovered']
-            state_init_values['D'] = row['deceased']
-
-            state_init_values['E'] = params_dict['E_hosp_ratio'] * row['hospitalised']
-            state_init_values['I'] = params_dict['I_hosp_ratio'] * row['hospitalised']
-            
-            nonSsum = sum(state_init_values.values())
-            state_init_values['S'] = (params_dict['N'] - nonSsum)
-            for key in state_init_values.keys():
-                state_init_values[key] = state_init_values[key]/params_dict['N']
-
-            params_dict['state_init_values'] = state_init_values
-
         solver = SEIR_Testing(**params_dict)
         sol = solver.solve_ode(total_no_of_days=total_days - 1, time_step=1, method='Radau')
         df_prediction = solver.return_predictions(sol)
@@ -124,23 +78,28 @@ class Optimiser():
         params_dict = {param_names[i]: values[i] for i in range(len(values))}
         return params_dict
 
-    def init_default_params(self, df_true, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-05-31', 
-                            T_hosp=0.001, init_infected=None, start_date=None):
-        if (init_infected == None) and (start_date == None):
-            init_infected = max(df_true.iloc[0, :]['total_infected'], 1)
-            start_date = df_true.iloc[0, :]['date']
+    def init_default_params(self, df_train, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-05-31', 
+                            T_hosp=0.001, initialisation='intermediate', train_period=7, start_date=None,
+                            observed_values=None):
 
         intervention_date = datetime.datetime.strptime(lockdown_date, '%Y-%m-%d')
         lockdown_removal_date = datetime.datetime.strptime(lockdown_removal_date, '%Y-%m-%d')
 
+        if initialisation == 'intermediate':
+            observed_values = df_train.iloc[-train_period, :]
+            start_date = observed_values['date']
+        if initialisation == 'starting':
+            raise AssertionError
+
         default_params = {
             'N' : N,
-            'init_infected' : init_infected,
             'lockdown_day' : (intervention_date - start_date).days,
             'lockdown_removal_day': (lockdown_removal_date - start_date).days,
             'T_hosp' : T_hosp,
-            'starting_date' : start_date
+            'starting_date' : start_date,
+            'observed_values': observed_values
         }
+
         return default_params
 
     def gridsearch(self, df_true, default_params, variable_param_ranges, method='rmse', loss_indices=[-20, -10], 
