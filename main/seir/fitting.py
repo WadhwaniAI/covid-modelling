@@ -91,6 +91,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
 
     print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
 
+    # Get date
     if data_from_tracker:
         df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
     else:
@@ -111,7 +112,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
             df_train, df_val, df_true_fitting = train_val_split(
                 df_district, train_rollingmean=True, val_rollingmean=True, val_size=0)
             df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
+                df_district, train_rollingmean=False, val_rollingmean=False, val_size=0)
         else:
             df_train, df_val, df_true_fitting = train_val_split(
                 df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
@@ -160,8 +161,9 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
                       which_compartments=which_compartments)
 
     results_dict = {}
-    for name in ['best_params', 'default_params', 'optimiser', 'df_prediction', 'df_district', 'df_train', \
-        'df_val', 'df_loss', 'ax', 'trials']:
+    data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
+    for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
+                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'ax', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
 
     return results_dict
