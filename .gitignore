@@ -12,6 +12,8 @@
 **plots/
 *outputs/
 **outputs/
+*reports/
+**reports/
 *.vscode/
 
 sftp-config.json
