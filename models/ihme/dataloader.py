@@ -6,7 +6,7 @@ import pickle
 
 sys.path.append('../..')
 from data.dataloader import get_covid19india_api_data, get_rootnet_api_data, get_jhu_data
-from utils.age_standardisation import get_district_time_series
+from data.processing import get_concat_data, get_district_time_series
 
 def bbmp():
 	df = pd.read_csv('../../data/data/bbmp.csv')
@@ -94,11 +94,12 @@ def jhu(country):
 	# ActiveCases               object
 	df = df_master[df_master['Country/Region'] == country]
 	df.loc[:, 'day'] = (df['Date'] - df['Date'].min()).dt.days
-	df.loc[:, 'ConfirmedCases'] = pd.to_numeric(df['ConfirmedCases'])
-	df.loc[:, 'Deaths'] = pd.to_numeric(df['Deaths'])
-	df.loc[:, 'RecoveredCases'] = pd.to_numeric(df['RecoveredCases'])
-	df.loc[:, 'ActiveCases'] = pd.to_numeric(df['ActiveCases'])
+	df.loc[:, 'confirmed'] = pd.to_numeric(df['ConfirmedCases'])
+	df.loc[:, 'deceased'] = pd.to_numeric(df['Deaths'])
+	df.loc[:, 'recovered'] = pd.to_numeric(df['RecoveredCases'])
+	df.loc[:, 'active'] = pd.to_numeric(df['ActiveCases'])
 	df['Province/State'].fillna(country, inplace=True)
+	df.columns = [c.lower() for c in df.columns]
 	return df
 
 def districtwise(district_state_tuple):
@@ -120,18 +121,38 @@ def districtwise(district_state_tuple):
 	
 	return districtdf
 	
-def get_district_timeseries_cached(districts, states):
+def get_dataframes_cached():
+	picklefn = "data/dataframes_ts_{today}.pkl".format(today=datetime.today().strftime("%d%m%Y"))
+	try:
+		print(picklefn)
+		with open(picklefn, 'rb') as pickle_file:
+			dataframes = pickle.load(pickle_file)
+	except:
+		print("pulling from source")
+		dataframes = get_covid19india_api_data()
+		with open(picklefn, 'wb+') as pickle_file:
+			pickle.dump(dataframes, pickle_file)
+	return dataframes
+
+def get_district_timeseries_cached(district, state):
 	picklefn = "data/{district}_ts_{today}.pkl".format(
-		district=districts, today=datetime.today().strftime("%d%m%Y")
-	)
+		district=district, today=datetime.today().strftime("%d%m%Y")
+	)	
 	try:
 		print(picklefn)
 		with open(picklefn, 'rb') as pickle_file:
 			district_timeseries = pickle.load(pickle_file)
 	except:
-		print("pulling from source")
-		dataframes = get_covid19india_api_data()
-		district_timeseries = get_district_time_series(dataframes, state=states, district=districts)
-		with open(picklefn, 'wb') as pickle_file:
+		new_district = district
+		if district == 'Bengaluru':
+			district = ['Bengaluru Urban', 'Bengaluru Rural']
+		elif district == 'Delhi':
+			district = ['East Delhi', 'New Delhi', 'North Delhi', 
+			'North East Delhi','North West Delhi', 'South Delhi', 
+			'South West Delhi','West Delhi', 'Unknown', 'Central Delhi', 
+			'Shahdara','South East Delhi','']
+		dataframes = get_dataframes_cached()
+		district_timeseries = get_concat_data(dataframes, state=state, district=district, new_district_name=new_district, concat=True)
+		with open(picklefn, 'wb+') as pickle_file:
 			pickle.dump(district_timeseries, pickle_file)
 	return district_timeseries

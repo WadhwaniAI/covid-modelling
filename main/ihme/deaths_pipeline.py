@@ -8,7 +8,7 @@ from datetime import datetime
 
 sys.path.append('../..')
 from models.ihme.pipeline import WAIPipeline
-from models.ihme.util import Params
+from models.ihme.params import Params
 
 
 parser = argparse.ArgumentParser() 
@@ -28,7 +28,7 @@ deriv = True if daily else False
 # output
 fname = args.params
 today = datetime.today()
-output_folder = f'output/pipeline/{fname}/{today}'
+output_folder = f'output/deaths/{fname}/{today}'
 if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 

@@ -142,6 +142,9 @@ def get_covid19india_api_data():
     df_districts = df_districts[['state', 'district', 'date', 'active', 'confirmed', 'deceased', 'recovered', 'notes']]
     df_districts.loc[df_districts['district'] == 'Bengaluru', 'district'] = 'Bengaluru Urban'
     df_districts.loc[df_districts['district'] == 'Ahmadabad', 'district'] = 'Ahmedabad'
+    
+    numeric_cols = ['active', 'confirmed', 'deceased', 'recovered']
+    df_districts[numeric_cols] = df_districts[numeric_cols].apply(pd.to_numeric)
     dataframes['df_districts'] = df_districts
 
     # Parse travel_history.json file
@@ -182,6 +185,13 @@ def get_rootnet_api_data():
     df_state_time_series['confirmedCases'] = df_state_time_series['confirmedCasesForeign'] + df_state_time_series['confirmedCasesIndian']
     df_state_time_series['date'] = pd.to_datetime(df_state_time_series['date'])
     df_state_time_series.columns = [x if x != 'loc' else 'state' for x in df_state_time_series.columns]
+    del df_state_time_series['confirmedCasesIndian']
+    del df_state_time_series['confirmedCasesForeign']
+    del df_state_time_series['totalConfirmed']
+    df_state_time_series['hospitalised'] = df_state_time_series['confirmedCases'] - \
+        df_state_time_series['deaths'] - df_state_time_series['discharged']
+    df_state_time_series.columns = ['deceased', 'recovered', 'state', 'date', 'total_infected', 'hospitalised']
+    df_state_time_series = df_state_time_series[['state', 'date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
     dataframes['df_state_time_series'] = df_state_time_series
     
     data = requests.get('https://api.rootnet.in/covid19-in/hospitals/beds').json()

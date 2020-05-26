@@ -1,0 +1,35 @@
+State,District,Ward/block name,Ward number (if applicable),Date,Total cases,Active cases,Mild cases (isolated),Moderate cases (hospitalized),Severe cases (In ICU),Critical cases (ventilated patients),Recovered cases,Fatalities
+Name of city/district (string),city/district (string),Name of the ward (if city) or block (if reporting body is a district) for which details are being provided (string),Ward number for which details are being provided (integer),"Date, updated daily (mm-dd-yyyy)",cumulative cases in the region upto the date specified (integer),number of active cases as on date (integer),"number of active cases who are isolated in facilities, as on date (integer)",number of active cases who are currently hospitalized  or in covid health care centers (integer),number of active cases who are in intensive care units as on date (integer),number of active cases who are currently on ventilators as on date (integer),cumulative number of recovered cases as on date (integer),cumulative number of fatalities as on date (integer)
+Mandatory,Mandatory,if available,If applicable,Mandatory,Mandatory,Mandatory,Mandatory,Mandatory,Mandatory,Mandatory,Mandatory,Mandatory
+,,,,,,,,,,,,
+Maharashtra,Pune,,,04-19-2020,586,482,0,0,0,0,55,49
+Maharashtra,Pune,,,04-20-2020,666,549,0,0,0,0,68,49
+Maharashtra,Pune,,,04-21-2020,708,570,0,0,0,0,87,51
+Maharashtra,Pune,,,04-22-2020,772,595,0,0,0,0,122,55
+Maharashtra,Pune,,,04-23-2020,876,687,0,0,0,0,130,59
+Maharashtra,Pune,,,04-24-2020,980,772,0,0,0,0,146,62
+Maharashtra,Pune,,,04-25-2020,1070,845,0,0,0,0,159,66
+Maharashtra,Pune,,,04-26-2020,1139,902,0,0,0,0,165,72
+Maharashtra,Pune,,,04-27-2020,1217,966,0,0,0,0,176,75
+Maharashtra,Pune,,,04-28-2020,1339,1057,0,0,0,0,203,79
+Maharashtra,Pune,,,04-29-2020,1432,1121,0,0,0,0,230,81
+Maharashtra,Pune,,,04-30-2020,1518,1159,0,0,0,0,274,85
+Maharashtra,Pune,,,05-01-2020,1611,1195,0,0,0,0,325,91
+Maharashtra,Pune,,,05-02-2020,1718,1246,0,0,0,0,378,94
+Maharashtra,Pune,,,05-03-2020,1817,1283,0,0,0,0,433,101
+Maharashtra,Pune,,,05-04-2020,1878,1288,0,0,0,0,483,107
+Maharashtra,Pune,,,05-05-2020,1943,1297,0,0,0,0,535,111
+Maharashtra,Pune,,,05-06-2020,2029,1324,0,0,0,0,587,118
+Maharashtra,Pune,,,05-07-2020,2146,1350,0,0,0,0,671,125
+Maharashtra,Pune,,,05-08-2020,2245,1377,0,0,0,0,732,136
+Maharashtra,Pune,,,05-09-2020,2380,1414,0,0,0,0,826,140
+Maharashtra,Pune,,,05-10-2020,2482,1318,0,0,0,0,1020,144
+Maharashtra,Pune,,,05-11-2020,2573,1335,0,0,0,0,1089,149
+Maharashtra,Pune,,,05-12-2020,2737,1372,0,0,0,0,1209,156
+Maharashtra,Pune,,,05-13-2020,2824,1284,0,0,0,0,1377,163
+Maharashtra,Pune,,,05-14-2020,2987,1332,0,0,0,0,1486,169
+Maharashtra,Pune,,,05-15-2020,3093,1289,0,0,0,0,1630,174
+Maharashtra,Pune,,,05-16-2020,3295,1412,0,0,0,0,1698,185
+Maharashtra,Pune,,,05-17-2020,3496,1551,0,0,0,0,1751,194
+Maharashtra,Pune,,,05-18-2020,3598,1599,0,0,0,0,1800,199
+,,,,,,,,0,,,,
