@@ -3,6 +3,9 @@ import numpy as np
 import requests
 import datetime
 
+from pyathena import connect
+from pyathena.pandas_cursor import PandasCursor
+
 # ---------FUNCTIONS FOR GETTING GLOBAL DATA----------
 
 # helper function for modifying the dataframes such that each row is a snapshot of a country on a particular day
@@ -46,6 +49,78 @@ def get_jhu_data():
     df_master['ActiveCases'] = df_master['ConfirmedCases'] - df_master['Deaths'] - df_master['RecoveredCases']
 
     return df_master
+
+# ---------FUNCTIONS FOR GETTING CUSTOM DATA----------
+
+def create_connection(pyathena_rc_path=None):
+    """Creates SQL Server connection using AWS Athena credentials
+
+    Keyword Arguments:
+        pyathena_rc_path {str} -- [Path to the PyAthena RC file with the AWS Athena variables] (default: {None})
+
+    Returns:
+        [cursor] -- [Connection Cursor]
+    """
+    if pyathena_rc_path == None:
+        pyathena_rc_path = '../../misc/pyathena/pyathena.rc'
+    SCHEMA_NAME = 'wiai-covid-data'
+
+    # Open Pyathena RC file and get list of all connection variables in a processable format
+    with open(pyathena_rc_path) as f:
+        lines = f.readlines()
+
+    import pdb; pdb.set_trace()
+    lines = [x.strip() for x in lines]
+    lines = [x.split('export ')[1] for x in lines]
+    lines = [line.replace('=', '="') + '"' if '="' not in line else line for line in lines]
+    variables = [line.split('=') for line in lines]
+
+    # Create variables using the processed variable names from the RC file
+    AWS_CREDS = {}
+    for key, var in variables:
+        exec("{} = {}".format(key, var), AWS_CREDS)
+
+    # Create connection
+    cursor = connect(aws_access_key_id=AWS_CREDS['AWS_ACCESS_KEY_ID'],
+                     aws_secret_access_key=AWS_CREDS['AWS_SECRET_ACCESS_KEY'],
+                     s3_staging_dir=AWS_CREDS['AWS_ATHENA_S3_STAGING_DIR'],
+                     region_name=AWS_CREDS['AWS_DEFAULT_REGION'],
+                     work_group=AWS_CREDS['AWS_ATHENA_WORK_GROUP'],
+                     schema_name=SCHEMA_NAME).cursor(PandasCursor)
+    return cursor
+
+
+def get_athena_dataframes(pyathena_rc_path=None):
+    """Creates connection to Athena database and returns all the tables there as a dict of Pandas dataframes
+
+    Keyword Arguments:
+        pyathena_rc_path {str} -- Path to the PyAthena RC file with the AWS Athena variables 
+        (If you don't have this contact jerome@wadhwaniai.org) (default: {None})
+
+    Returns:
+        dict -- dict where key is str and value is pd.DataFrame
+        The dataframes : 
+        covid_case_summary
+        demographics_details
+        healthcare_capacity
+        testing_summary
+    """
+    if pyathena_rc_path == None:
+        pyathena_rc_path = '../../misc/pyathena/pyathena.rc'
+
+    # Create connection
+    cursor = create_connection(pyathena_rc_path)
+
+    # Run SQL SELECT queries to get all the tables in the database as pandas dataframes
+    dataframes = {}
+    import pdb; pdb.set_trace()
+    tables_list = cursor.execute('Show tables').as_pandas().to_numpy().reshape(-1, )
+    for table in tables_list:
+        dataframes[table] = cursor.execute(
+            'SELECT * FROM {}'.format(table)).as_pandas()
+    
+    return dataframes
+
 
 # ---------FUNCTIONS FOR GETTING INDIAN DATA----------
 
@@ -111,18 +186,21 @@ def get_covid19india_api_data():
 
     data = requests.get('https://api.covid19india.org/raw_data1.json').json()
     df_raw_data_1 = pd.DataFrame.from_dict(data['raw_data'])
-    # dataframes['df_raw_data_1'] = df_raw_data_1
 
     data = requests.get('https://api.covid19india.org/raw_data2.json').json()
     df_raw_data_2 = pd.DataFrame.from_dict(data['raw_data'])
-    # dataframes['df_raw_data_2'] = df_raw_data_2
 
     data = requests.get('https://api.covid19india.org/raw_data3.json').json()
     df_raw_data_3 = pd.DataFrame.from_dict(data['raw_data'])
-    df_raw_data_3 = df_raw_data_3[np.logical_and(df_raw_data_3['dateannounced'] != '', df_raw_data_3['numcases'] != '')]
-    # dataframes['df_raw_data_3'] = df_raw_data_3
 
-    dataframes['df_raw_data'] = pd.concat([df_raw_data_1, df_raw_data_2, df_raw_data_3], ignore_index=True)
+    data = requests.get('https://api.covid19india.org/raw_data4.json').json()
+    df_raw_data_4 = pd.DataFrame.from_dict(data['raw_data'])
+
+    data = requests.get('https://api.covid19india.org/raw_data5.json').json()
+    df_raw_data_5 = pd.DataFrame.from_dict(data['raw_data'])
+
+    dataframes['df_raw_data'] = pd.concat(
+        [df_raw_data_1, df_raw_data_2, df_raw_data_3, df_raw_data_4, df_raw_data_5], ignore_index=True)
 
     # Parse deaths_recoveries.json file
     data = requests.get('https://api.covid19india.org/deaths_recoveries.json').json()
