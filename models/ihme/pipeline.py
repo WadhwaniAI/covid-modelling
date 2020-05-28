@@ -15,7 +15,10 @@ from curvefit.pipelines.basic_model import BasicModel
 from curvefit.core.functions import *
 from curvefit.core.utils import data_translator
 
-from models.ihme.util import mape, rmse, rmsle, smooth, get_daily_vals, setup_plt
+from models.ihme.util import get_daily_vals
+from utils.loss import mape, rmse, rmsle
+from utils.util import smooth
+from models.ihme.util import setup_plt
 
 class WAIPipeline():
     def __init__(self, df, ycol, params, covs, file_prefix, smoothing=None, predict_space=None, priors=None):

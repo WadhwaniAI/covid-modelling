@@ -204,6 +204,7 @@ def plot_forecast(predictions_dict : dict, region : tuple, initialisation='inter
     if log_scale:
         plt.yscale('log')
     plt.xlabel('Time', fontsize=16)
+    plt.xticks(rotation=45,horizontalalignment='right')
     plt.legend()
     plt.title('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
     plt.grid()

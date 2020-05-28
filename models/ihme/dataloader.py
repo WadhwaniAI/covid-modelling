@@ -130,7 +130,7 @@ def get_dataframes_cached():
 	except:
 		print("pulling from source")
 		dataframes = get_covid19india_api_data()
-		with open(picklefn, 'wb') as pickle_file:
+		with open(picklefn, 'wb+') as pickle_file:
 			pickle.dump(dataframes, pickle_file)
 	return dataframes
 
@@ -153,6 +153,6 @@ def get_district_timeseries_cached(district, state):
 			'Shahdara','South East Delhi','']
 		dataframes = get_dataframes_cached()
 		district_timeseries = get_concat_data(dataframes, state=state, district=district, new_district_name=new_district, concat=True)
-		with open(picklefn, 'wb') as pickle_file:
+		with open(picklefn, 'wb+') as pickle_file:
 			pickle.dump(district_timeseries, pickle_file)
 	return district_timeseries

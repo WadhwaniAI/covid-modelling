@@ -46,8 +46,8 @@
             "log_mortality": "log_erf"
 		},
 		"priors": {
-			"fe_init": [-1.13, 18, -8],
-			"fe_bounds": [[-3.0, 0], [10,50], [-20, -5]]
+			"fe_init": [-1.1, 16.0, -9.0],
+			"fe_bounds": [[-5.0, -0.5], [12,40], [-20, -5]]
 		},
 		"daysforward": 21
 	},

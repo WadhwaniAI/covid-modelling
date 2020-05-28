@@ -1,4 +1,5 @@
 amqp==2.5.2
+arviz==0.8.0
 astroid==2.3.3
 attrs==19.3.0
 Automat==20.2.0
@@ -14,6 +15,7 @@ cachetools==4.1.0
 celery==4.4.2
 certifi==2020.4.5.1
 cffi==1.14.0
+cftime==1.1.3
 chardet==3.0.4
 click==7.1.1
 cloudpickle==1.3.0
@@ -38,6 +40,7 @@ google-auth==1.15.0
 google-auth-oauthlib==0.4.1
 gspread==3.6.0
 gunicorn==20.0.4
+h5py==2.10.0
 hyperlink==19.0.0
 hyperopt==0.2.3
 idna==2.9
@@ -65,16 +68,20 @@ llvmlite==0.31.0
 MarkupSafe==1.1.1
 matplotlib==3.2.1
 mccabe==0.6.1
+mdutils==1.2.1
 mistune==0.8.4
+mkl-service==2.3.0
 mpld3==0.3
 nbconvert==5.6.1
 nbformat==5.0.4
+netCDF4==1.5.3
 networkx==2.2
 notebook==6.0.3
 numba==0.48.0
 numpy==1.18.2
 oauthlib==3.1.0
 openpyexcel==2.5.14
+packaging==20.4
 pandas==1.0.3
 pandocfilters==1.4.2
 parso==0.6.2
@@ -97,7 +104,9 @@ pycparser==2.20
 Pygments==2.6.1
 PyHamcrest==2.0.2
 pylint==2.4.4
+pymc3==3.8
 pyocr==0.7.2
+pypandoc==1.5
 pyparsing==2.4.6
 pyrsistent==0.16.0
 pytesseract==0.3.4
@@ -126,9 +135,11 @@ soupsieve==2.0
 SQLAlchemy==1.3.15
 statsmodels==0.11.1
 tabula-py==2.1.0
+tabulate==0.8.7
 tenacity==6.2.0
 terminado==0.8.3
 testpath==0.4.4
+Theano==1.0.4
 tornado==6.0.4
 tqdm==4.45.0
 traitlets==4.3.3
@@ -142,6 +153,7 @@ Werkzeug==1.0.1
 wget==3.2
 widgetsnbextension==3.5.1
 wrapt==1.12.1
+xarray==0.15.1
 xlrd==1.2.0
 XlsxWriter==1.2.8
 zipp==3.1.0

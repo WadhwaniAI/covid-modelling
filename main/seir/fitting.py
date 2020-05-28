@@ -25,24 +25,29 @@ from main.seir.losses import Loss_Calculator
 
 now = str(datetime.now())
 
-def get_variable_param_ranges(as_str=False):
-    if as_str:
-        return {
-            'lockdown_R0': "hp.uniform('lockdown_R0', 1, 1.5)",
-            'T_inc': "hp.uniform('T_inc', 4, 5)",
-            'T_inf': "hp.uniform('T_inf', 3, 4)",
-            'T_recov_severe': "hp.uniform('T_recov_severe', 5, 60)",
-            'P_severe': "hp.uniform('P_severe', 0.3, 0.99)",
-            'P_fatal': "hp.uniform('P_fatal', 0, 0.3)"
-        }
+def get_variable_param_ranges(initialisation='intermediate',as_str=False):
+
     variable_param_ranges = {
-        'lockdown_R0': hp.uniform('lockdown_R0', 1, 1.5),
-        'T_inc': hp.uniform('T_inc', 4, 5),
-        'T_inf': hp.uniform('T_inf', 3, 4),
-        'T_recov_severe': hp.uniform('T_recov_severe', 5, 60),
-        'P_severe': hp.uniform('P_severe', 0.3, 0.99),
-        'P_fatal': hp.uniform('P_fatal', 0, 0.3)
+        'lockdown_R0': (1, 1.5),
+        'T_inc': (4, 5),
+        'T_inf': (3, 4),
+        'T_recov_severe': (5, 60),
+        'P_severe': (0.3, 0.99),
+        'P_fatal': (0, 0.3)
     }
+    if initialisation == 'intermediate':
+        extra_params = {
+            'E_hosp_ratio': (0, 2),
+            'I_hosp_ratio': (0, 1)
+        }
+    variable_param_ranges.update(extra_params)
+    if as_str:
+        return str(variable_param_ranges)
+
+    for key in variable_param_ranges.keys():
+        variable_param_ranges[key] = hp.uniform(
+            key, variable_param_ranges[key][0], variable_param_ranges[key][1])
+
     return variable_param_ranges
     
 
@@ -86,6 +91,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
 
     print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
 
+    # Get date
     if data_from_tracker:
         df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
     else:
@@ -106,7 +112,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
             df_train, df_val, df_true_fitting = train_val_split(
                 df_district, train_rollingmean=True, val_rollingmean=True, val_size=0)
             df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
+                df_district, train_rollingmean=False, val_rollingmean=False, val_size=0)
         else:
             df_train, df_val, df_true_fitting = train_val_split(
                 df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
@@ -120,23 +126,16 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
     optimiser = Optimiser()
     # Get the fixed params
     if initialisation == 'starting':
-        init_infected = max(df_district_raw_data.iloc[0, :]['total_infected'], 1)
+        observed_values = df_district_raw_data.iloc[0, :]
         start_date = df_district_raw_data.iloc[0, :]['date']
-        default_params = optimiser.init_default_params(df_train, N=N, init_infected=init_infected, 
-                                                       start_date=start_date)
+        default_params = optimiser.init_default_params(df_train, df_district_raw_data, observed_values=observed_values,
+                                                       start_date=start_date, initialisation=initialisation, N=N)
     if initialisation == 'intermediate':
-        start_date = df_train.iloc[-train_period, :]['date']
-        default_params = optimiser.init_default_params(df_train, N=N, init_infected=0, 
-                                                       start_date=start_date)
+        default_params = optimiser.init_default_params(df_train, N=N, initialisation=initialisation, 
+                                                       train_period=train_period)
 
-    # Create searchspace of variable params
-    variable_param_ranges = get_variable_param_ranges()
-    if initialisation == 'intermediate':
-        extra_params = {
-            'E_hosp_ratio': hp.uniform('E_hosp_ratio', 0, 2),
-            'I_hosp_ratio': hp.uniform('I_hosp_ratio', 0, 1),
-        }
-        variable_param_ranges.update(extra_params)
+    # Get/create searchspace of variable params
+    variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
 
     # Perform Bayesian Optimisation
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days + 1
@@ -162,8 +161,10 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
                       which_compartments=which_compartments)
 
     results_dict = {}
-    for name in ['best_params', 'default_params', 'optimiser', 'df_prediction', 'df_district', 'df_train', \
-        'df_val', 'df_loss', 'ax', 'trials']:
+    data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
+    variable_param_ranges = get_variable_param_ranges(initialisation=initialisation, as_str=True)
+    for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
+                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'ax', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
 
     return results_dict
@@ -207,7 +208,7 @@ def create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, tr
     
     df_predicted_plotting = df_prediction.loc[df_prediction['date'].isin(
         df_true_plotting['date']), ['date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
-    # import pdb; pdb.set_trace()
+    
     if 'total_infected' in which_compartments:
         ax.plot(df_true_plotting['date'], df_true_plotting['total_infected'],
                 '-o', color='C0', label='Confirmed Cases (Observed)')

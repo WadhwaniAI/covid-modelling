@@ -34,8 +34,8 @@ class Loss_Calculator():
                 continue
         return losses
 
-    def calc_loss(self, states_time_matrix, df, which_compartments=['hospitalised', 'recovered', 'total_infected', 'deceased'], method='rmse'):
-        losses = self.calc_loss_dict(states_time_matrix, df, method)
+    def calc_loss(self, df_prediction, df_true, which_compartments=['hospitalised', 'recovered', 'total_infected', 'deceased'], method='rmse'):
+        losses = self.calc_loss_dict(df_prediction, df_true, method)
         loss = 0
         for compartment in which_compartments:
             loss += losses[compartment]
