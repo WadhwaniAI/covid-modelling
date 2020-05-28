@@ -4,8 +4,8 @@ import pandas as pd
 import datetime
 import argparse
 
-# import sys
-# sys.path.append('../..')
+import sys
+sys.path.append('../..')
 from data.dataloader import get_covid19india_api_data
 from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
 from main.seir.forecast import create_all_csvs, write_csv, plot_forecast

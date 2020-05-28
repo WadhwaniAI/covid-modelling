@@ -298,10 +298,10 @@ def replot_backtest(triple, folder, args):
         future_days = pargs['future_days']
         min_days = pargs['min_days']
         val_size = pargs['hyperopt_val_size']
-        increment = 3
-        future_days = 7
-        val_size = 7
-        min_days = 7
+        # increment = 3
+        # future_days = 7
+        # val_size = 7
+        # min_days = 7
     # df = df[df[model.date] > datetime(year=2020, month=4, day=14)]
     
     xform = lograte_to_cumulative if args.log else rate_to_cumulative 
