@@ -162,6 +162,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
 
     results_dict = {}
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
+    variable_param_ranges = get_variable_param_ranges(initialisation=initialisation, as_str=True)
     for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
                  'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'ax', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
@@ -207,7 +208,7 @@ def create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, tr
     
     df_predicted_plotting = df_prediction.loc[df_prediction['date'].isin(
         df_true_plotting['date']), ['date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
-    # import pdb; pdb.set_trace()
+    
     if 'total_infected' in which_compartments:
         ax.plot(df_true_plotting['date'], df_true_plotting['total_infected'],
                 '-o', color='C0', label='Confirmed Cases (Observed)')
