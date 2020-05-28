@@ -106,7 +106,7 @@ def data_setup(df_district, df_district_raw_data, pre_lockdown,
             df_train, df_val, df_true_fitting = train_val_split(
                 df_district, train_rollingmean=True, val_rollingmean=True, val_size=0)
             df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
+                df_district, train_rollingmean=False, val_rollingmean=False, val_size=0)
         else:
             df_train, df_val, df_true_fitting = train_val_split(
                 df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
@@ -159,8 +159,10 @@ def run_cycle(state, district, df_district, df_district_raw_data, df_train, df_v
                       which_compartments=which_compartments)
 
     results_dict = {}
-    for name in ['best_params', 'default_params', 'optimiser', 'df_prediction', 'df_district', 'df_train', \
-        'df_val', 'df_loss', 'ax', 'trials']:
+    data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
+    variable_param_ranges = get_variable_param_ranges(initialisation=initialisation, as_str=True)
+    for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
+                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'ax', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
 
     return results_dict
@@ -168,7 +170,7 @@ def run_cycle(state, district, df_district, df_district_raw_data, df_train, df_v
 def single_fitting_cycle(dataframes, state, district, train_period=7, val_period=7, train_on_val=False, num_evals=1500,
                          data_from_tracker=True, filename=None, data_format='new', pre_lockdown=False, N=1e7, 
                          which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
-
+    # Get date
     print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
     df_district, df_district_raw_data = get_all_district_data(dataframes, state, district, 
         data_from_tracker, data_format, filename)
@@ -224,7 +226,7 @@ def create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, tr
     
     df_predicted_plotting = df_prediction.loc[df_prediction['date'].isin(
         df_true_plotting['date']), ['date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
-    # import pdb; pdb.set_trace()
+    
     if 'total_infected' in which_compartments:
         ax.plot(df_true_plotting['date'], df_true_plotting['total_infected'],
                 '-o', color='C0', label='Confirmed Cases (Observed)')
