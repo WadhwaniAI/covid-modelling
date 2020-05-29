@@ -1,11 +1,14 @@
 import numpy as np
-from models.ihme.util import setup_plt
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from pandas.plotting import register_matplotlib_converters
 from matplotlib.dates import DateFormatter
 import pandas as pd
 from datetime import timedelta
+
+import sys
+sys.path.append('../..')
+from utils.plotting import setup_plt
 
 def plot_results(model, df, train_size, test, predictions, predictdate, testerr,
         file_prefix, val_size, draws=None, yaxis_name=None):
