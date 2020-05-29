@@ -17,10 +17,9 @@ from curvefit.core.functions import *
 from pathos.multiprocessing import ProcessingPool as Pool
 
 sys.path.append('../..')
-from models.ihme.new_model import IHME
+from models.ihme.model import IHME
 from models.ihme.util import get_mortality
 from models.ihme.dataloader import get_district_timeseries_cached
-# from backtesting import backtesting
 from backtesting import IHMEBacktest
 from optimiser import Optimiser
 from utils.util import train_test_split, rollingavg

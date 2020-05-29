@@ -1,6 +1,6 @@
 from utils.loss import evaluate
 from copy import copy
-from models.ihme.new_model import IHME
+from models.ihme.model import IHME
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
