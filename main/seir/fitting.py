@@ -114,7 +114,7 @@ def data_setup(df_district, df_district_raw_data, pre_lockdown,
                 df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
     return df_district, df_district_raw_data, df_train, df_val, df_true_fitting, df_train_nora, df_val_nora
 
-def run_cycle(state, district, df_district, df_district_raw_data, df_train, df_val, df_train_nora, df_val_nora,
+def run_cycle(state, district, df_district, df_district_raw_data, df_train, df_val, df_train_nora, df_val_nora, data_from_tracker,
                         train_period=7, train_on_val=False, num_evals=1500, N=1e7, 
                         which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
     if district is None:
@@ -183,7 +183,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
     print('val\n', df_val)
     
     return run_cycle(
-        state, district, df_district, df_district_raw_data, df_train, df_val, df_train_nora, df_val_nora,
+        state, district, df_district, df_district_raw_data, df_train, df_val, df_train_nora, df_val_nora, data_from_tracker,
         train_period=train_period, train_on_val=train_on_val, num_evals=num_evals, N=N, 
         which_compartments=which_compartments, initialisation=initialisation
     )
