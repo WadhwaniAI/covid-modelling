@@ -10,7 +10,6 @@ import time
 
 import dill
 from pathos.multiprocessing import ProcessingPool as Pool
-from pathos.multiprocessing import ThreadPool as ThreadPool
 
 import sys
 sys.path.append('../..')
@@ -96,7 +95,7 @@ def backtesting1(model: IHME, data, start, end, increment=5, future_days=10,
     return out
 
 def backtesting(model: IHME, data, start, end, increment=5, future_days=10, 
-        hyperopt_val_size=7, optimize_runs=3, max_evals=100, xform_func=None,
+        hyperopt_val_size=7, max_evals=100, xform_func=None,
         dtp=None, min_days=14):
     runtime_s = time.time()
     n_days = (end - start).days + 1 - future_days
@@ -107,7 +106,7 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10,
     args = []
     for run_day in range(min_days + hyperopt_val_size, n_days, increment):
         args.append((model, data, start, run_day, future_days, max_evals, 
-            hyperopt_val_size, min_days, optimize_runs, xform_func, seed, dtp, 'mape'))
+            hyperopt_val_size, min_days, xform_func, seed, dtp, 'mape'))
     for run_day, result_dict in pool.map(past_run, args):
         results[run_day] = result_dict
    
@@ -125,7 +124,7 @@ def backtesting(model: IHME, data, start, end, increment=5, future_days=10,
 
 def past_run(tup):
     model, data, start, run_day, future_days, max_evals, hyperopt_val_size, \
-        min_days, optimize_runs, xform_func, seed, dtp, scoring = tup
+        min_days, xform_func, seed, dtp, scoring = tup
     print ("\rbacktesting for", run_day, end="")
     incremental_model = model.generate()
     fit_data = data[(data[model.date] <= start + timedelta(days=run_day))]
@@ -133,25 +132,15 @@ def past_run(tup):
         & (data[model.date] <= start + timedelta(days=run_day+future_days))]
     
     # # OPTIMIZE HYPERPARAMS
-    if optimize_runs > 0:
-        hyperopt_runs = {}
-        trials_dict = {}
-        pool = ThreadPool(processes=3)
-        o = Optimize((incremental_model, fit_data,
-                incremental_model.priors['fe_bounds'], max_evals, 'mape', 
-                hyperopt_val_size, min_days))
-        for i, ((best_init, n_days), err, trials) in enumerate(pool.map(o.optimizestar, list(range(optimize_runs)))):
-            hyperopt_runs[err] = (best_init, n_days)
-            trials_dict[i] = trials
-        best_init, n_days = hyperopt_runs[min(hyperopt_runs.keys())]
-        
-        fit_data = fit_data[-n_days:]
-        fit_data.loc[:, 'day'] = (fit_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
-        val_data.loc[:, 'day'] = (val_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
-        incremental_model.priors['fe_init'] = best_init
-    else:
-        n_days, best_init = len(fit_data), incremental_model.priors['fe_init']
-        trials_dict = None
+    o = Optimize((incremental_model, fit_data,
+            incremental_model.priors['fe_bounds'], max_evals, scoring, 
+            hyperopt_val_size, min_days))
+    ((best_init, n_days), err, trials) = o.optimizestar(0)
+    
+    fit_data = fit_data[-n_days:]
+    fit_data.loc[:, 'day'] = (fit_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
+    val_data.loc[:, 'day'] = (val_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
+    incremental_model.priors['fe_init'] = best_init
     
     # FIT/PREDICT
     incremental_model.fit(fit_data)
@@ -176,7 +165,7 @@ def past_run(tup):
             'fit_preds': predictions[:len(fit_data)],
             'val_preds': predictions[len(fit_data):],
         },
-        'trials': trials_dict,
+        'trials': trials,
     }
     return run_day, result_dict
 
