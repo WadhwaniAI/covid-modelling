@@ -26,7 +26,7 @@ def plot_results(model, df, train_size, test, predictions, predictdate, testerr,
     future_y = predictions[n_data:]
     plt.errorbar(future_x, 
         future_y,
-        yerr=future_y*maperr, lw=0.5, color='palegoldenrod', barsabove='False', label='mape')
+        yerr=future_y*maperr/100, lw=0.5, color='palegoldenrod', barsabove='False', label='mape')
     if draws is not None:
         # plot error bars based on draws
         plt.errorbar(future_x, 
@@ -77,10 +77,10 @@ def plot_backtesting_results(model, df, results, future_days, file_prefix, trans
         plt.plot(fit_dates, fit_preds, ls='solid', c=color,
             label=f'run day: {run_day}')
         plt.errorbar(val_dates, val_preds,
-            yerr=val_preds*results[run_day][errkey]['mape'], lw=0.5,
+            yerr=val_preds*results[run_day][errkey]['mape']/100, lw=0.5,
             color='lightcoral', barsabove='False', label='MAPE')
         plt.errorbar(fit_dates, fit_preds,
-            yerr=fit_preds*results[run_day][errkey]['mape'], lw=0.5,
+            yerr=fit_preds*results[run_day][errkey]['mape']/100, lw=0.5,
             color='lightcoral', barsabove='False', label='MAPE')
 
     # plot data we fit on

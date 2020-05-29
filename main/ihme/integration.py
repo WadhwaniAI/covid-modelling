@@ -26,8 +26,10 @@ from utils.loss import evaluate
 from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
 from plotting import plot_results, plot_backtesting_results, plot_backtesting_errors
 from plotting import plot
-pd.options.mode.chained_assignment = None
 
+import warnings
+pd.options.mode.chained_assignment = None
+warnings.filterwarnings('ignore', module='pandas', category=RuntimeWarning) #, message='invalid value encountered in')
 
 # tuples: (district, state, census_area_name(s))
 mumbai = 'Mumbai', 'Maharashtra', ['District - Mumbai (23)', 'District - Mumbai Suburban (22)']
@@ -225,6 +227,7 @@ def backtest(triple, args):
     start_time = time.time()
     # df = df[df[model.date] > datetime(year=2020, month=4, day=14)]
     xform = lograte_to_cumulative if args.log else rate_to_cumulative
+    
     results = backtesting(model, df, df[model_params['date']].min(), 
         df[model_params['date']].max(), future_days=future_days, 
         hyperopt_val_size=val_size, optimize_runs=args.hyperopt,
@@ -234,13 +237,14 @@ def backtest(triple, args):
     picklefn = f'{output_folder}/backtesting.pkl'
     with open(picklefn, 'wb') as pickle_file:
             pickle.dump(results, pickle_file)
-    plot_backtesting_results(model, results['df'], results['results'],
-        results['future_days'], file_prefix, transform_y=xform, dtp=dtp,
-            axis_name='cumulative deaths')    
-    # picklefn = f'../../main/ihme/output/mortality/Mumbai_deaths/big_run/backtesting.pkl'
+            
+    # picklefn = f'../../main/ihme/output/backtesting/Pune_deaths/2020-05-28 23:33:29.706262/backtesting.pkl'
     # with open(picklefn, 'rb') as pickle_file:
     #     results = pickle.load(pickle_file)
-    # plot_backtesting_results(model, df, results, increment, future_days, file_prefix)
+    
+    plot_backtesting_results(model, results['df'], results['results'],
+        results['future_days'], file_prefix, transform_y=xform, dtp=dtp,
+            axis_name='cumulative deaths') 
     plt.savefig(f'{output_folder}/backtesting.png')
     plt.clf()
     plot_backtesting_errors(model, df, df[model_params['date']].min(),
