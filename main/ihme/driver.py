@@ -27,6 +27,7 @@ from utils.loss import evaluate
 from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
 from plotting import plot_results, plot_backtesting_results, plot_backtesting_errors
 from plotting import plot
+from models.ihme.population import get_district_population
 
 import warnings
 pd.options.mode.chained_assignment = None
@@ -276,7 +277,8 @@ def backtest(triple, args):
         json.dump(pargs, pfile)
 
 def replot_backtest(triple, folder, args):
-    dist, st, _ = triple
+    dist, st, area_names = triple
+    dtp = get_district_population(st, area_names)
     file_prefix = f'{dist}_deaths'
     output_folder = os.path.join(create_output_folder(args, file_prefix), '/replotted/')
     start_time = time.time()
