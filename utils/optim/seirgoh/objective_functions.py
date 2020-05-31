@@ -11,7 +11,7 @@ sys.path.append('../..')
 from joblib import Parallel, delayed
 from functools import partial
 from hyperopt import hp, tpe, fmin, Trials
-from models.optim.sir_dis import SIR
+from models.optim.seirgoh_dis import SEIR
 
 def check(start_array, duration_array, choice_array, total_resource, days):
 	for i in range(1,len(start_array)):
@@ -30,13 +30,27 @@ def get_impact(choice):
 
 def calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params=None):
 	if(params==None):
-		R0 = 2.2 
-		T_treat = 14
+		R0 = 3 
+		T_inf = 30
+		T_inc = 5
+		T_death = 50
+		T_recov_mild = (50 - T_inf)
+		T_hosp = 10
+		T_recov_severe = (50 - T_inf)		
+
 	else:
 		R0 = params['R0']
-		T_treat = params['T_treat']
-	T_trans = T_treat/R0
+		T_inf = params['T_inf']
+		T_inc = params['T_inc']
+		T_death = params['T_death']
+		T_recov_mild = params['T_recov_mild']
+		T_hosp = params['T_hosp']
+		T_recov_severe = params['T_recov_severe']
 
+	P_severe = 0.3
+	P_fatal = 0.04
+	P_mild = 1 - P_severe - P_fatal
+	T_trans = T_inf/R0
 	N = 1e5
 	I0 = 100.0
 
@@ -49,22 +63,30 @@ def calculate_opt(intervention_day, intervention_duration, intervention_choice, 
 		for i in range(intervention_day[intvn],min(intervention_day[intvn]+intervention_duration[intvn],days)):
 			int_vec[i] = get_impact(intervention_choice[intvn])
 	
-	params = [T_trans, T_treat, N, int_vec]
+	params = [T_trans, T_inc, T_inf, T_recov_mild, T_hosp, T_recov_severe, T_death, 
+              P_mild, P_severe, P_fatal, N, int_vec]
 
-	state_init_values = [(N - I0)/N, I0/N, 0]
+	state_init_values = [(N - I0)/N, 0, I0/N, 0, 0, 0, 0, 0, 0]
 	
-	solver = SIR(params, state_init_values)
+	solver = SEIR(params, state_init_values)
 	states_int_array = solver.solve_ode(time_step=1, total_no_of_days=days)
 	
 	S_coeficeint=0
-	I_coeficeint=1
-	R_coeficeint=0
+    E_coeficeint=0
+    I_coeficeint=0.7
+    R_mild_coeficeint=0.7
+    R_severe_coeficeint=0.9
+    R_severe_hosp_coeficeint=0.9
+    R_R_fatal_coeficeint=0.9
+    C_coeficeint=0
+    D_coeficeint=1
 #   When we have joint optimization of time and qald
 #     time_weight = 0.5 + (np.arange(days)/(2*days))
 #     time_weight = time_weight[::-1]
 #   when we have only qald
 	time_weight = np.ones(days)
-	coeficeint=[S_coeficeint,I_coeficeint,R_coeficeint]
+	coeficeint=[S_coeficeint,E_coeficeint,I_coeficeint,R_mild_coeficeint,R_severe_coeficeint,R_severe_hosp_coeficeint,\
+                R_R_fatal_coeficeint,C_coeficeint,D_coeficeint]
 	
 	grad1 = np.dot(coeficeint, states_int_array)
 	grad1 = np.dot(time_weight, grad1)
@@ -76,13 +98,13 @@ def calculate_opt_qald(intervention_day, intervention_duration, intervention_cho
 
 def calculate_opt_height(intervention_day, intervention_duration, intervention_choice, days, params=None):
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
-	infection_array = states_int_array[1]
+	infection_array = states_int_array[2]
 	height = np.max(infection_array)
 	return(height)
 
 def calculate_opt_time(intervention_day, intervention_duration, intervention_choice, days, params=None):
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
-	infection_array = states_int_array[1]
+	infection_array = states_int_array[2]
 	maxy = int(np.max(infection_array)/0.01)
 	time = 0
 	for y in range(1,maxy+1):
@@ -94,7 +116,7 @@ def calculate_opt_time(intervention_day, intervention_duration, intervention_cho
 
 def calculate_opt_burden(intervention_day, intervention_duration, intervention_choice, days, capacity=np.array([0.1]), params=None):
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
-	infection_array = states_int_array[1]
+	infection_array = states_int_array[2]
 	if(len(capacity)==1):
 		burden = np.sum(infection_array[infection_array>=capacity[0]])
 	if(len(capacity)==2):
@@ -129,7 +151,7 @@ def hp_calculate_opt_height(variable_params, total_resource, days, params=None):
 		return(100)
 	
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
-	infection_array = states_int_array[1]
+	infection_array = states_int_array[2]
 	height = np.max(infection_array)
 	return(height)
 
@@ -142,7 +164,7 @@ def hp_calculate_opt_time(variable_params, total_resource, days, params=None):
 		return(100)
 	
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
-	infection_array = states_int_array[1]
+	infection_array = states_int_array[2]
 	maxy = int(np.max(infection_array)/0.01)
 	time = 0
 	for y in range(1,maxy+1):
@@ -162,7 +184,7 @@ def hp_calculate_opt_burden(variable_params, total_resource, days, capacity, par
 		return(100)
 
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
-	infection_array = states_int_array[1]
+	infection_array = states_int_array[2]
 	if(len(capacity)==1):
 		burden = np.sum(infection_array[infection_array>=capacity[0]])
 	if(len(capacity)==2):
@@ -176,33 +198,60 @@ def hp_calculate_opt_burden(variable_params, total_resource, days, capacity, par
 		burden = np.sum(burden_array)
 	return(burden)
 
-def run_seir(int_vec, days):
-	R0 = 3 
-	T_treat = 30
-	T_trans = T_treat/R0
+def run_seir(int_vec, days, params=None):
+	if(params==None):
+		R0 = 3 
+		T_inf = 30
+		T_inc = 5
+		T_death = 50
+		T_recov_mild = (50 - T_inf)
+		T_hosp = 10
+		T_recov_severe = (50 - T_inf)		
 
+	else:
+		R0 = params['R0']
+		T_inf = params['T_inf']
+		T_inc = params['T_inc']
+		T_death = params['T_death']
+		T_recov_mild = params['T_recov_mild']
+		T_hosp = params['T_hosp']
+		T_recov_severe = params['T_recov_severe']
+
+	P_severe = 0.3
+	P_fatal = 0.04
+	P_mild = 1 - P_severe - P_fatal
+	T_trans = T_inf/R0
 	N = 1e5
 	I0 = 100.0
 	
-	params = [T_trans, T_treat, N, int_vec]
+	params = [T_trans, T_inc, T_inf, T_recov_mild, T_hosp, T_recov_severe, T_death, 
+              P_mild, P_severe, P_fatal, N, int_vec]
+
+	state_init_values = [(N - I0)/N, 0, I0/N, 0, 0, 0, 0, 0, 0]
 
 	# S, E, I, R_mild, R_severe, R_severe_home, R_fatal, C, D
-	state_init_values = [(N - I0)/N, I0/N, 0]
 	
 	solver = SIR(params, state_init_values)
 	states_int_array = solver.solve_ode(time_step=1, total_no_of_days=days)
 	
 	
 	S_coeficeint=0
-	I_coeficeint=1
-	R_coeficeint=0
+    E_coeficeint=0
+    I_coeficeint=0.7
+    R_mild_coeficeint=0.7
+    R_severe_coeficeint=0.9
+    R_severe_hosp_coeficeint=0.9
+    R_R_fatal_coeficeint=0.9
+    C_coeficeint=0
+    D_coeficeint=1
 #   When we have joint optimization of time and qald
 #     time_weight = 0.5 + (np.arange(days)/(2*days))
 #     time_weight = time_weight[::-1]
 #   when we have only qald
 	time_weight = np.ones(days)
 	
-	coeficeint=np.array([S_coeficeint,I_coeficeint,R_coeficeint])
+	coeficeint=[S_coeficeint,E_coeficeint,I_coeficeint,R_mild_coeficeint,R_severe_coeficeint,R_severe_hosp_coeficeint,\
+                R_R_fatal_coeficeint,C_coeficeint,D_coeficeint]
 	
 	grad1 = np.dot(coeficeint, states_int_array)
 	grad1 = np.dot(time_weight, grad1)
@@ -215,13 +264,13 @@ def seir_qald(int_vec, days):
 
 def seir_height(int_vec, days):
 	grad1, states_int_array = run_seir(int_vec, days)
-	infection_array = states_int_array[1]
+	infection_array = states_int_array[2]
 	height = np.max(infection_array)
 	return(height)
 
 def seir_time(int_vec, days):
 	grad1, states_int_array = run_seir(int_vec, days)
-	infection_array = states_int_array[1]
+	infection_array = states_int_array[2]
 	maxy = int(np.max(infection_array)/0.01)
 	time = 0
 	for y in range(1,maxy+1):
@@ -233,7 +282,7 @@ def seir_time(int_vec, days):
 
 def seir_burden(int_vec, days, capacity=np.array([0.1])):
 	grad1, states_int_array = run_seir(int_vec, days)
-	infection_array = states_int_array[1]
+	infection_array = states_int_array[2]
 	if(len(capacity)==1):
 		burden = np.sum(infection_array[infection_array>=capacity[0]])
 	if(len(capacity)==2):
