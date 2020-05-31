@@ -59,9 +59,20 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     return df_train, df_val, df_true_fitting
 
 
+def get_predictions_mcmc(params, default_params, df_train, initialisation, train_period):
+    if train_on_val:
+        df_prediction = optimiser.solve(params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'], 
+                                        initialisation=initialisation, loss_indices=[-train_period, None])
+    else:
+        df_prediction = optimiser.solve(params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'],
+                                        initialisation=initialisation, loss_indices=[-train_period, None])
+    return df_prediction
+
+
 def single_fitting_cycle(dataframes, state, district, train_period=7, val_period=7, train_on_val=False,
                          data_from_tracker=True, filename=None, pre_lockdown=False, N=1e7, 
-                         which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
+                         which_compartments=['hospitalised', 'total_infected'], initialisation='starting',
+                         use_mcmc = False):
 
     print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
 
@@ -108,50 +119,113 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
         default_params = optimiser.init_default_params(df_train, N=N, init_infected=0, 
                                                        start_date=start_date)
 
-    # Create searchspace of variable params
-    variable_param_ranges = {
-        'R0': hp.uniform('R0', 1.6, 5),
-        'T_inc': hp.uniform('T_inc', 4, 5),
-        'T_inf': hp.uniform('T_inf', 3, 4),
-        'T_recov_severe': hp.uniform('T_recov_severe', 9, 20),
-        'P_severe': hp.uniform('P_severe', 0.3, 0.9),
-        'P_fatal': hp.uniform('P_fatal', 0, 0.3),
-        'intervention_amount': hp.uniform('intervention_amount', 0, 1)
-    }
-    if initialisation == 'intermediate':
-        extra_params = {
-            'E_hosp_ratio': hp.uniform('E_hosp_ratio', 0, 2),
-            'I_hosp_ratio': hp.uniform('I_hosp_ratio', 0, 1),
-        }
-        variable_param_ranges.update(extra_params)
+    if use_mcmc:
+        #TODO implement which compartments
+        SEIR_Test_obj = SEIR_Test_pymc3()
+        num_patients = SEIR_Test_obj.__dict__['vanilla_params']['N']
+        init_vals = list(SEIR_Test_obj.__dict__['state_init_values'].values())
+        num_states = 11
+        num_params = 7
+        num_steps = 40
+        num_train_steps = 7
 
-    # Perform Bayesian Optimisation
-    total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days + 1
-    best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, method='mape', 
-                                              num_evals=1500, loss_indices=[-train_period, None],
-                                              total_days=total_days, which_compartments=which_compartments, 
-                                              initialisation=initialisation)
+        burn_in = 10
+        mcmc_steps = 20
 
-    print('best parameters\n', best_params)
+        observed = df_train['total_infected'][-num_train_steps:]
+        num_train = len(df_train)
+        with pm.Model() as model:
+            R0 = pm.Uniform("R0", lower = 1, upper = 3)#(1.6, 3)
+            T_inc = pm.Uniform("T_inc", lower = 1, upper = 5)#(3, 4)
+            T_inf = pm.Uniform("T_inf", lower = 1, upper = 4)#(3, 4)
+            T_recov_severe = pm.Uniform("T_recov_severe ", lower = 9, upper = 20)
+            P_severe = pm.Uniform("P_severe", lower = 0.3, upper = 0.99)
+            P_fatal = pm.Uniform("P_fatal", lower = 1e-6, upper = 0.3)
+            intervention_amount = pm.Uniform("intervention_amount", lower = 0.3, upper = 1)
+            
+            ode_solution = sir_model(y0=init_vals , theta=[R0, T_inc, T_inf, T_recov_severe, P_severe,
+                                                           P_fatal, intervention_amount])
+            # The ode_solution has a shape of (n_times, n_states)
+            
+            predictions = ode_solution[num_train-num_train_steps-1:num_train-1]
+            hospitalised = predictions[:,6] + predictions[:,7] + predictions[:,8]
+            recovered = predictions[:,9]
+            deceased = predictions[:,10]
+            total_infected = hospitalised + recovered + deceased
+            total_infected = total_infected * num_patients 
+            #sigma = pm.HalfNormal('sigma',
+            #                      sigma=observed.std(),
+            #                      shape=num_params)
+            Y = pm.Normal('Y', mu = total_infected, observed=observed)
+            
+            prior = pm.sample_prior_predictive()
+            trace = pm.sample(mcmc_steps, tune=burn_in , target_accept=0.9, cores=4)
+            posterior_predictive = pm.sample_posterior_predictive(trace)
+            total_df_predictions = pd.DataFrame() 
+            for predictions in trace:
+                df_prediction = get_predictions_mcmc(params, default_params, df_train, initialisation, train_period)
+                total_df_predictions = pd.concat([total_df_prediction, prediction], axis = 1)
 
-    if train_on_val:
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'], 
-                                        initialisation=initialisation, loss_indices=[-train_period, None])
+        df_prediction  = total_df_predictions.mean(axis = 1)
+        df_upper =  df_prediction  + 1.96*total_df_predictions.std(axis = 1)
+        df_lower =  df_prediction  - 1.96*total_df_predictions.std(axis = 1)
+        df_loss = calculate_loss(df_train_nora, df_val_nora, df_prediction, train_period,
+                                 train_on_val, which_compartments=which_compartments)
+
+        
+        ax = create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
+                          which_compartments=which_compartments)
+
+        results_dict = {}
+        for name in ['best_params', 'default_params', 'optimiser', 'df_prediction', 'df_district', 'df_train', \
+            'df_val', 'df_loss', 'ax']:
+            results_dict[name] = eval(name)
     else:
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'],
-                                        initialisation=initialisation, loss_indices=[-train_period, None])
-    
-    df_loss = calculate_loss(df_train_nora, df_val_nora, df_prediction, train_period,
-                             train_on_val, which_compartments=which_compartments)
+        # Create searchspace of variable params
+        variable_param_ranges = {
+            'R0': hp.uniform('R0', 1.6, 5),
+            'T_inc': hp.uniform('T_inc', 4, 5),
+            'T_inf': hp.uniform('T_inf', 3, 4),
+            'T_recov_severe': hp.uniform('T_recov_severe', 9, 20),
+            'P_severe': hp.uniform('P_severe', 0.3, 0.9),
+            'P_fatal': hp.uniform('P_fatal', 0, 0.3),
+            'intervention_amount': hp.uniform('intervention_amount', 0, 1)
+        }
+        if initialisation == 'intermediate':
+            extra_params = {
+                'E_hosp_ratio': hp.uniform('E_hosp_ratio', 0, 2),
+                'I_hosp_ratio': hp.uniform('I_hosp_ratio', 0, 1),
+            }
+            variable_param_ranges.update(extra_params)
 
-    
-    ax = create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
-                      which_compartments=which_compartments)
 
-    results_dict = {}
-    for name in ['best_params', 'default_params', 'optimiser', 'df_prediction', 'df_district', 'df_train', \
-        'df_val', 'df_loss', 'ax']:
-        results_dict[name] = eval(name)
+        # Perform Bayesian Optimisation
+        total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days + 1
+        best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, method='mape', 
+                                                  num_evals=1500, loss_indices=[-train_period, None],
+                                                  total_days=total_days, which_compartments=which_compartments, 
+                                                  initialisation=initialisation)
+
+        print('best parameters\n', best_params)
+
+        if train_on_val:
+            df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'], 
+                                            initialisation=initialisation, loss_indices=[-train_period, None])
+        else:
+            df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'],
+                                            initialisation=initialisation, loss_indices=[-train_period, None])
+        
+        df_loss = calculate_loss(df_train_nora, df_val_nora, df_prediction, train_period,
+                                 train_on_val, which_compartments=which_compartments)
+
+        
+        ax = create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
+                          which_compartments=which_compartments)
+
+        results_dict = {}
+        for name in ['best_params', 'default_params', 'optimiser', 'df_prediction', 'df_district', 'df_train', \
+            'df_val', 'df_loss', 'ax']:
+            results_dict[name] = eval(name)
 
     return results_dict
 

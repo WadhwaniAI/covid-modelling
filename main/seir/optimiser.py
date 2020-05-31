@@ -18,8 +18,9 @@ from main.seir.losses import Loss_Calculator
 
 class Optimiser():
 
-    def __init__(self):
+    def __init__(self, use_mcmc = False):
         self.loss_calculator = Loss_Calculator()
+        self.use_mcmc = use_mcmc
 
     def solve(self, variable_params, default_params, df_true, start_date=None, end_date=None, 
               state_init_values=None, initialisation='starting', loss_indices=[-20, -10]):
@@ -28,7 +29,8 @@ class Optimiser():
             row = df_true.iloc[loss_indices[0], :]
             
             state_init_values = OrderedDict()
-            key_order = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
+            key_order = ['S', 'E', 'I', 'D_E', 'D_I', 
+                'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
             for key in key_order:
                 state_init_values[key] = 0
 
@@ -57,10 +59,16 @@ class Optimiser():
             if type(start_date) is str:
                 start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
             params_dict['starting_date'] = start_date
-        solver = SEIR_Testing(**params_dict)
-        total_days = (end_date - params_dict['starting_date']).days
-        sol = solver.solve_ode(total_no_of_days=total_days, time_step=1, method='Radau')
-        df_prediction = solver.return_predictions(sol)
+
+
+        if (use_mcmc):
+            solver = SEIR_Testing_pymc3(**params_dict)
+            total_days = (end_date - params_dict['starting_date']).days
+        else:
+            solver = SEIR_Testing(**params_dict)
+            total_days = (end_date - params_dict['starting_date']).days
+            sol = solver.solve_ode(total_no_of_days=total_days, time_step=1, method='Radau')
+            df_prediction = solver.return_predictions(sol)
         return df_prediction
 
 
