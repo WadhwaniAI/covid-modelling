@@ -13,7 +13,7 @@ from mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, 
 
 
 class MCMC(object):
-    def __init__(self, state: str, district: str, n_chains: int, iters: int, fit_days: int = 10, test_days: int = 5, fit: str = 'all'):
+    def __init__(self, state: str, district: str, n_chains: int, iters: int, fit_days: int = 10, test_days: int = 5, fit2new: bool = False):
         self.timestamp = datetime.now()
         self.state = state
         self.district = district
@@ -21,7 +21,7 @@ class MCMC(object):
         self.fit_days = fit_days
         self.test_days = test_days
         self._iters = iters
-        self._fit = fit
+        self._fit2new = fit2new
 
         self._fetch_data()
         self._split_data()
@@ -84,7 +84,7 @@ class MCMC(object):
         df_prediction = self._optimiser.solve(theta, self._default_params, self.df_train)
         pred = np.array(df_prediction['total_infected'].iloc[-self.fit_days:])
         true = np.array(self.df_train['total_infected'].iloc[-self.fit_days:])
-        if self._fit.__eq__('new'):
+        if self._fit2new:
             pred = self._get_new_cases_array(pred.copy())
             true = self._get_new_cases_array(true.copy())
         sigma = theta['sigma']
