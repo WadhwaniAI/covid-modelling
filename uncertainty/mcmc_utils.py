@@ -6,6 +6,21 @@ from collections import defaultdict
 from main.seir.optimiser import Optimiser
 
 
+def get_state(district):
+    state_map = {
+        "Mumbai": "Maharashtra",
+        "Pune": "Maharashtra",
+        "Jaipur": "Rajasthan",
+        "Bengaluru Urban": "Karnataka",
+        "Bengaluru Rural": "Karnataka",
+        "Ahmedabad": "Gujarat",
+        "North Delhi": "Delhi",
+        "South Delhi": "Delhi",
+        "East Delhi": "Delhi",
+        "West Delhi": "Delhi"
+    }
+    return state_map[district]
+    
 def get_PI(pred_dfs, date, key, multiplier=1.96):
     pred_samples = list()
     for df in pred_dfs:

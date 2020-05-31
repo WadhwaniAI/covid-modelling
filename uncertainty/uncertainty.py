@@ -1,5 +1,6 @@
 import os
 import pdb
+import argparse
 import numpy as np
 np.random.seed(10)
 import pandas as pd
@@ -8,7 +9,7 @@ from os.path import exists
 import matplotlib.pyplot as plt
 
 from mcmc import MCMC
-from mcmc_utils import predict, get_PI
+from mcmc_utils import predict, get_PI, get_state
 
 
 def visualize(mcmc: MCMC, compartments: list, end_date: str = None): 
@@ -40,14 +41,18 @@ def visualize(mcmc: MCMC, compartments: list, end_date: str = None):
     plt.savefig('./plots/{}_mcmc_confidence_intervals_{}_{}.png'.format(mcmc.timestamp, mcmc.district, mcmc.state))
     plt.show()
 
-def main():
+def main(district: str, end_date: str = None):
     os.makedirs('./plots', exist_ok=True)
-    mcmc = MCMC(state = "Maharashtra", district = "Pune", n_chains = 5, iters = 25000, fit_days=10, test_days=5, fit2new=True)
+    state = get_state(district)
+    mcmc = MCMC(state = state, district = district, n_chains = 5, iters = 25000, fit_days=10, test_days=5, fit2new=True)
     mcmc.run()
 
     compartments = ["total_infected"]
-    visualize(mcmc, compartments, end_date="2020-06-24")
-
+    visualize(mcmc, compartments, end_date=end_date)
 
 if __name__=="__main__":
-    main()
+    parser = argparse.ArgumentParser(description = 'Uncertainty Estimation with MCMC', allow_abbrev=False)
+    parser.add_argument('-d', '--district', type=str, required=True, help = 'name of the district')
+    parser.add_argument('-e', '--end_date', type=str, default=None, help = 'forecast end date')
+    (args, _) = parser.parse_known_args()
+    main(args.district, args.end_date)
