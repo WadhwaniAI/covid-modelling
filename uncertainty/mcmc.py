@@ -13,7 +13,7 @@ from mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, 
 
 
 class MCMC(object):
-    def __init__(self, state: str, district: str, n_chains: int, iters: int, fit_days: int = 10, test_days: int = 5):
+    def __init__(self, state: str, district: str, n_chains: int, iters: int, fit_days: int = 10, test_days: int = 5, fit: str = 'all'):
         self.timestamp = datetime.now()
         self.state = state
         self.district = district
@@ -21,6 +21,7 @@ class MCMC(object):
         self.fit_days = fit_days
         self.test_days = test_days
         self._iters = iters
+        self._fit = fit
 
         self._fetch_data()
         self._split_data()
@@ -83,11 +84,12 @@ class MCMC(object):
         df_prediction = self._optimiser.solve(theta, self._default_params, self.df_train)
         pred = np.array(df_prediction['total_infected'].iloc[-self.fit_days:])
         true = np.array(self.df_train['total_infected'].iloc[-self.fit_days:])
-        pred_cases = self._get_new_cases_array(pred.copy())
-        true_cases = self._get_new_cases_array(true.copy())
+        if self._fit.__eq__('new'):
+            pred = self._get_new_cases_array(pred.copy())
+            true = self._get_new_cases_array(true.copy())
         sigma = theta['sigma']
-        N = len(true_cases)
-        ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (np.sum(((true_cases - pred_cases) ** 2) / (2 * sigma ** 2)))
+        N = len(true)
+        ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (np.sum(((true - pred) ** 2) / (2 * sigma ** 2)))
         return ll
 
     def _log_prior(self, theta):
@@ -109,7 +111,6 @@ class MCMC(object):
             return (x < np.exp(x_new - x_old))
 
     def _metropolis(self, seed:int = None):
-        np.random.seed(seed)
         theta = self._param_init()
         accepted = [theta]
         rejected = list()

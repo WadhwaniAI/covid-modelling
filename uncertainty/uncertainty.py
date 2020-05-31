@@ -42,7 +42,7 @@ def visualize(mcmc: MCMC, compartments: list, end_date: str = None):
 
 def main():
     os.makedirs('./plots', exist_ok=True)
-    mcmc = MCMC(state = "Maharashtra", district = "Pune", n_chains = 5, iters = 10000, fit_days=10, test_days=5)
+    mcmc = MCMC(state = "Maharashtra", district = "Pune", n_chains = 5, iters = 10000, fit_days=10, test_days=5, fit='all')
     mcmc.run()
 
     compartments = ["total_infected"]
