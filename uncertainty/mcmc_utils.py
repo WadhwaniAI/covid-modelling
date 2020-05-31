@@ -18,7 +18,7 @@ def get_PI(pred_dfs, date, key, multiplier=1.96):
     return mu, low, high
 
 def set_optimizer(data: pd.DataFrame):
-    optimiser = Optimiser()
+    optimiser = Optimiser(use_mcmc=False)
     default_params = optimiser.init_default_params(data)
     return optimiser, default_params
 

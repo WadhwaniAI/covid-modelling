@@ -61,7 +61,7 @@ class Optimiser():
             params_dict['starting_date'] = start_date
 
 
-        if (use_mcmc):
+        if (self.use_mcmc):
             solver = SEIR_Testing_pymc3(**params_dict)
             total_days = (end_date - params_dict['starting_date']).days
         else:
