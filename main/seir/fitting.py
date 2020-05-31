@@ -91,6 +91,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
 
     print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
 
+    # Get date
     if data_from_tracker:
         df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
     else:
@@ -111,7 +112,7 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
             df_train, df_val, df_true_fitting = train_val_split(
                 df_district, train_rollingmean=True, val_rollingmean=True, val_size=0)
             df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
+                df_district, train_rollingmean=False, val_rollingmean=False, val_size=0)
         else:
             df_train, df_val, df_true_fitting = train_val_split(
                 df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
@@ -160,8 +161,10 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
                       which_compartments=which_compartments)
 
     results_dict = {}
-    for name in ['best_params', 'default_params', 'optimiser', 'df_prediction', 'df_district', 'df_train', \
-        'df_val', 'df_loss', 'ax', 'trials']:
+    data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
+    variable_param_ranges = get_variable_param_ranges(initialisation=initialisation, as_str=True)
+    for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
+                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'ax', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
 
     return results_dict
@@ -205,7 +208,7 @@ def create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, tr
     
     df_predicted_plotting = df_prediction.loc[df_prediction['date'].isin(
         df_true_plotting['date']), ['date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
-    # import pdb; pdb.set_trace()
+    
     if 'total_infected' in which_compartments:
         ax.plot(df_true_plotting['date'], df_true_plotting['total_infected'],
                 '-o', color='C0', label='Confirmed Cases (Observed)')

@@ -4,38 +4,91 @@ import copy
 import datetime
 from collections import defaultdict
 
-from data.dataloader import get_rootnet_api_data
+from data.dataloader import get_covid19india_api_data, get_rootnet_api_data, get_athena_dataframes
 
 def get_data(dataframes=None, state=None, district=None, use_dataframe='districts_daily', disable_tracker=False,
              filename=None, data_format='new'):
+    """Handshake between data module and training module. Returns a dataframe of cases for a particular district/state
+       from multiple sources
+
+    If : 
+    state, dist are given, use_dataframe == 'districts_daily' : data loaded from covid19india tracker (districts_daily.json)
+    state, dist are given, use_dataframe == 'raw_data' : data loaded from covid19india tracker (raw_data.json)
+    dist given, state == None : state data loaded from rootnet tracker
+    disable_tracker=True, filename != None : data loaded from file (csv file)
+        data_format == new  : The new format used by Jerome/Vasudha
+        data_format == old  : The old format Puskar/Keshav used to supply data in
+    disable_tracker=True, filename == None : data loaded from AWS Athena Database
+
+    Keyword Arguments:
+        dataframes {dict} -- dict of dataframes returned from the get_covid19india_api_data function (default: {None})
+        state {str} -- Name of state for which data to be loaded (in title case) (default: {None})
+        district {str} -- Name of district for which data to be loaded (in title case) (default: {None})
+        use_dataframe {str} -- If covid19india tracker being used, what json to use (default: {'districts_daily'})
+        disable_tracker {bool} -- Flag to not use tracker (default: {False})
+        filename {str} -- Path to CSV file with data (only if disable_tracker == True) (default: {None})
+        data_format {str} -- Format of the CSV file (default: {'new'})
+
+    Returns:
+        pd.DataFrame -- dataframe of cases for a particular state, district with 4 columns : 
+        ['total_infected', 'hospitalised', 'deceased', 'recovered']
+        (All columns are populated except using raw_data.json)
+       
+    """
     if disable_tracker:
-        df_result = get_custom_data(filename, data_format=data_format)
+        if filename != None:
+            df_result = get_custom_data_from_file(
+                filename, data_format=data_format)
+        else:
+            df_result = get_custom_data_from_db(state, district)
     elif district != None:
         df_result = get_district_time_series(dataframes, state=state, district=district, use_dataframe=use_dataframe)
     else:
         df_result = get_state_time_series(state=state)
     return df_result
+
+
+def get_custom_data_from_db(state='Maharashtra', district='Pune'):
+    dataframes = get_athena_dataframes()
+    df_result = copy.copy(dataframes['covid_case_summary'])
+    df_result = df_result[np.logical_and(
+        df_result['state'] == state.lower(), df_result['district'] == district.lower())]
+    df_result['date'] = pd.to_datetime(df_result['date'])
+    del df_result['ward_name']
+    del df_result['ward_no']
+    del df_result['mild']
+    del df_result['moderate']
+    del df_result['severe']
+    del df_result['critical']
+    del df_result['partition_0']
+
+    df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]
+    df_result.columns = [x if x != 'confirmed' else 'total_infected' for x in df_result.columns]
+    return df_result
     
 #TODO add support of adding 0s column for the ones which don't exist
-def get_custom_data(filename, data_format='new'):
+def get_custom_data_from_file(filename, data_format='new'):
     if data_format == 'new':
-        df = pd.read_csv(filename)
-        del df['Ward/block name']
-        del df['Ward number (if applicable)']
-        del df['Mild cases (isolated)']
-        del df['Moderate cases (hospitalized)']
-        del df['Severe cases (In ICU)']
-        del df['Critical cases (ventilated patients)']
-        df.columns = ['state', 'district', 'date', 'total_infected', 'hospitalised', 'recovered', 'deceased']
-        df.drop(np.arange(3), inplace=True)
-        df['date'] = pd.to_datetime(df['date'], format='%m-%d-%Y')
-        df = df[np.logical_not(df['state'].isna())]
-        df.reset_index(inplace=True, drop=True)
-        df.loc[:, ['total_infected', 'hospitalised', 'recovered', 'deceased']] = df[[
+
+        df_result = pd.read_csv(filename)
+        del df_result['Ward/block name']
+        del df_result['Ward number (if applicable)']
+        del df_result['Mild cases (isolated)']
+        del df_result['Moderate cases (hospitalized)']
+        del df_result['Severe cases (In ICU)']
+        del df_result['Critical cases (ventilated patients)']
+        df_result.columns = ['state', 'district', 'date', 'total_infected', 'hospitalised', 'recovered', 'deceased']
+        df_result.drop(np.arange(3), inplace=True)
+        df_result['date'] = pd.to_datetime(df_result['date'], format='%m-%d-%Y')
+        df_result = df_result[np.logical_not(df_result['state'].isna())]
+        df_result.reset_index(inplace=True, drop=True)
+        df_result.loc[:, ['total_infected', 'hospitalised', 'recovered', 'deceased']] = df_result[[
             'total_infected', 'hospitalised', 'recovered', 'deceased']].apply(pd.to_numeric)
-        df = df[['date', 'state', 'district', 'total_infected', 'hospitalised', 'recovered', 'deceased']]
-        return df
+        df_result = df_result[['date', 'state', 'district', 'total_infected', 'hospitalised', 'recovered', 'deceased']]
+
+        return df_result
     if data_format == 'old':
+
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]

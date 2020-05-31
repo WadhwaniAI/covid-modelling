@@ -21,8 +21,8 @@ class Optimiser():
     def __init__(self):
         self.loss_calculator = Loss_Calculator()
 
-    def solve(self, variable_params, default_params, df_true, start_date=None, end_date=None, 
-              state_init_values=None, initialisation='starting', loss_indices=[-20, -10]):
+    def solve(self, variable_params : dict, default_params :dict, df_true : pd.DataFrame, start_date=None, 
+              end_date=None, state_init_values=None, initialisation='starting', loss_indices=[-20, -10]):
         params_dict = {**variable_params, **default_params}
         if end_date == None:
             end_date = df_true.iloc[-1, :]['date']
