@@ -4,8 +4,8 @@ import numpy as np
 np.random.seed(10)
 import pandas as pd
 from tqdm import tqdm
+from os.path import exists
 import matplotlib.pyplot as plt
-from os.path import exists, join
 
 from mcmc import MCMC
 from mcmc_utils import predict, get_PI
@@ -42,7 +42,7 @@ def visualize(mcmc: MCMC, compartments: list, end_date: str = None):
 
 def main():
     os.makedirs('./plots', exist_ok=True)
-    mcmc = MCMC(state = "Maharashtra", district = "Pune", n_chains = 5, iters = 100, fit_days=10, test_days=5)
+    mcmc = MCMC(state = "Maharashtra", district = "Pune", n_chains = 5, iters = 10000, fit_days=10, test_days=5)
     mcmc.run()
 
     compartments = ["total_infected"]

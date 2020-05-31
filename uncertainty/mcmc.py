@@ -1,4 +1,3 @@
-import pdb
 import pprint
 import numpy as np
 import pandas as pd
@@ -8,7 +7,6 @@ from datetime import datetime
 from joblib import delayed, Parallel
 from collections import defaultdict, OrderedDict
 
-from utils.generic import init_params
 from data.processing import get_district_time_series
 from data.dataloader import get_covid19india_api_data
 from mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, avg_sum_multiple_chains
