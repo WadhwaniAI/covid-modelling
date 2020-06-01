@@ -6,6 +6,7 @@ import math
 class SIR_Discrete(object):
     def __init__(self, S=0.999, I=0.001, R=0, B=60,t=0,switch_budgets=5,terminal=False):
         self.T=400
+        self.minduration=10
         self.STATE=np.array([S, I, R, B,t,switch_budgets,terminal])
         self.R0 = 3
         # self.T_inf = 2.9
@@ -17,7 +18,7 @@ class SIR_Discrete(object):
         # self.I0 = 100.0
         '''Intervention Relateted'''
         self.num_actions=4
-        self.max_duration=100
+        self.max_duration=6
         self.num_states=7
     def reset(self):
         self.STATE=np.array([0.999, 0.001, 0, 60,0,5,False])
@@ -54,10 +55,14 @@ class SIR_Discrete(object):
     def perform_leader(self, Strength, Duration):
         a_s=[]
         reward=0
-        Duration+=10
+#        Duration=+self.minduration
+        Duration=Duration*10+self.minduration
         Duration=int(Duration)
+#        print(self.STATE[4])
+#        print(Duration)
         if self.STATE[6]==False:        
             if self.STATE[3]<self.get_action_cost(Strength)*Duration:
+#                Strength=0
                 Duration=int(math.floor(float(self.STATE[3])/self.get_action_cost(Strength)))
             if self.STATE[4]+Duration>self.T:
                 Duration=int(self.T-self.STATE[4])
@@ -69,6 +74,7 @@ class SIR_Discrete(object):
                 self.STATE[5]-=1
         if self.STATE[4]>=self.T:
             self.STATE[6]=True
+#        print(self.STATE[4])
         return reward, self.STATE, a_s
     
     def perform(self,ACTION):
@@ -86,6 +92,7 @@ class SIR_Discrete(object):
 
     def calc_reward(self):
         reward=1-self.STATE[1]
+#        reward=1
         return reward
     
     

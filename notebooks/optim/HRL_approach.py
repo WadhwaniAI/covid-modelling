@@ -42,15 +42,30 @@ class FittedQIteration(object):
                 for j in range(self.simulator.num_actions):
                     for k in range(self.simulator.max_duration):
                         SA_table.append(self.encode([states[i]], [j, k])[0])
+#                        SA_table.append([j, k])
 #                        Q[i,j,k]=self.regressor.predict(self.encode([states[i]], [j, k]))
 #            print(SA_table)
+#            print(SA_table[6])
             Qt=self.regressor.predict(SA_table)
+#            print(self.regressor.predict([[0,3]]))
+#            print(SA_table)
+#            print('QT')
+#            print(Qt)
+#            print(self.regressor.predict([SA_table[0]]))
+#            print(self.regressor.predict([SA_table[6]]))
+#            print(Qt)
             t=0
             for i in range(len(states)):
                 for j in range(self.simulator.num_actions):
                     for k in range(self.simulator.max_duration):
-                        Q[i,j,k]=Qt[t]
+                        state=SA_table[t]
+                        if(state[6]):
+                            Q[i,j,k]=0
+                        else:
+                            Q[i,j,k]=Qt[t]
                         t+=1
+#            np.set_printoptions(precision=3)
+#            print(Q)
             return Q
 #            return np.array([self.regressor.predict(self.encode(states, [action, duration]))
 #                             for action, duration in itertools.product(range(self.simulator.num_actions), range(self.simulator.max_duration))])
@@ -65,13 +80,26 @@ class FittedQIteration(object):
             a[1]=np.random.choice(self.simulator.max_duration)
         else:
             # Find index of maximum value from 2D numpy array
-            result = np.where(self.Q([state] == np.amax(self.Q([state]))))
-            listOfCordinates = list(zip(result[1], result[2]))
-            # travese over the list of cordinates
-            cord=random.choice(listOfCordinates)
+            Table=self.Q([state])[0]
+#            print(Table)
+            result = np.where(Table== np.amax(Table))
+#            print(result)
+            listOfCordinates = list(zip(result[0], result[1]))
 #            print(listOfCordinates)
-            a[0]=cord[0]
-            a[1]=cord[1]
+            # travese over the list of cordinates
+            if len(listOfCordinates)>0:
+                cord=random.choice(listOfCordinates)
+                a[0]=cord[0]
+                a[1]=cord[1]
+            else:
+                a=[0,0]
+#            Duration=a[1]*10+10
+#            if state[3]<self.simulator.get_action_cost(a[0])*Duration:
+#                a[0]=0
+#            if state[4]+Duration>self.simulator.T:
+#                a[1]=math.floor((self.simulator.T-state[4])/10)
+            
+            
 #            print(a)
         return a
 
@@ -89,17 +117,20 @@ class FittedQIteration(object):
         S.append(s)
         while self.simulator.STATE[6]==False:
             a=self.policy(s, eps=eps)
+#            print(a)
+#            print('-----------')
             r, s_ , a_s= self.simulator.perform_leader(a[0],a[1])
             s=s_
             S.append(s)
             A.append(a)
             R.append(r)
             A_S=A_S+a_s
+#        print(A)
         return S, A, R, A_S
 
 
 
-    def fit_Q(self, episodes, num_iters=100, discount=0.9999):
+    def fit_Q(self, episodes, num_iters=2, discount=0.9999):
         """Fit and re-fit the Q function using historical data for the
         specified number of `iters` at the specified `discount` factor"""
         S1 = np.vstack([ep[0][:-1] for ep in episodes])
@@ -107,15 +138,20 @@ class FittedQIteration(object):
         A = np.vstack([ep[1] for ep in episodes])
         R = np.hstack([ep[2] for ep in episodes])
         inputs = self.encode(S1, A)
+#        print(A)
+#        print(R)
 #        progress = tqdm(range(num_iters), file=sys.stdout,desc='num_iters')
         for _ in range(num_iters):
 #            progress.update(1)
 #            targets = R + discount * self.Q(S2).max(axis=1)
             targets = R + discount * ((self.Q(S2).max(axis=2)).max(axis=1))
+#            targets = R
+#            print(targets)
 #            alpha=1
 #            targets = (self.Q(S1).max(axis=2)).max(axis=1)+alpha*(R + discount * (self.Q(S2).max(axis=2)).max(axis=1)-(self.Q(S1).max(axis=2)).max(axis=1))
-            
+
             self.regressor.fit(inputs, targets)
+#            self.regressor.fit(A, targets)
 #        progress.close()
         
         
@@ -129,6 +165,7 @@ class FittedQIteration(object):
 #        progress = tqdm(range(num_refits), file=sys.stdout,desc='num_refits')
         for i in range(num_refits):
 #            progress.update(1)
+#            episodes = []
             for _ in range(num_episodes):
                 episodes.append(self.run_episode())
                 ###
@@ -144,6 +181,7 @@ class FittedQIteration(object):
                     best_r2+=A_S[j][1]
                 print('Round: {}-{} Reward 1: {} Reward 2:{} B"{}'.format(i,_,best_r,best_r2,S[-1][3]))   
                 ###
+#            print(real_episodes[1])
             self.fit_Q(episodes=episodes, discount=discount)
             if save:
 #                with open('./fqi-regressor-iter-{}.pkl'.format(i+1), 'wb') as f:
@@ -184,11 +222,11 @@ class FittedQIteration(object):
 
 if __name__ == '__main__':
     print('Here goes nothing')
-    discount=0.9999
-    num_refits=2
-    num_episodes=10
+    discount=1
+    num_refits=5
+    num_episodes=100
 #    episode_length=10
-    First_time=False
+    First_time=True
     lam=0.0
     if First_time:
         env=FittedQIteration()
@@ -210,9 +248,9 @@ if __name__ == '__main__':
     A_S=real_episodes[3]
     best_r=0
     for i in range(len(R)):
-        # best_r+=R[i]*discount**i
+         best_r+=R[i]*discount**i
         # best_r+=S[i][0]+S[i][2]
-        best_r+=R[i]
+#        best_r+=R[i]
 
     random_action_episodes=env.run_episode(eps=1)
     S_r=random_action_episodes[0]
@@ -221,19 +259,19 @@ if __name__ == '__main__':
     A_S_r=random_action_episodes[3]
     random_r=0
     for i in range(len(R_r)):
-        # random_r+=R_r[i]*discount**i
+         random_r+=R_r[i]*discount**i
         # random_r+=S_r[i][0]+S_r[i][2]
-        random_r+=R_r[i]
+#        random_r+=R_r[i]
     
     state=real_episodes[0][0]
     
     estimate_r=env.Q([state])[0]
 #    print("Estimate Reward(Discounted):")
-#    print(max(estimate_r))
+#    print(np.max(estimate_r))
     print("Real Reward(Discounted):")
-    print(400-best_r)
+    print(best_r)
     print("Random Action Reward(Discounted):")
-    print(400-random_r)
+    print(random_r)
     I=[]
     action=[]
     for i in range(1,len(A_S)):
