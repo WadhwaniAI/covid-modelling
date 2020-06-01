@@ -5,14 +5,14 @@ import numpy as np
 np.random.seed(10)
 import pandas as pd
 from tqdm import tqdm
-from os.path import exists
 import matplotlib.pyplot as plt
+from os.path import exists, join
 
 from mcmc import MCMC
 from mcmc_utils import predict, get_state
 
 
-def visualize(mcmc: MCMC, compartments: list, end_date: str = None): 
+def visualize(mcmc: MCMC, compartments: list, end_date: str = None, out_dir: str = ''): 
     data = pd.concat([mcmc.df_train, mcmc.df_val])
     result = predict(data, mcmc.chains, end_date)
 
@@ -38,17 +38,50 @@ def visualize(mcmc: MCMC, compartments: list, end_date: str = None):
     plt.title("95% confidence intervals for {}, {}".format(mcmc.district, mcmc.state))
     plt.tight_layout()
     
-    plt.savefig('./plots/{}_mcmc_confidence_intervals_{}_{}.png'.format(mcmc.timestamp, mcmc.district, mcmc.state))
+    plt.savefig(join(out_dir, 'forecasts_{}_{}.png'.format(mcmc.district, mcmc.state)))
     plt.show()
 
-def main(district: str, end_date: str, chains:int, iters: int):
-    os.makedirs('./plots', exist_ok=True)
+def plot_chains(mcmc: MCMC, out_dir: str):
+    color = plt.cm.rainbow(np.linspace(0, 1, mcmc.n_chains))
+    params = [*mcmc.prior_ranges.keys()]
+
+    for param in params:
+        plt.figure(figsize=(20, 10))
+        plt.subplot(1, 2, 1)
+
+        for i, chain in enumerate(mcmc.chains):
+            df = pd.DataFrame(chain[0])
+            samples = np.array(df[param])
+            plt.scatter(list(range(len(samples))), samples, s=10, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+
+        plt.xlabel("iterations")
+        plt.title("Accepted {} samples".format(param))
+        plt.legend()
+
+        plt.subplot(1, 2, 2)
+
+        for i, chain in enumerate(mcmc.chains):
+            df = pd.DataFrame(chain[1])
+            samples = np.array(df[param])
+            plt.scatter(list(range(len(samples))), samples, s=10, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+
+        plt.xlabel("iterations")
+        plt.title("Rejected {} samples".format(param))
+        plt.legend()
+
+        plt.savefig(join(out_dir, '{}_{}_{}.png'.format(param, mcmc.district, mcmc.state)))
+
+def main(district: str, end_date: str, chains:int, iters: int, stamp: bool):
     state = get_state(district)
     mcmc = MCMC(state = state, district = district, n_chains = chains, iters = iters, fit_days=10, test_days=5, fit2new=True)
     mcmc.run()
+    sig = mcmc.timestamp.strftime("%d-%b-%Y (%H:%M:%S)") if stamp else ''
+    out_dir = join('plots', sig)
+    os.makedirs(out_dir, exist_ok=True)
+    plot_chains(mcmc, out_dir)
 
     compartments = ["total_infected"]
-    visualize(mcmc, compartments, end_date=end_date)
+    visualize(mcmc, compartments, end_date=end_date, out_dir=out_dir)
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description = 'Uncertainty Estimation with MCMC', allow_abbrev=False)
@@ -56,5 +89,6 @@ if __name__=="__main__":
     parser.add_argument('-e', '--end_date', type=str, default=None, help = 'forecast end date')
     parser.add_argument('-c', '--chains', type=int, default=5, help = 'no. of mcmc chains')
     parser.add_argument('-i', '--iters', type=int, default=25000, help = 'no. of iterations for mcmc')
+    parser.add_argument('-s', '--stamp', action='store_true', help = 'add timestamp to plots?')
     (args, _) = parser.parse_known_args()
-    main(args.district, args.end_date, args.chains, args.iters)
+    main(args.district, args.end_date, args.chains, args.iters, args.stamp)

@@ -20,7 +20,7 @@ class MCMC(object):
         self.n_chains = n_chains
         self.fit_days = fit_days
         self.test_days = test_days
-        self._iters = iters
+        self.iters = iters
         self._fit2new = fit2new
 
         self._fetch_data()
@@ -115,7 +115,7 @@ class MCMC(object):
         accepted = [theta]
         rejected = list()
         
-        for i in tqdm(range(self._iters)):
+        for i in tqdm(range(self.iters)):
             theta_new = self._proposal(theta)
             if self._accept(theta, theta_new):
                 theta = theta_new
