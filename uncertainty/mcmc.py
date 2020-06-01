@@ -110,7 +110,7 @@ class MCMC(object):
             x = np.random.uniform(0, 1)
             return (x < np.exp(x_new - x_old))
 
-    def _metropolis(self, seed:int = None):
+    def _metropolis(self):
         theta = self._param_init()
         accepted = [theta]
         rejected = list()
@@ -152,6 +152,6 @@ class MCMC(object):
         pp.pprint(R_hat)
 
     def run(self):
-        self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)(seed=100*run) for run in range(self.n_chains))
+        self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for run in range(self.n_chains))
         self._check_convergence()
 
