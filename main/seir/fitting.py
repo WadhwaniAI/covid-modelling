@@ -15,8 +15,7 @@ from datetime import datetime
 from joblib import Parallel, delayed
 import copy
 
-from data.dataloader import get_jhu_data, get_covid19india_api_data
-from data.processing import get_data, get_district_time_series
+from data.processing import get_all_district_data
 
 from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
@@ -82,17 +81,6 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
         df_val = df_district.iloc[-val_size:, :]
     df_val.reset_index(inplace=True, drop=True)
     return df_train, df_val, df_true_fitting
-
-def get_all_district_data(dataframes, state, district, 
-                    data_from_tracker, data_format, filename):
-    if data_from_tracker:
-        df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
-    else:
-        df_district = get_data(disable_tracker=True, filename=filename, data_format=data_format)
-    
-    df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
-    df_district_raw_data = df_district_raw_data[df_district_raw_data['date'] <= '2020-03-25']
-    return df_district, df_district_raw_data
     
 def data_setup(df_district, df_district_raw_data, pre_lockdown, 
                     train_on_val, val_period):

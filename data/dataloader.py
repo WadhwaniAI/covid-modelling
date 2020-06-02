@@ -113,7 +113,7 @@ def get_athena_dataframes(pyathena_rc_path=None):
 
     # Run SQL SELECT queries to get all the tables in the database as pandas dataframes
     dataframes = {}
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     tables_list = cursor.execute('Show tables').as_pandas().to_numpy().reshape(-1, )
     for table in tables_list:
         dataframes[table] = cursor.execute(

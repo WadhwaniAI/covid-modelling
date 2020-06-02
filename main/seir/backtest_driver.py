@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('../..')
 from data.dataloader import get_covid19india_api_data
+from data.processing import get_all_district_data
 from main.seir.backtesting import SEIRBacktest
-from main.seir.fitting import get_all_district_data
 
 parser = argparse.ArgumentParser() 
 parser.add_argument("-d", "--district", help="district name", required=True)

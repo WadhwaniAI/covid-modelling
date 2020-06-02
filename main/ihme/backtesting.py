@@ -39,11 +39,14 @@ class IHMEBacktest:
         for run_day in range(min_days + hyperopt_val_size, n_days, increment):
             kwargs = {
                 'model': self.model.generate(),
-                'data': copy(self.data)
             }
-            for arg in ['start', 'run_day', 'future_days', 'max_evals', 
+            fit_data = self.data[(self.data[self.model.date] <= start + timedelta(days=run_day))]
+            val_data = self.data[(self.data[self.model.date] > start + timedelta(days=run_day)) \
+                & (self.data[self.model.date] <= start + timedelta(days=run_day+future_days))]
+            for arg in ['fit_data', 'val_data', 'run_day', 'max_evals', 
                 'hyperopt_val_size', 'min_days', 'xform_func', 'dtp', 'scoring']:
                 kwargs[arg] = eval(arg)
+            
             args.append(kwargs)
         for run_day, result_dict in pool.map(run_model_unpack, args):
             results[run_day] = result_dict
@@ -138,12 +141,9 @@ class IHMEBacktest:
 def run_model_unpack(kwargs):
     return run_model(**kwargs)
 
-def run_model(model, data, start, run_day, future_days, max_evals, hyperopt_val_size,min_days, xform_func, dtp, scoring):
+def run_model(model, run_day, fit_data, val_data, max_evals, hyperopt_val_size,min_days, xform_func, dtp, scoring):
     print ("\rbacktesting for", run_day, end="")
     incremental_model = model.generate()
-    fit_data = data[(data[model.date] <= start + timedelta(days=run_day))]
-    val_data = data[(data[model.date] > start + timedelta(days=run_day)) \
-        & (data[model.date] <= start + timedelta(days=run_day+future_days))]
     
     # # OPTIMIZE HYPERPARAMS
     kwargs = {
@@ -177,7 +177,7 @@ def run_model(model, data, start, run_day, future_days, max_evals, hyperopt_val_
         'error': err,
         'xform_error': xform_err,
         'predictions': {
-            'start': start,
+            'start': fit_data[model.date].min(),
             'fit_dates': fit_data[model.date],
             'val_dates': val_data[model.date],
             'fit_preds': predictions[:len(fit_data)],

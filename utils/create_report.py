@@ -7,6 +7,9 @@ from pprint import pformat
 
 
 def create_report(predictions_dict, ROOT_DIR='../../reports/'):
+    if not os.path.exists(ROOT_DIR):
+        os.mkdir(ROOT_DIR)
+
     fitting_date = predictions_dict['fitting_date']
     data_last_date = predictions_dict['data_last_date']
     state = predictions_dict['state']
@@ -33,9 +36,10 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     mdFile.new_header(level=2, title=f'M1 Fit Curves')
 
     plot_filename = '{}-{}-m1-{}.png'.format(state.lower(), dist.lower(), fitting_date)
-    plot_filepath = os.path.join(ROOT_DIR, plot_filename)
+    plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
     predictions_dict['m1']['ax'].figure.savefig(plot_filepath)
-    mdFile.new_line(mdFile.new_inline_image(text='M1 Fit Curve', path=plot_filename))
+    mdFile.new_line(mdFile.new_inline_image(text='M1 Fit Curve', path=plot_filepath))
+    mdFile.new_paragraph("")
 
     mdFile.new_header(level=1, title=f'M2 FIT')
     mdFile.new_header(level=2, title=f'Optimal Parameters')
@@ -45,21 +49,21 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     mdFile.new_header(level=2, title=f'M2 Fit Curves')
 
     plot_filename = '{}-{}-m2-{}.png'.format(state.lower(), dist.lower(), fitting_date)
-    plot_filepath = os.path.join(ROOT_DIR, plot_filename)
+    plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
     predictions_dict['m2']['ax'].figure.savefig(plot_filepath)
-    mdFile.new_line(mdFile.new_inline_image(text='M2 Fit Curve', path=plot_filename))
+    mdFile.new_line(mdFile.new_inline_image(text='M2 Fit Curve', path=plot_filepath))
 
     mdFile.new_paragraph("---")
     
     mdFile.new_header(level=1, title=f'FORECAST USING M2 FIT WITH ERROR EVALUATED ON VAL SET OF M1 FIT')
     plot_filename = '{}-{}-forecast-{}.png'.format(state.lower(), dist.lower(), fitting_date)
-    plot_filepath = os.path.join(ROOT_DIR, plot_filename)
+    plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
     predictions_dict['forecast'].figure.savefig(plot_filepath)
-    mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2', path=plot_filename))
+    mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2', path=plot_filepath))
     
     # mdFile.new_header(level=1, title=f'FORECASTS ON TOTAL INFECTIONS BASED ON TOP 10 PARAMETER SETS FOR M2 FIT')
     # plot_filename = '{}-{}-forecast-top10-{}.png'.format(state.lower(), dist.lower(), fitting_date)
-    # plot_filepath = os.path.join(ROOT_DIR, plot_filename)
+    # plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
     # predictions_dict['forecast_top10'].figure.savefig(plot_filepath)
     # mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2 of top 10', path=plot_filename))
 
@@ -68,5 +72,6 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     mdFile.create_md_file()
 
     pypandoc.convert_file("{}.md".format(filename), 'docx', outputfile="{}.docx".format(filename))
-
+    # pypandoc.convert_file("{}.md".format(filename), 'tex', format='md', outputfile="{}.pdf".format(filename))
+    # TODO: pdf conversion has some issues with order of images, low priority
 
