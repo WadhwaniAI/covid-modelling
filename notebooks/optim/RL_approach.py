@@ -5,8 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append('../..')
 # from models.optim.SEIR_Discrete import SEIR_Discrete
-from models.optim.sir_discrete import SIR_Discrete
-# from SEIR_Discrete import SEIR_Discrete
+#from models.optim.sir_discrete import SIR_Discrete
+from sir_discrete2 import SIR_Discrete
 from sklearn.ensemble import ExtraTreesRegressor
 import pickle
 import time
@@ -63,42 +63,61 @@ class FittedQIteration(object):
             #     A[t]=0
         return S, A, R
 
+
+
     def fit_Q(self, episodes, num_iters=100, discount=0.9999,episode_length=500):
         """Fit and re-fit the Q function using historical data for the
         specified number of `iters` at the specified `discount` factor"""
         S1 = np.vstack([ep[0][:-1] for ep in episodes])
         S2 = np.vstack([ep[0][1:] for ep in episodes])
         A = np.hstack([ep[1] for ep in episodes])
+        print(S1)
+        print(A)
         R = np.hstack([ep[2] for ep in episodes])
         inputs = self.encode(S1, A)
-        progress = tqdm(range(num_iters), file=sys.stdout,desc='num_iters')
+#        progress = tqdm(range(num_iters), file=sys.stdout,desc='num_iters')
         for _ in range(num_iters):
-            progress.update(1)
+#            progress.update(1)
             # targets = R + discount * self.Q(S2).max(axis=1)
             alpha=1
             targets = self.Q(S1).max(axis=1)+alpha*(R + discount * self.Q(S2).max(axis=1)-self.Q(S1).max(axis=1))
             
             self.regressor.fit(inputs, targets)
-        progress.close()
+#        progress.close()
         
         
         
-    def fit(self, num_refits=10, num_episodes=15, episode_length=500, discount=0.9999, save=False):
+    def fit(self, num_refits=10, num_episodes=15, episode_length=500, discount=0.9999, save=True):
         """Perform fitted-Q iteration. For `outer_iters` steps, gain
         `num_episodes` episodes worth of experience using the current policy
         (which is initially random), then fit or re-fit the Q-function. Return
         the full set of episode data."""
         episodes = []
-        progress = tqdm(range(num_refits), file=sys.stdout,desc='num_refits')
+#        progress = tqdm(range(num_refits), file=sys.stdout,desc='num_refits')
         for i in range(num_refits):
-            progress.update(1)
+#            progress.update(1)
             for _ in range(num_episodes):
                 episodes.append(self.run_episode(episode_length=episode_length))
+                ###
+                real_episodes=self.run_episode(eps=0,episode_length=episode_length)
+                R=real_episodes[2]
+                S=real_episodes[0]
+                best_r=0
+                best_r2=0
+                for j in range(len(R)):
+                    best_r+=R[j]
+                    best_r2+=S[j][1]
+                print('Round: {}-{} Reward 1: {} Reward 2:{} B"{}'.format(i,_,best_r,best_r2,S[-1][3]))   
+                ###
+            print(episodes)
             self.fit_Q(episodes=episodes, discount=discount, episode_length=episode_length)
             if save:
-                with open('./fqi-regressor-iter-{}.pkl'.format(i+1), 'wb') as f:
+#                with open('./fqi-regressor-iter-{}.pkl'.format(i+1), 'wb') as f:
+                with open('./fqi-regressor-iter.pkl', 'wb') as f:
                     pickle.dump(self.regressor, f)
-        progress.close()
+     
+                    
+#        progress.close()
         # S=episodes[0]
         # R=episodes[2]
         # best_r=0
@@ -117,16 +136,19 @@ class FittedQIteration(object):
             actions = [actions] * len(states)
         actions = np.array([[a] for a in actions])
         states = np.array(states)
+#        print(actions)
+#        print(states)
+        print(np.hstack([states, actions]))
         return np.hstack([states, actions])
 
 if __name__ == '__main__':
     print('Here goes nothing')
     discount=0.9999
-    num_refits=10
-    num_episodes=10
-    episode_length=500
+    num_refits=100
+    num_episodes=1
+    episode_length=10
     First_time=True
-    lam=0.13
+    lam=0.0
     if First_time:
         env=FittedQIteration()
         episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,episode_length=episode_length,discount=discount)

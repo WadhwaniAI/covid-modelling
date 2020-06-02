@@ -1,10 +1,13 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+import math
 
 class SIR_Discrete(object):
-    def __init__(self, S=0.99, I=0.01, R=0, B=0,t=0,switch_budgets=5,pAction=0):
-        self.STATE=np.array([S, I, R, B,t])
+    def __init__(self, S=0.999, I=0.001, R=0, B=60,t=0,switch_budgets=5,terminal=False):
+        self.T=400
+        self.minduration=10
+        self.STATE=np.array([S, I, R, B,t,switch_budgets,terminal])
         self.R0 = 3
         # self.T_inf = 2.9
 #        self.T_treat = 50
@@ -13,13 +16,12 @@ class SIR_Discrete(object):
         # self.T_treat = 15
         # self.N = 1e5
         # self.I0 = 100.0
-#        self.t=0
         '''Intervention Relateted'''
         self.num_actions=4
-        self.num_states=5
+        self.max_duration=60
+        self.num_states=7
     def reset(self):
-        self.STATE=np.array([0.999, 0.001, 0, 0,0])
-#        self.t=0
+        self.STATE=np.array([0.999, 0.001, 0, 60,0,5,False])
     
     def is_action_legal(self,ACTION):
         if(self.get_action_cost(ACTION)<=self.STATE[3]):
@@ -49,34 +51,53 @@ class SIR_Discrete(object):
             T_trans_c=3 
         return T_trans_c*self.T_treat/self.R0    
     
+    
+    def perform_leader(self, Strength, Duration):
+        a_s=[]
+        reward=0
+#        Duration=+self.minduration
+        Duration=Duration+self.minduration
+        Duration=int(Duration)
+#        print(self.STATE[4])
+#        print(Duration)
+        if self.STATE[6]==False:
+#            if self.STATE[3]<=0:
+#                Strength=0
+#            elif self.STATE[3]<self.get_action_cost(Strength)*Duration:
+#                Duration=int(math.floor(float(self.STATE[3])/self.get_action_cost(Strength)))+1
+            if self.STATE[4]+Duration>self.T:
+                Duration=int(self.T-self.STATE[4])
+            for _ in range(Duration):
+                r,self.STATE=self.perform(Strength)
+                a_s.append(self.STATE)
+                reward+=r
+            if Strength>0:
+                self.STATE[5]-=1
+        if self.STATE[4]>=self.T:
+            self.STATE[6]=True
+#        print(self.STATE[4])
+        return reward, self.STATE, a_s
+    
     def perform(self,ACTION):
         STATE_=self.STATE.copy()
-        # if self.is_action_legal(ACTION)==False:
-        #     ACTION=0
-        # 0:S, 1:E, 2:I, 3:B 4:days_last 5:switch_budgets 6:pAction
+        # 0:S, 1:I, 2:R, 3:B 4:t 5:switch_budgets 6:pAction
         T_trans=self.get_action_T(ACTION)
         STATE_[0] = self.STATE[0]-self.STATE[1]*self.STATE[0]/(T_trans)
         STATE_[1] = self.STATE[1]+self.STATE[1]*self.STATE[0]/(T_trans) - self.STATE[1]/self.T_treat
         STATE_[2] = self.STATE[2]+self.STATE[1]/self.T_treat
-        STATE_[3] = self.STATE[3]+self.get_action_cost(ACTION)
+        STATE_[3] = self.STATE[3]-self.get_action_cost(ACTION)
         STATE_[4]+=1
-        panelty=0
-#        STATE_[6]=ACTION
         self.STATE=STATE_.copy()
-#        self.t+=1
-#        if self.STATE[3]<0 or self.STATE[4]<0:
-#            panelty=100
-        # r=self.calc_reward()-panelty
-        r=self.calc_reward()-0.06*self.get_action_cost(ACTION)
+        r=self.calc_reward()
         return r, self.STATE
 
     def calc_reward(self):
-        S_coeficeint=0
-        I_coeficeint=-1
-        R_coeficeint=0
-        B_coeficeint=0
-        coeficeint=np.array([S_coeficeint,I_coeficeint,R_coeficeint,B_coeficeint,0])
-        reward=sum(coeficeint[:]*self.STATE[:])
+        reward=1-self.STATE[1]
+#        reward=0
+#        if self.STATE[1]>0.1:
+#            reward=-100*(self.STATE[1]-0.15)
+        
+#        reward=1
         return reward
     
     
