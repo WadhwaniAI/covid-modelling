@@ -1,6 +1,10 @@
 import numpy as np
+import pandas as pd
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
+
+from collections import OrderedDict
+import datetime
 
 class SEIR:
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_hosp=5, 
@@ -111,13 +115,14 @@ class SEIR:
         # Initialisation
         state_init_values = OrderedDict()
         key_order = ['S', 'E', 'I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
-            for key in key_order:
-                state_init_values[key] = 0
-        if intialisation == 'starting':
-            state_init_values['S'] = (self.N - observed_values['init_infected'])/self.N
-            state_init_values['I'] = observed_values['init_infected']/self.N
+        for key in key_order:
+            state_init_values[key] = 0
+        if initialisation == 'starting':
+            init_infected = max(observed_values['init_infected'], 1)
+            state_init_values['S'] = (self.N - init_infected)/self.N
+            state_init_values['I'] = init_infected/self.N
 
-        if intialisation == 'intermediate':
+        if initialisation == 'intermediate':
             state_init_values['R_severe_hosp'] = self.P_severe / (self.P_severe + self.P_fatal) * observed_values['hospitalised']
             state_init_values['R_fatal'] = self.P_fatal / (self.P_severe + self.P_fatal) * observed_values['hospitalised']
             state_init_values['C'] = observed_values['recovered']
@@ -181,14 +186,14 @@ class SEIR:
         sol = solve_ivp(self.get_derivative, [t_start, t_final], 
                         state_init_values_arr, method=method, t_eval=time_steps)
 
-        return sol
+        self.sol = sol
 
-    def return_predictions(self, sol):
+    def return_predictions(self):
         """
         Returns predictions of the model
         sol : Solved ODE variable
         """
-        states_time_matrix = (sol.y*self.vanilla_params['N']).astype('int')
+        states_time_matrix = (self.sol.y*self.vanilla_params['N']).astype('int')
         dataframe_dict = {}
         for i, key in enumerate(self.state_init_values.keys()):
             dataframe_dict[key] = states_time_matrix[i]
