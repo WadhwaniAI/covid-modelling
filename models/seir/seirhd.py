@@ -72,7 +72,9 @@ class SEIRHD(SEIR):
         if post_lockdown_R0 == None:
            post_lockdown_R0 = lockdown_R0
 
-        P_mild = 1 - P_severe - P_fatal
+        # P_mild = 1 - P_severe - P_fatal
+        P_severe = 1 - P_fatal
+        P_mild = 0
 
         # define testing related parameters
         T_inf_detected = T_inf

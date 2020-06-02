@@ -40,7 +40,7 @@ def get_variable_param_ranges(initialisation='intermediate', as_str=False):
         'T_inc': (4, 5),
         'T_inf': (3, 4),
         'T_recov_severe': (5, 60),
-        'P_severe': (0.3, 0.99),
+        # 'P_severe': (0.3, 0.99),
         'P_fatal': (0, 0.3)
     }
     if initialisation == 'intermediate':
