@@ -15,7 +15,7 @@ from datetime import datetime
 from joblib import Parallel, delayed
 import copy
 
-from data.processing import get_all_district_data
+from data.processing import get_data
 
 from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
@@ -113,40 +113,47 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     df_val.reset_index(inplace=True, drop=True)
     return df_train, df_val, df_true_fitting
     
-def data_setup(df_district, df_district_raw_data, pre_lockdown, 
-                    train_on_val, val_period):
-    
-    # Get train val split
-    if pre_lockdown:
-        df_train, df_val, df_true_fitting = train_val_split(
-            df_district_raw_data, train_rollingmean=False, val_rollingmean=False, val_size=0)
+def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename):
+    if data_from_tracker:
+        df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
     else:
-        if train_on_val:
-            df_train, df_val, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=True, val_rollingmean=True, val_size=0)
-            df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=False, val_rollingmean=False, val_size=0)
-        else:
-            df_train, df_val, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
-            df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
-    return df_district, df_district_raw_data, df_train, df_val, df_true_fitting, df_train_nora, df_val_nora
+        df_district = get_data(state=state, district=district, disable_tracker=True, filename=filename, 
+                               data_format=data_format)
+    
+    df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
+    df_district_raw_data = df_district_raw_data[df_district_raw_data['date'] <= '2020-03-25']
+    return df_district, df_district_raw_data
 
-def run_cycle(state, district, df_district, df_district_raw_data, df_train, df_val, df_train_nora, df_val_nora, data_from_tracker,
-                        train_period=7, train_on_val=False, num_evals=1500, N=1e7, 
-                        which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
+def data_setup(df_district, df_district_raw_data, val_period):
+    # Get train val split
+    df_train, df_val, df_true_fitting = train_val_split(
+        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
+    df_train_nora, df_val_nora, df_true_fitting = train_val_split(
+        df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
+
+    observed_dataframes = {}
+    for name in ['df_district', 'df_district_raw_data', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
+        observed_dataframes[name] = eval(name)
+    return observed_dataframes
+
+
+def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_from_tracker=True, train_period=7, 
+              which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], num_evals=1500, N=1e7, 
+              initialisation='starting'):
     if district is None:
         district = ''
-    
+
+    df_district, df_district_raw_data, df_train, df_val, df_train_nora, df_val_nora = [
+        observed_dataframes.get(k) for k in observed_dataframes.keys()]
+
     # Initialise Optimiser
     optimiser = Optimiser()
     # Get the fixed params
     if initialisation == 'starting':
         observed_values = df_district_raw_data.iloc[0, :]
         start_date = df_district_raw_data.iloc[0, :]['date']
-        default_params = optimiser.init_default_params(df_train, observed_values=observed_values,
-                                                       start_date=start_date, initialisation=initialisation, N=N)
+        default_params = optimiser.init_default_params(df_train, N=N, observed_values=observed_values,
+                                                       start_date=start_date, initialisation=initialisation)
     elif initialisation == 'intermediate':
         default_params = optimiser.init_default_params(df_train, N=N, initialisation=initialisation, 
                                                        train_period=train_period)
@@ -156,19 +163,19 @@ def run_cycle(state, district, df_district, df_district_raw_data, df_train, df_v
 
     # Perform Bayesian Optimisation
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days + 1
-    best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, method='mape', 
-                                              num_evals=num_evals, loss_indices=[-train_period, None],
+    best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
+                                              num_evals=num_evals, loss_indices=[-train_period, None], method='mape',
                                               total_days=total_days, which_compartments=which_compartments)
 
     print('best parameters\n', best_params)
 
-    if train_on_val:
+    if not isinstance(df_val, pd.DataFrame):
         df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date']) 
     else:
         df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'])
     
-    df_loss = calculate_loss(df_train_nora, df_val_nora, df_prediction, train_period,
-                             train_on_val, which_compartments=which_compartments)
+    df_loss = calculate_loss(df_train_nora, df_val_nora, df_prediction, train_period, 
+                             which_compartments=which_compartments)
 
     
     ax = create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
@@ -183,8 +190,8 @@ def run_cycle(state, district, df_district, df_district_raw_data, df_train, df_v
 
     return results_dict
 
-def single_fitting_cycle(dataframes, state, district, train_period=7, val_period=7, train_on_val=False, num_evals=1500,
-                         data_from_tracker=True, filename=None, data_format='new', pre_lockdown=False, N=1e7, 
+def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_period=7, val_period=7, 
+                         data_from_tracker=True, filename=None, data_format='new', N=1e7, num_evals=1500,
                          which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
@@ -194,14 +201,13 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
         district {str} -- District Name (in title case)
 
     Keyword Arguments:
+        model_class {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
         train_period {int} -- The training period (default: {7})
         val_period {int} -- The validation period (default: {7})
-        train_on_val {bool} -- If true, the model is trained on val (default: {False})
         num_evals {int} -- Number of evaluations of Bayesian Optimsation (default: {1500})
         data_from_tracker {bool} -- If False, data from tracker is not used (default: {True})
         filename {str} -- If None, Athena database is used. Otherwise, data in filename is read (default: {None})
         data_format {str} -- The format type of the filename user is providing ('old'/'new') (default: {'new'})
-        pre_lockdown {bool} -- To fit on free lockdown data or not [DEPRECATED] (default: {False})
         N {float} -- The population of the geographical region (default: {1e7})
         which_compartments {list} -- Which compartments to fit on (default: {['hospitalised', 'total_infected']})
         initialisation {str} -- The method of intitalisation (default: {'starting'})
@@ -209,27 +215,25 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
     Returns:
         dict -- dict of everything related to prediction
     """
-    print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
+    print('Performing {} fit ..'.format('m1' if val_period == 0 else 'm2'))
 
-    # Get date
-    df_district, df_district_raw_data = get_all_district_data(dataframes, state, district, 
-        data_from_tracker, data_format, filename)
+    # Get data
+    df_district, df_district_raw_data = get_regional_data(
+        dataframes, state, district, data_from_tracker, data_format, filename)
 
-    df_district, df_district_raw_data, df_train, df_val, df_true_fitting, df_train_nora, df_val_nora = data_setup(
-        df_district, df_district_raw_data, pre_lockdown, train_on_val, val_period
-    )
+    # Process the data to get rolling averages and other stuff
+    observed_dataframes = data_setup(df_district, df_district_raw_data, val_period)
 
-    print('train\n', df_train.tail())
-    print('val\n', df_val)
+    print('train\n', observed_dataframes['df_train'].tail())
+    print('val\n', observed_dataframes['df_val'])
     
-    return run_cycle(
-        state, district, df_district, df_district_raw_data, df_train, df_val, df_train_nora, df_val_nora, data_from_tracker,
-        train_period=train_period, train_on_val=train_on_val, num_evals=num_evals, N=N, 
-        which_compartments=which_compartments, initialisation=initialisation
-    )
+    predictions_dict = run_cycle(state, district, observed_dataframes, data_from_tracker=data_from_tracker, 
+                                 model=model, train_period=train_period, which_compartments=which_compartments, N=N,
+                                 num_evals=num_evals, initialisation=initialisation)
 
-def calculate_loss(df_train, df_val, df_prediction, train_period,
-                   train_on_val, which_compartments=['hospitalised', 'total_infected']):
+    return predictions_dict
+
+def calculate_loss(df_train, df_val, df_prediction, train_period, which_compartments=['hospitalised', 'total_infected']):
     """Helper function for calculating loss in training pipeline
 
     Arguments:
@@ -237,7 +241,6 @@ def calculate_loss(df_train, df_val, df_prediction, train_period,
         df_val {pd.DataFrame} -- Val dataset
         df_prediction {pd.DataFrame} -- Model Prediction
         train_period {int} -- Length of training Period
-        train_on_val {bool} -- Whether model was trained on val or nor
 
     Keyword Arguments:
         which_compartments {list} -- List of buckets to calculate loss on (default: {['hospitalised', 'total_infected']})

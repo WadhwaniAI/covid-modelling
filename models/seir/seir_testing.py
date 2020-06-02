@@ -234,15 +234,17 @@ class SEIR_Testing():
 
         sol = solve_ivp(self.get_derivative, [t_start, t_final], 
                         state_init_values_arr, method=method, t_eval=time_steps)
+        self.sol = sol
 
-        return sol
-
-    def return_predictions(self, sol):
+    def return_predictions(self):
         """
         Returns predictions of the model
-        sol : Solved ODE variable
+
+        Returns: 
+        pd.DataFrame : dataframe of predictions
         """
-        states_time_matrix = (sol.y*self.vanilla_params['N']).astype('int')
+
+        states_time_matrix = (self.sol.y*self.vanilla_params['N']).astype('int')
         dataframe_dict = {}
         for i, key in enumerate(self.state_init_values.keys()):
             dataframe_dict[key] = states_time_matrix[i]
