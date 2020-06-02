@@ -257,7 +257,7 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
     Returns:
         dict -- dict of everything related to prediction
     """
-    print('Performing {} fit ..'.format('m1' if val_period == 0 else 'm2'))
+    print('Performing {} fit ..'.format('m2' if val_period == 0 else 'm1'))
 
     # Get data
     df_district, df_district_raw_data = get_regional_data(

@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 from collections import OrderedDict
 import datetime
 
-class SEIR_Testing():
+from models.seir.seir import SEIR
+
+class SEIR_Testing(SEIR):
 
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_hosp=5, 
                  T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6, init_infected=1,
@@ -236,7 +238,7 @@ class SEIR_Testing():
                         state_init_values_arr, method=method, t_eval=time_steps)
         self.sol = sol
 
-    def return_predictions(self):
+    def predict(self):
         """
         Returns predictions of the model
 
