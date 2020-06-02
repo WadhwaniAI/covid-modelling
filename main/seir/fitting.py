@@ -35,10 +35,6 @@ def get_variable_param_ranges(initialisation='intermediate', as_str=False):
     Returns:
         dict -- dict of ranges of variable params
     """
-<<<<<<< HEAD
-=======
-
->>>>>>> e4b11e91262f35ba0ee4bb742f70169ac471e9ef
     variable_param_ranges = {
         'lockdown_R0': (1, 1.5),
         'T_inc': (4, 5),
