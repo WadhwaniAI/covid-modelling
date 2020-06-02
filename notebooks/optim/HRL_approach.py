@@ -63,6 +63,7 @@ class FittedQIteration(object):
                             Q[i,j,k]=0
                         else:
                             Q[i,j,k]=Qt[t]
+#                            Q[i,j,k]=400-state[4]
                         t+=1
 #            np.set_printoptions(precision=3)
 #            print(Q)
@@ -71,7 +72,7 @@ class FittedQIteration(object):
 #                             for action, duration in itertools.product(range(self.simulator.num_actions), range(self.simulator.max_duration))])
 
 
-    def policy(self, state, eps=0.1):
+    def policy(self, state, eps=0.5):
         """Return the epsilon-greedy action based on the current policy (or a
         random action if the Q function hasn't yet been estimated."""
         a=np.zeros(2)
@@ -93,18 +94,18 @@ class FittedQIteration(object):
                 a[1]=cord[1]
             else:
                 a=[0,0]
-#            Duration=a[1]*10+10
-#            if state[3]<self.simulator.get_action_cost(a[0])*Duration:
-#                a[0]=0
-#            if state[4]+Duration>self.simulator.T:
-#                a[1]=math.floor((self.simulator.T-state[4])/10)
+        Duration=a[1]*10+10
+        if state[3]<self.simulator.get_action_cost(a[0])*Duration:
+            a[0]=0
+        if state[4]+Duration>self.simulator.T:
+            a[1]=math.floor((self.simulator.T-state[4])/10)
             
             
 #            print(a)
         return a
 
 
-    def run_episode(self, eps=0.1):
+    def run_episode(self, eps=0.5):
         """Run a single episode on the SEIR_Discrete using the current policy.
         Can pass a custom `eps` to test out varying levels of randomness.
         Return the states visited, actions taken, and rewards received."""
@@ -121,6 +122,7 @@ class FittedQIteration(object):
 #            print('-----------')
             r, s_ , a_s= self.simulator.perform_leader(a[0],a[1])
             s=s_
+#            print(s[4])
             S.append(s)
             A.append(a)
             R.append(r)
@@ -130,7 +132,7 @@ class FittedQIteration(object):
 
 
 
-    def fit_Q(self, episodes, num_iters=2, discount=0.9999):
+    def fit_Q(self, episodes, num_iters=10, discount=0.9999):
         """Fit and re-fit the Q function using historical data for the
         specified number of `iters` at the specified `discount` factor"""
         S1 = np.vstack([ep[0][:-1] for ep in episodes])
@@ -141,7 +143,7 @@ class FittedQIteration(object):
 #        print(A)
 #        print(R)
 #        progress = tqdm(range(num_iters), file=sys.stdout,desc='num_iters')
-        for _ in range(num_iters):
+        for iters in range(num_iters):
 #            progress.update(1)
 #            targets = R + discount * self.Q(S2).max(axis=1)
             targets = R + discount * ((self.Q(S2).max(axis=2)).max(axis=1))
@@ -167,7 +169,8 @@ class FittedQIteration(object):
 #            progress.update(1)
 #            episodes = []
             for _ in range(num_episodes):
-                episodes.append(self.run_episode())
+                episodes.append(self.run_episode(eps=0.2))
+#                print('Round: {}-{}'.format(i,_))
                 ###
                 real_episodes=self.run_episode(eps=0)
                 R=real_episodes[2]
@@ -179,7 +182,10 @@ class FittedQIteration(object):
                     best_r+=R[j]
                 for j in range(len(A_S)):
                     best_r2+=A_S[j][1]
-                print('Round: {}-{} Reward 1: {} Reward 2:{} B"{}'.format(i,_,best_r,best_r2,S[-1][3]))   
+                Q=0
+                if is_fitted(self.regressor):
+                    Q=((self.Q(S).max(axis=2)).max(axis=1))[0]
+                print('Round: {}-{} Reward 1: {} Reward 2:{} Estimate R:{}'.format(i,_,best_r,best_r2,Q))   
                 ###
 #            print(real_episodes[1])
             self.fit_Q(episodes=episodes, discount=discount)
@@ -223,8 +229,8 @@ class FittedQIteration(object):
 if __name__ == '__main__':
     print('Here goes nothing')
     discount=1
-    num_refits=5
-    num_episodes=100
+    num_refits=10
+    num_episodes=1000
 #    episode_length=10
     First_time=True
     lam=0.0
@@ -232,10 +238,10 @@ if __name__ == '__main__':
         env=FittedQIteration()
         episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,discount=discount)
      
-        with open('Result_{}_SIR_refits={}_episodes={}.pickle'.format(lam,num_refits,num_episodes), 'wb') as f:
+        with open('Result_{}_SIR_refits={}_episodes={}_H=0.1t.pickle'.format(lam,num_refits,num_episodes), 'wb') as f:
                     pickle.dump([env,episodes], f)
     else:            
-        with open('Result_{}_SIR_refits={}_episodes={}.pickle'.format(lam,num_refits,num_episodes), 'rb') as f:
+        with open('Result_{}_SIR_refits={}_episodes={}_H=0.1t.pickle'.format(lam,num_refits,num_episodes), 'rb') as f:
             X = pickle.load(f)  
         env=X[0]
         episodes=X[1]
@@ -248,9 +254,9 @@ if __name__ == '__main__':
     A_S=real_episodes[3]
     best_r=0
     for i in range(len(R)):
-         best_r+=R[i]*discount**i
+#         best_r+=R[i]*discount**i
         # best_r+=S[i][0]+S[i][2]
-#        best_r+=R[i]
+        best_r+=R[i]
 
     random_action_episodes=env.run_episode(eps=1)
     S_r=random_action_episodes[0]
@@ -259,9 +265,9 @@ if __name__ == '__main__':
     A_S_r=random_action_episodes[3]
     random_r=0
     for i in range(len(R_r)):
-         random_r+=R_r[i]*discount**i
+#         random_r+=R_r[i]*discount**i
         # random_r+=S_r[i][0]+S_r[i][2]
-#        random_r+=R_r[i]
+        random_r+=R_r[i]
     
     state=real_episodes[0][0]
     

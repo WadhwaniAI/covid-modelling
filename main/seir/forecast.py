@@ -24,8 +24,20 @@ from main.seir.optimiser import Optimiser
 from main.seir.losses import Loss_Calculator
 
 
-def get_forecast(predictions_dict: dict, simulate_till=None, initialisation='intermediate', train_period=7, 
-                 train_fit='m2', best_params=None):
+def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', best_params=None):
+    """Returns the forecasts for a given set of params of a particular geographical area
+
+    Arguments:
+        predictions_dict {dict} -- [description]
+
+    Keyword Arguments:
+        simulate_till {[type]} -- [description] (default: {None})
+        train_fit {str} -- [description] (default: {'m2'})
+        best_params {[type]} -- [description] (default: {None})
+
+    Returns:
+        [type] -- [description]
+    """
     print("getting forecasts ..")
     if simulate_till == None:
         simulate_till = datetime.datetime.today() + datetime.timedelta(days=37)
@@ -39,8 +51,22 @@ def get_forecast(predictions_dict: dict, simulate_till=None, initialisation='int
     return df_prediction
 
 
-def create_region_csv(predictions_dict: dict, region: str, regionType: str, initialisation='intermediate', 
-                    train_period=7, icu_fraction=0.02, best_params=None):
+def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_fraction=0.02, best_params=None):
+    """Created the CSV file for one particular geographical area in the format Keshav consumes
+
+    Arguments:
+        predictions_dict {dict} -- Dict of predictions for a geographical region
+        region {str} -- Region Name
+        regionType {str} -- Region type ('dist', 'state')
+
+    Keyword Arguments:
+        icu_fraction {float} -- Percentage of people that are in ICU (as a fraction of active cases) (default: {0.02})
+        best_params {dict} -- If not none, these params are used to get predictions, not 
+        the predictions_dict['best_params'] (default: {None})
+
+    Returns:
+        pd.DataFrame -- The output CSV file in the format Keshav consumes
+    """
     print("compiling csv data ..")
     columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value', 'current_total', 'current_active', 'current_recovered',
                'current_deceased', 'current_hospitalized', 'current_icu', 'current_ventilator', 'predictionDate', 'active_mean', 'active_min',
@@ -48,8 +74,7 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, init
                'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 'recovered_max', 'total_mean', 'total_min', 'total_max']
     df_output = pd.DataFrame(columns=columns)
 
-    df_prediction = get_forecast(predictions_dict, initialisation=initialisation, train_period=train_period, 
-                                 best_params=best_params)
+    df_prediction = get_forecast(predictions_dict, best_params=best_params)
     df_true = predictions_dict['m1']['df_district']
     prediction_daterange = np.union1d(df_true['date'], df_prediction['date'])
     no_of_data_points = len(prediction_daterange)
@@ -105,7 +130,18 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, init
     df_output = df_output[columns]
     return df_output
 
-def create_all_csvs(predictions_dict: dict, initialisation='intermediate', train_period=7, icu_fraction=0.02):
+def create_all_csvs(predictions_dict: dict, icu_fraction=0.02):
+    """Creates the output for all geographical regions (not just one)
+
+    Arguments:
+        predictions_dict {dict} -- The predictions dict for all geographical regions
+
+    Keyword Arguments:
+        icu_fraction {float} -- Percentage of active cases that are in the ICU (default: {0.02})
+
+    Returns:
+        pd.DataFrame -- output for all geographical regions
+    """
     columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value', 'current_total', 'current_active', 'current_recovered',
                'current_deceased', 'current_hospitalized', 'current_icu', 'current_ventilator', 'predictionDate', 'active_mean', 'active_min',
                'active_max', 'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 'icu_max', 'deceased_mean',
@@ -114,15 +150,24 @@ def create_all_csvs(predictions_dict: dict, initialisation='intermediate', train
     for region in predictions_dict.keys():
         if region[1] == None:
             df_output = create_region_csv(predictions_dict[region], region=region[0], regionType='state', 
-                                          initialisation=initialisation, train_period=train_period, icu_fraction=icu_fraction)
+                                          icu_fraction=icu_fraction)
         else:
             df_output = create_region_csv(predictions_dict[region], region=region[1], regionType='district',
-                                          initialisation=initialisation, train_period=train_period, icu_fraction=icu_fraction)
+                                        icu_fraction=icu_fraction)
         df_final = pd.concat([df_final, df_output], ignore_index=True)
     
     return df_final
 
-def write_csv(df_final : pd.DataFrame, filename : str):
+
+def write_csv(df_final: pd.DataFrame, filename:str=None):
+    """Helper function for saving the CSV files
+
+    Arguments:
+        df_final {pd.DataFrame} -- the final CSV to be saved
+        filename {str} -- the name of the file
+    """
+    if filename == None:
+        filename = '../../output-{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     df_final.to_csv(filename, index=False)
 
 
@@ -136,14 +181,30 @@ def preprocess_for_error_plot(df_prediction : pd.DataFrame, df_loss : pd.DataFra
     df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
     return df_prediction
 
-def plot_forecast(predictions_dict : dict, region : tuple, initialisation='intermediate', train_period=7,
-                  which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'], both_forecasts=False, 
-                  log_scale=False, filename=None, fileformat='eps', error_bars=False):
-    df_prediction = get_forecast(predictions_dict, initialisation=initialisation, train_period=train_period)
+def plot_forecast(predictions_dict : dict, region : tuple, both_forecasts=False, log_scale=False, filename=None, 
+                  which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'], 
+                  fileformat='eps', error_bars=False):
+    """Function for plotting forecasts
+
+    Arguments:
+        predictions_dict {dict} -- Dict of predictions for a particular district 
+        region {tuple} -- Region Name eg : ('Maharashtra', 'Mumbai')
+
+    Keyword Argument
+        which_compartments {list} -- Which compartments to plot (default: {['hospitalised', 'total_infected', 'deceased', 'recovered']})
+        both_forecasts {bool} -- If true, plot both forecasts (default: {False})
+        log_scale {bool} -- If true, y is in log scale (default: {False})
+        filename {str} -- If given, the plot is saved here (default: {None})
+        fileformat {str} -- The format in which the plot will be saved (default: {'eps'})
+        error_bars {bool} -- If true, error bars will be plotted (default: {False})
+
+    Returns:
+        ax -- Matplotlib ax figure
+    """
+    df_prediction = get_forecast(predictions_dict)
     # df_prediction.loc[:, which_compartments] = df_prediction[]
     if both_forecasts:
-        df_prediction_m1 = get_forecast(predictions_dict, initialisation=initialisation, train_period=train_period, 
-                                        train_fit='m1')
+        df_prediction_m1 = get_forecast(predictions_dict, train_fit='m1')
     df_true = predictions_dict['m1']['df_district']
     
     if error_bars:
