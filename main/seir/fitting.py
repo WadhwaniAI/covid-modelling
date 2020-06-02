@@ -114,6 +114,19 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     return df_train, df_val, df_true_fitting
     
 def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename):
+    """Helper function for single_fitting_cycle where data from different sources (given input) is imported
+
+    Arguments:
+        dataframes {dict(pd.Dataframe)} -- dict of dataframes from get_covid19india_api_data() 
+        state {str} -- State name in title case
+        district {str} -- District name in title case
+        data_from_tracker {bool} -- Whether data is from tracker or not
+        data_format {str} -- If using filename, what is the filename format
+        filename {str} -- Name of the filename to read file from
+
+    Returns:
+        pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
+    """
     if data_from_tracker:
         df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
     else:
@@ -121,10 +134,19 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
                                data_format=data_format)
     
     df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
-    df_district_raw_data = df_district_raw_data[df_district_raw_data['date'] <= '2020-03-25']
     return df_district, df_district_raw_data
 
 def data_setup(df_district, df_district_raw_data, val_period):
+    """Helper function for single_fitting_cycle which sets up the data including doing the train val split
+
+    Arguments:
+        df_district {pd.DataFrame} -- True observations from districts_daily/custom file/athena DB
+        df_district_raw_data {pd.DataFrame} -- True observations from raw_data
+        val_period {int} -- Length of val period
+
+    Returns:
+        dict(pd.DataFrame) -- Dict of pd.DataFrame objects
+    """
     # Get train val split
     df_train, df_val, df_true_fitting = train_val_split(
         df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
@@ -140,6 +162,26 @@ def data_setup(df_district, df_district_raw_data, val_period):
 def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_from_tracker=True, train_period=7, 
               which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], num_evals=1500, N=1e7, 
               initialisation='starting'):
+    """Helper function for single_fitting_cycle where the fitting actually takes place
+
+    Arguments:
+        state {str} -- state name in title case
+        district {str} -- district name in title case
+        observed_dataframes {dict(pd.DataFrame)} -- Dict of all observed dataframes
+
+    Keyword Arguments:
+        model {class} -- The epi model class we're using to perform optimisation (default: {SEIR_Testing})
+        data_from_tracker {bool} -- If true, data is from covid19india API (default: {True})
+        train_period {int} -- Length of training period (default: {7})
+        which_compartments {list} -- Whci compartments to apply loss over 
+        (default: {['hospitalised', 'total_infected', 'recovered', 'deceased']})
+        num_evals {int} -- Number of evaluations for hyperopt (default: {1500})
+        N {float} -- Population of area (default: {1e7})
+        initialisation {str} -- Method of initialisation (default: {'starting'})
+
+    Returns:
+        dict -- Dict of all predictions
+    """
     if district is None:
         district = ''
 
