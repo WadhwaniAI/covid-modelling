@@ -18,7 +18,7 @@ class SIR_Discrete(object):
         # self.I0 = 100.0
         '''Intervention Relateted'''
         self.num_actions=4
-        self.max_duration=6
+        self.max_duration=60
         self.num_states=7
     def reset(self):
         self.STATE=np.array([0.999, 0.001, 0, 60,0,5,False])
@@ -56,14 +56,15 @@ class SIR_Discrete(object):
         a_s=[]
         reward=0
 #        Duration=+self.minduration
-        Duration=Duration*10+self.minduration
+        Duration=Duration+self.minduration
         Duration=int(Duration)
 #        print(self.STATE[4])
 #        print(Duration)
-        if self.STATE[6]==False:        
-            if self.STATE[3]<self.get_action_cost(Strength)*Duration:
+        if self.STATE[6]==False:
+#            if self.STATE[3]<=0:
 #                Strength=0
-                Duration=int(math.floor(float(self.STATE[3])/self.get_action_cost(Strength)))
+#            elif self.STATE[3]<self.get_action_cost(Strength)*Duration:
+#                Duration=int(math.floor(float(self.STATE[3])/self.get_action_cost(Strength)))+1
             if self.STATE[4]+Duration>self.T:
                 Duration=int(self.T-self.STATE[4])
             for _ in range(Duration):
@@ -92,6 +93,10 @@ class SIR_Discrete(object):
 
     def calc_reward(self):
         reward=1-self.STATE[1]
+#        reward=0
+#        if self.STATE[1]>0.1:
+#            reward=-100*(self.STATE[1]-0.15)
+        
 #        reward=1
         return reward
     
