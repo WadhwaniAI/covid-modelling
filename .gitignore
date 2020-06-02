@@ -5,6 +5,7 @@
 *.pkl
 *.pyc
 *.pickle
+*.txt
 
 # Junk / Hidden Files
 **.ipynb_checkpoints/

@@ -14,20 +14,20 @@ from models.optim.sir_dis import SIR
 from utils.optim.sir.objective_functions import *
 from utils.optim.sir.optimization_methods import *
 
-output_file = './test_conjecture.txt'
-f = open(output_file, 'a')
-
 
 days = 400
 iterations = 20
+np.random.seed(0)
 
 acui_performance, height_performance, time_performance = [], [], []
 
 for i in range(iterations):
+	output_file = './test_conjecture.txt'
+	f = open(output_file, 'a')
 	params = {}
 	params['R0'] = 2+np.random.rand()
 	params['T_treat'] = 14 + int(26*np.random.rand())
-	f.write(params)
+	f.write(str(params)+'\n')
 	auci_base = calculate_opt_qald(intervention_day=np.array([100]), intervention_duration=np.array([50]), intervention_choice=np.array([0]),\
 									 days=days, params=params)
 	height_base = calculate_opt_height(intervention_day=np.array([100]), intervention_duration=np.array([50]), intervention_choice=np.array([0]),\
@@ -38,7 +38,7 @@ for i in range(iterations):
 					days=days, capacity=np.array([0.05]), params=params)
 	_, states = calculate_opt(intervention_day=np.array([100]), intervention_duration=np.array([50]), intervention_choice=np.array([0]), days=days, params=params)
 	peak_time_base = np.argmax(states[1])
-	f.write('AUCI (base): {}, Height (base): {}, Avg. Time (base): {}, Burden (base): {}, Peak Time (base): {}'.format(auci_base, height_base, time_base, burden_base, peak_time_base))
+	f.write('AUCI (base): {}, Height (base): {}, Avg. Time (base): {}, Burden (base): {}, Peak Time (base): {}'.format(auci_base, height_base, time_base, burden_base, peak_time_base) + '\n')
 
 	
 
@@ -59,7 +59,7 @@ for i in range(iterations):
 	auci_3 = calculate_opt_qald(intervention_day=min_params['start_array'], intervention_duration=min_params['duration_array'],\
               intervention_choice=min_params['choice_array'], days=days, params=params)
 
-	f.write('best optimized AUCI : {}'.format(min(auci_1, auci_2, auci_3)))
+	f.write('best optimized AUCI : {}'.format(min(auci_1, auci_2, auci_3)) + '\n')
 
 	# f.write('Conjecture AUCI')
 	conj_start_array = np.array([peak_time_base - 16])
@@ -68,9 +68,9 @@ for i in range(iterations):
 	conj_auci = calculate_opt_qald(intervention_day=conj_start_array, intervention_duration=conj_duration_array,\
               intervention_choice=conj_choice_array, days=days, params=params)
 
-	f.write('Conjecture Policy AUCI : {}'.format(conj_auci))
+	f.write('Conjecture Policy AUCI : {}'.format(conj_auci) + '\n')
 	performance = (auci_base - conj_auci) / (auci_base - min(auci_1, auci_2, auci_3))
-	f.write('Performance of Conjecture: {}'.format(performance))
+	f.write('Performance of Conjecture: {}'.format(performance) + '\n')
 	acui_performance.append(performance)
 
 
@@ -93,7 +93,7 @@ for i in range(iterations):
 	height_3 = calculate_opt_height(intervention_day=min_params['start_array'], intervention_duration=min_params['duration_array'],\
               intervention_choice=min_params['choice_array'], days=days, params=params)
 
-	f.write('best optimized Height : {}'.format(min(height_1, height_2, height_3)))
+	f.write('best optimized Height : {}'.format(min(height_1, height_2, height_3)) + '\n')
 
 	# f.write('Conjecture Height')
 	conj_start_array = np.array([peak_time_base - 80])
@@ -102,9 +102,9 @@ for i in range(iterations):
 	conj_height = calculate_opt_height(intervention_day=conj_start_array, intervention_duration=conj_duration_array,\
               intervention_choice=conj_choice_array, days=days, params=params)
 
-	f.write('Conjecture Policy Height : {}'.format(conj_height))
+	f.write('Conjecture Policy Height : {}'.format(conj_height) + '\n')
 	performance = (height_base - conj_height) / (height_base - min(height_1, height_2, height_3))
-	f.write('Performance of Conjecture: {}'.format(performance))
+	f.write('Performance of Conjecture: {}'.format(performance) + '\n')
 	height_performance.append(performance)
 
 	
@@ -128,7 +128,7 @@ for i in range(iterations):
 	time_3 = calculate_opt_time(intervention_day=min_params['start_array'], intervention_duration=min_params['duration_array'],\
               intervention_choice=min_params['choice_array'], days=days, params=params)
 
-	f.write('best optimized Avg. Time : {}'.format(max(time_1, time_2, time_3)))
+	f.write('best optimized Avg. Time : {}'.format(max(time_1, time_2, time_3)) + '\n')
 
 	# f.write('Conjecture Avg. Time')
 	conj_start_array = np.array([10])
@@ -137,16 +137,26 @@ for i in range(iterations):
 	conj_time = calculate_opt_time(intervention_day=conj_start_array, intervention_duration=conj_duration_array,\
               intervention_choice=conj_choice_array, days=days, params=params)
 
-	f.write('Conjecture Policy Avg. Time : {}'.format(conj_time))
+	f.write('Conjecture Policy Avg. Time : {}'.format(conj_time) + '\n')
 	performance = (conj_time - time_base) / (max(time_1, time_2, time_3) - time_base)
-	f.write('Performance of Conjecture: {}'.format(performance))
+	f.write('Performance of Conjecture: {}'.format(performance) + '\n')
 	time_performance.append(performance)
 
+	f.close()
 
 
 
-f.write('Performance of AUCI Conjecture: mean={}, std_deviation={}'.format(np.mean(np.array(acui_performance)),np.std(np.array(acui_performance))))
-f.write('Performance of Height Conjecture: mean={}, std_deviation={}'.format(np.mean(np.array(height_performance)),np.std(np.array(height_performance))))
-f.write('Performance of Avg Time Conjecture: mean={}, std_deviation={}'.format(np.mean(np.array(time_performance)),np.std(np.array(time_performance))))
+output_file = './test_conjecture.txt'
+f = open(output_file, 'a')
+
+f.write('Performance values of AUCI Conjecture: {}'.format(acui_performance) + '\n')
+f.write('Performance values of Height Conjecture: {}'.format(height_performance) + '\n')
+f.write('Performance values of Avg Time Conjecture: {}'.format(time_performance) + '\n')
+
+f.write('Performance of AUCI Conjecture: mean={}, std_deviation={}'.format(np.mean(np.array(acui_performance)),np.std(np.array(acui_performance))) + '\n')
+f.write('Performance of Height Conjecture: mean={}, std_deviation={}'.format(np.mean(np.array(height_performance)),np.std(np.array(height_performance))) + '\n')
+f.write('Performance of Avg Time Conjecture: mean={}, std_deviation={}'.format(np.mean(np.array(time_performance)),np.std(np.array(time_performance))) + '\n')
+
 f.close()
+
 
