@@ -17,12 +17,29 @@ from models.seir.seir_testing import SEIR_Testing
 from main.seir.losses import Loss_Calculator
 
 class Optimiser():
+    """Class which implements all optimisation related activites (training, evaluation, etc)
+    """
 
     def __init__(self):
         self.loss_calculator = Loss_Calculator()
 
     def solve(self, variable_params : dict, default_params :dict, df_true : pd.DataFrame, start_date=None, 
-              end_date=None, state_init_values=None, initialisation='starting', loss_indices=[-20, -10]):
+              end_date=None):
+        """This function solves the ODE for an input of params (but does not compute loss)
+
+        Arguments:
+            variable_params {dict} -- The values for the params that are variable across the searchspace
+            default_params {dict} -- The values for the params that are fixed across the searchspace
+            df_true {pd.DataFrame} -- The training dataset
+
+        Keyword Arguments:
+            start_date {str} -- The start date (usually not specifed, inferred from the params_dict) (default: {None})
+            end_date {str} -- Last date of projection (default: {None})
+
+        Returns:
+            pd.DataFrame -- DataFrame of predictions
+        """
+
         params_dict = {**variable_params, **default_params}
         if end_date == None:
             end_date = df_true.iloc[-1, :]['date']
@@ -44,8 +61,26 @@ class Optimiser():
     # TODO add cross validation support
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, 
                                which_compartments=['hospitalised', 'recovered', 'total_infected', 'deceased'], 
-                               loss_indices=[-20, -10], loss_method='rmse', return_dict=False, 
-                               initialisation='starting'):
+                               loss_indices=[-20, -10], loss_method='rmse', return_dict=False):
+        """The function that computes solves the ODE for a given set of input params and computes loss on train set
+
+        Arguments:
+            variable_params {dict} -- The values for the params that are variable across the searchspace
+            default_params {dict} -- The values of the params that are fixed across the searchspace
+            df_true {pd.DataFrame} -- The train set
+            total_days {int} -- Total number of days into the future for which we want to simulate
+
+        Keyword Arguments:
+            which_compartments {list} -- Which compartments to apply loss on 
+            (default: {['hospitalised', 'recovered', 'total_infected', 'deceased']})
+            loss_indices {list} -- Which indices of the train set to apply loss on (default: {[-20, -10]})
+            loss_method {str} -- Loss Method (default: {'rmse'})
+            return_dict {bool} -- If True, instead of returning single loss value, will return loss value 
+            for every compartment (default: {False})
+
+        Returns:
+            float -- The loss value
+        """
         params_dict = {**variable_params, **default_params}
         
         # Returning a very high loss value for the cases where the sampled values of P_severe and P_fatal are > 1
@@ -75,12 +110,40 @@ class Optimiser():
         return loss
 
     def _create_dict(self, param_names, values):
+        """Helper function for creating dict of all parameters
+
+        Arguments:
+            param_names {arr} -- Names of the parameters
+            values {arr} -- Their corresponding values
+
+        Returns:
+            dict -- Dict of all parameters
+        """
         params_dict = {param_names[i]: values[i] for i in range(len(values))}
         return params_dict
 
     def init_default_params(self, df_train, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-05-31', 
                             T_hosp=0.001, initialisation='intermediate', train_period=7, start_date=None,
                             observed_values=None):
+        """Function for creating all default params for the optimisation (hyperopt/gridsearch)
+
+        Arguments:
+            df_train {pd.DataFramw} -- The train dataset
+
+        Keyword Arguments:
+            N {float} -- Population of region (default: {1e7})
+            lockdown_date {str} -- The date on which lockdown is implemented (default: {'2020-03-25'})
+            lockdown_removal_date {str} -- The date on which lockdown is removed (default: {'2020-05-31'})
+            T_hosp {float} -- The time it takes for a severe infection to go from home to hopsital (default: {0.001})
+            initialisation {str} -- The method of initialisation (default: {'intermediate'})
+            train_period {int} -- The number of days for which the model is trained (default: {7})
+            start_date {str} -- If initialisation=='starting', start_date must be provided (default: {None})
+            observed_values {pd.Series} -- This is a row of a pandas dataframe that corresponds to the observed values 
+            on the initialisation date (to initialise the latent params) (default: {None})
+
+        Returns:
+            dict -- Dict of default params
+        """
 
         intervention_date = datetime.datetime.strptime(lockdown_date, '%Y-%m-%d')
         lockdown_removal_date = datetime.datetime.strptime(lockdown_removal_date, '%Y-%m-%d')
@@ -89,7 +152,7 @@ class Optimiser():
             observed_values = df_train.iloc[-train_period, :]
             start_date = observed_values['date']
         if initialisation == 'starting':
-            raise AssertionError
+            assert start_date != None
 
         default_params = {
             'N' : N,
@@ -104,8 +167,14 @@ class Optimiser():
 
     def gridsearch(self, df_true, default_params, variable_param_ranges, method='rmse', loss_indices=[-20, -10], 
                    which_compartments=['total_infected'], debug=False):
-        """
-        What variable_param_ranges is supposed to look like
+        """Implements gridsearch based optimisation
+
+        Arguments:
+            df_true {pd.DataFrame} -- The train set
+            default_params {dict} -- Dict of default (fixed) params
+            variable_param_ranges {dict} -- The range of variable params (the searchspace)
+
+        An example of variable_param_ranges :
         variable_param_ranges = {
             'R0' : np.linspace(1.8, 3, 13),
             'T_inc' : np.linspace(3, 5, 5),
@@ -114,6 +183,15 @@ class Optimiser():
             'P_severe' : np.linspace(0.3, 0.9, 25),
             'intervention_amount' : np.linspace(0.4, 1, 31)
         }
+
+        Keyword Arguments:
+            method {str} -- The loss method (default: {'rmse'})
+            loss_indices {list} -- The indices on the train set to apply the loss on (default: {[-20, -10]})
+            which_compartments {list} -- Which compartments to apply loss on (default: {['total_infected']})
+            debug {bool} -- If debug is true, gridsearch is not parellelised. For debugging (default: {False})
+
+        Returns:
+            arr, list(dict) -- Array of loss values, and a list of parameter dicts
         """
         total_days = len(df_true['date'])
 
@@ -136,24 +214,39 @@ class Optimiser():
         return loss_array, list_of_param_dicts
 
     def bayes_opt(self, df_true, default_params, variable_param_ranges, total_days=None, method='rmse', num_evals=3500, 
-                  loss_indices=[-20, -10], which_compartments=['total_infected'], initialisation='starting'):
-        """
-        What variable_param_ramges is supposed to look like : 
+                  loss_indices=[-20, -10], which_compartments=['total_infected']):
+        """Implements Bayesian Optimisation using hyperopt library
+
+        Arguments:
+            df_true {pd.DataFrame} -- The training dataset
+            default_params {str} -- Dict of default (static) params
+            variable_param_ranges {dict} -- The ranges for the variable params (the searchspace)
+
+        An example of variable_param_ranges : 
         variable_param_ranges = {
-            'R0' : hp.uniform('R0', 1.6, 3),
+            'lockdown_R0' : hp.uniform('R0', 0, 2),
             'T_inc' : hp.uniform('T_inc', 4, 5),
             'T_inf' : hp.uniform('T_inf', 3, 4),
-            'T_recov_severe' : hp.uniform('T_recov_severe', 9, 20),
-            'P_severe' : hp.uniform('P_severe', 0.3, 0.99),
-            'intervention_amount' : hp.uniform('intervention_amount', 0.3, 1)
+            'T_recov_severe' : hp.uniform('T_recov_severe', 5, 60),
+            'P_severe' : hp.uniform('P_severe', 0.3, 0.99)
         }
+
+        Keyword Arguments:
+            total_days {int} -- total days to simulate for (deprecated) (default: {None})
+            method {str} -- Loss Method (default: {'rmse'})
+            num_evals {int} -- Number of hyperopt evaluations (default: {3500})
+            loss_indices {list} -- The indices of the train set to apply the losses on (default: {[-20, -10]})
+            which_compartments {list} -- Which compartments to apply loss on (default: {['total_infected']})
+
+        Returns:
+            dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
         """
         if total_days == None:
             total_days = len(df_true['date'])
         
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params, df_true=df_true,
                                                  total_days=total_days, loss_method=method, loss_indices=loss_indices, 
-                                                 which_compartments=which_compartments, initialisation=initialisation)
+                                                 which_compartments=which_compartments)
         
         searchspace = variable_param_ranges
         

@@ -7,9 +7,19 @@ from pprint import pformat
 
 
 def create_report(predictions_dict, ROOT_DIR='../../reports/'):
+    """Creates report (BOTH MD and DOCX) for an input of a dict of predictions for a particular district/region
+    The DOCX file can directly be uploaded to Google Drive and shared with the people who have to review
+
+    Arguments:
+        predictions_dict {dict} -- Dict of predictions for a particual district/region [NOT ALL Districts]
+
+    Keyword Arguments:
+        ROOT_DIR {str} -- the path where the plots and the report would be saved (default: {'../../reports/'})
+    """
+
     if not os.path.exists(ROOT_DIR):
         os.mkdir(ROOT_DIR)
-
+    
     fitting_date = predictions_dict['fitting_date']
     data_last_date = predictions_dict['data_last_date']
     state = predictions_dict['state']

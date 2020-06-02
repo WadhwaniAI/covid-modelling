@@ -11,7 +11,7 @@ sys.path.append('../..')
 from joblib import Parallel, delayed
 from functools import partial
 from hyperopt import hp, tpe, fmin, Trials
-from utils.optim.sir.objective_functions import *
+from utils.optim.seirgoh.objective_functions import *
 from pulp import *
 
 def grid_search(num_int, objective='qald', total_resource=80, day0=10, days=500, capacity=np.array([0.1]), sir_init=None):

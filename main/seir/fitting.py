@@ -25,6 +25,16 @@ from main.seir.losses import Loss_Calculator
 now = str(datetime.now())
 
 def get_variable_param_ranges(initialisation='intermediate', as_str=False):
+    """Returns the ranges for the variable params in the search space
+
+    Keyword Arguments:
+        initialisation {str} -- The method of initialisation (default: {'intermediate'})
+        as_str {bool} -- If true, the parameters are not returned as a hyperopt object, but as a dict in 
+        string form (default: {False})
+
+    Returns:
+        dict -- dict of ranges of variable params
+    """
     variable_param_ranges = {
         'lockdown_R0': (1, 1.5),
         'T_inc': (4, 5),
@@ -49,13 +59,34 @@ def get_variable_param_ranges(initialisation='intermediate', as_str=False):
     return variable_param_ranges
     
 
-def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5,
+def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5, 
                     which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
+    """Creates train val split on dataframe
+
+    # TODO : Add support for creating train val test split
+
+    Arguments:
+        df_district {pd.DataFrame} -- The observed dataframe
+
+    Keyword Arguments:
+        train_rollingmean {bool} -- If true, apply rolling mean on train (default: {False})
+        val_rollingmean {bool} -- If true, apply rolling mean on val (default: {False})
+        val_size {int} -- Size of val set (default: {5})
+        rolling_window {int} -- Size of rolling window. The rolling window is centered (default: {5})
+        which_columns {list} -- Which columnns to do the rolling average over (default: {['hospitalised', 'total_infected', 'deceased', 'recovered']})
+
+    Returns:
+        pd.DataFrame, pd.DataFrame, pd.DataFrame -- train dataset, val dataset, concatenation of rolling average dfs
+    """
     print("splitting data ..")
     df_true_fitting = copy.copy(df_district)
     for column in which_columns:
         df_true_fitting[column] = df_true_fitting[column].rolling(
-            5, center=True).mean()
+            rolling_window, center=True).mean()
+
+    # Since the rolling average method is center, we need an offset variable where the ends of the series will
+    # use the true observations instead (as rolling averages for those offset days don't exist)
+    offset_window = rolling_window // 2
 
     df_true_fitting = df_true_fitting[np.logical_not(
         df_true_fitting['total_infected'].isna())]
@@ -64,10 +95,10 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     if train_rollingmean:
         if val_size == 0:
             df_train = pd.concat(
-                [df_true_fitting, df_district.iloc[-(val_size+2):, :]], ignore_index=True)
+                [df_true_fitting, df_district.iloc[-(val_size+offset_window):, :]], ignore_index=True)
             return df_train, None, df_true_fitting
         else:
-            df_train = df_true_fitting.iloc[:-(val_size-2), :]
+            df_train = df_true_fitting.iloc[:-(val_size-offset_window), :]
     else:
         if val_size == 0:
             return df_district, None, df_true_fitting
@@ -75,8 +106,8 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
             df_train = df_district.iloc[:-val_size, :]
 
     if val_rollingmean:
-        df_val = pd.concat([df_true_fitting.iloc[-(val_size-2):, :],
-                            df_district.iloc[-2:, :]], ignore_index=True)
+        df_val = pd.concat([df_true_fitting.iloc[-(val_size-offset_window):, :],
+                            df_district.iloc[-offset_window:, :]], ignore_index=True)
     else:
         df_val = df_district.iloc[-val_size:, :]
     df_val.reset_index(inplace=True, drop=True)
@@ -127,17 +158,14 @@ def run_cycle(state, district, df_district, df_district_raw_data, df_train, df_v
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days + 1
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, method='mape', 
                                               num_evals=num_evals, loss_indices=[-train_period, None],
-                                              total_days=total_days, which_compartments=which_compartments, 
-                                              initialisation=initialisation)
+                                              total_days=total_days, which_compartments=which_compartments)
 
     print('best parameters\n', best_params)
 
     if train_on_val:
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'], 
-                                        initialisation=initialisation, loss_indices=[-train_period, None])
+        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date']) 
     else:
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'],
-                                        initialisation=initialisation, loss_indices=[-train_period, None])
+        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'])
     
     df_loss = calculate_loss(df_train_nora, df_val_nora, df_prediction, train_period,
                              train_on_val, which_compartments=which_compartments)
@@ -158,8 +186,33 @@ def run_cycle(state, district, df_district, df_district_raw_data, df_train, df_v
 def single_fitting_cycle(dataframes, state, district, train_period=7, val_period=7, train_on_val=False, num_evals=1500,
                          data_from_tracker=True, filename=None, data_format='new', pre_lockdown=False, N=1e7, 
                          which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
-    # Get date
+    """Main function which user runs for running an entire fitting cycle for a particular district
+
+    Arguments:
+        dataframes {dict(pd.DataFrame)} -- Dict of dataframes returned by the get_covid19india_api_data function
+        state {str} -- State Name
+        district {str} -- District Name (in title case)
+
+    Keyword Arguments:
+        train_period {int} -- The training period (default: {7})
+        val_period {int} -- The validation period (default: {7})
+        train_on_val {bool} -- If true, the model is trained on val (default: {False})
+        num_evals {int} -- Number of evaluations of Bayesian Optimsation (default: {1500})
+        data_from_tracker {bool} -- If False, data from tracker is not used (default: {True})
+        filename {str} -- If None, Athena database is used. Otherwise, data in filename is read (default: {None})
+        data_format {str} -- The format type of the filename user is providing ('old'/'new') (default: {'new'})
+        pre_lockdown {bool} -- To fit on free lockdown data or not [DEPRECATED] (default: {False})
+        N {float} -- The population of the geographical region (default: {1e7})
+        which_compartments {list} -- Which compartments to fit on (default: {['hospitalised', 'total_infected']})
+        initialisation {str} -- The method of intitalisation (default: {'starting'})
+
+    Returns:
+        dict -- dict of everything related to prediction
+    """
+
     print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
+
+    # Get date
     df_district, df_district_raw_data = get_all_district_data(dataframes, state, district, 
         data_from_tracker, data_format, filename)
 
@@ -178,6 +231,21 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
 
 def calculate_loss(df_train, df_val, df_prediction, train_period,
                    train_on_val, which_compartments=['hospitalised', 'total_infected']):
+    """Helper function for calculating loss in training pipeline
+
+    Arguments:
+        df_train {pd.DataFrame} -- Train dataset
+        df_val {pd.DataFrame} -- Val dataset
+        df_prediction {pd.DataFrame} -- Model Prediction
+        train_period {int} -- Length of training Period
+        train_on_val {bool} -- Whether model was trained on val or nor
+
+    Keyword Arguments:
+        which_compartments {list} -- List of buckets to calculate loss on (default: {['hospitalised', 'total_infected']})
+
+    Returns:
+        pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
+    """
     loss_calculator = Loss_Calculator()
     df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
 
@@ -203,6 +271,25 @@ def calculate_loss(df_train, df_val, df_prediction, train_period,
 
 def create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district, 
                  which_compartments=['hospitalised', 'total_infected'], description=''):
+    """Helper function for creating plots for the training pipeline
+
+    Arguments:
+        df_prediction {pd.DataFrame} -- The prediction dataframe outputted by the model
+        df_train {pd.DataFrame} -- The train dataset (with rolling average)
+        df_val {pd.DataFrame} -- The val dataset (with rolling average)
+        df_train_nora {pd.DataFrame} -- The train dataset (with no rolling average)
+        df_val_nora {pd.DataFrame} -- The val dataset (with no rolling average)
+        train_period {int} -- Length of train period
+        state {str} -- Name of state
+        district {str} -- Name of district
+
+    Keyword Arguments:
+        which_compartments {list} -- Which buckets to plot (default: {['hospitalised', 'total_infected']})
+        description {str} -- Additional description for the plots (if any) (default: {''})
+
+    Returns:
+        ax -- Matplotlib ax object
+    """
     # Create plots
     fig, ax = plt.subplots(figsize=(12, 12))
     if isinstance(df_val, pd.DataFrame):
