@@ -69,7 +69,7 @@ def create_connection(pyathena_rc_path=None):
     with open(pyathena_rc_path) as f:
         lines = f.readlines()
 
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     lines = [x.strip() for x in lines]
     lines = [x.split('export ')[1] for x in lines]
     lines = [line.replace('=', '="') + '"' if '="' not in line else line for line in lines]
@@ -113,7 +113,7 @@ def get_athena_dataframes(pyathena_rc_path=None):
 
     # Run SQL SELECT queries to get all the tables in the database as pandas dataframes
     dataframes = {}
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     tables_list = cursor.execute('Show tables').as_pandas().to_numpy().reshape(-1, )
     for table in tables_list:
         dataframes[table] = cursor.execute(

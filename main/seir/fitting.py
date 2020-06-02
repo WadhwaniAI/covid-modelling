@@ -15,8 +15,7 @@ from datetime import datetime
 from joblib import Parallel, delayed
 import copy
 
-from data.dataloader import get_jhu_data, get_covid19india_api_data
-from data.processing import get_data, get_district_time_series
+from data.processing import get_all_district_data
 
 from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
@@ -25,7 +24,7 @@ from main.seir.losses import Loss_Calculator
 
 now = str(datetime.now())
 
-def get_variable_param_ranges(initialisation='intermediate',as_str=False):
+def get_variable_param_ranges(initialisation='intermediate', as_str=False):
     """Returns the ranges for the variable params in the search space
 
     Keyword Arguments:
@@ -36,7 +35,6 @@ def get_variable_param_ranges(initialisation='intermediate',as_str=False):
     Returns:
         dict -- dict of ranges of variable params
     """
-
     variable_param_ranges = {
         'lockdown_R0': (1, 1.5),
         'T_inc': (4, 5),
@@ -50,7 +48,7 @@ def get_variable_param_ranges(initialisation='intermediate',as_str=False):
             'E_hosp_ratio': (0, 2),
             'I_hosp_ratio': (0, 1)
         }
-    variable_param_ranges.update(extra_params)
+        variable_param_ranges.update(extra_params)
     if as_str:
         return str(variable_param_ranges)
 
@@ -114,49 +112,10 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
         df_val = df_district.iloc[-val_size:, :]
     df_val.reset_index(inplace=True, drop=True)
     return df_train, df_val, df_true_fitting
-
-
-def single_fitting_cycle(dataframes, state, district, train_period=7, val_period=7, train_on_val=False, num_evals=1500,
-                         data_from_tracker=True, filename=None, data_format='new', pre_lockdown=False, N=1e7, 
-                         which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
-    """Main function which user runs for running an entire fitting cycle for a particular district
-
-    Arguments:
-        dataframes {dict(pd.DataFrame)} -- Dict of dataframes returned by the get_covid19india_api_data function
-        state {str} -- State Name
-        district {str} -- District Name (in title case)
-
-    Keyword Arguments:
-        train_period {int} -- The training period (default: {7})
-        val_period {int} -- The validation period (default: {7})
-        train_on_val {bool} -- If true, the model is trained on val (default: {False})
-        num_evals {int} -- Number of evaluations of Bayesian Optimsation (default: {1500})
-        data_from_tracker {bool} -- If False, data from tracker is not used (default: {True})
-        filename {str} -- If None, Athena database is used. Otherwise, data in filename is read (default: {None})
-        data_format {str} -- The format type of the filename user is providing ('old'/'new') (default: {'new'})
-        pre_lockdown {bool} -- To fit on free lockdown data or not [DEPRECATED] (default: {False})
-        N {float} -- The population of the geographical region (default: {1e7})
-        which_compartments {list} -- Which compartments to fit on (default: {['hospitalised', 'total_infected']})
-        initialisation {str} -- The method of intitalisation (default: {'starting'})
-
-    Returns:
-        dict -- dict of everything related to prediction
-    """
-
-    print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
-
-    # Get date
-    if data_from_tracker:
-        df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
-    else:
-        df_district = get_data(disable_tracker=True, filename=filename, data_format=data_format)
     
-    df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
-    df_district_raw_data = df_district_raw_data[df_district_raw_data['date'] <= '2020-03-25']
-
-    if district is None:
-        district = ''
-
+def data_setup(df_district, df_district_raw_data, pre_lockdown, 
+                    train_on_val, val_period):
+    
     # Get train val split
     if pre_lockdown:
         df_train, df_val, df_true_fitting = train_val_split(
@@ -172,19 +131,23 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
                 df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
             df_train_nora, df_val_nora, df_true_fitting = train_val_split(
                 df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
+    return df_district, df_district_raw_data, df_train, df_val, df_true_fitting, df_train_nora, df_val_nora
 
-    print('train\n', df_train.tail())
-    print('val\n', df_val)
-
+def run_cycle(state, district, df_district, df_district_raw_data, df_train, df_val, df_train_nora, df_val_nora, data_from_tracker,
+                        train_period=7, train_on_val=False, num_evals=1500, N=1e7, 
+                        which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
+    if district is None:
+        district = ''
+    
     # Initialise Optimiser
     optimiser = Optimiser()
     # Get the fixed params
     if initialisation == 'starting':
         observed_values = df_district_raw_data.iloc[0, :]
         start_date = df_district_raw_data.iloc[0, :]['date']
-        default_params = optimiser.init_default_params(df_train, df_district_raw_data, observed_values=observed_values,
+        default_params = optimiser.init_default_params(df_train, observed_values=observed_values,
                                                        start_date=start_date, initialisation=initialisation, N=N)
-    if initialisation == 'intermediate':
+    elif initialisation == 'intermediate':
         default_params = optimiser.init_default_params(df_train, N=N, initialisation=initialisation, 
                                                        train_period=train_period)
 
@@ -220,6 +183,50 @@ def single_fitting_cycle(dataframes, state, district, train_period=7, val_period
 
     return results_dict
 
+def single_fitting_cycle(dataframes, state, district, train_period=7, val_period=7, train_on_val=False, num_evals=1500,
+                         data_from_tracker=True, filename=None, data_format='new', pre_lockdown=False, N=1e7, 
+                         which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
+    """Main function which user runs for running an entire fitting cycle for a particular district
+
+    Arguments:
+        dataframes {dict(pd.DataFrame)} -- Dict of dataframes returned by the get_covid19india_api_data function
+        state {str} -- State Name
+        district {str} -- District Name (in title case)
+
+    Keyword Arguments:
+        train_period {int} -- The training period (default: {7})
+        val_period {int} -- The validation period (default: {7})
+        train_on_val {bool} -- If true, the model is trained on val (default: {False})
+        num_evals {int} -- Number of evaluations of Bayesian Optimsation (default: {1500})
+        data_from_tracker {bool} -- If False, data from tracker is not used (default: {True})
+        filename {str} -- If None, Athena database is used. Otherwise, data in filename is read (default: {None})
+        data_format {str} -- The format type of the filename user is providing ('old'/'new') (default: {'new'})
+        pre_lockdown {bool} -- To fit on free lockdown data or not [DEPRECATED] (default: {False})
+        N {float} -- The population of the geographical region (default: {1e7})
+        which_compartments {list} -- Which compartments to fit on (default: {['hospitalised', 'total_infected']})
+        initialisation {str} -- The method of intitalisation (default: {'starting'})
+
+    Returns:
+        dict -- dict of everything related to prediction
+    """
+    print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
+
+    # Get date
+    df_district, df_district_raw_data = get_all_district_data(dataframes, state, district, 
+        data_from_tracker, data_format, filename)
+
+    df_district, df_district_raw_data, df_train, df_val, df_true_fitting, df_train_nora, df_val_nora = data_setup(
+        df_district, df_district_raw_data, pre_lockdown, train_on_val, val_period
+    )
+
+    print('train\n', df_train.tail())
+    print('val\n', df_val)
+    
+    return run_cycle(
+        state, district, df_district, df_district_raw_data, df_train, df_val, df_train_nora, df_val_nora, data_from_tracker,
+        train_period=train_period, train_on_val=train_on_val, num_evals=num_evals, N=N, 
+        which_compartments=which_compartments, initialisation=initialisation
+    )
 
 def calculate_loss(df_train, df_val, df_prediction, train_period,
                    train_on_val, which_compartments=['hospitalised', 'total_infected']):
