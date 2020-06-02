@@ -103,6 +103,6 @@ for region in predictions_dict.keys():
     
 #     create_report(path=region_folder, **model_report[region])
 
-df_output = create_all_csvs(predictions_dict, initialisation='intermediate', train_period=7, icu_fraction=0.02)
+df_output = create_all_csvs(predictions_dict, icu_fraction=0.02)
 write_csv(df_output, '../../output-{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S")))
 
