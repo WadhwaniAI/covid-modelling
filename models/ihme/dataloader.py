@@ -79,7 +79,7 @@ def get_dataframes_cached():
 			pickle.dump(dataframes, pickle_file)
 	return dataframes
 
-def get_district_timeseries_cached(district, state, disable_tracker=True, filename=None, data_format='new'):
+def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
 	picklefn = "data/{district}_ts_{today}.pkl".format(
 		district=district, today=datetime.today().strftime("%d%m%Y")
 	)	

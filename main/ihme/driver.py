@@ -61,7 +61,7 @@ def setup(triple, args):
     dist, st, area_names = triple
     fname = f'{dist}_deaths'
 
-    district_timeseries = get_district_timeseries_cached(dist, st)
+    district_timeseries = get_district_timeseries_cached(dist, st, disable_tracker=args.disable_tracker)
     df, dtp = get_mortality(district_timeseries, st, area_names)
 
     # TODO: move these flags to params, make label cl flag?
@@ -313,10 +313,11 @@ if __name__ == "__main__":
     parser.add_argument("-l", "--log", help="fit on log", required=False, action='store_true')
     parser.add_argument("-sd", "--sd", help="use social distance covariate", required=False, action='store_true')
     parser.add_argument("-s", "--smoothing", help="how much to smooth, else no smoothing", required=False, type=int)
-    parser.add_argument("-hp", "--hyperopt", help="[single run only] number of times to do hyperparam optimization", required=False, type=int, default=0)
+    parser.add_argument("-hp", "--hyperopt", help="[single run only] number of times to do hyperparam optimization", required=False, type=int, default=1)
     parser.add_argument("-i", "--max_evals", help="max evals on each hyperopt run", required=False, default=50, type=int)
     parser.add_argument("-b", "--backtest", help="run backtesting", required=False, action='store_true')
     parser.add_argument("-re", "--replot", help="folder of backtest run to replot, must also run with -b", required=False)
+    parser.add_argument("-dt", "--disable_tracker", help="disable tracker (use athena instead)", required=False, action='store_true')
     args = parser.parse_args()
 
     if args.backtest:

@@ -34,8 +34,7 @@ def get_forecast(predictions_dict: dict, simulate_till=None, initialisation='int
     df_prediction = predictions_dict[train_fit]['optimiser'].solve(best_params,
                                                                    predictions_dict[train_fit]['default_params'],
                                                                    predictions_dict[train_fit]['df_train'], 
-                                                                   end_date=simulate_till, initialisation=initialisation, 
-                                                                   loss_indices=[-train_period, None])
+                                                                   end_date=simulate_till)
 
     return df_prediction
 
