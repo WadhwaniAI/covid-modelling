@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('../..')
 from data.dataloader import get_covid19india_api_data
-from data.processing import get_all_district_data
+from main.seir.fitting import get_regional_data
 from main.seir.backtesting import SEIRBacktest
 
 parser = argparse.ArgumentParser() 
@@ -38,7 +38,7 @@ else:
     filepath = None
 
 print('\rgetting district data...')
-df_district, df_district_raw_data = get_all_district_data(dataframes, state, district, 
+df_district, df_district_raw_data = get_regional_data(dataframes, state, district, 
                 data_from_tracker, data_format, filepath)
 
 print('starting backtesting...')

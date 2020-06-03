@@ -9,8 +9,8 @@ import sys
 sys.path.append('../..')
 from data.dataloader import get_covid19india_api_data
 from models.ihme.dataloader import get_dataframes_cached
-from data.processing import get_all_district_data, get_concat_data
-from main.seir.fitting import data_setup, run_cycle, get_variable_param_ranges
+from data.processing import get_concat_data
+from main.seir.fitting import get_regional_data, data_setup, run_cycle, get_variable_param_ranges
 from main.seir.forecast import create_all_csvs, write_csv, plot_forecast
 from utils.create_report import create_report
 
@@ -20,7 +20,7 @@ def rsingle_fitting_cycle(smoothingfunc, dataframes, state,
     print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
 
     # Get date
-    _, df_district_raw_data = get_all_district_data(dataframes, state, district, 
+    _, df_district_raw_data = get_regional_data(dataframes, state, district, 
         data_from_tracker, data_format, filename)
 
     df_district = get_concat_data(dataframes, state=state, district=district, concat=True)
@@ -33,16 +33,16 @@ def rsingle_fitting_cycle(smoothingfunc, dataframes, state,
     del new_df_district['n_hospitalised']
     df_district = new_df_district
     
-    df_district, df_district_raw_data, df_train, df_val, df_true_fitting, df_train_nora, df_val_nora = data_setup(
-        df_district, df_district_raw_data, pre_lockdown, train_on_val, val_period
+    observed_dataframes = data_setup(
+        df_district, df_district_raw_data, val_period
     )
 
-    print('train\n', df_train.tail())
-    print('val\n', df_val)
+    print('train\n', observed_dataframes['df_train'].tail())
+    print('val\n', observed_dataframes['df_val'])
     
     return run_cycle(
-        state, district, df_district, df_district_raw_data, df_train, df_val, df_train_nora, df_val_nora, data_from_tracker,
-        train_period=train_period, train_on_val=train_on_val, num_evals=num_evals, N=N, 
+        state, district, observed_dataframes, data_from_tracker=data_from_tracker,
+        train_period=train_period, num_evals=num_evals, N=N, 
         which_compartments=which_compartments, initialisation=initialisation
     )
 
