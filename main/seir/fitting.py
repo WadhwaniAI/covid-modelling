@@ -161,17 +161,17 @@ def smooth_big_jump(df_district, smoothing_length, data_from_tracker, method='li
     elif method == 'weighted':
         newcases = df_district['total_infected'].shift(14) - df_district['total_infected'].shift(15)
         idx = newcases.first_valid_index()
-        newcases = newcases.loc[idx:]
-        truncated = df_district.loc[idx:, :]
+        newcases = newcases.loc[idx:d1]
+        truncated = df_district.loc[idx:d1, :]
         print('len truncated', len(truncated))
         invpercent = newcases.sum()/newcases
         for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
             date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
             offset = np.random.binomial(1, (big_jump%invpercent.loc[date])/newcases.loc[date])
-            truncated.loc[:date, 'recovered'] += (big_jump // invpercent.loc[date]) + offset
-            truncated.loc[:date, 'hospitalised'] -= (big_jump // invpercent.loc[date]) + offset
-        df_district.loc[truncated.index, 'recovered'] = truncated['recovered']
-        df_district.loc[truncated.index, 'hospitalised'] = truncated['hospitalised']
+            truncated.loc[date:, 'recovered'] += (big_jump // invpercent.loc[date]) + offset
+            truncated.loc[date:, 'hospitalised'] -= (big_jump // invpercent.loc[date]) + offset
+        df_district.loc[truncated.index, 'recovered'] = truncated['recovered'].astype('int64')
+        df_district.loc[truncated.index, 'hospitalised'] = truncated['hospitalised'].astype('int64')
 
     assert((df_district['total_infected'] == df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']).all())
     return df_district.reset_index()
