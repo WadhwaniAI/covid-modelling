@@ -8,13 +8,13 @@ import datetime
 
 from models.seir.seir import SEIR
 
-class SEIR_Movement(SEIR):
-    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_hosp=5,
+class SEIRHD(SEIR):
+    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_hosp=5, 
                 T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6, init_infected=1,
                  lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', initialisation='intermediate', 
-                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, mu=0, **kwargs):
+                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
         """
-        This class implements SEIR + Hospitalisation + Severity Levels + Movement
+        This class implements SEIR + Hospitalisation + Severity Levels 
         The model further implements 
         - pre, post, and during lockdown behaviour 
         - different initialisations : intermediate and starting 
@@ -42,9 +42,6 @@ class SEIR_Movement(SEIR):
         pre_lockdown_R0: R0 value pre-lockdown (float)
         lockdown_R0: R0 value during lockdown (float)
         post_lockdown_R0: R0 value post-lockdown (float)
-
-        Movement params -
-        mu, Percentage of people moving out of S, E, I buckets daily (float)
 
         Transmission parameters - 
         T_inc: The incubation time of the infection (float)
@@ -92,9 +89,6 @@ class SEIR_Movement(SEIR):
             'pre_lockdown_R0': pre_lockdown_R0, # R0 value pre-lockdown
             'lockdown_R0': lockdown_R0,  # R0 value during lockdown
             'post_lockdown_R0': post_lockdown_R0,  # R0 value post-lockdown
-
-            #Movement
-            'mu': mu, #Percentage of people moving out of S, E, I buckets daily
 
             # Transmission parameters
             'T_inc': T_inc,  # The incubation time of the infection
@@ -148,6 +142,7 @@ class SEIR_Movement(SEIR):
 
         self.state_init_values = state_init_values
 
+
     def get_derivative(self, t, y):
         """
         Calculates derivative at time t
@@ -173,9 +168,9 @@ class SEIR_Movement(SEIR):
         dydt = np.zeros(y.shape)
 
         # Write differential equations
-        dydt[0] = - I * S / (self.T_trans) - self.mu*S  # S
-        dydt[1] = I * S / (self.T_trans) - (E / self.T_inc) - self.mu*E  # E
-        dydt[2] = E / self.T_inc - I / self.T_inf - self.mu*I  # I
+        dydt[0] = - I * S / (self.T_trans)  # S
+        dydt[1] = I * S / (self.T_trans) - (E/ self.T_inc)  # E
+        dydt[2] = E / self.T_inc - I / self.T_inf  # I
         dydt[3] = (1/self.T_inf)*(self.P_mild*I) - R_mild/self.T_recov_mild # R_mild
         dydt[4] = (1/self.T_inf)*(self.P_severe*I) - R_severe_home/self.T_hosp # R_severe_home
         dydt[5] = R_severe_home/self.T_hosp - R_severe_hosp/self.T_recov_severe # R_severe_hosp
@@ -221,4 +216,3 @@ class SEIR_Movement(SEIR):
         df_prediction['infectious_unknown'] = df_prediction['I']
         df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction
-

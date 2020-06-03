@@ -6,17 +6,6 @@ from collections import defaultdict
 
 from data.dataloader import get_covid19india_api_data, get_rootnet_api_data, get_athena_dataframes
 
-def get_all_district_data(dataframes, state, district, 
-                    data_from_tracker, data_format, filename):
-    if data_from_tracker:
-        df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
-    else:
-        df_district = get_data(state=state, district=district, disable_tracker=True, filename=filename, data_format=data_format)
-    
-    df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
-    df_district_raw_data = df_district_raw_data[df_district_raw_data['date'] <= '2020-03-25']
-    return df_district, df_district_raw_data
-
 def get_data(dataframes=None, state=None, district=None, use_dataframe='districts_daily', disable_tracker=False,
              filename=None, data_format='new'):
     """Handshake between data module and training module. Returns a dataframe of cases for a particular district/state

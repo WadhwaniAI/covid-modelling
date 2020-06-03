@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 from collections import OrderedDict
 import datetime
 
-class SEIR_Testing():
+from models.seir.seir import SEIR
+
+class SEIR_Testing(SEIR):
 
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_hosp=5, 
                  T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6, init_infected=1,
@@ -84,7 +86,9 @@ class SEIR_Testing():
         if post_lockdown_R0 == None:
            post_lockdown_R0 = lockdown_R0
 
-        P_mild = 1 - P_severe - P_fatal
+        # P_mild = 1 - P_severe - P_fatal
+        P_severe = 1 - P_fatal
+        P_mild = 0
 
         # define testing related parameters
         T_inf_detected = T_inf
@@ -234,15 +238,17 @@ class SEIR_Testing():
 
         sol = solve_ivp(self.get_derivative, [t_start, t_final], 
                         state_init_values_arr, method=method, t_eval=time_steps)
+        self.sol = sol
 
-        return sol
-
-    def return_predictions(self, sol):
+    def predict(self):
         """
         Returns predictions of the model
-        sol : Solved ODE variable
+
+        Returns: 
+        pd.DataFrame : dataframe of predictions
         """
-        states_time_matrix = (sol.y*self.vanilla_params['N']).astype('int')
+
+        states_time_matrix = (self.sol.y*self.vanilla_params['N']).astype('int')
         dataframe_dict = {}
         for i, key in enumerate(self.state_init_values.keys()):
             dataframe_dict[key] = states_time_matrix[i]
