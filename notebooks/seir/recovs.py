@@ -40,7 +40,7 @@ def rsingle_fitting_cycle(smoothingfunc, dataframes, state,
         which_compartments=which_compartments, initialisation=initialisation
     )
 
-def smooth_using_active(df_district, last_n_days=60, cols=['hospitalised', 'recovered']):
+def smooth_using_total(df_district, last_n_days=60, cols=['hospitalised', 'recovered']):
     df = copy(df_district)
     districtdf = copy(df_district)    
     # create column of new total infected cases 14 days ago
@@ -63,6 +63,7 @@ def smooth_using_active(df_district, last_n_days=60, cols=['hospitalised', 'reco
         new_col = f'new_{col}'
         # calc jump for each col
         jump = districtdf.loc[jump_date, col] - districtdf.loc[jump_date - 1, col]
+        print(col, jump)
         # jump * %newcases for each col, round
         df[new_col] = (jump * df['percent']).round(0)
         # check if all were redistributed, add surplus to last row
@@ -99,12 +100,12 @@ if __name__ == "__main__":
     # for ndays in [7, 15, 30, 60]:
         for state, district in districts_to_show:
             predictions_dict[(state, district)] = {}
-            predictions_dict[(state, district)]['m1'] = rsingle_fitting_cycle(smooth_using_active,
+            predictions_dict[(state, district)]['m1'] = rsingle_fitting_cycle(smooth_using_total,
                 dataframes, state, district, train_period=7, val_period=7, 
                 n_days_back_smooth=ndays,
                 data_from_tracker=args.use_tracker, initialisation='intermediate', num_evals=args.iterations,
                 which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
-            predictions_dict[(state, district)]['m2'] = rsingle_fitting_cycle(smooth_using_active,
+            predictions_dict[(state, district)]['m2'] = rsingle_fitting_cycle(smooth_using_total,
                 dataframes, state, district, train_period=7, val_period=0, num_evals=args.iterations,
                 n_days_back_smooth=ndays,
                 train_on_val=True, data_from_tracker=args.use_tracker, initialisation='intermediate',
