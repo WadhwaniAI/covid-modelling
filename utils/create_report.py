@@ -71,11 +71,14 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     predictions_dict['forecast'].figure.savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2', path=plot_filepath))
     
-    # mdFile.new_header(level=1, title=f'FORECASTS ON TOTAL INFECTIONS BASED ON TOP 10 PARAMETER SETS FOR M2 FIT')
-    # plot_filename = '{}-{}-forecast-top10-{}.png'.format(state.lower(), dist.lower(), fitting_date)
-    # plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-    # predictions_dict['forecast_top10'].figure.savefig(plot_filepath)
-    # mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2 of top 10', path=plot_filename))
+    if 'forecast_top10' in predictions_dict['m2'].keys():
+        mdFile.new_header(level=1, title=f'FORECASTS ON TOTAL INFECTIONS BASED ON TOP 10 PARAMETER SETS FOR M2 FIT')
+        plot_filename = '{}-{}-forecast-top10-{}.png'.format(state.lower(), dist.lower(), fitting_date)
+        plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
+        predictions_dict['m2']['forecast_top10'].figure.savefig(plot_filepath)
+        mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2 of top 10', path=plot_filepath))
+        mdFile.new_paragraph("Top 10 Params")
+        mdFile.insert_code(pformat(predictions_dict['m2']['top10params']))
 
     # Create a table of contents
     mdFile.new_table_of_contents(table_title='Contents', depth=2)
