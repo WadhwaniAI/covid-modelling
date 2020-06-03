@@ -9,7 +9,7 @@ import datetime
 from models.seir.seir import SEIR
 
 class SEIR_Movement(SEIR):
-    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_hosp=0.001,
+    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
                 T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6, init_infected=1,
                  lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', initialisation='intermediate', 
                  observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, mu=0, **kwargs):
@@ -25,8 +25,7 @@ class SEIR_Movement(SEIR):
         E : No of exposed people
         I : No of infected people
         R_mild : No of people recovering from a mild version of the infection
-        R_severe_home : No of people recovering from a severe version of the infection (at home)
-        R_severe_hosp : No of people recovering from a fatal version of the infection (at hospital)
+        R_severe : No of people recovering from a fatal version of the infection (at hospital)
         R_fatal : No of people recovering from a fatal version of the infection
         C : No of recovered people
         D : No of deceased people 
@@ -58,7 +57,6 @@ class SEIR_Movement(SEIR):
         Clinical time parameters - 
         T_recov_mild: Time it takes for an individual with a mild infection to recover (float)
         T_recov_severe: Time it takes for an individual with a severe infection to recover (float)
-        T_hosp: Time it takes for an individual to get hospitalised, after they have been diagnosed (float)
         T_death: Time it takes for an individual with a fatal infection to die (float)
 
         Lockdown parameters - 
@@ -108,7 +106,6 @@ class SEIR_Movement(SEIR):
             # Clinical time parameters
             'T_recov_mild': T_recov_mild, # Time it takes for an individual with a mild infection to recover
             'T_recov_severe': T_recov_severe, # Time it takes for an individual with a severe infection to recover
-            'T_hosp': T_hosp, # Time it takes for an individual to get hospitalised, after they have been diagnosed
             'T_death': T_death, #Time it takes for an individual with a fatal infection to die
 
             # Lockdown parameters
@@ -124,7 +121,7 @@ class SEIR_Movement(SEIR):
 
         # Initialisation
         state_init_values = OrderedDict()
-        key_order = ['S', 'E', 'I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
+        key_order = ['S', 'E', 'I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
         for key in key_order:
             state_init_values[key] = 0
         if initialisation == 'starting':
@@ -133,7 +130,7 @@ class SEIR_Movement(SEIR):
             state_init_values['I'] = init_infected/self.N
 
         if initialisation == 'intermediate':
-            state_init_values['R_severe_hosp'] = self.P_severe / (self.P_severe + self.P_fatal) * observed_values['hospitalised']
+            state_init_values['R_severe'] = self.P_severe / (self.P_severe + self.P_fatal) * observed_values['hospitalised']
             state_init_values['R_fatal'] = self.P_fatal / (self.P_severe + self.P_fatal) * observed_values['hospitalised']
             state_init_values['C'] = observed_values['recovered']
             state_init_values['D'] = observed_values['deceased']
@@ -155,7 +152,7 @@ class SEIR_Movement(SEIR):
         # Init state variables
         for i, _ in enumerate(y):
             y[i] = max(y[i], 0)
-        S, E, I, R_mild, R_severe_home, R_severe_hosp, R_fatal, C, D = y
+        S, E, I, R_mild, R_severe, R_fatal, C, D = y
 
         # Modelling the behaviour post-lockdown
         if t >= self.lockdown_removal_day:
@@ -177,11 +174,10 @@ class SEIR_Movement(SEIR):
         dydt[1] = I * S / (self.T_trans) - (E / self.T_inc) - self.mu*E  # E
         dydt[2] = E / self.T_inc - I / self.T_inf - self.mu*I  # I
         dydt[3] = (1/self.T_inf)*(self.P_mild*I) - R_mild/self.T_recov_mild # R_mild
-        dydt[4] = (1/self.T_inf)*(self.P_severe*I) - R_severe_home/self.T_hosp # R_severe_home
-        dydt[5] = R_severe_home/self.T_hosp - R_severe_hosp/self.T_recov_severe # R_severe_hosp
-        dydt[6] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_death # R_fatal
-        dydt[7] = R_mild/self.T_recov_mild + R_severe_hosp/self.T_recov_severe # C
-        dydt[8] = R_fatal/self.T_death # D
+        dydt[4] = (1/self.T_inf)*(self.P_severe*I) - R_severe/self.T_recov_severe # R_severe
+        dydt[5] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_death # R_fatal
+        dydt[6] = R_mild/self.T_recov_mild + R_severe/self.T_recov_severe # C
+        dydt[7] = R_fatal/self.T_death # D
 
         return dydt
 
@@ -215,7 +211,7 @@ class SEIR_Movement(SEIR):
         columns.remove('date')
         df_prediction = df_prediction[['date'] + columns]
 
-        df_prediction['hospitalised'] = df_prediction['R_severe_home'] + df_prediction['R_severe_hosp'] + df_prediction['R_fatal']
+        df_prediction['hospitalised'] = df_prediction['R_severe'] + df_prediction['R_fatal']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
         df_prediction['infectious_unknown'] = df_prediction['I']
