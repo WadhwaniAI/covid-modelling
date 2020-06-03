@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import numpy as np
 import pickle
+import os
 
 sys.path.append('../..')
 from data.dataloader import get_covid19india_api_data, get_jhu_data
@@ -67,7 +68,7 @@ def jhu(country):
 	return df
 	
 def get_dataframes_cached():
-	picklefn = "data/dataframes_ts_{today}.pkl".format(today=datetime.today().strftime("%d%m%Y"))
+	picklefn = "../../cache/dataframes_ts_{today}.pkl".format(today=datetime.today().strftime("%d%m%Y"))
 	try:
 		print(picklefn)
 		with open(picklefn, 'rb') as pickle_file:
@@ -75,12 +76,14 @@ def get_dataframes_cached():
 	except:
 		print("pulling from source")
 		dataframes = get_covid19india_api_data()
+		if not os.path.exists('../../cache/'):
+			os.mkdir('../../cache/')
 		with open(picklefn, 'wb+') as pickle_file:
 			pickle.dump(dataframes, pickle_file)
 	return dataframes
 
 def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
-	picklefn = "data/{district}_ts_{today}.pkl".format(
+	picklefn = "../../cache/{district}_ts_{today}.pkl".format(
 		district=district, today=datetime.today().strftime("%d%m%Y")
 	)	
 	try:

@@ -46,13 +46,12 @@ class SEIRBacktest:
             df_district_incr = self.df_district[pd.to_datetime(self.df_district['date'], format='%Y-%m-%d') <= end_date]
             df_district_raw_data_incr = self.df_district_raw_data[pd.to_datetime(self.df_district_raw_data['date'], format='%Y-%m-%d') <= end_date]
             
-            df_district_incr, df_district_raw_data_incr, df_train, df_val, df_true_fitting, df_train_nora, df_val_nora = \
-                data_setup(df_district_incr, df_district_raw_data_incr, pre_lockdown, train_on_val, val_period)
+            observed_dataframes = data_setup(df_district_incr, df_district_raw_data_incr, val_period)
             
             # FIT/PREDICT
             res = run_cycle(
-                self.state, self.district, df_district_incr, df_district_raw_data_incr, df_train, df_val, df_train_nora, df_val_nora, self.data_from_tracker,
-                train_period=train_period, train_on_val=train_on_val, num_evals=num_evals, N=N, 
+                self.state, self.district, observed_dataframes, data_from_tracker=self.data_from_tracker,
+                train_period=train_period, num_evals=num_evals, N=N, 
                 which_compartments=which_compartments, initialisation=initialisation
             )
 
@@ -64,13 +63,16 @@ class SEIRBacktest:
         runtime = time.time() - runtime_s
         print (runtime)
         if df_val is None:
-            df_val = pd.DataFrame(columns=df_train.columns)
-            df_val_nora = pd.DataFrame(columns=df_train_nora.columns)
+            df_val = pd.DataFrame(columns=observed_dataframes['df_train'].columns)
+            df_val_nora = pd.DataFrame(columns=observed_dataframes['df_train_nora'].columns)
+        else:
+            df_val = observed_dataframes['df_val']
+            df_val_nora = observed_dataframes['df_val_nora']
         self.results = {
             'results': results,
             'df_district': self.df_district,
-            'df_true_plotting_rolling': pd.concat([df_train, df_val], ignore_index=True),
-            'df_true_plotting': pd.concat([df_train_nora, df_val_nora], ignore_index=True),
+            'df_true_plotting_rolling': pd.concat([observed_dataframes['df_train'], df_val], ignore_index=True),
+            'df_true_plotting': pd.concat([observed_dataframes['df_train_nora'], df_val_nora], ignore_index=True),
             'future_days': future_days,
             'train_period': train_period,
             'runtime': runtime,

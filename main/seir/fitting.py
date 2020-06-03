@@ -148,6 +148,7 @@ def smooth_big_jump(df_district, smoothing_length, data_from_tracker, method='li
         d1, d2 = '2020-05-29', '2020-05-30'
     else:
         d1, d2 = '2020-05-28', '2020-05-29'
+    df_district['date'] = pd.to_datetime(df_district['date'])
     df_district = df_district.set_index('date')
     big_jump = df_district.loc[d2, 'recovered'] - df_district.loc[d1, 'recovered']
     print(big_jump)
@@ -159,20 +160,28 @@ def smooth_big_jump(df_district, smoothing_length, data_from_tracker, method='li
             df_district.loc[date, 'hospitalised'] -= ((i+1)*big_jump)//smoothing_length + offset
 
     elif method == 'weighted':
+        newcases = df_district['total_infected'].shift(14) - df_district['total_infected'].shift(15)
+        valid_idx = newcases.first_valid_index()
+        window_start = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=smoothing_length - 1)
+        print (type(valid_idx))
+        print (type(window_start))
+        newcases = newcases.loc[max(valid_idx, window_start):d1]
+        truncated = df_district.loc[max(valid_idx, window_start):d1, :]
+        print('len truncated', len(truncated))
+        invpercent = newcases.sum()/newcases
         for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
-            newcases = df_district['total_infected'].shift(15) - df_district['total_infected'].shift(14)
-            invpercent = newcases.sum()/newcases
-            offset = np.random.binomial(1, (big_jump%invpercent)/newcases)
-            
             date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
-            df_district.loc[date, 'recovered'] += ((i+1)*big_jump // invpercent) + offset
-            df_district.loc[date, 'hospitalised'] -= ((i+1)*big_jump // invpercent) + offset
+            offset = np.random.binomial(1, (big_jump%invpercent.loc[date])/invpercent.loc[date])
+            truncated.loc[date:, 'recovered'] += (big_jump // invpercent.loc[date]) + offset
+            truncated.loc[date:, 'hospitalised'] -= (big_jump // invpercent.loc[date]) + offset
+        df_district.loc[truncated.index, 'recovered'] = truncated['recovered'].astype('int64')
+        df_district.loc[truncated.index, 'hospitalised'] = truncated['hospitalised'].astype('int64')
 
     assert((df_district['total_infected'] == df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']).all())
     return df_district.reset_index()
 
 
-def data_setup(df_district, df_district_raw_data, val_period):
+def data_setup(df_district, df_district_raw_data, val_period, which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
     """Helper function for single_fitting_cycle which sets up the data including doing the train val split
 
     Arguments:
@@ -185,9 +194,9 @@ def data_setup(df_district, df_district_raw_data, val_period):
     """
     # Get train val split
     df_train, df_val, df_true_fitting = train_val_split(
-        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
+        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period, which_columns=which_columns)
     df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-        df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
+        df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period, which_columns=which_columns)
 
     observed_dataframes = {}
     for name in ['df_district', 'df_district_raw_data', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
@@ -302,14 +311,20 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
                                                           smoothing_length=smoothing_length)
 
     # Process the data to get rolling averages and other stuff
-    observed_dataframes = data_setup(df_district, df_district_raw_data, val_period)
+    observed_dataframes = data_setup(
+        df_district, df_district_raw_data, 
+        val_period, which_columns=which_compartments)
 
     print('train\n', observed_dataframes['df_train'].tail())
     print('val\n', observed_dataframes['df_val'])
     
-    predictions_dict = run_cycle(state, district, observed_dataframes, data_from_tracker=data_from_tracker, 
-                                 model=model, train_period=train_period, which_compartments=which_compartments, N=N,
-                                 num_evals=num_evals, initialisation=initialisation)
+    predictions_dict = run_cycle(
+        state, district, observed_dataframes, 
+        data_from_tracker=data_from_tracker, 
+        model=model, train_period=train_period, 
+        which_compartments=which_compartments, N=N,
+        num_evals=num_evals, initialisation=initialisation
+    )
 
     return predictions_dict
 
@@ -380,7 +395,6 @@ def create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, tr
     else:
         df_true_plotting_rolling = df_train
         df_true_plotting = df_train_nora
-    
     df_predicted_plotting = df_prediction.loc[df_prediction['date'].isin(
         df_true_plotting['date']), ['date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
     
