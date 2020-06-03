@@ -25,6 +25,7 @@ from utils.create_report import create_report
 # dataframes = get_covid19india_api_data()
 dataframes = get_dataframes_cached()
 t = time.time()
+t = 'trial33'
 
 predictions_dict = {}
 
@@ -42,12 +43,12 @@ for state, district in districts_to_show:
     predictions_dict[(state, district)]['m1'] = single_fitting_cycle(
         dataframes, state, district, train_period=7, val_period=7, 
         data_from_tracker=False, initialisation='intermediate', num_evals=700, model=SEIR_Testing, 
-        smooth_jump=True, smoothing_method='linear', smoothing_length=45,
+        smooth_jump=True, smoothing_method='weighted', smoothing_length=33,
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     predictions_dict[(state, district)]['m2'] = single_fitting_cycle(
         dataframes, state, district, train_period=7, val_period=0, num_evals=700,
         data_from_tracker=False, initialisation='intermediate', model=SEIR_Testing, 
-        smooth_jump=True, smoothing_method='linear', smoothing_length=45,
+        smooth_jump=True, smoothing_method='weighted', smoothing_length=33,
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     
     predictions_dict[(state, district)]['state'] = state

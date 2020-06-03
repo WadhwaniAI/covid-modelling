@@ -167,7 +167,7 @@ def smooth_big_jump(df_district, smoothing_length, data_from_tracker, method='li
         invpercent = newcases.sum()/newcases
         for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
             date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
-            offset = np.random.binomial(1, (big_jump%invpercent.loc[date])/newcases.loc[date])
+            offset = np.random.binomial(1, (big_jump%invpercent.loc[date])/invpercent.loc[date])
             truncated.loc[date:, 'recovered'] += (big_jump // invpercent.loc[date]) + offset
             truncated.loc[date:, 'hospitalised'] -= (big_jump // invpercent.loc[date]) + offset
         df_district.loc[truncated.index, 'recovered'] = truncated['recovered'].astype('int64')
