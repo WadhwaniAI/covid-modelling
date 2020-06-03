@@ -14,6 +14,7 @@ from utils.create_report import create_report
 # --- turn into command line args
 parser = argparse.ArgumentParser() 
 parser.add_argument("-t", "--use-tracker", help="district name", required=False, action='store_true')
+parser.add_argument("-i", "--iterations", help="optimiser iterations", required=False, default=700, type=int)
 args = parser.parse_args()
 use_tracker = args.use_tracker
 # ---
@@ -42,11 +43,11 @@ for state, district in districts_to_show:
     predictions_dict[(state, district)] = {}
     predictions_dict[(state, district)]['m1'] = single_fitting_cycle(
         dataframes, state, district, train_period=7, val_period=7, 
-        data_from_tracker=args.use_tracker, initialisation='intermediate', num_evals=700,
+        data_from_tracker=args.use_tracker, initialisation='intermediate', num_evals=args.iterations,
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     predictions_dict[(state, district)]['m2'] = single_fitting_cycle(
-        dataframes, state, district, train_period=7, val_period=0, num_evals=700,
-        train_on_val=True, data_from_tracker=args.use_tracker, initialisation='intermediate',
+        dataframes, state, district, train_period=7, val_period=0, num_evals=args.iterations,
+        data_from_tracker=args.use_tracker, initialisation='intermediate',
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     
     predictions_dict[(state, district)]['state'] = state
@@ -64,44 +65,13 @@ for m in ['m1', 'm2']:
 
     df_loss_master = pd.DataFrame(columns=loss_columns, index=loss_index)
     for region in predictions_dict.keys():
-        # region_folder = os.path.join(output_folder, region[1])
-        # if not os.path.exists(region_folder):
-        #     os.makedirs(region_folder)
-
-        # report = model_report[region]
         df_loss_master.loc[region, :] = np.around(predictions_dict[region][m]['df_loss'].values.T.flatten().astype('float'), decimals=2)
         
-        # print (df_loss_master)
-        # report[m] = {}
-        # report[m]['loss_df'] = df_loss_master.to_markdown()
-        # report[m]['best_params'] = predictions_dict[region][m]['best_params']
-        # report[m]['plot'] = predictions_dict[region][m]['ax'].figure
-        # report[m]['plot_path'] = f'{m}-fit.png'
-        # report[m]['plot'].savefig(os.path.join(region_folder, report[m]['plot_path']))
-
 for region in predictions_dict.keys():
     predictions_dict[region]['forecast'] = plot_forecast(predictions_dict[region], region, both_forecasts=False, error_bars=True)
 
 for region in predictions_dict.keys():
     create_report(predictions_dict[region])
-
-# for region in predictions_dict.keys():
-#     region_folder = os.path.join(output_folder, region[1])
-#     if not os.path.exists(region_folder):
-#         os.makedirs(region_folder)
-#     report = model_report[region]['overall']
-    
-#     m2_val_m1 = plot_forecast(predictions_dict[region], region, both_forecasts=False, error_bars=True,)
-    
-#     report['m2_val_m1'] = m2_val_m1.figure
-#     report['m2_val_m1_path'] = f'm2_val_m1-fit.png'
-#     report['m2_val_m1'].savefig(os.path.join(region_folder, report['m2_val_m1_path']))
-    
-#     m2_trials = predictions_dict[region]['m2']['trials']
-#     m2_best_trials = sorted(m2_trials.trials, key=lambda x: x['result']['loss'], reverse=False)
-#     report['top_10_trials'] = [trial['misc']['vals'] for trial in m2_best_trials[:10]]
-    
-#     create_report(path=region_folder, **model_report[region])
 
 df_output = create_all_csvs(predictions_dict, icu_fraction=0.02)
 write_csv(df_output, '../../output-{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S")))
