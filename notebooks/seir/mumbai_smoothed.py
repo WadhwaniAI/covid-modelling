@@ -5,6 +5,7 @@ import datetime
 import copy
 import json
 import time
+import argparse
 
 import sys
 sys.path.append('../../')
@@ -22,10 +23,16 @@ from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
 from main.seir.forecast import get_forecast, create_region_csv, create_all_csvs, write_csv, plot_forecast
 from utils.create_report import create_report
 
+# --- turn into command line args
+parser = argparse.ArgumentParser()
+parser.add_argument("-t", "--use-tracker", help="district name", required=False, action='store_true')
+parser.add_argument("-i", "--iterations", help="optimiser iterations", required=False, default=700, type=int)
+parser.add_argument("-n", "--ndays", help="smoothing days", required=False, default=33, type=int)
+parser.add_argument("-f", "--folder", help="folder name", required=False, default=str(time.time()), type=str)
+args = parser.parse_args()
+
 # dataframes = get_covid19india_api_data()
 dataframes = get_dataframes_cached()
-t = time.time()
-t = 'trial33'
 
 predictions_dict = {}
 
@@ -42,13 +49,13 @@ for state, district in districts_to_show:
     predictions_dict[(state, district)] = {}
     predictions_dict[(state, district)]['m1'] = single_fitting_cycle(
         dataframes, state, district, train_period=7, val_period=7, 
-        data_from_tracker=False, initialisation='intermediate', num_evals=700, model=SEIR_Testing, 
-        smooth_jump=True, smoothing_method='weighted', smoothing_length=33,
+        data_from_tracker=args.use_tracker, initialisation='intermediate', num_evals=args.iterations, model=SEIR_Testing, 
+        smooth_jump=True, smoothing_method='weighted', smoothing_length=args.ndays,
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     predictions_dict[(state, district)]['m2'] = single_fitting_cycle(
-        dataframes, state, district, train_period=7, val_period=0, num_evals=700,
-        data_from_tracker=False, initialisation='intermediate', model=SEIR_Testing, 
-        smooth_jump=True, smoothing_method='weighted', smoothing_length=33,
+        dataframes, state, district, train_period=7, val_period=0, num_evals=args.iterations,
+        data_from_tracker=args.use_tracker, initialisation='intermediate', model=SEIR_Testing, 
+        smooth_jump=True, smoothing_method='weighted', smoothing_length=args.ndays,
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     
     predictions_dict[(state, district)]['state'] = state
@@ -84,7 +91,7 @@ for region in predictions_dict.keys():
     predictions_dict[region]['forecast'] = plot_forecast(predictions_dict[region], region, both_forecasts=False, error_bars=True)
 
 for region in predictions_dict.keys():
-    create_report(predictions_dict[region], ROOT_DIR=f'../../reports/{t}') 
+    create_report(predictions_dict[region], ROOT_DIR=f'../../reports/{args.folder}') 
 
 df_output = create_all_csvs(predictions_dict, icu_fraction=0.02)
 write_csv(df_output)
@@ -140,4 +147,4 @@ for region in predictions_dict.keys():
     predictions_dict[region][m]['forecast_top10'] = plot_trials(predictions_dict[region][m], top10losses, top10params, top10predictions)
 
 for region in predictions_dict.keys():
-    create_report(predictions_dict[region], ROOT_DIR=f'../../reports/{t}')                        
+    create_report(predictions_dict[region], ROOT_DIR=f'../../reports/{args.folder}')
