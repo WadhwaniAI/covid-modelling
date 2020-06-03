@@ -25,7 +25,7 @@ from main.seir.losses import Loss_Calculator
 
 from utils.enums import Columns
 
-def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', best_params=None):
+def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', best_params=None, verbose=True):
     """Returns the forecasts for a given set of params of a particular geographical area
 
     Arguments:
@@ -39,7 +39,8 @@ def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', bes
     Returns:
         [type] -- [description]
     """
-    print("getting forecasts ..")
+    if verbose:
+        print("getting forecasts ..")
     if simulate_till == None:
         simulate_till = datetime.datetime.today() + datetime.timedelta(days=37)
     if best_params == None:
@@ -295,16 +296,21 @@ def top_k_trials(m_dict: dict, k=10):
 
 def forecast_k(predictions_dict: dict, k=10, train_fit='m2'):
     top_k_losses, top_k_params = top_k_trials(predictions_dict[train_fit], k=k)
-    predictions = [get_forecast(
-        predictions_dict, best_params=params_dict, train_fit=train_fit) for params_dict in top_k_params]
+    predictions = []
+    dots = ['.']
+    for i, params_dict in enumerate(top_k_params):
+        print(f"getting forecasts {''.join((i+1)*dots)}", end='\r')
+        predictions.append(get_forecast(
+            predictions_dict, best_params=params_dict, train_fit=train_fit, verbose=False))
     return predictions, top_k_losses
 
 def plot_trials(predictions_dict, k=10, train_fit='m2', which_compartments=[Columns.active]):
     predictions, top_k_losses = forecast_k(predictions_dict, k=k, train_fit=train_fit)
     df_true = predictions_dict[train_fit]['df_district']
-    fig, ax = plt.subplots(figsize=(12, 12))
-    texts = []
+    plots = {}
     for compartment in which_compartments:
+        fig, ax = plt.subplots(figsize=(12, 12))
+        texts = []
         ax.plot(df_true[Columns.date.name], df_true[compartment.name],
                 '-o', color='C0', label=f'{compartment.label} (Observed)')
         for i, df_prediction in enumerate(predictions):
@@ -312,19 +318,20 @@ def plot_trials(predictions_dict, k=10, train_fit='m2', which_compartments=[Colu
             sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
                         ls='-', label=f'{compartment.label} ({loss_value})')
             texts.append(plt.text(
-                x=df_prediction[Columns.date.name].iloc[-1] + datetime.timedelta(
-                    days=np.random.binomial(1, 0.5)), 
+                x=df_prediction[Columns.date.name].iloc[-1], 
                 y=df_prediction[compartment.name].iloc[-1], s=loss_value))
-    ax.set_xlim(ax.get_xlim()[0], ax.get_xlim()[1] + 10)
-    from adjustText import adjust_text
-    adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
-    ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
-    plt.ylabel('No of People', fontsize=16)
-    plt.yscale('log')
-    plt.xlabel('Time', fontsize=16)
-    plt.legend()
-    plt.title('Forecast - ({} {})'.format(predictions_dict['state'], predictions_dict['dist']), fontsize=16)
-    # plt.grid()
-    return ax
+        
+        ax.set_xlim(ax.get_xlim()[0], ax.get_xlim()[1] + 10)
+        from adjustText import adjust_text
+        adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
+        ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+        plt.ylabel('No of People', fontsize=16)
+        plt.yscale('log')
+        plt.xlabel('Time', fontsize=16)
+        plt.legend()
+        plt.title('Forecast - ({} {})'.format(predictions_dict['state'], predictions_dict['dist']), fontsize=16)
+        # plt.grid()
+        plots[compartment] = ax
+    return plots

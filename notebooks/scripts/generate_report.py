@@ -88,8 +88,9 @@ for region in predictions_dict.keys():
     params_array, losses_array = order_trials(predictions_dict[region]['m2'])
     predictions_dict[region]['forecast']['params'] = params_array
     predictions_dict[region]['forecast']['losses'] = losses_array
-    predictions_dict[region]['forecast']['forecast_confirmed_topk'] = plot_trials(predictions_dict[region], which_compartments=[Columns.confirmed], k=100)
-    predictions_dict[region]['forecast']['forecast_active_topk'] = plot_trials(predictions_dict[region], which_compartments=[Columns.active], k=100)
+    kforecasts = plot_trials(predictions_dict[region], which_compartments=[Columns.confirmed, Columns.active], k=100)
+    predictions_dict[region]['forecast']['forecast_confirmed_topk'] = kforecasts[Columns.confirmed]
+    predictions_dict[region]['forecast']['forecast_active_topk'] = kforecasts[Columns.active]
 
 for region in predictions_dict.keys():
     create_report(predictions_dict[region], ROOT_DIR=f'../../reports/{args.folder}') 
