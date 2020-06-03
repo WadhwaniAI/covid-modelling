@@ -25,13 +25,7 @@ def rsingle_fitting_cycle(smoothingfunc, dataframes, state,
 
     df_district = get_concat_data(dataframes, state=state, district=district, concat=True)
 
-    new_df_district = smoothingfunc(df_district, last_n_days=n_days_back_smooth)
-
-    new_df_district['recovered'] = new_df_district['n_recovered']
-    new_df_district['hospitalised'] = new_df_district['n_hospitalised']
-    del new_df_district['n_recovered']
-    del new_df_district['n_hospitalised']
-    df_district = new_df_district
+    df_district = smoothingfunc(df_district, last_n_days=n_days_back_smooth)
     
     observed_dataframes = data_setup(
         df_district, df_district_raw_data, val_period
@@ -94,15 +88,46 @@ def smooth_using_active1(df_district, df_district_raw_data=None, last_n_days=60)
     districtdf = districtdf.reset_index()
     districtdf = districtdf[44:] # truncate old data from other dfs
     
-    districtdf['n_recovered'] = districtdf['n_recovered'].astype(dtype=int)
-    districtdf['n_hospitalised'] = districtdf['n_hospitalised'].astype(dtype=int)
-    districtdf['n_deceased'] = districtdf['n_deceased'].astype(dtype=int)
+    districtdf['recovered'] = districtdf['n_recovered'].astype(dtype=int)
+    districtdf['hospitalised'] = districtdf['n_hospitalised'].astype(dtype=int)
+    districtdf['deceased'] = districtdf['n_deceased'].astype(dtype=int)
     return districtdf
 
-def smooth_using_active(df_district, last_n_days=60):
+def smooth_using_active(df_district, last_n_days=60, cols=['hospitalised', 'recovered']):
     df = copy(df_district)
-    districtdf = copy(df_district)
+    districtdf = copy(df_district)    
+    # create column of new total infected cases 14 days ago
+    df['newcases_14back'] = df['total_infected'].shift(14) - df['total_infected'].shift(15)
+    df = df.reset_index(drop=True)
+    # truncate df to end on 5/29 and start on 5/29-ndays
+    jump_date = np.datetime64('2020-05-30')
+    df = df[df['date'] < jump_date]
+    df = df[-last_n_days:]
 
+    # calculate how many new infected cases over len(df)
+    allinfected = df['newcases_14back'].sum()
+    # to distribute proportionally, use delta/allinfected -> %of new cases for each day
+    df['percent'] = df['newcases_14back']/allinfected
+    # TODO: uniformly, delta/len(df)
+    
+    districtdf = districtdf.set_index('date')
+    df = df.set_index('date')
+    for col in cols:
+        new_col = f'new_{col}'
+        # calc jump for each col
+        jump = districtdf.loc[jump_date, col] - districtdf.loc[jump_date - 1, col]
+        # jump * %newcases for each col, round
+        df[new_col] = (jump * df['percent']).round(0)
+        # check if all were redistributed, add surplus to last row
+        df.loc[df.index[-1], new_col] += jump - df[new_col].sum()
+        # add new_additions.cumsum() to orig_col
+        df[col] +=  df[new_col].cumsum()
+        # merge into original df
+        districtdf.loc[df.index, col] = df[col].astype(int)
+    districtdf['total_infected'] = districtdf['deceased'] + districtdf['hospitalised'] + districtdf['recovered']
+    return districtdf.reset_index()[44:]
+
+def smooth_using_active2(df_district, last_n_days=60):
     df['delta14'] = df['total_infected'].shift(14) - df['total_infected'].shift(15)
     df = df.reset_index(drop=True)
 
@@ -154,6 +179,7 @@ if __name__ == "__main__":
     # --- turn into command line args
     parser = argparse.ArgumentParser() 
     parser.add_argument("-t", "--use-tracker", help="district name", required=False, action='store_true')
+    parser.add_argument("-i", "--iterations", help="optimiser iterations", required=False, default=700, type=int)
     args = parser.parse_args()
     use_tracker = args.use_tracker
     # ---
@@ -176,10 +202,10 @@ if __name__ == "__main__":
             predictions_dict[(state, district)]['m1'] = rsingle_fitting_cycle(smooth_using_active,
                 dataframes, state, district, train_period=7, val_period=7, 
                 n_days_back_smooth=ndays,
-                data_from_tracker=args.use_tracker, initialisation='intermediate', num_evals=700,
+                data_from_tracker=args.use_tracker, initialisation='intermediate', num_evals=args.iterations,
                 which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
             predictions_dict[(state, district)]['m2'] = rsingle_fitting_cycle(smooth_using_active,
-                dataframes, state, district, train_period=7, val_period=0, num_evals=700,
+                dataframes, state, district, train_period=7, val_period=0, num_evals=args.iterations,
                 n_days_back_smooth=ndays,
                 train_on_val=True, data_from_tracker=args.use_tracker, initialisation='intermediate',
                 which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
