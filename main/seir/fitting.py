@@ -240,7 +240,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
 
     
     ax = create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
-                      which_compartments=which_compartments)
+                      which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'])
 
     results_dict = {}
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
