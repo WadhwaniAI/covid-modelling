@@ -140,7 +140,7 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
         df_district = smooth_big_jump(df_district, smoothing_length=smoothing_length, method=smoothing_method)
     return df_district, df_district_raw_data
 
-def smooth_big_jump(df_district, smoothing_length, method='linear'):
+def smooth_big_jump(df_district, smoothing_length, method='linear', concat_df_district=None):
     df_district = df_district.set_index('date')
     big_jump = df_district.loc['2020-05-30', 'recovered'] - df_district.loc['2020-05-29', 'recovered']
 
@@ -148,16 +148,19 @@ def smooth_big_jump(df_district, smoothing_length, method='linear'):
         for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
             date = datetime.datetime.strptime('2020-05-29', '%Y-%m-%d') - datetime.timedelta(days=day_number)
             offset = np.random.binomial(1, (big_jump%smoothing_length)/smoothing_length)
-            print(offset)
             df_district.loc[date, 'recovered'] += ((i+1)*big_jump)//smoothing_length + offset
             df_district.loc[date, 'hospitalised'] += ((i+1)*big_jump)//smoothing_length - offset
+        df_district['total_infected'] = df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']
+        return df_district.reset_index()
 
     elif method == 'weighted':
-        #TODO add implementation for weighted smoothing
-        pass   
-    df_district['total_infected'] = df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']
-    return df_district.reset_index()
-
+        for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
+            date = datetime.datetime.strptime('2020-05-29', '%Y-%m-%d') - datetime.timedelta(days=day_number)
+            offset = np.random.binomial(1, (big_jump%smoothing_length)/smoothing_length)
+            df_district.loc[date, 'recovered'] += ((i+1)*big_jump)//smoothing_length + offset
+            df_district.loc[date, 'hospitalised'] += ((i+1)*big_jump)//smoothing_length - offset
+        df_district['total_infected'] = df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']
+        return df_district.reset_index()
 
 def data_setup(df_district, df_district_raw_data, val_period, which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
     """Helper function for single_fitting_cycle which sets up the data including doing the train val split
