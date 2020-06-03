@@ -60,27 +60,29 @@ class MCMC(object):
 
     def _set_proposal_sigmas(self):
         self.proposal_sigmas = OrderedDict()
-        self.proposal_sigmas['R0'] = 20
+        self.proposal_sigmas['R0'] = np.exp(10)
         self.proposal_sigmas['T_inc'] = np.exp(10)
         self.proposal_sigmas['T_inf'] = np.exp(10)
         self.proposal_sigmas['T_recov_severe'] = np.exp(100)
-        self.proposal_sigmas['P_severe'] = 10
-        self.proposal_sigmas['P_fatal'] = 10
+        self.proposal_sigmas['P_severe'] = np.exp(10)
+        self.proposal_sigmas['P_fatal'] = np.exp(10)
         self.proposal_sigmas['intervention_amount'] = 10
         self.proposal_sigmas['sigma'] = 10
 
     def _proposal(self, theta_old):
-        theta_new = [np.nan]
+        theta_new = OrderedDict()
         
-        while np.isnan(theta_new).any():
-            theta_new = np.random.normal(loc=np.exp([*theta_old.values()]), scale=[*self.proposal_sigmas.values()])
-            theta_new = np.log(theta_new)
+        for param in theta_old:
+            old_value = theta_old[param]
+            new_value = -1
+            while np.isnan(new_value) or new_value <=0:
+                new_value = np.random.normal(loc=np.exp(old_value), scale=self.proposal_sigmas[param])
+                new_value = np.log(new_value)
+            theta_new[param] = new_value
         
-        return dict(zip(theta_old.keys(), theta_new))
+        return theta_new
 
     def _log_likelihood(self, theta):
-        if (np.array([*theta.values()]) < 0).any():
-            return -np.inf
         df_prediction = self._optimiser.solve(theta, self._default_params, self.df_train)
         pred = np.array(df_prediction['total_infected'].iloc[-self.fit_days:])
         true = np.array(self.df_train['total_infected'].iloc[-self.fit_days:])
@@ -101,8 +103,8 @@ class MCMC(object):
         return np.log(prior)
 
     def _accept(self, theta_old, theta_new):    
-        x_new = self._log_likelihood(theta_new) + self._log_prior(theta_new)
-        x_old = self._log_likelihood(theta_old) + self._log_prior(theta_old)
+        x_new = self._log_likelihood(theta_new) #+ self._log_prior(theta_new)
+        x_old = self._log_likelihood(theta_old) #+ self._log_prior(theta_old)
         
         if (x_new) > (x_old):
             return True
