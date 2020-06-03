@@ -14,7 +14,7 @@ from main.seir.fitting import get_regional_data, data_setup, run_cycle, get_vari
 from main.seir.forecast import create_all_csvs, write_csv, plot_forecast
 from utils.create_report import create_report
 
-def rsingle_fitting_cycle(smoothingfunc, dataframes, state, 
+def single_fitting_cycle(smoothingfunc, dataframes, state, 
     district, train_period=7, val_period=7, train_on_val=False, 
     num_evals=1500, data_from_tracker=True, filename=None, data_format='new', pre_lockdown=False, N=1e7, which_compartments=['hospitalised', 'total_infected'], initialisation='starting', n_days_back_smooth=60):
     print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
@@ -100,12 +100,12 @@ if __name__ == "__main__":
     # for ndays in [7, 15, 30, 60]:
         for state, district in districts_to_show:
             predictions_dict[(state, district)] = {}
-            predictions_dict[(state, district)]['m1'] = rsingle_fitting_cycle(smooth_using_total,
+            predictions_dict[(state, district)]['m1'] = single_fitting_cycle(smooth_using_total,
                 dataframes, state, district, train_period=7, val_period=7, 
                 n_days_back_smooth=ndays,
                 data_from_tracker=args.use_tracker, initialisation='intermediate', num_evals=args.iterations,
                 which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
-            predictions_dict[(state, district)]['m2'] = rsingle_fitting_cycle(smooth_using_total,
+            predictions_dict[(state, district)]['m2'] = single_fitting_cycle(smooth_using_total,
                 dataframes, state, district, train_period=7, val_period=0, num_evals=args.iterations,
                 n_days_back_smooth=ndays,
                 train_on_val=True, data_from_tracker=args.use_tracker, initialisation='intermediate',
