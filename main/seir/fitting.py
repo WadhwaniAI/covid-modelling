@@ -11,7 +11,7 @@ from tqdm import tqdm
 from collections import OrderedDict, defaultdict
 import itertools
 from functools import partial
-from datetime import datetime
+import datetime
 from joblib import Parallel, delayed
 import copy
 
@@ -22,7 +22,7 @@ from main.seir.optimiser import Optimiser
 from main.seir.losses import Loss_Calculator
 
 
-now = str(datetime.now())
+now = str(datetime.datetime.now())
 
 def get_variable_param_ranges(initialisation='intermediate', as_str=False):
     """Returns the ranges for the variable params in the search space
@@ -145,7 +145,7 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
                 date = datetime.datetime.strptime('2020-05-29', '%Y-%m-%d') - datetime.timedelta(days=day_number)
                 offset = np.random.binomial(1, (big_jump%smoothing_length)/smoothing_length)
                 df_district.loc[date, 'recovered'] += ((i+1)*big_jump)//smoothing_length + offset
-                df_district.loc[date, 'hospitalised'] += ((i+1)*big_jump)//smoothing_length - offset
+                df_district.loc[date, 'hospitalised'] -= ((i+1)*big_jump)//smoothing_length + offset
 
         elif smoothing_method == 'weighted':
             #TODO add implementation for weighted smoothing
