@@ -48,6 +48,7 @@ def get_data(dataframes=None, state=None, district=None, use_dataframe='district
     return df_result
 
 def get_custom_data_from_db(state='Maharashtra', district='Pune'):
+    print('fetching from athenadb...')
     dataframes = get_athena_dataframes()
     df_result = copy.copy(dataframes['covid_case_summary'])
     df_result = df_result[np.logical_and(
