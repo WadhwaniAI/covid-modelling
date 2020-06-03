@@ -125,7 +125,7 @@ class Optimiser():
         return params_dict
 
     def init_default_params(self, df_train, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-06-30', 
-                            T_hosp=0.001, initialisation='intermediate', train_period=7, start_date=None,
+                            initialisation='intermediate', train_period=7, start_date=None,
                             observed_values=None):
         """Function for creating all default params for the optimisation (hyperopt/gridsearch)
 
@@ -136,7 +136,6 @@ class Optimiser():
             N {float} -- Population of region (default: {1e7})
             lockdown_date {str} -- The date on which lockdown is implemented (default: {'2020-03-25'})
             lockdown_removal_date {str} -- The date on which lockdown is removed (default: {'2020-05-31'})
-            T_hosp {float} -- The time it takes for a severe infection to go from home to hopsital (default: {0.001})
             initialisation {str} -- The method of initialisation (default: {'intermediate'})
             train_period {int} -- The number of days for which the model is trained (default: {7})
             start_date {str} -- If initialisation=='starting', start_date must be provided (default: {None})
@@ -160,7 +159,6 @@ class Optimiser():
             'N' : N,
             'lockdown_day' : (intervention_date - start_date).days,
             'lockdown_removal_day': (lockdown_removal_date - start_date).days,
-            'T_hosp' : T_hosp,
             'starting_date' : start_date,
             'observed_values': observed_values
         }
