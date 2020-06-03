@@ -136,7 +136,7 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
     df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
     return df_district, df_district_raw_data
 
-def data_setup(df_district, df_district_raw_data, val_period):
+def data_setup(df_district, df_district_raw_data, val_period, which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
     """Helper function for single_fitting_cycle which sets up the data including doing the train val split
 
     Arguments:
@@ -149,9 +149,9 @@ def data_setup(df_district, df_district_raw_data, val_period):
     """
     # Get train val split
     df_train, df_val, df_true_fitting = train_val_split(
-        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
+        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period, which_columns=which_columns)
     df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-        df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
+        df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period, which_columns=which_columns)
 
     observed_dataframes = {}
     for name in ['df_district', 'df_district_raw_data', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
@@ -264,14 +264,20 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
         dataframes, state, district, data_from_tracker, data_format, filename)
 
     # Process the data to get rolling averages and other stuff
-    observed_dataframes = data_setup(df_district, df_district_raw_data, val_period)
+    observed_dataframes = data_setup(
+        df_district, df_district_raw_data, 
+        val_period, which_columns=which_compartments)
 
     print('train\n', observed_dataframes['df_train'].tail())
     print('val\n', observed_dataframes['df_val'])
     
-    predictions_dict = run_cycle(state, district, observed_dataframes, data_from_tracker=data_from_tracker, 
-                                 model=model, train_period=train_period, which_compartments=which_compartments, N=N,
-                                 num_evals=num_evals, initialisation=initialisation)
+    predictions_dict = run_cycle(
+        state, district, observed_dataframes, 
+        data_from_tracker=data_from_tracker, 
+        model=model, train_period=train_period, 
+        which_compartments=which_compartments, N=N,
+        num_evals=num_evals, initialisation=initialisation
+    )
 
     return predictions_dict
 
@@ -342,7 +348,6 @@ def create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, tr
     else:
         df_true_plotting_rolling = df_train
         df_true_plotting = df_train_nora
-    
     df_predicted_plotting = df_prediction.loc[df_prediction['date'].isin(
         df_true_plotting['date']), ['date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
     
