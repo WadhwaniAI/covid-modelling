@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from models import Model
 
-class SEIR(ABC):
+class SEIR(Model):
 
     @abstractmethod
     def __init__(self):

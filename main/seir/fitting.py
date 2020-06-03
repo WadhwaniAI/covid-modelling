@@ -11,7 +11,7 @@ from tqdm import tqdm
 from collections import OrderedDict, defaultdict
 import itertools
 from functools import partial
-from datetime import datetime
+import datetime
 from joblib import Parallel, delayed
 import copy
 
@@ -22,7 +22,7 @@ from main.seir.optimiser import Optimiser
 from main.seir.losses import Loss_Calculator
 
 
-now = str(datetime.now())
+now = str(datetime.datetime.now())
 
 def get_variable_param_ranges(initialisation='intermediate', as_str=False):
     """Returns the ranges for the variable params in the search space
@@ -137,30 +137,40 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
     df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
 
     if smooth_jump:
-        df_district = smooth_big_jump(df_district, smoothing_length=smoothing_length, method=smoothing_method)
+        df_district = smooth_big_jump(
+            df_district, smoothing_length=smoothing_length, 
+            method=smoothing_method, data_from_tracker=data_from_tracker)
+
     return df_district, df_district_raw_data
 
-def smooth_big_jump(df_district, smoothing_length, method='linear', concat_df_district=None):
+def smooth_big_jump(df_district, smoothing_length, data_from_tracker, method='linear', ):
+    if data_from_tracker:
+        d1, d2 = '2020-05-29', '2020-05-30'
+    else:
+        d1, d2 = '2020-05-28', '2020-05-29'
     df_district = df_district.set_index('date')
-    big_jump = df_district.loc['2020-05-30', 'recovered'] - df_district.loc['2020-05-29', 'recovered']
-
+    big_jump = df_district.loc[d2, 'recovered'] - df_district.loc[d1, 'recovered']
+    print(big_jump)
     if method == 'linear':
         for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
-            date = datetime.datetime.strptime('2020-05-29', '%Y-%m-%d') - datetime.timedelta(days=day_number)
+            date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
             offset = np.random.binomial(1, (big_jump%smoothing_length)/smoothing_length)
             df_district.loc[date, 'recovered'] += ((i+1)*big_jump)//smoothing_length + offset
-            df_district.loc[date, 'hospitalised'] += ((i+1)*big_jump)//smoothing_length - offset
-        df_district['total_infected'] = df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']
-        return df_district.reset_index()
+            df_district.loc[date, 'hospitalised'] -= ((i+1)*big_jump)//smoothing_length + offset
 
     elif method == 'weighted':
         for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
-            date = datetime.datetime.strptime('2020-05-29', '%Y-%m-%d') - datetime.timedelta(days=day_number)
-            offset = np.random.binomial(1, (big_jump%smoothing_length)/smoothing_length)
-            df_district.loc[date, 'recovered'] += ((i+1)*big_jump)//smoothing_length + offset
-            df_district.loc[date, 'hospitalised'] += ((i+1)*big_jump)//smoothing_length - offset
-        df_district['total_infected'] = df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']
-        return df_district.reset_index()
+            newcases = df_district['total_infected'].shift(15) - df_district['total_infected'].shift(14)
+            invpercent = newcases.sum()/newcases
+            offset = np.random.binomial(1, (big_jump%invpercent)/newcases)
+            
+            date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
+            df_district.loc[date, 'recovered'] += ((i+1)*big_jump // invpercent) + offset
+            df_district.loc[date, 'hospitalised'] -= ((i+1)*big_jump // invpercent) + offset
+
+    assert((df_district['total_infected'] == df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']).all())
+    return df_district.reset_index()
+
 
 def data_setup(df_district, df_district_raw_data, val_period, which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
     """Helper function for single_fitting_cycle which sets up the data including doing the train val split
