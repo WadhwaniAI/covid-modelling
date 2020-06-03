@@ -9,7 +9,7 @@ import datetime
 from models.seir.seir import SEIR
 
 class SEIR_Movement(SEIR):
-    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_hosp=5,
+    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_hosp=0.001,
                 T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6, init_infected=1,
                  lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', initialisation='intermediate', 
                  observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, mu=0, **kwargs):

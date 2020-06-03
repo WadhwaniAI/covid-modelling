@@ -113,7 +113,8 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     df_val.reset_index(inplace=True, drop=True)
     return df_train, df_val, df_true_fitting
     
-def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename):
+def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename, smooth_jump=False,
+                      smoothing_length=28, smoothing_method='linear'):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -134,7 +135,29 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
                                data_format=data_format)
     
     df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
+
+    if smooth_jump:
+        df_district = smooth_big_jump(df_district, smoothing_length=smoothing_length, method=smoothing_method)
     return df_district, df_district_raw_data
+
+def smooth_big_jump(df_district, smoothing_length, method='linear'):
+    df_district = df_district.set_index('date')
+    big_jump = df_district.loc['2020-05-30', 'recovered'] - df_district.loc['2020-05-29', 'recovered']
+
+    if method == 'linear':
+        for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
+            date = datetime.datetime.strptime('2020-05-29', '%Y-%m-%d') - datetime.timedelta(days=day_number)
+            offset = np.random.binomial(1, (big_jump%smoothing_length)/smoothing_length)
+            print(offset)
+            df_district.loc[date, 'recovered'] += ((i+1)*big_jump)//smoothing_length + offset
+            df_district.loc[date, 'hospitalised'] += ((i+1)*big_jump)//smoothing_length - offset
+
+    elif method == 'weighted':
+        #TODO add implementation for weighted smoothing
+        pass   
+    df_district['total_infected'] = df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']
+    return df_district.reset_index()
+
 
 def data_setup(df_district, df_district_raw_data, val_period, which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
     """Helper function for single_fitting_cycle which sets up the data including doing the train val split
@@ -234,7 +257,8 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
 
 def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_period=7, val_period=7, 
                          data_from_tracker=True, filename=None, data_format='new', N=1e7, num_evals=1500,
-                         which_compartments=['hospitalised', 'total_infected'], initialisation='starting'):
+                         which_compartments=['hospitalised', 'total_infected'], initialisation='starting', 
+                         smooth_jump=False, smoothing_length=28, smoothing_method='linear'):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -260,8 +284,9 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
     print('Performing {} fit ..'.format('m2' if val_period == 0 else 'm1'))
 
     # Get data
-    df_district, df_district_raw_data = get_regional_data(
-        dataframes, state, district, data_from_tracker, data_format, filename)
+    df_district, df_district_raw_data = get_regional_data(dataframes, state, district, data_from_tracker, data_format, 
+                                                          filename, smooth_jump=smooth_jump, smoothing_method=smoothing_method,
+                                                          smoothing_length=smoothing_length)
 
     # Process the data to get rolling averages and other stuff
     observed_dataframes = data_setup(
