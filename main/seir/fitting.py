@@ -162,8 +162,6 @@ def smooth_big_jump(df_district, smoothing_length, data_from_tracker, method='li
         newcases = df_district['total_infected'].shift(14) - df_district['total_infected'].shift(15)
         valid_idx = newcases.first_valid_index()
         window_start = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=smoothing_length - 1)
-        print (type(valid_idx))
-        print (type(window_start))
         newcases = newcases.loc[max(valid_idx, window_start):d1]
         truncated = df_district.loc[max(valid_idx, window_start):d1, :]
         print('len truncated', len(truncated))

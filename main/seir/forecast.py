@@ -23,8 +23,9 @@ from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
 from main.seir.losses import Loss_Calculator
 
+from utils.enums import Columns
 
-def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', best_params=None):
+def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', best_params=None, verbose=True):
     """Returns the forecasts for a given set of params of a particular geographical area
 
     Arguments:
@@ -38,7 +39,8 @@ def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', bes
     Returns:
         [type] -- [description]
     """
-    print("getting forecasts ..")
+    if verbose:
+        print("getting forecasts ..")
     if simulate_till == None:
         simulate_till = datetime.datetime.today() + datetime.timedelta(days=37)
     if best_params == None:
@@ -272,3 +274,64 @@ def plot_forecast(predictions_dict : dict, region : tuple, both_forecasts=False,
         plt.savefig(filename, format=fileformat)
 
     return ax
+
+def order_trials(m_dict: dict):
+    params_array = []
+    for trial in m_dict['trials']:
+        params_dict = copy.copy(trial['misc']['vals'])
+        for key in params_dict.keys():
+            params_dict[key] = params_dict[key][0]
+        params_array.append(params_dict)
+    params_array = np.array(params_array)
+    losses_array = np.array([trial['result']['loss'] for trial in m_dict['trials']])
+    
+    least_losses_indices = np.argsort(losses_array)
+    losses_array = losses_array[least_losses_indices]
+    params_array = params_array[least_losses_indices]
+    return params_array, losses_array
+
+def top_k_trials(m_dict: dict, k=10):
+    params_array, losses_array = order_trials(m_dict)
+    return losses_array[:k], params_array[:k]
+
+def forecast_k(predictions_dict: dict, k=10, train_fit='m2'):
+    top_k_losses, top_k_params = top_k_trials(predictions_dict[train_fit], k=k)
+    predictions = []
+    dots = ['.']
+    for i, params_dict in enumerate(top_k_params):
+        print(f"getting forecasts {''.join((i+1)*dots)}", end='\r')
+        predictions.append(get_forecast(
+            predictions_dict, best_params=params_dict, train_fit=train_fit, verbose=False))
+    return predictions, top_k_losses
+
+def plot_trials(predictions_dict, k=10, train_fit='m2', which_compartments=[Columns.active]):
+    predictions, top_k_losses = forecast_k(predictions_dict, k=k, train_fit=train_fit)
+    df_true = predictions_dict[train_fit]['df_district']
+    plots = {}
+    for compartment in which_compartments:
+        fig, ax = plt.subplots(figsize=(12, 12))
+        texts = []
+        ax.plot(df_true[Columns.date.name], df_true[compartment.name],
+                '-o', color='C0', label=f'{compartment.label} (Observed)')
+        for i, df_prediction in enumerate(predictions):
+            loss_value = np.around(top_k_losses[i], 2)
+            sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
+                        ls='-', label=f'{compartment.label} ({loss_value})')
+            texts.append(plt.text(
+                x=df_prediction[Columns.date.name].iloc[-1], 
+                y=df_prediction[compartment.name].iloc[-1], s=loss_value))
+        
+        ax.set_xlim(ax.get_xlim()[0], ax.get_xlim()[1] + 10)
+        from adjustText import adjust_text
+        adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
+        ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+        plt.ylabel('No of People', fontsize=16)
+        plt.yscale('log')
+        plt.xlabel('Time', fontsize=16)
+        plt.legend()
+        plt.title('Forecast - ({} {})'.format(predictions_dict['state'], predictions_dict['dist']), fontsize=16)
+        # plt.grid()
+        plots[compartment] = ax
+    return plots

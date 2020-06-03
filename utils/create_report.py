@@ -4,7 +4,7 @@ import pypandoc
 from mdutils.mdutils import MdUtils
 from mdutils import Html
 from pprint import pformat
-
+import pickle
 
 def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     """Creates report (BOTH MD and DOCX) for an input of a dict of predictions for a particular district/region
@@ -19,7 +19,11 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
 
     if not os.path.exists(ROOT_DIR):
         os.mkdir(ROOT_DIR)
-    
+
+    filepath = os.path.join(ROOT_DIR, 'predictions_dict.pkl')
+    with open(filepath, 'wb+') as dump:
+        pickle.dump(predictions_dict, dump)
+
     fitting_date = predictions_dict['fitting_date']
     data_last_date = predictions_dict['data_last_date']
     state = predictions_dict['state']
@@ -65,21 +69,37 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
 
     mdFile.new_paragraph("---")
     
+    forecast_dict = predictions_dict['forecast']
     mdFile.new_header(level=1, title=f'FORECAST USING M2 FIT WITH ERROR EVALUATED ON VAL SET OF M1 FIT')
     plot_filename = '{}-{}-forecast-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-    predictions_dict['forecast'].figure.savefig(plot_filepath)
+    forecast_dict['forecast'].figure.savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2', path=plot_filepath))
     
-    if 'forecast_top10' in predictions_dict['m2'].keys():
-        mdFile.new_header(level=1, title=f'FORECASTS ON TOTAL INFECTIONS BASED ON TOP 10 PARAMETER SETS FOR M2 FIT')
-        plot_filename = '{}-{}-forecast-top10-{}.png'.format(state.lower(), dist.lower(), fitting_date)
+    if len(forecast_dict.keys()) > 0:
+        mdFile.new_header(level=1, title=f'FORECASTS ON TOTAL INFECTIONS BASED ON TOP k PARAMETER SETS FOR M2 FIT')
+        plot_filename = '{}-{}-confirmed-forecast-topk-{}.png'.format(state.lower(), dist.lower(), fitting_date)
         plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-        predictions_dict['m2']['forecast_top10'].figure.savefig(plot_filepath)
-        mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2 of top 10', path=plot_filepath))
-        mdFile.new_paragraph("Top 10 Params")
-        mdFile.insert_code(pformat(predictions_dict['m2']['top10params']))
-
+        forecast_dict['forecast_confirmed_topk'].figure.savefig(plot_filepath)
+        mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2 of top k', path=plot_filepath))
+        mdFile.new_header(level=1, title=f'FORECASTS ON ACTIVE CASES BASED ON TOP k PARAMETER SETS FOR M2 FIT')
+        plot_filename = '{}-{}-active-forecast-topk-{}.png'.format(state.lower(), dist.lower(), fitting_date)
+        plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
+        forecast_dict['forecast_active_topk'].figure.savefig(plot_filepath)
+        mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2 of top k', path=plot_filepath))
+        
+        mdFile.new_header(level=2, title="Top 10 Trials")
+        header = f'| Loss | Params |\n|:-:|-|\n'
+        for i, params_dict in enumerate(forecast_dict['params'][:10]):
+            tbl = f'| {forecast_dict["losses"][:10][i]} |'
+            if i == 0:
+                tbl = header + tbl
+            for l in pformat(params_dict).split('\n'):
+                tbl += f'`{l}` <br> '
+            tbl += '|\n'
+            if i != 0:
+                tbl += '|-|-|'
+            mdFile.new_paragraph(tbl)
     # Create a table of contents
     mdFile.new_table_of_contents(table_title='Contents', depth=2)
     mdFile.create_md_file()
