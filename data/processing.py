@@ -89,7 +89,7 @@ def get_custom_data_from_file(filename, data_format='new'):
         df_result.loc[:, ['total_infected', 'hospitalised', 'recovered', 'deceased']] = df_result[[
             'total_infected', 'hospitalised', 'recovered', 'deceased']].apply(pd.to_numeric)
         df_result = df_result[['date', 'state', 'district', 'total_infected', 'hospitalised', 'recovered', 'deceased']]
-
+        df_result = df_result.dropna(subset=['date'], how='all')
         return df_result
     if data_format == 'old':
 
