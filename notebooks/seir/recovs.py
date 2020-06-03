@@ -40,7 +40,7 @@ def single_fitting_cycle(smoothingfunc, dataframes, state,
         which_compartments=which_compartments, initialisation=initialisation
     )
 
-def smooth_using_total(df_district, last_n_days=60, cols=['hospitalised', 'recovered']):
+def smooth_using_total(df_district, last_n_days=60, cols=['hospitalised', 'recovered'], method='prop'):
     df = copy(df_district)
     districtdf = copy(df_district)    
     # create column of new total infected cases 14 days ago
@@ -65,14 +65,17 @@ def smooth_using_total(df_district, last_n_days=60, cols=['hospitalised', 'recov
         jump = districtdf.loc[jump_date, col] - districtdf.loc[jump_date - 1, col]
         print(col, jump)
         # jump * %newcases for each col, round
-        df[new_col] = (jump * df['percent']).round(0)
+        if method == 'uniform':
+            df[new_col] = (jump // len(df))
+        else:
+            df[new_col] = (jump * df['percent']).round(0)
         # check if all were redistributed, add surplus to last row
         df.loc[df.index[-1], new_col] += jump - df[new_col].sum()
         # add new_additions.cumsum() to orig_col
         df[col] +=  df[new_col].cumsum()
         # merge into original df
         districtdf.loc[df.index, col] = df[col].astype(int)
-    districtdf['total_infected'] = districtdf['deceased'] + districtdf['hospitalised'] + districtdf['recovered']
+    # districtdf['total_infected'] = districtdf['deceased'] + districtdf['hospitalised'] + districtdf['recovered']
     return districtdf.reset_index()[44:]
 
 # ---
