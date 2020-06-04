@@ -454,6 +454,7 @@ def create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, tr
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.ylabel('No of People')
     plt.xlabel('Time')
+    plt.xticks(rotation=45, horizontalalignment='right')
     plt.legend()
     plt.title('{} - ({} {})'.format(description, state, district))
     plt.grid()

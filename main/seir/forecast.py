@@ -8,6 +8,7 @@ import matplotlib.dates as mdates
 import seaborn as sns
 from hyperopt import hp, tpe, fmin, Trials
 from tqdm import tqdm
+from adjustText import adjust_text
 
 from collections import OrderedDict, defaultdict
 import itertools
@@ -301,8 +302,13 @@ def forecast_k(predictions_dict: dict, k=10, train_fit='m2'):
             predictions_dict, best_params=params_dict, train_fit=train_fit, verbose=False))
     return predictions, top_k_losses, top_k_params
 
-def plot_trials(predictions_dict, k=10, train_fit='m2', which_compartments=[Columns.active]):
+
+def plot_trials(predictions_dict, k=10, train_fit='m2', which_compartments=[Columns.active], 
+                plot_individual_curves=True):
     predictions, top_k_losses, top_k_params = forecast_k(predictions_dict, k=k, train_fit=train_fit)
+    df_master = pd.DataFrame(columns=predictions[0].columns)
+    for i, df in enumerate(predictions):
+        df_master = pd.concat([df_master, df], ignore_index=True)
     df_true = predictions_dict[train_fit]['df_district']
     plots = {}
     for compartment in which_compartments:
@@ -310,17 +316,21 @@ def plot_trials(predictions_dict, k=10, train_fit='m2', which_compartments=[Colu
         texts = []
         ax.plot(df_true[Columns.date.name], df_true[compartment.name],
                 '-o', color='C0', label=f'{compartment.label} (Observed)')
-        for i, df_prediction in enumerate(predictions):
-            loss_value = np.around(top_k_losses[i], 2)
-            r0 = np.around(top_k_params[i]['lockdown_R0'], 2)
-            sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
-                        ls='-', label=f'{compartment.label} R0:{r0} Loss:{loss_value}')
-            texts.append(plt.text(
-                x=df_prediction[Columns.date.name].iloc[-1], 
-                y=df_prediction[compartment.name].iloc[-1], s=loss_value))
+        if plot_individual_curves == True:
+            for i, df_prediction in enumerate(predictions):
+                loss_value = np.around(top_k_losses[i], 2)
+                r0 = np.around(top_k_params[i]['lockdown_R0'], 2)
+                sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
+                            ls='-', label=f'{compartment.label} R0:{r0} Loss:{loss_value}')
+                texts.append(plt.text(
+                    x=df_prediction[Columns.date.name].iloc[-1], 
+                    y=df_prediction[compartment.name].iloc[-1], s=loss_value))
+        else:
+            sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_master,
+                         ls='-', label=f'{compartment.label}')
+                
         
         ax.set_xlim(ax.get_xlim()[0], ax.get_xlim()[1] + 10)
-        from adjustText import adjust_text
         adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
         ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
         ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
@@ -328,8 +338,9 @@ def plot_trials(predictions_dict, k=10, train_fit='m2', which_compartments=[Colu
         plt.ylabel('No of People', fontsize=16)
         plt.yscale('log')
         plt.xlabel('Time', fontsize=16)
+        plt.xticks(rotation=45, horizontalalignment='right')
         plt.legend()
         plt.title('Forecast - ({} {})'.format(predictions_dict['state'], predictions_dict['dist']), fontsize=16)
-        # plt.grid()
+        plt.grid()
         plots[compartment] = ax
     return plots
