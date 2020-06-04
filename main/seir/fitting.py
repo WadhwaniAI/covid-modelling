@@ -164,9 +164,27 @@ def smooth_big_jump(df_district, smoothing_length, data_from_tracker, t_recov=14
         window_start = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=smoothing_length - 1)
         newcases = newcases.loc[max(valid_idx, window_start):d1]
         truncated = df_district.loc[max(valid_idx, window_start):d1, :]
-        print('len truncated', len(truncated))
+        smoothing_length = len(truncated)
+        print(f'smoothing length truncated to {smoothing_length}')
         invpercent = newcases.sum()/newcases
-        for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
+        for day_number in range(smoothing_length-1, -1, -1):
+            date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
+            offset = np.random.binomial(1, (big_jump%invpercent.loc[date])/invpercent.loc[date])
+            truncated.loc[date:, 'recovered'] += (big_jump // invpercent.loc[date]) + offset
+            truncated.loc[date:, 'hospitalised'] -= (big_jump // invpercent.loc[date]) + offset
+        df_district.loc[truncated.index, 'recovered'] = truncated['recovered'].astype('int64')
+        df_district.loc[truncated.index, 'hospitalised'] = truncated['hospitalised'].astype('int64')
+
+    elif method == 'weighted-recov':
+        newcases = df_district['recovered'].shift(0) - df_district['recovered'].shift(1)
+        valid_idx = newcases.first_valid_index()
+        window_start = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=smoothing_length - 1)
+        newcases = newcases.loc[max(valid_idx, window_start):d1]
+        truncated = df_district.loc[max(valid_idx, window_start):d1, :]
+        smoothing_length = len(truncated)
+        print(f'smoothing length truncated to {smoothing_length}')
+        invpercent = newcases.sum()/newcases
+        for day_number in range(smoothing_length-1, -1, -1):
             date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
             offset = np.random.binomial(1, (big_jump%invpercent.loc[date])/invpercent.loc[date])
             truncated.loc[date:, 'recovered'] += (big_jump // invpercent.loc[date]) + offset
