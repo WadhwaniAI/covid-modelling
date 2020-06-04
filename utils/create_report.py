@@ -19,7 +19,7 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     """
 
     if not os.path.exists(ROOT_DIR):
-        os.mkdir(ROOT_DIR)
+        os.makedirs(ROOT_DIR)
 
     filepath = os.path.join(ROOT_DIR, 'predictions_dict.pkl')
     with open(filepath, 'wb+') as dump:
