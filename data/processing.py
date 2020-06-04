@@ -64,7 +64,8 @@ def get_custom_data_from_db(state='Maharashtra', district='Pune'):
     df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]
     df_result.columns = [x if x != 'confirmed' else 'total_infected' for x in df_result.columns]
     df_result.columns = [x if x != 'total' else 'total_infected' for x in df_result.columns]
-    df_result = df_result.dropna(subset=['date'], how='all')
+    df_result = df_result.dropna(subset=['date'], how='any')
+    # df_result = df_result.dropna(subset=['date', 'hospitalised', 'total_infected', 'recovered', 'deceased'], how='any')
     for col in df_result.columns:
         if col in ['hospitalised', 'total_infected', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
