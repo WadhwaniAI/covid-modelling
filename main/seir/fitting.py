@@ -198,6 +198,9 @@ def smooth_big_jump(df_district, smoothing_length, data_from_tracker, t_recov=14
         df_district.loc[truncated.index, 'recovered'] = truncated['recovered'].astype('int64')
         df_district.loc[truncated.index, 'hospitalised'] = truncated['hospitalised'].astype('int64')
 
+    else:
+        raise Exception("unknown smoothing method provided")
+    
     assert((df_district['total_infected'] == df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']).all())
     return df_district.reset_index()
 
