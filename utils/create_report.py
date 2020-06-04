@@ -119,7 +119,6 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
         tbl += f'`max: {maxval}` <br> '
         tbl += '|\n'
         for i, key in enumerate(forecast_dict['params'][0]):
-            print (key)
             tbl += f'| {key} |'
             vals = [params[key] for params in forecast_dict['params'][:100]]
             minval, maxval = min(vals), max(vals)

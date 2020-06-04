@@ -40,6 +40,7 @@ python3 generate_report.py --districts mumbai --ktrials 100 -i 1000 -f reporttes
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--use-tracker", help="district name", required=False, action='store_true')
 parser.add_argument("-s", "--smooth-jump", help="smooth jump", required=False, action='store_true')
+parser.add_argument("-method", "--smooth-method", help="smooth method", required=False, default='weighted', type=str)
 parser.add_argument("-i", "--iterations", help="optimiser iterations", required=False, default=700, type=int)
 parser.add_argument("-n", "--ndays", help="smoothing days", required=False, default=33, type=int)
 now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -76,13 +77,13 @@ for state, district in districts_to_show:
         dataframes, state, district, train_period=7, val_period=7, num_evals=args.iterations,
         data_from_tracker=args.use_tracker, initialisation='intermediate', model=SEIR_Testing, 
         # filename='../../data/data/mumbai_2020_06_02.csv', data_format='new',
-        smooth_jump=args.smooth_jump, smoothing_method='weighted', smoothing_length=args.ndays,
+        smooth_jump=args.smooth_jump, smoothing_method=args.smooth_method, smoothing_length=args.ndays,
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     predictions_dict[(state, district)]['m2'] = single_fitting_cycle(
         dataframes, state, district, train_period=7, val_period=0, num_evals=args.iterations,
         data_from_tracker=args.use_tracker, initialisation='intermediate', model=SEIR_Testing, 
         # filename='../../data/data/mumbai_2020_06_02.csv', data_format='new',
-        smooth_jump=args.smooth_jump, smoothing_method='weighted', smoothing_length=args.ndays,
+        smooth_jump=args.smooth_jump, smoothing_method=args.smooth_method, smoothing_length=args.ndays,
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     
     predictions_dict[(state, district)]['state'] = state
