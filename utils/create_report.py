@@ -109,6 +109,26 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
             if i != 0:
                 tbl += '|-|-|'
             mdFile.new_paragraph(tbl)
+    
+        mdFile.new_header(level=2, title="Min/Max Loss and Params in Top 100")
+        tbl = f'| Param | Min/Max |\n|:-:|-|\n'
+        tbl += f'| Loss |'
+        vals = [loss for loss in forecast_dict['losses'][:100]]
+        minval, maxval = min(vals), max(vals)
+        tbl += f'`min: {minval}` <br> '
+        tbl += f'`max: {maxval}` <br> '
+        tbl += '|\n'
+        for i, key in enumerate(forecast_dict['params'][0]):
+            print (key)
+            tbl += f'| {key} |'
+            vals = [params[key] for params in forecast_dict['params'][:100]]
+            minval, maxval = min(vals), max(vals)
+            tbl += f'`min: {minval}` <br> '
+            tbl += f'`max: {maxval}` <br> '
+            tbl += '|\n'
+        tbl += '|-|-|'
+        mdFile.new_paragraph(tbl)
+    
     # Create a table of contents
     mdFile.new_table_of_contents(table_title='Contents', depth=2)
     mdFile.create_md_file()

@@ -52,7 +52,6 @@ def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', bes
 
     return df_prediction
 
-
 def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_fraction=0.02, best_params=None):
     """Created the CSV file for one particular geographical area in the format Keshav consumes
 
@@ -160,7 +159,6 @@ def create_all_csvs(predictions_dict: dict, icu_fraction=0.02):
     
     return df_final
 
-
 def write_csv(df_final: pd.DataFrame, filename:str=None):
     """Helper function for saving the CSV files
 
@@ -171,7 +169,6 @@ def write_csv(df_final: pd.DataFrame, filename:str=None):
     if filename == None:
         filename = '../../output-{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     df_final.to_csv(filename, index=False)
-
 
 def preprocess_for_error_plot(df_prediction : pd.DataFrame, df_loss : pd.DataFrame, 
                               which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered']):
@@ -302,10 +299,10 @@ def forecast_k(predictions_dict: dict, k=10, train_fit='m2'):
         print(f"getting forecasts {''.join((i+1)*dots)}", end='\r')
         predictions.append(get_forecast(
             predictions_dict, best_params=params_dict, train_fit=train_fit, verbose=False))
-    return predictions, top_k_losses
+    return predictions, top_k_losses, top_k_params
 
 def plot_trials(predictions_dict, k=10, train_fit='m2', which_compartments=[Columns.active]):
-    predictions, top_k_losses = forecast_k(predictions_dict, k=k, train_fit=train_fit)
+    predictions, top_k_losses, top_k_params = forecast_k(predictions_dict, k=k, train_fit=train_fit)
     df_true = predictions_dict[train_fit]['df_district']
     plots = {}
     for compartment in which_compartments:
@@ -315,8 +312,9 @@ def plot_trials(predictions_dict, k=10, train_fit='m2', which_compartments=[Colu
                 '-o', color='C0', label=f'{compartment.label} (Observed)')
         for i, df_prediction in enumerate(predictions):
             loss_value = np.around(top_k_losses[i], 2)
+            r0 = np.around(top_k_params[i]['lockdown_R0'], 2)
             sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
-                        ls='-', label=f'{compartment.label} ({loss_value})')
+                        ls='-', label=f'{compartment.label} R0:{r0} Loss:{loss_value}')
             texts.append(plt.text(
                 x=df_prediction[Columns.date.name].iloc[-1], 
                 y=df_prediction[compartment.name].iloc[-1], s=loss_value))
