@@ -32,6 +32,7 @@ sftp-config.json
 **mcmc/
 *temp/
 **temp/
+cache/
 
 # Exceptions
 !data/data/*.csv

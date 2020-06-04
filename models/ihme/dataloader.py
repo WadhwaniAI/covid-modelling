@@ -3,10 +3,11 @@ import pandas as pd
 from datetime import datetime, timedelta
 import numpy as np
 import pickle
+import os
 
 sys.path.append('../..')
-from data.dataloader import get_covid19india_api_data, get_rootnet_api_data, get_jhu_data
-from data.processing import get_concat_data, get_district_time_series
+from data.dataloader import get_covid19india_api_data, get_jhu_data
+from data.processing import get_concat_data, get_data
 
 def bbmp():
 	df = pd.read_csv('../../data/data/bbmp.csv')
@@ -19,66 +20,30 @@ def bbmp():
 	df.loc[:, 'group'] = pd.Series([1 for i in range(len(df))])
 	return df
 
-strs = [('deceased', 'deaths'), ('confirmed', 'cases'), ('recovered', 'recovered')]
-
-def _covid19india():
-	dfs = []
-	for (name,_) in strs:
-		df = pd.read_csv('http://api.covid19india.org/states_daily_csv/{}.csv'.format(name))
-		df.dropna(axis=1, how='all', inplace=True)
-		df.loc[:, 'date'] = df['date'].apply(lambda x: datetime.strptime(x, "%d-%b-%y"))
-		df.columns = [df.columns[0]] + [colname + '_{}'.format(name) for colname in df.columns[1:]]
-		dfs.append(df)
-
-	result = dfs[0]
-	for df in dfs[1:]:
-		result = result.merge(df, on='date', how='outer')
-	result.loc[:, 'day'] = (result['date'] - result['date'].min()).dt.days
-	# result.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
-	result.set_index('date')
-	return result
-
 def india_all():
-	df = _covid19india() 
-	for (name, newname) in strs:
-		df['TT_{}'.format(name)] = df['TT_{}'.format(name)].cumsum()
-		df = df.rename(columns = {'TT_{}'.format(name):newname}, inplace = False) 
-	df['state'] = 'TT'
-	df = df[['date', 'day', 'state', 'deaths', 'cases', 'recovered']]
+	df = get_dataframes_cached()['df_india_time_series']
+	df = dataframes['df_india_time_series']
+	# df.dtypes
+	df = df[['date', 'totalconfirmed', 'totaldeceased','totalrecovered']]
+	df.columns = [df.columns[0]] + [col[5:] for col in df.columns[1:]]
 	return df
 
 def india_all_state():
-	dfs = []
-	for (name, newname) in strs:
-		df = pd.read_csv('http://api.covid19india.org/states_daily_csv/{}.csv'.format(name))
-		df.dropna(axis=1, how='all', inplace=True)
-		df.loc[:, 'date'] = df['date'].apply(lambda x: datetime.strptime(x, "%d-%b-%y"))
-		df.loc[:, 'day'] = (df['date'] - df['date'].min()).dt.days
-		# df.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
-		df = df.set_index(['date', 'day'])
-		df = df.stack().reset_index()
-		df.columns = ['date', 'day', 'state', newname]
-		dfs.append(df)
-
-	result = dfs[0]
-	for df in dfs[1:]:
-		result = result.merge(df, on=['date', 'state', 'day'], how='outer')
-
-	return result
+	df = get_dataframes_cached()['df_india_time_series']
+	df = dataframes['df_districts']
+	df = df.groupby(['state', 'date']).sum()
+	df.reset_index()
+	return df
 
 def india_state(state):
-	df = india_all_state()
-	state = df.loc[df['state'] == state].reset_index()
-	for (_, newname) in strs:
-		state[newname] = state[newname].cumsum()
-	return state
+	return get_data(get_dataframes_cached(), state=state)
 
 def india_states(states):
-	df = india_all_state()
-	state = df[df['state'].isin(states)].reset_index()
-	for (_, newname) in strs:
-		state[newname] = state[newname].cumsum()
-	return state
+	dataframes = get_dataframes_cached()
+	all_states = get_data(dataframes, state=states[0])
+	for state in states[1:]:
+		pd.concat(all_states, get_data(dataframes, state=state))
+	return all_states
 
 def jhu(country):
 	df_master = get_jhu_data()
@@ -101,28 +66,9 @@ def jhu(country):
 	df['Province/State'].fillna(country, inplace=True)
 	df.columns = [c.lower() for c in df.columns]
 	return df
-
-def districtwise(district_state_tuple):
-	district, state = district_state_tuple[0], district_state_tuple[1]
-	today = datetime.today().strftime('%Y%m%d')
-	filename = f'data/{district}_{today}.csv'
-	try:
-		districtdf = pd.read_csv(filename)
-	except:
-		print("Didnt find CSV, pulling from source")
-		dataframes = get_covid19india_api_data()
-		districtdf = get_district_time_series(dataframes, state=state, district=district)
-		districtdf.to_csv(filename, index=False)
-
-	districtdf.loc[:, 'date'] = pd.to_datetime(districtdf['date'])
-	districtdf.columns = ['date', 'cases', 'deaths']
-	districtdf.loc[:, 'group'] = district
-	districtdf.loc[:, 'day'] = (districtdf['date'] - districtdf['date'].min()).dt.days
-	
-	return districtdf
 	
 def get_dataframes_cached():
-	picklefn = "data/dataframes_ts_{today}.pkl".format(today=datetime.today().strftime("%d%m%Y"))
+	picklefn = "../../cache/dataframes_ts_{today}.pkl".format(today=datetime.today().strftime("%d%m%Y"))
 	try:
 		print(picklefn)
 		with open(picklefn, 'rb') as pickle_file:
@@ -130,12 +76,14 @@ def get_dataframes_cached():
 	except:
 		print("pulling from source")
 		dataframes = get_covid19india_api_data()
+		if not os.path.exists('../../cache/'):
+			os.mkdir('../../cache/')
 		with open(picklefn, 'wb+') as pickle_file:
 			pickle.dump(dataframes, pickle_file)
 	return dataframes
 
-def get_district_timeseries_cached(district, state):
-	picklefn = "data/{district}_ts_{today}.pkl".format(
+def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
+	picklefn = "../../cache/{district}_ts_{today}.pkl".format(
 		district=district, today=datetime.today().strftime("%d%m%Y")
 	)	
 	try:
@@ -152,7 +100,10 @@ def get_district_timeseries_cached(district, state):
 			'South West Delhi','West Delhi', 'Unknown', 'Central Delhi', 
 			'Shahdara','South East Delhi','']
 		dataframes = get_dataframes_cached()
-		district_timeseries = get_concat_data(dataframes, state=state, district=district, new_district_name=new_district, concat=True)
+		# district_timeseries = get_concat_data(dataframes, state=state, district=district, new_district_name=new_district, concat=True)
+		district_timeseries = get_data(dataframes, state=state, 
+			district=district, disable_tracker=disable_tracker, 
+			filename=filename, data_format=data_format)
 		with open(picklefn, 'wb+') as pickle_file:
 			pickle.dump(district_timeseries, pickle_file)
 	return district_timeseries
