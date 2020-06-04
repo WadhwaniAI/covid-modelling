@@ -56,8 +56,7 @@ def get_variable_param_ranges(initialisation='intermediate', as_str=False):
             key, variable_param_ranges[key][0], variable_param_ranges[key][1])
 
     return variable_param_ranges
-    
-
+   
 def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5, 
                     which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
     """Creates train val split on dataframe
@@ -195,7 +194,6 @@ def smooth_big_jump(df_district, smoothing_length, data_from_tracker, t_recov=14
     assert((df_district['total_infected'] == df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']).all())
     return df_district.reset_index()
 
-
 def data_setup(df_district, df_district_raw_data, val_period, which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
     """Helper function for single_fitting_cycle which sets up the data including doing the train val split
 
@@ -217,7 +215,6 @@ def data_setup(df_district, df_district_raw_data, val_period, which_columns=['ho
     for name in ['df_district', 'df_district_raw_data', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
         observed_dataframes[name] = eval(name)
     return observed_dataframes
-
 
 def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_from_tracker=True, train_period=7, 
               which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], num_evals=1500, N=1e7, 
