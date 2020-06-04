@@ -3,7 +3,7 @@ import enum
 from enum import Enum
 from collections import namedtuple
 
-Column = namedtuple('Color', ['name', 'label', 'color'])
+Column = namedtuple('Column', ['name', 'label', 'color'])
 
 class Columns(Enum):
 
