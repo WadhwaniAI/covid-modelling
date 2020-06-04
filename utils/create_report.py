@@ -5,6 +5,7 @@ from mdutils.mdutils import MdUtils
 from mdutils import Html
 from pprint import pformat
 import pickle
+import json
 
 def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     """Creates report (BOTH MD and DOCX) for an input of a dict of predictions for a particular district/region
@@ -23,6 +24,14 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     filepath = os.path.join(ROOT_DIR, 'predictions_dict.pkl')
     with open(filepath, 'wb+') as dump:
         pickle.dump(predictions_dict, dump)
+
+    filepath = os.path.join(ROOT_DIR, 'params.json')
+    with open(filepath, 'w+') as dump:
+        run_params = {
+            'm1': predictions_dict['m1']['run_params'],
+            'm2': predictions_dict['m2']['run_params']
+        }
+        json.dump(run_params, dump)
 
     fitting_date = predictions_dict['fitting_date']
     data_last_date = predictions_dict['data_last_date']
@@ -100,6 +109,26 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
             if i != 0:
                 tbl += '|-|-|'
             mdFile.new_paragraph(tbl)
+    
+        mdFile.new_header(level=2, title="Min/Max Loss and Params in Top 100")
+        tbl = f'| Param | Min/Max |\n|:-:|-|\n'
+        tbl += f'| Loss |'
+        vals = [loss for loss in forecast_dict['losses'][:100]]
+        minval, maxval = min(vals), max(vals)
+        tbl += f'`min: {minval}` <br> '
+        tbl += f'`max: {maxval}` <br> '
+        tbl += '|\n'
+        for i, key in enumerate(forecast_dict['params'][0]):
+            print (key)
+            tbl += f'| {key} |'
+            vals = [params[key] for params in forecast_dict['params'][:100]]
+            minval, maxval = min(vals), max(vals)
+            tbl += f'`min: {minval}` <br> '
+            tbl += f'`max: {maxval}` <br> '
+            tbl += '|\n'
+        tbl += '|-|-|'
+        mdFile.new_paragraph(tbl)
+    
     # Create a table of contents
     mdFile.new_table_of_contents(table_title='Contents', depth=2)
     mdFile.create_md_file()
