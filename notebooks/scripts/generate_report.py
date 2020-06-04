@@ -78,12 +78,14 @@ for state, district in districts_to_show:
         data_from_tracker=args.use_tracker, initialisation='intermediate', model=SEIR_Testing, 
         # filename='../../data/data/mumbai_2020_06_02.csv', data_format='new',
         smooth_jump=args.smooth_jump, smoothing_method=args.smooth_method, smoothing_length=args.ndays,
+        # which_compartments=['hospitalised', 'total_infected'])
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     predictions_dict[(state, district)]['m2'] = single_fitting_cycle(
         dataframes, state, district, train_period=7, val_period=0, num_evals=args.iterations,
         data_from_tracker=args.use_tracker, initialisation='intermediate', model=SEIR_Testing, 
         # filename='../../data/data/mumbai_2020_06_02.csv', data_format='new',
         smooth_jump=args.smooth_jump, smoothing_method=args.smooth_method, smoothing_length=args.ndays,
+        # which_compartments=['hospitalised', 'total_infected'])
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     
     predictions_dict[(state, district)]['state'] = state
