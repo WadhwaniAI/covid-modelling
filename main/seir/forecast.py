@@ -24,7 +24,7 @@ from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
 from main.seir.losses import Loss_Calculator
 
-from utils.enums import Columns
+from utils.enums import Columns, SEIRParams
 
 def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', best_params=None, verbose=True):
     """Returns the forecasts for a given set of params of a particular geographical area
@@ -43,7 +43,7 @@ def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', bes
     if verbose:
         print("getting forecasts ..")
     if simulate_till == None:
-        simulate_till = datetime.datetime.today() + datetime.timedelta(days=37)
+        simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + datetime.timedelta(days=37)
     if best_params == None:
         best_params = predictions_dict[train_fit]['best_params']
     df_prediction = predictions_dict[train_fit]['optimiser'].solve(best_params,
@@ -292,20 +292,29 @@ def top_k_trials(m_dict: dict, k=10):
     params_array, losses_array = order_trials(m_dict)
     return losses_array[:k], params_array[:k]
 
-def forecast_k(predictions_dict: dict, k=10, train_fit='m2'):
+def forecast_k(predictions_dict: dict, k=10, train_fit='m2', forecast_days=37):
     top_k_losses, top_k_params = top_k_trials(predictions_dict[train_fit], k=k)
     predictions = []
     dots = ['.']
+    simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + datetime.timedelta(days=forecast_days)
     for i, params_dict in enumerate(top_k_params):
         print(f"getting forecasts {''.join((i+1)*dots)}", end='\r')
+        if len(dots) % 100 == 0:
+            print(f"{i} done")
         predictions.append(get_forecast(
-            predictions_dict, best_params=params_dict, train_fit=train_fit, verbose=False))
+            predictions_dict, best_params=params_dict, train_fit=train_fit, simulate_till=simulate_till, verbose=False))
     return predictions, top_k_losses, top_k_params
 
-
-def plot_trials(predictions_dict, k=10, train_fit='m2', which_compartments=[Columns.active], 
-                plot_individual_curves=True):
-    predictions, top_k_losses, top_k_params = forecast_k(predictions_dict, k=k, train_fit=train_fit)
+def plot_trials(predictions_dict, train_fit='m2', k=10,
+        predictions=None, losses=None, params=None, 
+        which_compartments=[Columns.active], plot_individual_curves=True):
+    if predictions is not None:
+        top_k_losses = losses[:k]
+        top_k_params = params[:k]
+        predictions = predictions[:k]
+    else:
+        predictions, top_k_losses, top_k_params = forecast_k(predictions_dict, k=k, train_fit=train_fit)
+    
     df_master = pd.DataFrame(columns=predictions[0].columns)
     for i, df in enumerate(predictions):
         df_master = pd.concat([df_master, df], ignore_index=True)
@@ -344,3 +353,12 @@ def plot_trials(predictions_dict, k=10, train_fit='m2', which_compartments=[Colu
         plt.grid()
         plots[compartment] = ax
     return plots
+
+def get_all_trials(predictions_dict, train_fit='m2', forecast_days=37):
+    predictions, losses, params = forecast_k(
+        predictions_dict, 
+        k=len(predictions_dict[train_fit]['trials']), 
+        train_fit=train_fit,
+        forecast_days=forecast_days
+    )
+    return predictions, losses, params

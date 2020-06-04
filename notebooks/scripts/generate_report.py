@@ -21,8 +21,8 @@ from models.seir.seir_movement_testing import SEIR_Movement_Testing
 
 from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
 from main.seir.forecast import get_forecast, create_region_csv, create_all_csvs, write_csv, plot_forecast
-from main.seir.forecast import order_trials, plot_trials
-from utils.create_report import create_report
+from main.seir.forecast import order_trials, plot_trials, get_all_trials
+from utils.create_report import create_report, trials_to_df
 from utils.enums import Columns
 
 '''
@@ -78,14 +78,14 @@ for state, district in districts_to_show:
         data_from_tracker=args.use_tracker, initialisation='intermediate', model=SEIR_Testing, 
         # filename='../../data/data/mumbai_2020_06_02.csv', data_format='new',
         smooth_jump=args.smooth_jump, smoothing_method=args.smooth_method, smoothing_length=args.ndays,
-        # which_compartments=['hospitalised', 'total_infected'])
+        # which_compartments=['deceased', 'total_infected'])
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     predictions_dict[(state, district)]['m2'] = single_fitting_cycle(
         dataframes, state, district, train_period=7, val_period=0, num_evals=args.iterations,
         data_from_tracker=args.use_tracker, initialisation='intermediate', model=SEIR_Testing, 
         # filename='../../data/data/mumbai_2020_06_02.csv', data_format='new',
         smooth_jump=args.smooth_jump, smoothing_method=args.smooth_method, smoothing_length=args.ndays,
-        # which_compartments=['hospitalised', 'total_infected'])
+        # which_compartments=['deceased', 'total_infected'])
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     
     predictions_dict[(state, district)]['state'] = state
@@ -109,15 +109,19 @@ for region in predictions_dict.keys():
     predictions_dict[region]['forecast'] = {}
     predictions_dict[region]['forecast']['forecast'] = plot_forecast(predictions_dict[region], region, both_forecasts=False, error_bars=True)
     
-    params_array, losses_array = order_trials(predictions_dict[region]['m2'])
-    predictions_dict[region]['forecast']['params'] = params_array
-    predictions_dict[region]['forecast']['losses'] = losses_array
-    kforecasts = plot_trials(predictions_dict[region], which_compartments=[Columns.confirmed, Columns.active], k=args.ktrials)
+    predictions, losses, params = get_all_trials(predictions_dict[region])
+    predictions_dict[region]['forecast']['params'] = params
+    predictions_dict[region]['forecast']['losses'] = losses
+    predictions_dict[region]['forecast']['all_trials'] = trials_to_df(predictions, losses, params)
+    kforecasts = plot_trials(predictions_dict[region], predictions=predictions, losses=losses, params=params, which_compartments=[Columns.confirmed, Columns.active], k=args.ktrials)
     predictions_dict[region]['forecast']['forecast_confirmed_topk'] = kforecasts[Columns.confirmed]
     predictions_dict[region]['forecast']['forecast_active_topk'] = kforecasts[Columns.active]
 
 for region in predictions_dict.keys():
     create_report(predictions_dict[region], ROOT_DIR=f'../../reports/{args.folder}') 
+    predictions_dict[region]['forecast']['all_trials'].to_csv(f'../../reports/{args.folder}/trials.csv')
 
 df_output = create_all_csvs(predictions_dict, icu_fraction=0.02)
 write_csv(df_output, filename=f'../../reports/{args.folder}/output-{now}.csv')
+
+print(f"yeet. done: view files at ../../reports/{args.folder}/")

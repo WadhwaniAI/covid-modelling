@@ -33,15 +33,7 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
         }
         json.dump(run_params, dump)
 
-    cols = ['loss']
-    for key in predictions_dict['forecast']['params'][0].keys():
-        cols.append(key)
-    trials = pd.DataFrame(columns=cols)
-    for i in range(len(predictions_dict['forecast']['params'])):
-        to_add = copy.copy(predictions_dict['forecast']['params'][i])
-        to_add['loss'] = predictions_dict['forecast']['losses'][i]
-        trials = trials.append(to_add, ignore_index=True)
-    trials.to_csv(os.path.join(ROOT_DIR, 'trials.csv'))
+    predictions_dict['forecast']['all_trials'].to_csv(os.path.join(ROOT_DIR, 'trials.csv'))
 
     fitting_date = predictions_dict['fitting_date']
     data_last_date = predictions_dict['data_last_date']
@@ -158,3 +150,20 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     # pypandoc.convert_file("{}.md".format(filename), 'tex', format='md', outputfile="{}.pdf".format(filename))
     # TODO: pdf conversion has some issues with order of images, low priority
 
+import pandas as pd
+import copy
+from utils.enums import Columns
+
+def trials_to_df(predictions, losses, params):
+    cols = ['loss']
+    for key in params[0].keys():
+        cols.append(key)
+    trials = pd.DataFrame(columns=cols)
+    for i in range(len(params)):
+        to_add = copy.copy(params[i])
+        to_add['loss'] = losses[i]
+        trials = trials.append(to_add, ignore_index=True)
+    pred = pd.DataFrame(columns=predictions[0]['date'])
+    for i in range(len(params)):
+        pred = pred.append(predictions[i].set_index('date').loc[:, [Columns.active.name]].transpose(), ignore_index=True)
+    return pd.concat([trials, pred], axis=1)
