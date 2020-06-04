@@ -85,6 +85,8 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     forecast_dict['forecast'].figure.savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2', path=plot_filepath))
     
+    mdFile.new_paragraph("---")
+
     if len(forecast_dict.keys()) > 0:
         mdFile.new_header(level=1, title=f'FORECASTS ON TOTAL INFECTIONS BASED ON TOP k PARAMETER SETS FOR M2 FIT')
         plot_filename = '{}-{}-confirmed-forecast-topk-{}.png'.format(state.lower(), dist.lower(), fitting_date)
@@ -96,6 +98,7 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
         plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
         forecast_dict['forecast_active_topk'].figure.savefig(plot_filepath)
         mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2 of top k', path=plot_filepath))
+        mdFile.new_paragraph("---")
         
         mdFile.new_header(level=2, title="Top 10 Trials")
         header = f'| Loss | Params |\n|:-:|-|\n'
