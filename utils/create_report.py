@@ -33,6 +33,16 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
         }
         json.dump(run_params, dump)
 
+    cols = ['loss']
+    for key in predictions_dict['forecast']['params'][0].keys():
+        cols.append(key)
+    trials = pd.DataFrame(columns=cols)
+    for i in range(len(predictions_dict['forecast']['params'])):
+        to_add = copy.copy(predictions_dict['forecast']['params'][i])
+        to_add['loss'] = predictions_dict['forecast']['losses'][i]
+        trials = trials.append(to_add, ignore_index=True)
+    trials.to_csv(os.path.join(ROOT_DIR, 'trials.csv'))
+
     fitting_date = predictions_dict['fitting_date']
     data_last_date = predictions_dict['data_last_date']
     state = predictions_dict['state']
@@ -50,6 +60,14 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     
     mdFile.new_paragraph("Parameter fits were obtained via Bayesian optimization, searching uniformly on the following space of parameter ranges:")
     mdFile.insert_code(pformat(predictions_dict['variable_param_ranges']))
+
+    if 'smoothing_plot' in predictions_dict['m1'].keys() and predictions_dict['m1']['smoothing_plot'] is not None:
+        mdFile.new_header(level=1, title=f'SMOOTHING')
+        plot_filename = '{}-{}-smoothed-{}.png'.format(state.lower(), dist.lower(), fitting_date)
+        plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
+        predictions_dict['m1']['smoothing_plot'].figure.savefig(plot_filepath)
+        mdFile.new_line(mdFile.new_inline_image(text='M1 Fit Curve', path=plot_filepath))
+        mdFile.new_paragraph("")
 
     mdFile.new_header(level=1, title=f'M1 FIT')
     mdFile.new_header(level=2, title=f'Optimal Parameters')
@@ -75,6 +93,7 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
     predictions_dict['m2']['ax'].figure.savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='M2 Fit Curve', path=plot_filepath))
+    mdFile.new_paragraph("")
 
     mdFile.new_paragraph("---")
     
@@ -84,7 +103,9 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
     forecast_dict['forecast'].figure.savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2', path=plot_filepath))
+    mdFile.new_paragraph("")
     
+
     if len(forecast_dict.keys()) > 0:
         mdFile.new_header(level=1, title=f'FORECASTS ON TOTAL INFECTIONS BASED ON TOP k PARAMETER SETS FOR M2 FIT')
         plot_filename = '{}-{}-confirmed-forecast-topk-{}.png'.format(state.lower(), dist.lower(), fitting_date)
@@ -96,6 +117,7 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
         plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
         forecast_dict['forecast_active_topk'].figure.savefig(plot_filepath)
         mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2 of top k', path=plot_filepath))
+        mdFile.new_paragraph("")
         
         mdFile.new_header(level=2, title="Top 10 Trials")
         header = f'| Loss | Params |\n|:-:|-|\n'
