@@ -324,6 +324,25 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
         num_evals=num_evals, initialisation=initialisation
     )
 
+    # record parameters for reproducability
+    predictions_dict['run_params'] = {
+        'state': state,
+        'district': district,
+        'model': model.__name__,
+        'train_period': train_period,
+        'val_period': val_period,
+        'data_from_tracker': data_from_tracker,
+        'filename': filename,
+        'data_format': data_format,
+        'N': N,
+        'num_evals': num_evals,
+        'which_compartments': which_compartments,
+        'initialisation': initialisation,
+        'smooth_jump': smooth_jump,
+        'smoothing_length': smoothing_length,
+        'smoothing_method': smoothing_method,
+    }
+
     return predictions_dict
 
 def calculate_loss(df_train, df_val, df_prediction, train_period, which_compartments=['hospitalised', 'total_infected']):

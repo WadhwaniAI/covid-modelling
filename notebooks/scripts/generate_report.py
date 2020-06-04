@@ -25,6 +25,17 @@ from main.seir.forecast import order_trials, plot_trials
 from utils.create_report import create_report
 from utils.enums import Columns
 
+'''
+Please keep this script at par functionally with 
+    notebooks/seir/[STABLE] generate_report.ipynb
+AND linearly runnable 
+Use command line args / Modify the parameters in `single_fitting_cycle` and `plot_trials` per customizations
+
+ex. 
+python3 generate_report.py --districts mumbai,pune --ktrials 10 -i 700 -f reporttest
+python3 generate_report.py --districts mumbai --ktrials 100 -i 1000 -f reporttest -s -n 33
+'''
+
 # --- turn into command line args
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--use-tracker", help="district name", required=False, action='store_true')
@@ -33,6 +44,8 @@ parser.add_argument("-i", "--iterations", help="optimiser iterations", required=
 parser.add_argument("-n", "--ndays", help="smoothing days", required=False, default=33, type=int)
 now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 parser.add_argument("-f", "--folder", help="folder name", required=False, default=str(now), type=str)
+parser.add_argument("-k", "--ktrials", help="k trials to forecast", required=False, default=10, type=int)
+parser.add_argument("-d", "--districts", help="districts", required=False, default='mumbai', type=str)
 args = parser.parse_args()
 
 # dataframes = get_covid19india_api_data()
@@ -40,14 +53,22 @@ dataframes = get_dataframes_cached()
 
 predictions_dict = {}
 
-# districts_to_show = [('Maharashtra', 'Pune'), 
-#                      ('Maharashtra', 'Mumbai'), 
-#                      ('Rajasthan', 'Jaipur'), 
-#                      ('Gujarat', 'Ahmedabad'), 
-#                      ('Karnataka', 'Bengaluru Urban'),
-#                      ('Delhi', None)]
+distlist = args.districts.strip().lower()
+if ',' in distlist:
+    distlist =[d.strip() for d in distlist.split(',')]
+else:
+    distlist = [distlist]
 
-districts_to_show = [('Maharashtra', 'Mumbai')]
+districts_dict = {
+    'pune': ('Maharashtra', 'Pune'), 
+    'mumbai': ('Maharashtra', 'Mumbai'), 
+    'jaipur': ('Rajasthan', 'Jaipur'), 
+    'ahmedabad': ('Gujarat', 'Ahmedabad'), 
+    'bengaluru': ('Karnataka', 'Bengaluru Urban'),
+    'delhi': ('Delhi', None)
+}
+
+districts_to_show = [districts_dict[key] for key in distlist]
 
 for state, district in districts_to_show:
     predictions_dict[(state, district)] = {}
@@ -88,7 +109,7 @@ for region in predictions_dict.keys():
     params_array, losses_array = order_trials(predictions_dict[region]['m2'])
     predictions_dict[region]['forecast']['params'] = params_array
     predictions_dict[region]['forecast']['losses'] = losses_array
-    kforecasts = plot_trials(predictions_dict[region], which_compartments=[Columns.confirmed, Columns.active], k=100)
+    kforecasts = plot_trials(predictions_dict[region], which_compartments=[Columns.confirmed, Columns.active], k=args.ktrials)
     predictions_dict[region]['forecast']['forecast_confirmed_topk'] = kforecasts[Columns.confirmed]
     predictions_dict[region]['forecast']['forecast_active_topk'] = kforecasts[Columns.active]
 
