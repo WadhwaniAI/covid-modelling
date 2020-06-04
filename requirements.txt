@@ -1,3 +1,4 @@
+adjustText==0.7.3
 amqp==2.5.2
 arviz==0.8.0
 astroid==2.3.3
@@ -113,6 +114,7 @@ pytesseract==0.3.4
 python-dateutil==2.8.1
 python-Levenshtein==0.12.0
 pytz==2019.3
+PyYAML==5.3.1
 pyzmq==19.0.0
 redis==2.10.6
 requests==2.23.0
