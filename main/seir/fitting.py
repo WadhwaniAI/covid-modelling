@@ -21,7 +21,7 @@ from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
 from main.seir.losses import Loss_Calculator
 from utils.enums import Columns
-from viz.seir import plot_smoothing
+from viz import plot_smoothing, plot_fit
 
 now = str(datetime.datetime.now())
 
@@ -113,7 +113,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     return df_train, df_val, df_true_fitting
     
 def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename, smooth_jump=False,
-                      smoothing_length=28, smoothing_method='linear', t_recov=17, return_plot=False):
+                      smoothing_length=28, smoothing_method='uniform', t_recov=17, return_plot=False):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -141,14 +141,12 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
         df_district = smooth_big_jump(
             df_district, smoothing_length=smoothing_length, 
             method=smoothing_method, data_from_tracker=data_from_tracker, t_recov=t_recov)
-        ax = plot_smoothing(orig_df_district, df_district, state, district, description=f'Smoothing: {smoothing_method}')
-    
-    if return_plot:
-        return df_district, df_district_raw_data, ax
-    else:
-        return df_district, df_district_raw_data
+        if return_plot:
+            ax = plot_smoothing(orig_df_district, df_district, state, district, description=f'Smoothing: {smoothing_method}')
 
-def smooth_big_jump(df_district, smoothing_length, data_from_tracker, t_recov=14, method='linear', ):
+    return df_district, df_district_raw_data, ax
+
+def smooth_big_jump(df_district, smoothing_length, data_from_tracker, t_recov=14, method='uniform'):
     if data_from_tracker:
         d1, d2 = '2020-05-29', '2020-05-30'
     else:
@@ -157,7 +155,7 @@ def smooth_big_jump(df_district, smoothing_length, data_from_tracker, t_recov=14
     df_district = df_district.set_index('date')
     big_jump = df_district.loc[d2, 'recovered'] - df_district.loc[d1, 'recovered']
     print(big_jump)
-    if method == 'linear':
+    if method == 'uniform':
         for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
             date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
             offset = np.random.binomial(1, (big_jump%smoothing_length)/smoothing_length)
@@ -286,9 +284,8 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
     df_loss = calculate_loss(df_train_nora, df_val_nora, df_prediction, train_period, 
                              which_compartments=which_compartments)
 
-    
-    ax = create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
-                      which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'])
+    ax = plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
+                  which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'])
 
     results_dict = {}
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
@@ -302,7 +299,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
 def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_period=7, val_period=7, 
                          data_from_tracker=True, filename=None, data_format='new', N=1e7, num_evals=1500,
                          which_compartments=['hospitalised', 'total_infected'], initialisation='starting', 
-                         smooth_jump=False, smoothing_length=28, smoothing_method='linear'):
+                         smooth_jump=False, smoothing_length=28, smoothing_method='uniform', smooth_plot=False):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -328,9 +325,9 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
     print('Performing {} fit ..'.format('m2' if val_period == 0 else 'm1'))
 
     # Get data
-    df_district, df_district_raw_data, smoothed_plot = get_regional_data(dataframes, state, district, data_from_tracker, data_format, 
-                                                          filename, smooth_jump=smooth_jump, smoothing_method=smoothing_method,
-                                                          smoothing_length=smoothing_length, return_plot=True)
+    df_district, df_district_raw_data, smoothed_plot = get_regional_data(dataframes, state, district, data_from_tracker, data_format,
+                                                                         filename, smooth_jump=smooth_jump, smoothing_method=smoothing_method,
+                                                                         smoothing_length=smoothing_length, return_plot=smooth_plot)
 
     # Process the data to get rolling averages and other stuff
     observed_dataframes = data_setup(
@@ -348,7 +345,8 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
         num_evals=num_evals, initialisation=initialisation
     )
 
-    predictions_dict['smoothing_plot'] = smoothed_plot
+    if smoothed_plot != None:
+        predictions_dict['smoothing_plot'] = smoothed_plot
 
     # record parameters for reproducability
     predictions_dict['run_params'] = {
@@ -408,82 +406,3 @@ def calculate_loss(df_train, df_val, df_prediction, train_period, which_compartm
     else:
         del df_loss['val']
     return df_loss
-
-def create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district, 
-                 which_compartments=['hospitalised', 'total_infected'], description=''):
-    """Helper function for creating plots for the training pipeline
-
-    Arguments:
-        df_prediction {pd.DataFrame} -- The prediction dataframe outputted by the model
-        df_train {pd.DataFrame} -- The train dataset (with rolling average)
-        df_val {pd.DataFrame} -- The val dataset (with rolling average)
-        df_train_nora {pd.DataFrame} -- The train dataset (with no rolling average)
-        df_val_nora {pd.DataFrame} -- The val dataset (with no rolling average)
-        train_period {int} -- Length of train period
-        state {str} -- Name of state
-        district {str} -- Name of district
-
-    Keyword Arguments:
-        which_compartments {list} -- Which buckets to plot (default: {['hospitalised', 'total_infected']})
-        description {str} -- Additional description for the plots (if any) (default: {''})
-
-    Returns:
-        ax -- Matplotlib ax object
-    """
-    # Create plots
-    fig, ax = plt.subplots(figsize=(12, 12))
-    if isinstance(df_val, pd.DataFrame):
-        df_true_plotting_rolling = pd.concat([df_train, df_val], ignore_index=True)
-        df_true_plotting = pd.concat([df_train_nora, df_val_nora], ignore_index=True)
-    else:
-        df_true_plotting_rolling = df_train
-        df_true_plotting = df_train_nora
-    df_predicted_plotting = df_prediction.loc[df_prediction['date'].isin(
-        df_true_plotting['date']), ['date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
-    
-    if 'total_infected' in which_compartments:
-        ax.plot(df_true_plotting['date'], df_true_plotting['total_infected'],
-                '-o', color='C0', label='Confirmed Cases (Observed)')
-        ax.plot(df_true_plotting_rolling['date'], df_true_plotting_rolling['total_infected'],
-                '-', color='C0', label='Confirmed Cases (Obs RA)')
-        ax.plot(df_predicted_plotting['date'], df_predicted_plotting['total_infected'],
-                '-.', color='C0', label='Confirmed Cases (Predicted)')
-    if 'hospitalised' in which_compartments:
-        ax.plot(df_true_plotting['date'], df_true_plotting['hospitalised'],
-                '-o', color='orange', label='Active Cases (Observed)')
-        ax.plot(df_true_plotting_rolling['date'], df_true_plotting_rolling['hospitalised'],
-                '-', color='orange', label='Active Cases (Obs RA)')
-        ax.plot(df_predicted_plotting['date'], df_predicted_plotting['hospitalised'],
-                '-.', color='orange', label='Active Cases (Predicted)')
-    if 'recovered' in which_compartments:
-        ax.plot(df_true_plotting['date'], df_true_plotting['recovered'],
-                '-o', color='green', label='Recovered Cases (Observed)')
-        ax.plot(df_true_plotting_rolling['date'], df_true_plotting_rolling['recovered'],
-                '-', color='green', label='Recovered Cases (Obs RA)')
-        ax.plot(df_predicted_plotting['date'], df_predicted_plotting['recovered'],
-                '-.', color='green', label='Recovered Cases (Predicted)')
-    if 'deceased' in which_compartments:
-        ax.plot(df_true_plotting['date'], df_true_plotting['deceased'],
-                '-o', color='red', label='Deceased Cases (Observed)')
-        ax.plot(df_true_plotting_rolling['date'], df_true_plotting_rolling['deceased'],
-                '-', color='red', label='Deceased Cases (Obs RA)')
-        ax.plot(df_predicted_plotting['date'], df_predicted_plotting['deceased'],
-                '-.', color='red', label='Deceased Cases (Predicted)')
-    
-    ax.plot([df_train.iloc[-train_period, :]['date'], df_train.iloc[-train_period, :]['date']],
-            [min(df_train['deceased']), max(df_train['total_infected'])], '--', color='brown', label='Train starts')
-    if isinstance(df_val, pd.DataFrame):
-        ax.plot([df_val.iloc[0, :]['date'], df_val.iloc[0, :]['date']],
-                [min(df_val['deceased']), max(df_val['total_infected'])], '--', color='black', label='Val starts')
-
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=5))
-    ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.ylabel('No of People')
-    plt.xlabel('Time')
-    plt.xticks(rotation=45, horizontalalignment='right')
-    plt.legend()
-    plt.title('{} - ({} {})'.format(description, state, district))
-    plt.grid()
-
-    return ax

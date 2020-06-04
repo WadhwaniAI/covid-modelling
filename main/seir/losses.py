@@ -27,9 +27,11 @@ class Loss_Calculator():
             calculate = lambda x, y : self._calc_mape(x, y)
         
         losses = {}
-        for compartment in ['hospitalised', 'recovered', 'deceased', 'infectious_unknown', 'total_infected']:
+        for compartment in ['hospitalised', 'recovered', 'deceased', 'total_infected']:
             try:
                 losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
+                # losses[compartment] = calculate(df_prediction.iloc[-window_dict[compartment]:, compartment],
+                #                                 df_true[-window_dict[compartment]:, compartment])
             except Exception:
                 continue
         return losses
