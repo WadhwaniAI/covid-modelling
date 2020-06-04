@@ -322,6 +322,11 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
     Returns:
         dict -- dict of everything related to prediction
     """
+    # record parameters for reproducability
+    run_params = locals()
+    del run_params['dataframes']
+    run_params['model'] = model.__name__
+    
     print('Performing {} fit ..'.format('m2' if val_period == 0 else 'm1'))
 
     # Get data
@@ -349,23 +354,7 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
         predictions_dict['smoothing_plot'] = smoothed_plot
 
     # record parameters for reproducability
-    predictions_dict['run_params'] = {
-        'state': state,
-        'district': district,
-        'model': model.__name__,
-        'train_period': train_period,
-        'val_period': val_period,
-        'data_from_tracker': data_from_tracker,
-        'filename': filename,
-        'data_format': data_format,
-        'N': N,
-        'num_evals': num_evals,
-        'which_compartments': which_compartments,
-        'initialisation': initialisation,
-        'smooth_jump': smooth_jump,
-        'smoothing_length': smoothing_length,
-        'smoothing_method': smoothing_method,
-    }
+    predictions_dict['run_params'] = run_params
 
     return predictions_dict
 
