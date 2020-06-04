@@ -202,7 +202,6 @@ def plot_forecast(predictions_dict : dict, region : tuple, both_forecasts=False,
         ax -- Matplotlib ax figure
     """
     df_prediction = get_forecast(predictions_dict)
-    # df_prediction.loc[:, which_compartments] = df_prediction[]
     if both_forecasts:
         df_prediction_m1 = get_forecast(predictions_dict, train_fit='m1')
     df_true = predictions_dict['m1']['df_district']
@@ -212,7 +211,7 @@ def plot_forecast(predictions_dict : dict, region : tuple, both_forecasts=False,
                                                   which_compartments)
         if both_forecasts:
             df_prediction_m1 = preprocess_for_error_plot(df_prediction_m1, predictions_dict['m1']['df_loss'], 
-                                                        which_compartments)
+                                                         which_compartments)
 
     fig, ax = plt.subplots(figsize=(12, 12))
 
@@ -223,9 +222,8 @@ def plot_forecast(predictions_dict : dict, region : tuple, both_forecasts=False,
                      ls='-', color='C0', label='Confirmed Cases (M2 Forecast)')
         if both_forecasts:
             sns.lineplot(x="date", y="total_infected", data=df_prediction_m1,
-                         ls='--', color='C0', label='Confirmed Cases (M1 Forecast)')
-            # ax.plot(df_prediction_m1['date'], df_prediction_m1['total_infected'],
-            #         '--', color='C0', label='Confirmed Cases (M1 Forecast)')
+                         color='C0', label='Confirmed Cases (M1 Forecast)')
+            ax.lines[-1].set_linestyle("--")
     if 'hospitalised' in which_compartments:
         ax.plot(df_true['date'], df_true['hospitalised'],
                 '-o', color='orange', label='Active Cases (Observed)')
@@ -233,9 +231,8 @@ def plot_forecast(predictions_dict : dict, region : tuple, both_forecasts=False,
                      ls='-', color='orange', label='Active Cases (M2 Forecast)')
         if both_forecasts:
             sns.lineplot(x="date", y="hospitalised", data=df_prediction_m1,
-                         ls='--', color='orange', label='Active Cases (M1 Forecast)')
-            # ax.plot(df_prediction_m1['date'], df_prediction_m1['hospitalised'],
-            #         '--', color='orange', label='Active Cases (M1 Forecast)')
+                         color='orange', label='Active Cases (M1 Forecast)')
+            ax.lines[-1].set_linestyle("--")
     if 'recovered' in which_compartments:
         ax.plot(df_true['date'], df_true['recovered'],
                 '-o', color='green', label='Recovered Cases (Observed)')
@@ -243,9 +240,8 @@ def plot_forecast(predictions_dict : dict, region : tuple, both_forecasts=False,
                      ls='-', color='green', label='Recovered Cases (M2 Forecast)')
         if both_forecasts:
             sns.lineplot(x="date", y="recovered", data=df_prediction_m1,
-                         ls='--', color='green', label='Recovered Cases (M1 Forecast)')
-            # ax.plot(df_prediction_m1['date'], df_prediction_m1['recovered'],
-            #         '--', color='green', label='Recovered Cases (M1 Forecast)')
+                         color='green', label='Recovered Cases (M1 Forecast)')
+            ax.lines[-1].set_linestyle("--")
     if 'deceased' in which_compartments:
         ax.plot(df_true['date'], df_true['deceased'],
                 '-o', color='red', label='Deceased Cases (Observed)')
@@ -253,9 +249,8 @@ def plot_forecast(predictions_dict : dict, region : tuple, both_forecasts=False,
                      ls='-', color='red', label='Deceased Cases (M2 Forecast)')
         if both_forecasts:
             sns.lineplot(x="date", y="deceased", data=df_prediction_m1,
-                         ls='--', color='red', label='Deceased Cases (M1 Forecast)')
-            # ax.plot(df_prediction_m1['date'], df_prediction_m1['deceased'],
-            #         '--', color='red', label='Deceased Cases (M1 Forecast)')
+                         color='red', label='Deceased Cases (M1 Forecast)')
+            ax.lines[-1].set_linestyle("--")
     
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
