@@ -142,7 +142,7 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
 
     return df_district, df_district_raw_data
 
-def smooth_big_jump(df_district, smoothing_length, data_from_tracker, method='linear', ):
+def smooth_big_jump(df_district, smoothing_length, data_from_tracker, t_recov=14, method='linear', ):
     if data_from_tracker:
         d1, d2 = '2020-05-29', '2020-05-30'
     else:
@@ -159,7 +159,7 @@ def smooth_big_jump(df_district, smoothing_length, data_from_tracker, method='li
             df_district.loc[date, 'hospitalised'] -= ((i+1)*big_jump)//smoothing_length + offset
 
     elif method == 'weighted':
-        newcases = df_district['total_infected'].shift(14) - df_district['total_infected'].shift(15)
+        newcases = df_district['total_infected'].shift(t_recov) - df_district['total_infected'].shift(t_recov + 1)
         valid_idx = newcases.first_valid_index()
         window_start = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=smoothing_length - 1)
         newcases = newcases.loc[max(valid_idx, window_start):d1]
