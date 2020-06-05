@@ -14,6 +14,8 @@
 *outputs/
 **outputs/
 *.vscode/
+misc/
+reports/
 
 sftp-config.json
 *__pycache__

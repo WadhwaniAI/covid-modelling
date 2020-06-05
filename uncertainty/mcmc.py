@@ -4,6 +4,7 @@ import pandas as pd
 from tqdm import tqdm
 import multiprocessing as mp
 from datetime import datetime
+from scipy.stats import poisson
 from joblib import delayed, Parallel
 from collections import defaultdict, OrderedDict
 
@@ -82,16 +83,29 @@ class MCMC(object):
         
         return theta_new
 
-    def _log_likelihood(self, theta):
-        df_prediction = self._optimiser.solve(theta, self._default_params, self.df_train)
-        pred = np.array(df_prediction['total_infected'].iloc[-self.fit_days:])
-        true = np.array(self.df_train['total_infected'].iloc[-self.fit_days:])
-        if self._fit2new:
-            pred = self._get_new_cases_array(pred.copy())
-            true = self._get_new_cases_array(true.copy())
-        sigma = theta['sigma']
+    def _gaussian_log_likelihood(self, true, pred, sigma):
         N = len(true)
         ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (np.sum(((true - pred) ** 2) / (2 * sigma ** 2)))
+        return ll
+
+    def _poisson_log_likelihood(self, true, pred, sigma):
+        ll = np.log(poisson.pmf(k = np.abs(true - pred), mu = sigma))
+        return ll
+
+    def _log_likelihood(self, theta):
+        ll = 0
+        df_prediction = self._optimiser.solve(theta, self._default_params, self.df_train)
+        sigma = theta['sigma']
+        compartments = ['hospitalised', 'recovered', 'deceased']
+
+        for compartment in compartments:
+            pred = np.array(df_prediction[compartment].iloc[-self.fit_days:])
+            true = np.array(self.df_train[compartment].iloc[-self.fit_days:])
+            if self._fit2new:
+                pred = self._get_new_cases_array(pred.copy())
+                true = self._get_new_cases_array(true.copy())
+            ll += self._gaussian_log_likelihood(true, pred, sigma)
+
         return ll
 
     def _log_prior(self, theta):
