@@ -33,7 +33,8 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
         }
         json.dump(run_params, dump)
 
-    predictions_dict['forecast']['all_trials'].to_csv(os.path.join(ROOT_DIR, 'trials.csv'))
+    predictions_dict['m1']['all_trials'].to_csv(os.path.join(ROOT_DIR, 'm1-trials.csv'))
+    predictions_dict['m2']['all_trials'].to_csv(os.path.join(ROOT_DIR, 'm2-trials.csv'))
 
     fitting_date = predictions_dict['fitting_date']
     data_last_date = predictions_dict['data_last_date']
@@ -89,7 +90,7 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
 
     mdFile.new_paragraph("---")
     
-    forecast_dict = predictions_dict['forecast']
+    forecast_dict = predictions_dict['m2']
     mdFile.new_header(level=1, title=f'FORECAST USING M2 FIT WITH ERROR EVALUATED ON VAL SET OF M1 FIT')
     plot_filename = '{}-{}-forecast-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
