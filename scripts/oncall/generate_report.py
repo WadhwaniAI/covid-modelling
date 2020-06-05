@@ -20,10 +20,11 @@ from models.seir.seir_movement import SEIR_Movement
 from models.seir.seir_movement_testing import SEIR_Movement_Testing
 
 from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
-from main.seir.forecast import get_forecast, create_region_csv, create_all_csvs, write_csv, plot_forecast
-from main.seir.forecast import order_trials, plot_trials, get_all_trials
+from main.seir.forecast import get_forecast, create_region_csv, create_all_csvs, write_csv
+from main.seir.forecast import order_trials, get_all_trials
 from utils.create_report import create_report, trials_to_df
 from utils.enums import Columns
+from viz import plot_forecast, plot_trials
 
 '''
 Please keep this script at par functionally with 
@@ -112,6 +113,7 @@ for region in predictions_dict.keys():
     predictions, losses, params = get_all_trials(predictions_dict[region])
     predictions_dict[region]['forecast']['params'] = params
     predictions_dict[region]['forecast']['losses'] = losses
+    predictions_dict[region]['forecast']['predictions'] = predictions
     predictions_dict[region]['forecast']['all_trials'] = trials_to_df(predictions, losses, params)
     kforecasts = plot_trials(predictions_dict[region], predictions=predictions, losses=losses, params=params, which_compartments=[Columns.confirmed, Columns.active], k=args.ktrials)
     predictions_dict[region]['forecast']['forecast_confirmed_topk'] = kforecasts[Columns.confirmed]
