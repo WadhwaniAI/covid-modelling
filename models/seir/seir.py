@@ -8,11 +8,7 @@ class SEIR(Model):
         pass
     
     @abstractmethod
-    def get_derivative(self):
-        pass
-
-    @abstractmethod
-    def solve_ode(self):
+    def get_derivative(self, t, y):
         pass
 
     @abstractmethod
