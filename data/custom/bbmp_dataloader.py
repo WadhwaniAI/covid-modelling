@@ -15,8 +15,6 @@ from joblib import Parallel, delayed
 
 from models.seir.seir_testing import SEIR_Testing
 from data.dataloader import get_global_data, get_indian_data
-from utils.plotting import create_plots
-from utils.generic import init_params
 
 def loadbbmpdata(filename):
     df = pd.read_csv('../../data/data/{}'.format(filename))
