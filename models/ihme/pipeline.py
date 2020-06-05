@@ -19,7 +19,7 @@ sys.path.append('../..')
 from models.ihme.util import get_daily_vals
 from utils.loss import mape, rmse, rmsle
 from utils.util import smooth
-from utils.plotting import setup_plt
+from viz import setup_plt
 
 class WAIPipeline():
     def __init__(self, df, ycol, params, covs, file_prefix, smoothing=None, predict_space=None, priors=None):

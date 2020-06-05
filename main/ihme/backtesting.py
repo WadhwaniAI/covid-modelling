@@ -14,7 +14,7 @@ import matplotlib as mpl
 import sys
 sys.path.append('../..')
 from utils.util import HidePrints, train_test_split
-from utils.plotting import setup_plt
+from viz import setup_plt
 from main.ihme.optimiser import Optimiser
 
 class IHMEBacktest:

@@ -8,7 +8,7 @@ import matplotlib as mpl
 import sys
 sys.path.append('../..')
 from main.seir.fitting import data_setup, run_cycle
-from utils.plotting import setup_plt
+from viz import setup_plt
 
 class SEIRBacktest:
     def __init__(self, state, district, df_district, df_district_raw_data, data_from_tracker):
