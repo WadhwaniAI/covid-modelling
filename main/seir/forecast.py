@@ -13,6 +13,7 @@ from adjustText import adjust_text
 from collections import OrderedDict, defaultdict
 import itertools
 from functools import partial
+from tqdm import tqdm
 import datetime
 from joblib import Parallel, delayed
 import copy
@@ -250,10 +251,8 @@ def forecast_k(predictions_dict: dict, k=10, train_fit='m2', forecast_days=37):
     predictions = []
     dots = ['.']
     simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + datetime.timedelta(days=forecast_days)
-    for i, params_dict in enumerate(top_k_params):
-        print(f"getting forecasts {''.join((i+1)*dots)}", end='\r')
-        if len(dots) % 100 == 0:
-            print(f"{i} done")
+    print("getting forecasts ..")
+    for i, params_dict in tqdm(enumerate(top_k_params)):
         predictions.append(get_forecast(
             predictions_dict, best_params=params_dict, train_fit=train_fit, simulate_till=simulate_till, verbose=False))
     return predictions, top_k_losses, top_k_params
