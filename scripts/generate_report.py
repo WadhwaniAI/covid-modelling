@@ -8,7 +8,7 @@ import time
 import argparse
 
 import sys
-sys.path.append('../../')
+sys.path.append('../')
 
 from data.dataloader import get_covid19india_api_data
 from data.processing import get_data
@@ -20,8 +20,9 @@ from models.seir.seir_movement import SEIR_Movement
 from models.seir.seir_movement_testing import SEIR_Movement_Testing
 
 from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
-from main.seir.forecast import get_forecast, create_region_csv, create_all_csvs, write_csv, plot_forecast
-from main.seir.forecast import order_trials, plot_trials, get_all_trials
+from main.seir.forecast import get_forecast, create_region_csv, create_all_csvs, write_csv
+from main.seir.forecast import order_trials, get_all_trials
+from viz.forecast import plot_forecast, plot_trials
 from utils.create_report import create_report, trials_to_df
 from utils.enums import Columns
 
@@ -118,10 +119,10 @@ for region in predictions_dict.keys():
     predictions_dict[region]['forecast']['forecast_active_topk'] = kforecasts[Columns.active]
 
 for region in predictions_dict.keys():
-    create_report(predictions_dict[region], ROOT_DIR=f'../../reports/{args.folder}') 
-    predictions_dict[region]['forecast']['all_trials'].to_csv(f'../../reports/{args.folder}/trials.csv')
+    create_report(predictions_dict[region], ROOT_DIR=f'../reports/{args.folder}') 
+    predictions_dict[region]['forecast']['all_trials'].to_csv(f'../reports/{args.folder}/trials.csv')
 
 df_output = create_all_csvs(predictions_dict, icu_fraction=0.02)
-write_csv(df_output, filename=f'../../reports/{args.folder}/output-{now}.csv')
+write_csv(df_output, filename=f'../reports/{args.folder}/output-{now}.csv')
 
-print(f"yeet. done: view files at ../../reports/{args.folder}/")
+print(f"yeet. done: view files at ../reports/{args.folder}/")

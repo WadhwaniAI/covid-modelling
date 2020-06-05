@@ -106,7 +106,7 @@ def get_athena_dataframes(pyathena_rc_path=None):
         testing_summary
     """
     if pyathena_rc_path == None:
-        pyathena_rc_path = '../../misc/pyathena/pyathena.rc'
+        pyathena_rc_path = '../misc/pyathena/pyathena.rc'
 
     # Create connection
     cursor = create_connection(pyathena_rc_path)
