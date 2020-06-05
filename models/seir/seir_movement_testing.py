@@ -146,17 +146,13 @@ class SEIR_Movement_Testing(SEIR):
             'psi_I': psi_I # Sensitivity of test that Infected people undergo
         }
 
-         # Set all dicts as attributes of self
-        for param_dict_name in ['vanilla_params', 'testing_params']:
-            setattr(self, param_dict_name, eval(param_dict_name))
-
         # Set all variables as attributes of self
-        for key in self.vanilla_params:
-            setattr(self, key, self.vanilla_params[key])
+        for key in vanilla_params:
+            setattr(self, key, vanilla_params[key])
 
-        for key in self.testing_params:
-            suffix = '_D' if key in self.vanilla_params else ''
-            setattr(self, key + suffix, self.testing_params[key])
+        for key in testing_params:
+            suffix = '_D' if key in vanilla_params else ''
+            setattr(self, key + suffix, testing_params[key])
 
         # Initialisation
         state_init_values = OrderedDict()
@@ -225,13 +221,13 @@ class SEIR_Movement_Testing(SEIR):
 
         return dydt
 
-    def solve_ode(self, total_no_of_days=200, time_step=1, method='Radau'):
+    def solve_ode(self, total_days=200, time_step=1, method='Radau'):
         """
         Solves ODE
         """
         t_start = 0
-        t_final = total_no_of_days
-        time_steps = np.arange(t_start, total_no_of_days + time_step, time_step)
+        t_final = total_days
+        time_steps = np.arange(t_start, total_days + time_step, time_step)
         
         state_init_values_arr = [self.state_init_values[x] for x in self.state_init_values]
 
@@ -247,7 +243,7 @@ class SEIR_Movement_Testing(SEIR):
         pd.DataFrame : dataframe of predictions
         """
 
-        states_time_matrix = (self.sol.y*self.vanilla_params['N']).astype('int')
+        states_time_matrix = (sol.y*self.N).astype('int')
         dataframe_dict = {}
         for i, key in enumerate(self.state_init_values.keys()):
             dataframe_dict[key] = states_time_matrix[i]

@@ -143,17 +143,13 @@ class SEIR_Testing(SEIR):
             'psi_I': psi_I # Sensitivity of test that Infected people undergo
         }
 
-         # Set all dicts as attributes of self
-        for param_dict_name in ['vanilla_params', 'testing_params']:
-            setattr(self, param_dict_name, eval(param_dict_name))
-
         # Set all variables as attributes of self
-        for key in self.vanilla_params:
-            setattr(self, key, self.vanilla_params[key])
+        for key in vanilla_params:
+            setattr(self, key, vanilla_params[key])
 
-        for key in self.testing_params:
-            suffix = '_D' if key in self.vanilla_params else ''
-            setattr(self, key + suffix, self.testing_params[key])
+        for key in testing_params:
+            suffix = '_D' if key in vanilla_params else ''
+            setattr(self, key + suffix, testing_params[key])
 
         # Initialisation
         state_init_values = OrderedDict()

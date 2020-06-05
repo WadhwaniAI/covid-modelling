@@ -116,8 +116,8 @@ class SEIR_Movement(SEIR):
         }
 
         # Set all variables as attributes of self
-        for key in self.vanilla_params:
-            setattr(self, key, self.vanilla_params[key])
+        for key in vanilla_params:
+            setattr(self, key, vanilla_params[key])
 
         # Initialisation
         state_init_values = OrderedDict()
@@ -200,7 +200,7 @@ class SEIR_Movement(SEIR):
         """
         Returns predictions of the model
         """
-        states_time_matrix = (self.sol.y*self.vanilla_params['N']).astype('int')
+        states_time_matrix = (sol.y*self.N).astype('int')
         dataframe_dict = {}
         for i, key in enumerate(self.state_init_values.keys()):
             dataframe_dict[key] = states_time_matrix[i]
