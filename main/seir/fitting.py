@@ -269,7 +269,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
     variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
 
     # Perform Bayesian Optimisation
-    total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days + 1
+    total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
                                               num_evals=num_evals, loss_indices=[-train_period, None], method='mape',
                                               total_days=total_days, which_compartments=which_compartments)
@@ -277,9 +277,11 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
     print('best parameters\n', best_params)
 
     if not isinstance(df_val, pd.DataFrame):
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date']) 
+        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'],
+                                        model=model)
     else:
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'])
+        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'], 
+                                        model=model)
     
     df_loss = calculate_loss(df_train_nora, df_val_nora, df_prediction, train_period, 
                              which_compartments=which_compartments)

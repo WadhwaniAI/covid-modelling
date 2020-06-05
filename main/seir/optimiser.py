@@ -54,8 +54,8 @@ class Optimiser():
             params_dict['starting_date'] = start_date
         solver = model(**params_dict)
         total_days = (end_date - params_dict['starting_date']).days
-        solver.solve_ode(total_no_of_days=total_days, time_step=1, method='Radau')
-        df_prediction = solver.predict()
+        df_prediction = solver.predict(total_days=total_days)
+        # df_prediction = solver.predict()
         return df_prediction
 
 
@@ -90,8 +90,8 @@ class Optimiser():
         #     return 1e10
 
         solver = model(**params_dict)
-        solver.solve_ode(total_no_of_days=total_days - 1, time_step=1, method='Radau')
-        df_prediction = solver.predict()
+        # solver.solve_ode(total_no_of_days=total_days - 1, time_step=1, method='Radau')
+        df_prediction = solver.predict(total_days=total_days)
 
         # Choose which indices to calculate loss on
         # TODO Add slicing capabilities on the basis of date
@@ -248,7 +248,7 @@ class Optimiser():
         if total_days == None:
             total_days = len(df_true['date'])
         
-        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=SEIR_Testing, 
+        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
                                                  default_params=default_params, total_days=total_days,
                                                  loss_method=method, loss_indices=loss_indices, df_true=df_true,
                                                  which_compartments=which_compartments)
