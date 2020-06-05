@@ -8,7 +8,7 @@ import time
 import argparse
 
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 
 from data.dataloader import get_covid19india_api_data
 from data.processing import get_data
@@ -22,7 +22,7 @@ from models.seir.seir_movement_testing import SEIR_Movement_Testing
 from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
 from main.seir.forecast import get_forecast, create_region_csv, create_all_csvs, write_csv
 from main.seir.forecast import order_trials, get_all_trials
-from viz.forecast import plot_forecast, plot_trials
+from viz import plot_forecast, plot_trials
 from utils.create_report import create_report, trials_to_df
 from utils.enums import Columns
 
