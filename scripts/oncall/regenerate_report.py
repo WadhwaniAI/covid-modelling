@@ -23,4 +23,9 @@ args = parser.parse_args()
 with open(f'../../reports/{args.folder}/predictions_dict.pkl', 'rb') as pkl:
     region_dict = pickle.load(pkl)
 
-create_report(region_dict, ROOT_DIR=f'../../reports/{args.folder}/{t}') 
+create_report(region_dict, ROOT_DIR=f'../../reports/{args.folder}/{t}')
+region_dict['m1']['all_trials'].to_csv(f'../../reports/{args.folder}/{t}/m1-trials.csv')
+region_dict['m2']['all_trials'].to_csv(f'../../reports/{args.folder}/{t}/m2-trials.csv')
+region_dict['m2']['df_district'].to_csv(f'../../reports/{args.folder}/true.csv')
+region_dict['m2']['df_district_unsmoothed'].to_csv(f'../../reports/{args.folder}/smoothed.csv')
+

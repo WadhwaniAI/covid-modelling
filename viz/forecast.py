@@ -163,3 +163,34 @@ def plot_trials(predictions_dict, train_fit='m2', k=10,
         plt.grid()
         plots[compartment] = ax
     return plots
+
+
+def plot_r0_multipliers(region_dict,best_params_dict, predictions_array_mul, multipliers):
+    df_true = region_dict['m2']['df_district']
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.plot(df_true['date'], df_true['hospitalised'],
+        '-o', color='orange', label='Active Cases (Observed)')
+    for i, df_prediction in enumerate(predictions_array_mul):
+        # loss_value = np.around(np.sort(losses_array)[:10][i], 2)
+        
+        true_r0 = multipliers[i]*best_params_dict['lockdown_R0']
+        # df_loss = calculate_loss(df_train_nora, df_val_nora, df_predictions, train_period=7,
+        #         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
+        sns.lineplot(x="date", y="hospitalised", data=df_prediction,
+                    ls='-', label=f'Active Cases ({multipliers[i]} - R0 {true_r0})')
+        plt.text(
+            x=df_prediction['date'].iloc[-1],
+            y=df_prediction['hospitalised'].iloc[-1], s=true_r0
+        )
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
+        ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+        plt.ylabel('No of People', fontsize=16)
+        # plt.yscale('log')
+        plt.xticks(rotation=45,horizontalalignment='right')
+        plt.xlabel('Time', fontsize=16)
+        plt.legend()
+        state, dist = region_dict['state'], region_dict['dist']
+        plt.title(f'Forecast - ({state} {dist})', fontsize=16)
+        # plt.grid()
+        return ax
