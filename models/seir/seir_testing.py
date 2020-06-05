@@ -7,6 +7,7 @@ from collections import OrderedDict
 import datetime
 
 from models.seir.seir import SEIR
+from utils.ode import ODE_Solver
 
 class SEIR_Testing(SEIR):
 
@@ -218,29 +219,20 @@ class SEIR_Testing(SEIR):
 
         return dydt
 
-    def solve_ode(self, total_no_of_days=200, time_step=1, method='Radau'):
-        """
-        Solves ODE
-        """
-        t_start = 0
-        t_final = total_no_of_days
-        time_steps = np.arange(t_start, total_no_of_days + time_step, time_step)
-        
-        state_init_values_arr = [self.state_init_values[x] for x in self.state_init_values]
-
-        sol = solve_ivp(self.get_derivative, [t_start, t_final], 
-                        state_init_values_arr, method=method, t_eval=time_steps)
-        self.sol = sol
-
-    def predict(self):
+    def predict(self, total_days=50, time_step=1, method='Radau'):
         """
         Returns predictions of the model
-
-        Returns: 
-        pd.DataFrame : dataframe of predictions
         """
+        # Solve ODE get result
+        solver = ODE_Solver()
+        state_init_values_arr = [self.state_init_values[x]
+                                 for x in self.state_init_values]
 
-        states_time_matrix = (self.sol.y*self.vanilla_params['N']).astype('int')
+        sol = solver.solve_ode(state_init_values_arr, self.get_derivative, method=method, 
+                               total_days=total_days, time_step=time_step)
+
+        states_time_matrix = (sol.y*self.N).astype('int')
+
         dataframe_dict = {}
         for i, key in enumerate(self.state_init_values.keys()):
             dataframe_dict[key] = states_time_matrix[i]

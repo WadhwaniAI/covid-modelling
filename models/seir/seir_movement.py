@@ -7,6 +7,7 @@ from collections import OrderedDict
 import datetime
 
 from models.seir.seir import SEIR
+from utils.ode import ODE_Solver
 
 class SEIR_Movement(SEIR):
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
@@ -112,7 +113,11 @@ class SEIR_Movement(SEIR):
             'starting_date': starting_date,  # Datetime value that corresponds to Day 0 of modelling
             'lockdown_day': lockdown_day, # Number of days from the starting_date, after which lockdown is initiated
             'lockdown_removal_day': lockdown_removal_day, # Number of days from the starting_date, after which lockdown is removed
-            'N': N
+            'N': N,
+
+            #Initialisation Params
+            'E_hosp_ratio': E_hosp_ratio,  # Ratio for Exposed to hospitalised for initialisation
+            'I_hosp_ratio': I_hosp_ratio  # Ratio for Infected to hospitalised for initialisation
         }
 
         # Set all variables as attributes of self
@@ -181,26 +186,20 @@ class SEIR_Movement(SEIR):
 
         return dydt
 
-    def solve_ode(self, total_no_of_days=200, time_step=1, method='Radau'):
-        """
-        Solves ODE
-        """
-        t_start = 0
-        t_final = total_no_of_days
-        time_steps = np.arange(t_start, total_no_of_days + time_step, time_step)
-        
-        state_init_values_arr = [self.state_init_values[x] for x in self.state_init_values]
-
-        sol = solve_ivp(self.get_derivative, [t_start, t_final], 
-                        state_init_values_arr, method=method, t_eval=time_steps)
-
-        self.sol = sol
-
-    def predict(self):
+    def predict(self, total_days=50, time_step=1, method='Radau'):
         """
         Returns predictions of the model
         """
+        # Solve ODE get result
+        solver = ODE_Solver()
+        state_init_values_arr = [self.state_init_values[x]
+                                 for x in self.state_init_values]
+
+        sol = solver.solve_ode(state_init_values_arr, self.get_derivative, method=method,
+                               total_days=total_days, time_step=time_step)
+
         states_time_matrix = (sol.y*self.N).astype('int')
+
         dataframe_dict = {}
         for i, key in enumerate(self.state_init_values.keys()):
             dataframe_dict[key] = states_time_matrix[i]

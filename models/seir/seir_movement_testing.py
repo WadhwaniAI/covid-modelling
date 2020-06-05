@@ -7,6 +7,7 @@ from collections import OrderedDict
 import datetime
 
 from models.seir.seir import SEIR
+from utils.ode import ODE_Solver
 
 class SEIR_Movement_Testing(SEIR):
 
@@ -235,15 +236,20 @@ class SEIR_Movement_Testing(SEIR):
                         state_init_values_arr, method=method, t_eval=time_steps)
         self.sol = sol
 
-    def predict(self):
+    def predict(self, total_days=50, time_step=1, method='Radau'):
         """
         Returns predictions of the model
-
-        Returns: 
-        pd.DataFrame : dataframe of predictions
         """
+        # Solve ODE get result
+        solver = ODE_Solver()
+        state_init_values_arr = [self.state_init_values[x]
+                                 for x in self.state_init_values]
+
+        sol = solver.solve_ode(state_init_values_arr, self.get_derivative, method=method,
+                               total_days=total_days, time_step=time_step)
 
         states_time_matrix = (sol.y*self.N).astype('int')
+
         dataframe_dict = {}
         for i, key in enumerate(self.state_init_values.keys()):
             dataframe_dict[key] = states_time_matrix[i]
