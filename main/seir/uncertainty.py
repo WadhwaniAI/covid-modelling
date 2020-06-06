@@ -1,11 +1,13 @@
 
-from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
-from functools import partial
+import os
+import sys
+import json
 import datetime
 import numpy as np
 import pandas as pd
-import os
-import sys
+from functools import partial
+from hyperopt import fmin, tpe, hp, Trials
+
 sys.path.append('../../')
 from main.seir.forecast import get_forecast
 from main.seir.fitting import calculate_loss, train_val_split
@@ -66,29 +68,28 @@ def get_ptiles(df, percentiles=None):
     for ptile in percentiles:
         index_value = (df['cdf'] - ptile/100).apply(abs).idxmin()
         best_idx = df.loc[index_value - 2:index_value + 2, :]['idx'].min()
-        ptile_dict[ptile] = best_idx
+        ptile_dict[ptile] = int(best_idx)
 
     return ptile_dict
 
 def get_all_ptiles(region_dict, date_of_interest, num_evals):
     beta = find_beta(region_dict, num_evals)
     df = sort_trials(region_dict, beta, date_of_interest)
-    return get_ptiles(df)
+    return get_ptiles(df), beta
 
-def forecast_ptiles(region_dict, deciles_idx):
+def forecast_ptiles(region_dict, ptile_dict):
     deciles_forecast = {}
     deciles_params = {}
     predictions = region_dict['m2']['predictions']
     params = region_dict['m2']['params']
     df_district = region_dict['m2']['df_district']
-    df_train_nora, df_val_nora, _ = train_val_split(
-        df_district, train_rollingmean=False, val_rollingmean=False, val_size=0)
-    for key in deciles_idx.keys():
+    df_train_nora = df_district.set_index('date').loc[region_dict['m2']['df_train']['date'],:].reset_index()
+    for key in ptile_dict.keys():
         deciles_forecast[key] = {}
-        df_predictions = predictions[deciles_idx[key]]
-        deciles_params[key] = params[deciles_idx[key]]
+        df_predictions = predictions[ptile_dict[key]]
+        deciles_params[key] = params[ptile_dict[key]]
         deciles_forecast[key]['df_prediction'] = df_predictions
-        deciles_forecast[key]['df_loss'] = calculate_loss(df_train_nora, df_val_nora, df_predictions, train_period=7,
+        deciles_forecast[key]['df_loss'] = calculate_loss(df_train_nora, None, df_predictions, train_period=7,
                         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     return deciles_params, deciles_forecast
 
@@ -101,10 +102,11 @@ def predict_r0_multipliers(region_dict, params_dict, multipliers=[0.9, 1, 1.1, 1
     predictions_mul_dict = {}
     for mul in multipliers:
         predictions_mul_dict[mul] = {}
-        predictions_mul_dict[mul]['lockdown_R0'] = mul*params_dict['lockdown_R0']
+        new_params = set_r0_multiplier(params_dict, mul)
+        predictions_mul_dict[mul]['params'] = new_params
         predictions_mul_dict[mul]['df_prediction'] = get_forecast(region_dict,
             train_fit = "m2",
-            best_params=set_r0_multiplier(params_dict, mul),
+            best_params=new_params,
             lockdown_removal_date=lockdown_removal_date)    
     return predictions_mul_dict
 
@@ -116,3 +118,5 @@ def save_r0_mul(predictions_mul_dict, folder):
         if not os.path.exists(path):
             os.makedirs(path)
         df_prediction[columns_for_csv].to_csv(os.path.join(path, f'what-if-{mul}.csv'))
+    pd.DataFrame({key: val['params'] for key, val in predictions_mul_dict.items()}) \
+        .to_csv(f'../../reports/{folder}/what-ifs/what-ifs-params.csv')
