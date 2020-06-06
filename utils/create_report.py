@@ -97,7 +97,6 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
     forecast_dict['forecast'].figure.savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2', path=plot_filepath))
     mdFile.new_paragraph("")
-    
 
     if len(forecast_dict.keys()) > 0:
         mdFile.new_header(level=1, title=f'FORECASTS ON TOTAL INFECTIONS BASED ON TOP k PARAMETER SETS FOR M2 FIT')
@@ -125,23 +124,28 @@ def create_report(predictions_dict, ROOT_DIR='../../reports/'):
                 tbl += '|-|-|'
             mdFile.new_paragraph(tbl)
     
-        mdFile.new_header(level=2, title="Min/Max Loss and Params in Top 100")
+        mdFile.new_header(level=2, title="Min/Max Loss and Params in Top 10")
         tbl = f'| Param | Min/Max |\n|:-:|-|\n'
         tbl += f'| Loss |'
-        vals = [loss for loss in forecast_dict['losses'][:100]]
+        vals = [loss for loss in forecast_dict['losses'][:10]]
         minval, maxval = min(vals), max(vals)
         tbl += f'`min: {minval}` <br> '
         tbl += f'`max: {maxval}` <br> '
         tbl += '|\n'
         for i, key in enumerate(forecast_dict['params'][0]):
             tbl += f'| {key} |'
-            vals = [params[key] for params in forecast_dict['params'][:100]]
+            vals = [params[key] for params in forecast_dict['params'][:10]]
             minval, maxval = min(vals), max(vals)
             tbl += f'`min: {minval}` <br> '
             tbl += f'`max: {maxval}` <br> '
             tbl += '|\n'
         tbl += '|-|-|'
         mdFile.new_paragraph(tbl)
+
+        mdFile.new_header(level=2, title="Percentiles")
+        mdFile.insert_code(pformat(forecast_dict['decile_params']))
+        
+        mdFile.new_header(level=2, title="What-Ifs")
     
     # Create a table of contents
     mdFile.new_table_of_contents(table_title='Contents', depth=2)
