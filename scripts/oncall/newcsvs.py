@@ -91,7 +91,7 @@ from models.ihme.dataloader import get_dataframes_cached
 # df_reported = region_dict['m2']['df_district'] # change this to df_district_unsmoothed
 df_reported = region_dict['m2']['df_district_unsmoothed'] # change this to df_district_unsmoothed
 
-df_district = region_dict['m2']['df_district'] # change this to df_district_unsmoothed
+df_district = region_dict['m2']['df_district']
 df_train_nora, df_val_nora, df_true_fitting = train_val_split(
     df_district, train_rollingmean=False, val_rollingmean=False, val_size=0)
 params = region_dict['m2']['params']
