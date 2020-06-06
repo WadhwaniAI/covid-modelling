@@ -133,8 +133,8 @@ for region in predictions_dict.keys():
     create_report(predictions_dict[region], ROOT_DIR=f'../../reports/{args.folder}') 
     predictions_dict[region]['m1']['all_trials'].to_csv(f'../../reports/{args.folder}/m1-trials.csv')
     predictions_dict[region]['m2']['all_trials'].to_csv(f'../../reports/{args.folder}/m2-trials.csv')
-    predictions_dict[region]['m2']['df_district'].to_csv(f'../../reports/{args.folder}/true.csv')
-    predictions_dict[region]['m2']['df_district_unsmoothed'].to_csv(f'../../reports/{args.folder}/smoothed.csv')
+    predictions_dict[region]['m2']['df_district_unsmoothed'].to_csv(f'../../reports/{args.folder}/true.csv')
+    predictions_dict[region]['m2']['df_district'].to_csv(f'../../reports/{args.folder}/smoothed.csv')
 
 df_output = create_all_csvs(predictions_dict, icu_fraction=0.02)
 write_csv(df_output, filename=f'../../reports/{args.folder}/output-{now}.csv')
