@@ -265,7 +265,6 @@ def forecast_k(predictions_dict: dict, k=10, train_fit='m2', forecast_days=37):
             predictions_dict, best_params=params_dict, train_fit=train_fit, simulate_till=simulate_till, verbose=False))
     return predictions, top_k_losses, top_k_params
 
-
 def get_all_trials(predictions_dict, train_fit='m2', forecast_days=37):
     predictions, losses, params = forecast_k(
         predictions_dict, 
