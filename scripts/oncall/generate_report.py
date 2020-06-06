@@ -39,7 +39,7 @@ python3 generate_report.py --districts mumbai --ktrials 100 -i 1000 -f reporttes
 
 # --- turn into command line args
 parser = argparse.ArgumentParser()
-parser.add_argument("-t", "--use-tracker", help="district name", required=False, action='store_true')
+parser.add_argument("-t", "--use-tracker", help="whether to use covid19api tracker", required=False, action='store_true')
 parser.add_argument("-s", "--smooth-jump", help="smooth jump", required=False, action='store_true')
 parser.add_argument("-method", "--smooth-method", help="smooth method", required=False, default='weighted', type=str)
 parser.add_argument("-i", "--iterations", help="optimiser iterations", required=False, default=700, type=int)
@@ -47,7 +47,7 @@ parser.add_argument("-n", "--ndays", help="smoothing days", required=False, defa
 now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 parser.add_argument("-f", "--folder", help="folder name", required=False, default=str(now), type=str)
 parser.add_argument("-k", "--ktrials", help="k trials to forecast", required=False, default=10, type=int)
-parser.add_argument("-d", "--districts", help="districts", required=False, default='mumbai', type=str)
+parser.add_argument("-d", "--districts", help="districts", required=True, type=str)
 args = parser.parse_args()
 
 # dataframes = get_covid19india_api_data()
