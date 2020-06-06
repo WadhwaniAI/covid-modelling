@@ -27,7 +27,7 @@ from main.seir.losses import Loss_Calculator
 
 from utils.enums import Columns, SEIRParams
 
-def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', best_params=None, verbose=True):
+def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', best_params=None, verbose=True, lockdown_removal_date=None):
     """Returns the forecasts for a given set of params of a particular geographical area
 
     Arguments:
@@ -47,8 +47,16 @@ def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', bes
         simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + datetime.timedelta(days=37)
     if best_params == None:
         best_params = predictions_dict[train_fit]['best_params']
+
+    default_params = copy.copy(predictions_dict[train_fit]['default_params'])
+    if lockdown_removal_date is not None:
+        train_period = predictions_dict[train_fit]['run_params']['train_period']
+        start_date = predictions_dict[train_fit]['df_train'].iloc[-train_period, :]['date']
+        lockdown_removal_date = datetime.datetime.strptime(lockdown_removal_date, '%Y-%m-%d')
+        default_params['lockdown_removal_day'] = (lockdown_removal_date - start_date).days
+    
     df_prediction = predictions_dict[train_fit]['optimiser'].solve(best_params,
-                                                                   predictions_dict[train_fit]['default_params'],
+                                                                   default_params,
                                                                    predictions_dict[train_fit]['df_train'], 
                                                                    end_date=simulate_till)
 

@@ -131,7 +131,8 @@ def predict_r0_multipliers(params_dict, multipliers=[0.9, 1, 1.1, 1.25]):
         predictions_mul_dict[mul]['lockdown_R0'] = mul*params_dict['lockdown_R0']
         predictions_mul_dict[mul]['df_prediction'] = get_forecast(region_dict,
             train_fit = "m2",
-            best_params=set_r0_multiplier(params_dict, mul))    
+            best_params=set_r0_multiplier(params_dict, mul),
+            lockdown_removal_date='2020-06-01')    
     return predictions_mul_dict
 
 def save_r0_mul(predictions_mul_dict, folder):
