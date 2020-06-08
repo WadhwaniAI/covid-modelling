@@ -19,7 +19,7 @@ from data.processing import get_data
 
 from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
-from utlis.loss import Loss_Calculator
+from utils.loss import Loss_Calculator
 from utils.enums import Columns
 from viz import plot_smoothing, plot_fit
 
