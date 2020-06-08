@@ -23,8 +23,6 @@ from utils.loss import Loss_Calculator
 from utils.enums import Columns
 from viz import plot_smoothing, plot_fit
 
-now = str(datetime.datetime.now())
-
 def get_variable_param_ranges(initialisation='intermediate', as_str=False):
     """Returns the ranges for the variable params in the search space
 
