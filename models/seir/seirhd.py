@@ -66,6 +66,7 @@ class SEIRHD(SEIR):
         N: Total population
         initialisation : method of initialisation ('intermediate'/'starting')
         """
+        STATES = ['S', 'E', 'I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
 
         # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
         if post_lockdown_R0 == None:
@@ -74,14 +75,6 @@ class SEIRHD(SEIR):
         # P_mild = 1 - P_severe - P_fatal
         P_severe = 1 - P_fatal
         P_mild = 0
-
-        # define testing related parameters
-        T_inf_detected = T_inf
-        T_inc_detected = T_inc
-
-        P_mild_detected = P_mild
-        P_severe_detected = P_severe
-        P_fatal_detected = P_fatal
 
         vanilla_params = {
             # R0 values
@@ -120,7 +113,7 @@ class SEIRHD(SEIR):
 
         # Initialisation
         state_init_values = OrderedDict()
-        key_order = ['S', 'E', 'I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
+        key_order = STATES
         for key in key_order:
             state_init_values[key] = 0
         if initialisation == 'starting':

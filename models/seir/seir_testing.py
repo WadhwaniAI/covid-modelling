@@ -80,6 +80,7 @@ class SEIR_Testing(SEIR):
         E_hosp_ratio : Ratio for Exposed to hospitalised for initialisation
         I_hosp_ratio : Ratio for Infected to hospitalised for initialisation
         """
+        STATES = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
 
         # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
         if post_lockdown_R0 == None:
@@ -133,7 +134,7 @@ class SEIR_Testing(SEIR):
 
         # Initialisation
         state_init_values = OrderedDict()
-        key_order = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
+        key_order = STATES
         for key in key_order:
             state_init_values[key] = 0
         

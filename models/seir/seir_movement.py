@@ -69,6 +69,7 @@ class SEIR_Movement(SEIR):
         N: Total population
         initialisation : method of initialisation ('intermediate'/'starting')
         """
+        STATES = ['S', 'E', 'I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
 
         # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
         if post_lockdown_R0 == None:
@@ -126,7 +127,7 @@ class SEIR_Movement(SEIR):
 
         # Initialisation
         state_init_values = OrderedDict()
-        key_order = ['S', 'E', 'I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
+        key_order = STATES
         for key in key_order:
             state_init_values[key] = 0
         if initialisation == 'starting':
