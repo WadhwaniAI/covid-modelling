@@ -113,7 +113,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     return df_train, df_val, df_true_fitting
     
 def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename, smooth_jump=False,
-                      smoothing_length=28, smoothing_method='uniform', t_recov=17, return_extra=False):
+                      smoothing_length=28, smoothing_method='uniform', t_recov=14, return_extra=False):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
