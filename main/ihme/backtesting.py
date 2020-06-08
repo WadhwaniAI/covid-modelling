@@ -1,4 +1,4 @@
-from utils.loss import evaluate
+from utils.losses import Loss_Calculator
 from copy import copy
 from models.ihme.model import IHME
 import numpy as np
@@ -166,10 +166,11 @@ def run_model(model, run_day, fit_data, val_data, max_evals, hyperopt_val_size,m
     predictions = incremental_model.predict(fit_data[model.date].min(),
         val_data[model.date].max())
     # print (predictions)
-    err = evaluate(val_data[model.ycol], predictions[len(fit_data):])
+    lc = Loss_Calculator()
+    err = lc.evaluate(val_data[model.ycol], predictions[len(fit_data):])
     xform_err = None
     if xform_func is not None:
-        xform_err = evaluate(xform_func(val_data[model.ycol], dtp),
+        xform_err = lc.evaluate(xform_func(val_data[model.ycol], dtp),
             xform_func(predictions[len(fit_data):], dtp))
     result_dict = {
         'fe_init': best_init,

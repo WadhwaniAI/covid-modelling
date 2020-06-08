@@ -1,5 +1,5 @@
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
-from utils.loss import evaluate
+from utils.losses import Loss_Calculator
 from copy import copy
 from models.ihme.model import IHME
 import numpy as np
@@ -42,7 +42,8 @@ class Optimiser():
             with HidePrints():
                 test_model.fit(train_cut)
                 predictions = test_model.predict(val_cut[model.date].min(), val_cut[model.date].max())
-            err = evaluate(val_cut[model.ycol], predictions)
+            lc = Loss_Calculator()
+            err = lc.evaluate(val_cut[model.ycol], predictions)
             return {
                 'loss': err[scoring],
                 'status': STATUS_OK,

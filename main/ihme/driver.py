@@ -23,7 +23,7 @@ from models.ihme.dataloader import get_district_timeseries_cached
 from backtesting import IHMEBacktest
 from optimiser import Optimiser
 from utils.util import train_test_split, rollingavg
-from utils.loss import evaluate
+from utils.losses import Loss_Calculator
 from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
 from plotting import plot_results, plot_backtesting_results, plot_backtesting_errors
 from plotting import plot
@@ -148,10 +148,12 @@ def run_pipeline(triple, args):
     all_preds_dates = pd.to_datetime(pd.Series([timedelta(days=x)+train[model_params['date']].min() for x in range(n_days)]))
     all_preds = model.predict(train[model_params['date']].min(), test[model_params['date']].max() + timedelta(days=model_params['daysforward']))
     
+    lc = Loss_Calculator()
+
     train_pred = all_preds[:len(train)]
-    trainerr = evaluate(train[model_params['ycol']], train_pred)
+    trainerr = lc.evaluate(train[model_params['ycol']], train_pred)
     test_pred = all_preds[len(train):len(train) + len(test)]
-    testerr = evaluate(test[model_params['ycol']], test_pred)
+    testerr = lc.evaluate(test[model_params['ycol']], test_pred)
     # future_pred = all_preds[len(train) + len(test):]
     err = {
         'train': trainerr,
@@ -160,9 +162,9 @@ def run_pipeline(triple, args):
 
     xform_err = None
     xform_func = lograte_to_cumulative if args.log else rate_to_cumulative
-    xform_trainerr = evaluate(xform_func(train[model_params['ycol']], dtp),
+    xform_trainerr = lc.evaluate(xform_func(train[model_params['ycol']], dtp),
         xform_func(train_pred, dtp))
-    xform_testerr = evaluate(xform_func(test[model_params['ycol']], dtp),
+    xform_testerr = lc.evaluate(xform_func(test[model_params['ycol']], dtp),
         xform_func(test_pred, dtp))
     xform_err = {
         'train': xform_trainerr,

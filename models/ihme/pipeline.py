@@ -17,7 +17,7 @@ from curvefit.core.utils import data_translator
 
 sys.path.append('../..')
 from models.ihme.util import get_daily_vals
-from utils.loss import mape, rmse, rmsle
+from utils.losses import Loss_Calculator
 from utils.util import smooth
 from viz import setup_plt
 
@@ -303,19 +303,20 @@ class WAIPipeline():
 
     def _calc_error(self, actual, pred):
         r2 = r2_score(actual, pred)
+        lc = Loss_Calculator()
         try:
-            rmserr = rmse(actual, pred)
+            rmserr = lc._calc_rmse(actual, pred)
         except Exception as e:
             rmserr = np.inf
             print("Could not compute RMSE: {}".format(e))
         try:
-            rmslerr = rmsle(actual, pred)
+            rmslerr = lc._calc_rmse(actual, pred, log=True)
         except Exception as e:
             try: 
-                rmslerr = rmsle(np.exp(actual), np.exp(pred))
+                rmslerr = lc._calc_rmse(np.exp(actual), np.exp(pred), log=True)
             except Exception as e:
                 rmslerr = np.inf
                 print("Could not compute RMSLE: {}".format(e))
-        maperr = mape(actual, pred)
+        maperr = lc._calc_mape(actual, pred)
         return r2, rmserr, rmslerr, maperr
         

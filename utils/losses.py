@@ -41,12 +41,21 @@ class Loss_Calculator():
             loss += losses[compartment]
         return loss
 
-    def evaluate(y_true, y_pred):
+    def evaluate(self, y_true, y_pred):
+        """Used by IHME
+
+        Args:
+            y_true ([type]): [description]
+            y_pred ([type]): [description]
+
+        Returns:
+            dict: Dict of losses
+        """
         err = {}
-        err['mape'] = mape(y_true, y_pred)
-        err['rmse'] = rmse(y_true, y_pred)
+        err['mape'] = _calc_mape(y_true, y_pred)
+        err['rmse'] = _calc_rmse(y_true, y_pred)
         try:
-            err['rmsle'] = rmsle(y_true, y_pred)
+            err['rmsle'] = _calc_rmse(y_true, y_pred, log=True)
         except:
             err['rmsle'] = None
         return err
