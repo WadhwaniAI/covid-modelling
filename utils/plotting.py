@@ -1,4 +1,15 @@
 import matplotlib.pyplot as plt
+import seaborn as sns
+from pandas.plotting import register_matplotlib_converters
+from matplotlib.dates import DateFormatter
+
+def setup_plt(ycol, yscale='log'):
+    sns.set()
+    register_matplotlib_converters()
+    plt.yscale(yscale)
+    plt.gca().xaxis.set_major_formatter(DateFormatter("%d.%m"))
+    plt.xlabel("Date")
+    plt.ylabel(ycol)
 
 def create_plots(sol, states_time_matrices, labels, last_time=100, savefig=False, filenames=None):
     ind = sol.t[:last_time]

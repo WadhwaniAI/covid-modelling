@@ -5,6 +5,7 @@
 *.pkl
 *.pyc
 *.pickle
+*.txt
 
 # Junk / Hidden Files
 **.ipynb_checkpoints/
@@ -31,6 +32,7 @@ sftp-config.json
 **mcmc/
 *temp/
 **temp/
+cache/
 
 # Exceptions
 !data/data/*.csv

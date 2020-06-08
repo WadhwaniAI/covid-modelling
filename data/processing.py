@@ -47,8 +47,8 @@ def get_data(dataframes=None, state=None, district=None, use_dataframe='district
         df_result = get_state_time_series(state=state)
     return df_result
 
-
 def get_custom_data_from_db(state='Maharashtra', district='Pune'):
+    print('fetching from athenadb...')
     dataframes = get_athena_dataframes()
     df_result = copy.copy(dataframes['covid_case_summary'])
     df_result = df_result[np.logical_and(
@@ -61,9 +61,14 @@ def get_custom_data_from_db(state='Maharashtra', district='Pune'):
     del df_result['severe']
     del df_result['critical']
     del df_result['partition_0']
-
     df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]
     df_result.columns = [x if x != 'confirmed' else 'total_infected' for x in df_result.columns]
+    df_result.columns = [x if x != 'total' else 'total_infected' for x in df_result.columns]
+    df_result = df_result.dropna(subset=['date'], how='any')
+    # df_result = df_result.dropna(subset=['date', 'hospitalised', 'total_infected', 'recovered', 'deceased'], how='any')
+    for col in df_result.columns:
+        if col in ['hospitalised', 'total_infected', 'recovered', 'deceased']:
+            df_result[col] = df_result[col].astype('int64')
     return df_result
     
 #TODO add support of adding 0s column for the ones which don't exist
@@ -85,7 +90,7 @@ def get_custom_data_from_file(filename, data_format='new'):
         df_result.loc[:, ['total_infected', 'hospitalised', 'recovered', 'deceased']] = df_result[[
             'total_infected', 'hospitalised', 'recovered', 'deceased']].apply(pd.to_numeric)
         df_result = df_result[['date', 'state', 'district', 'total_infected', 'hospitalised', 'recovered', 'deceased']]
-
+        df_result = df_result.dropna(subset=['date'], how='all')
         return df_result
     if data_format == 'old':
 
@@ -94,7 +99,6 @@ def get_custom_data_from_file(filename, data_format='new'):
         df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]
         df_result.columns = [x if x != 'confirmed' else 'total_infected' for x in df_result.columns]
         
-
 def get_state_time_series(state='Delhi'):
     rootnet_dataframes = get_rootnet_api_data()
     df_states = rootnet_dataframes['df_state_time_series']
@@ -264,32 +268,40 @@ def get_concat_data(dataframes, state, district, new_district_name=None, concat=
             assert new_district_name != None, "must provide new_district_name"
             all_dfs = defaultdict(list)
             for dist in district:
-                raw = get_district_time_series(dataframes, state, dist, use_dataframe='raw_data')
+                raw = get_data(dataframes, state=state, district=dist, use_dataframe='raw_data')
+                # raw = get_district_time_series(dataframes, state, dist, use_dataframe='raw_data')
                 if len(raw) != 0:
                     all_dfs['from_df_raw_data'].append(raw)
-                dr = get_district_time_series(dataframes, state, dist, use_dataframe='deaths_recovs')
+                dr = get_data(dataframes, state=state, district=dist, use_dataframe='deaths_recovs')
+                # dr = get_district_time_series(dataframes, state, dist, use_dataframe='deaths_recovs')
                 if len(dr) != 0:
                     all_dfs['from_df_deaths_recoveries'].append(dr)
-                dwise = get_district_time_series(dataframes, state, dist, use_dataframe='districts_daily')
+                dwise = get_data(dataframes, state=state, district=dist, use_dataframe='districts_daily')
+                # dwise = get_district_time_series(dataframes, state, dist, use_dataframe='districts_daily')
                 if len(dwise) != 0:
                     all_dfs['from_df_districtwise'].append(dwise)
             from_df_raw_data = combine_districts(all_dfs['from_df_raw_data'], new_district=new_district_name)
             from_df_deaths_recoveries = combine_districts(all_dfs['from_df_deaths_recoveries'], new_district=new_district_name)
             from_df_districtwise = combine_districts(all_dfs['from_df_districtwise'], new_district=new_district_name)
         else:
-            from_df_raw_data = get_district_time_series(dataframes, state, district, use_dataframe='raw_data')
-            from_df_deaths_recoveries = get_district_time_series(dataframes, state, district, use_dataframe='deaths_recovs')
-            from_df_districtwise = get_district_time_series(dataframes, state, district, use_dataframe='districts_daily')
+            from_df_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
+            # from_df_raw_data = get_district_time_series(dataframes, state, district, use_dataframe='raw_data')
+            from_df_deaths_recoveries = get_data(dataframes, state=state, district=district, use_dataframe='deaths_recovs')
+            # from_df_deaths_recoveries = get_district_time_series(dataframes, state, district, use_dataframe='deaths_recovs')
+            from_df_districtwise = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
+            # from_df_districtwise = get_district_time_series(dataframes, state, district, use_dataframe='districts_daily')
         return concat_sources(from_df_raw_data, from_df_deaths_recoveries, from_df_districtwise)
     else:
         if type(district) == list:
             assert new_district_name != None, "must provide new_district_name"
             all_dfs = []
             for dist in district:
-                dwise = get_district_time_series(dataframes, state, dist, use_dataframe='districts_daily')
+                dwise = get_data(dataframes, state=state, district=dist, use_dataframe='districts_daily')
+                # dwise = get_district_time_series(dataframes, state, dist, use_dataframe='districts_daily')
                 if len(dwise) != 0:
                     all_dfs.append(dwise)
             from_df_districtwise = combine_districts(all_dfs, new_district=new_district_name)
         else:
-            from_df_districtwise = get_district_time_series(dataframes, state, district, use_dataframe='districts_daily')
+            from_df_districtwise = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
+            # from_df_districtwise = get_district_time_series(dataframes, state, district, use_dataframe='districts_daily')
         return from_df_districtwise

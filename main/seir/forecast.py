@@ -8,10 +8,12 @@ import matplotlib.dates as mdates
 import seaborn as sns
 from hyperopt import hp, tpe, fmin, Trials
 from tqdm import tqdm
+from adjustText import adjust_text
 
 from collections import OrderedDict, defaultdict
 import itertools
 from functools import partial
+from tqdm import tqdm
 import datetime
 from joblib import Parallel, delayed
 import copy
@@ -23,8 +25,9 @@ from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
 from main.seir.losses import Loss_Calculator
 
+from utils.enums import Columns, SEIRParams
 
-def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', best_params=None):
+def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', best_params=None, verbose=True, lockdown_removal_date=None):
     """Returns the forecasts for a given set of params of a particular geographical area
 
     Arguments:
@@ -38,18 +41,26 @@ def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', bes
     Returns:
         [type] -- [description]
     """
-    print("getting forecasts ..")
+    if verbose:
+        print("getting forecasts ..")
     if simulate_till == None:
-        simulate_till = datetime.datetime.today() + datetime.timedelta(days=37)
+        simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + datetime.timedelta(days=37)
     if best_params == None:
         best_params = predictions_dict[train_fit]['best_params']
+
+    default_params = copy.copy(predictions_dict[train_fit]['default_params'])
+    if lockdown_removal_date is not None:
+        train_period = predictions_dict[train_fit]['run_params']['train_period']
+        start_date = predictions_dict[train_fit]['df_train'].iloc[-train_period, :]['date']
+        lockdown_removal_date = datetime.datetime.strptime(lockdown_removal_date, '%Y-%m-%d')
+        default_params['lockdown_removal_day'] = (lockdown_removal_date - start_date).days
+    
     df_prediction = predictions_dict[train_fit]['optimiser'].solve(best_params,
-                                                                   predictions_dict[train_fit]['default_params'],
+                                                                   default_params,
                                                                    predictions_dict[train_fit]['df_train'], 
                                                                    end_date=simulate_till)
 
     return df_prediction
-
 
 def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_fraction=0.02, best_params=None):
     """Created the CSV file for one particular geographical area in the format Keshav consumes
@@ -130,6 +141,61 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_
     df_output = df_output[columns]
     return df_output
 
+def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, regionType: str, icu_fraction=0.02):
+    print("compiling csv data ..")
+    columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'current_total', 'current_active', 'current_recovered',
+               'current_deceased', 'current_hospitalised', 'current_icu', 'current_ventilator', 'predictionDate']
+    
+    for decile in decile_dict.keys():
+        columns += [f'active_{decile}', f'active_{decile}_error', 
+            f'hospitalised_{decile}', f'hospitalised_{decile}_error', 
+            f'icu_{decile}', f'icu_{decile}_error', 
+            f'recovered_{decile}', f'recovered_{decile}_error', 
+            f'deceased_{decile}', f'deceased_{decile}_error', 
+            f'total_{decile}', f'total_{decile}_error'
+        ]
+
+    df_output = pd.DataFrame(columns=columns)
+
+    dateseries = decile_dict[list(decile_dict.keys())[0]]['df_prediction']['date']
+    prediction_daterange = np.union1d(df_true['date'], dateseries)
+    no_of_data_points = len(prediction_daterange)
+    df_output['predictionDate'] = prediction_daterange
+
+    df_output['forecastRunDate'] = [datetime.datetime.today().date()]*no_of_data_points
+    df_output['regionType'] = [regionType]*no_of_data_points
+    df_output['region'] = [region]*no_of_data_points
+    df_output['model_name'] = ['SEIR']*no_of_data_points
+    df_output['error_function'] = ['MAPE']*no_of_data_points
+    df_output.set_index('predictionDate', inplace=True)
+
+    for decile in decile_dict.keys():
+        df_prediction = decile_dict[decile]['df_prediction']
+        df_prediction = df_prediction.set_index('date')
+        df_loss = decile_dict[decile]['df_loss']
+        df_output.loc[df_prediction.index, f'active_{decile}'] = df_prediction['hospitalised']
+        df_output.loc[df_prediction.index, f'active_{decile}_error'] = df_loss.loc['hospitalised', 'train']
+        df_output.loc[df_prediction.index, f'hospitalised_{decile}'] = df_prediction['hospitalised']
+        df_output.loc[df_prediction.index, f'hospitalised_{decile}_error'] = df_loss.loc['hospitalised', 'train']
+        df_output.loc[df_prediction.index, f'icu_{decile}'] = icu_fraction*df_prediction['hospitalised']
+        df_output.loc[df_prediction.index, f'icu_{decile}_error'] = df_loss.loc['hospitalised', 'train']
+        df_output.loc[df_prediction.index, f'recovered_{decile}'] = df_prediction['recovered']
+        df_output.loc[df_prediction.index, f'recovered_{decile}_error'] = df_loss.loc['recovered', 'train']
+        df_output.loc[df_prediction.index, f'deceased_{decile}'] = df_prediction['deceased']
+        df_output.loc[df_prediction.index, f'deceased_{decile}_error'] = df_loss.loc['deceased', 'train']
+        df_output.loc[df_prediction.index, f'total_{decile}'] = df_prediction['total_infected']
+        df_output.loc[df_prediction.index, f'total_{decile}_error'] = df_loss.loc['total_infected', 'train']
+
+    df_true = df_true.set_index('date')
+    df_output.loc[df_true.index, 'current_total'] = df_true['total_infected'].to_numpy()
+    df_output.loc[df_true.index, 'current_hospitalised'] = df_true['hospitalised'].to_numpy()
+    df_output.loc[df_true.index, 'current_deceased'] = df_true['deceased'].to_numpy()
+    df_output.loc[df_true.index, 'current_recovered'] = df_true['recovered'].to_numpy()
+    
+    df_output.reset_index(inplace=True)
+    # df_output = df_output[columns]
+    return df_output
+
 def create_all_csvs(predictions_dict: dict, icu_fraction=0.02):
     """Creates the output for all geographical regions (not just one)
 
@@ -158,7 +224,6 @@ def create_all_csvs(predictions_dict: dict, icu_fraction=0.02):
     
     return df_final
 
-
 def write_csv(df_final: pd.DataFrame, filename:str=None):
     """Helper function for saving the CSV files
 
@@ -170,105 +235,41 @@ def write_csv(df_final: pd.DataFrame, filename:str=None):
         filename = '../../output-{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     df_final.to_csv(filename, index=False)
 
-
-def preprocess_for_error_plot(df_prediction : pd.DataFrame, df_loss : pd.DataFrame, 
-                              which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered']):
-    df_temp = copy.copy(df_prediction)
-    df_temp.loc[:, which_compartments] = df_prediction.loc[:, which_compartments]*(1 - 0.01*df_loss['val'])
-    df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
-    df_temp = copy.copy(df_prediction)
-    df_temp.loc[:, which_compartments] = df_prediction.loc[:, which_compartments]*(1 + 0.01*df_loss['val'])
-    df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
-    return df_prediction
-
-def plot_forecast(predictions_dict : dict, region : tuple, both_forecasts=False, log_scale=False, filename=None, 
-                  which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'], 
-                  fileformat='eps', error_bars=False):
-    """Function for plotting forecasts
-
-    Arguments:
-        predictions_dict {dict} -- Dict of predictions for a particular district 
-        region {tuple} -- Region Name eg : ('Maharashtra', 'Mumbai')
-
-    Keyword Argument
-        which_compartments {list} -- Which compartments to plot (default: {['hospitalised', 'total_infected', 'deceased', 'recovered']})
-        both_forecasts {bool} -- If true, plot both forecasts (default: {False})
-        log_scale {bool} -- If true, y is in log scale (default: {False})
-        filename {str} -- If given, the plot is saved here (default: {None})
-        fileformat {str} -- The format in which the plot will be saved (default: {'eps'})
-        error_bars {bool} -- If true, error bars will be plotted (default: {False})
-
-    Returns:
-        ax -- Matplotlib ax figure
-    """
-    df_prediction = get_forecast(predictions_dict)
-    # df_prediction.loc[:, which_compartments] = df_prediction[]
-    if both_forecasts:
-        df_prediction_m1 = get_forecast(predictions_dict, train_fit='m1')
-    df_true = predictions_dict['m1']['df_district']
+def order_trials(m_dict: dict):
+    params_array = []
+    for trial in m_dict['trials']:
+        params_dict = copy.copy(trial['misc']['vals'])
+        for key in params_dict.keys():
+            params_dict[key] = params_dict[key][0]
+        params_array.append(params_dict)
+    params_array = np.array(params_array)
+    losses_array = np.array([trial['result']['loss'] for trial in m_dict['trials']])
     
-    if error_bars:
-        df_prediction = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'], 
-                                                  which_compartments)
-        if both_forecasts:
-            df_prediction_m1 = preprocess_for_error_plot(df_prediction_m1, predictions_dict['m1']['df_loss'], 
-                                                        which_compartments)
+    least_losses_indices = np.argsort(losses_array)
+    losses_array = losses_array[least_losses_indices]
+    params_array = params_array[least_losses_indices]
+    return params_array, losses_array
 
-    fig, ax = plt.subplots(figsize=(12, 12))
+def top_k_trials(m_dict: dict, k=10):
+    params_array, losses_array = order_trials(m_dict)
+    return losses_array[:k], params_array[:k]
 
-    if 'total_infected' in which_compartments:
-        ax.plot(df_true['date'], df_true['total_infected'],
-                '-o', color='C0', label='Confirmed Cases (Observed)')
-        sns.lineplot(x="date", y="total_infected", data=df_prediction,
-                     ls='-', color='C0', label='Confirmed Cases (M2 Forecast)')
-        if both_forecasts:
-            sns.lineplot(x="date", y="total_infected", data=df_prediction_m1,
-                         ls='--', color='C0', label='Confirmed Cases (M1 Forecast)')
-            # ax.plot(df_prediction_m1['date'], df_prediction_m1['total_infected'],
-            #         '--', color='C0', label='Confirmed Cases (M1 Forecast)')
-    if 'hospitalised' in which_compartments:
-        ax.plot(df_true['date'], df_true['hospitalised'],
-                '-o', color='orange', label='Active Cases (Observed)')
-        sns.lineplot(x="date", y="hospitalised", data=df_prediction,
-                     ls='-', color='orange', label='Active Cases (M2 Forecast)')
-        if both_forecasts:
-            sns.lineplot(x="date", y="hospitalised", data=df_prediction_m1,
-                         ls='--', color='orange', label='Active Cases (M1 Forecast)')
-            # ax.plot(df_prediction_m1['date'], df_prediction_m1['hospitalised'],
-            #         '--', color='orange', label='Active Cases (M1 Forecast)')
-    if 'recovered' in which_compartments:
-        ax.plot(df_true['date'], df_true['recovered'],
-                '-o', color='green', label='Recovered Cases (Observed)')
-        sns.lineplot(x="date", y="recovered", data=df_prediction,
-                     ls='-', color='green', label='Recovered Cases (M2 Forecast)')
-        if both_forecasts:
-            sns.lineplot(x="date", y="recovered", data=df_prediction_m1,
-                         ls='--', color='green', label='Recovered Cases (M1 Forecast)')
-            # ax.plot(df_prediction_m1['date'], df_prediction_m1['recovered'],
-            #         '--', color='green', label='Recovered Cases (M1 Forecast)')
-    if 'deceased' in which_compartments:
-        ax.plot(df_true['date'], df_true['deceased'],
-                '-o', color='red', label='Deceased Cases (Observed)')
-        sns.lineplot(x="date", y="deceased", data=df_prediction,
-                     ls='-', color='red', label='Deceased Cases (M2 Forecast)')
-        if both_forecasts:
-            sns.lineplot(x="date", y="deceased", data=df_prediction_m1,
-                         ls='--', color='red', label='Deceased Cases (M1 Forecast)')
-            # ax.plot(df_prediction_m1['date'], df_prediction_m1['deceased'],
-            #         '--', color='red', label='Deceased Cases (M1 Forecast)')
-    
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
-    ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.ylabel('No of People', fontsize=16)
-    if log_scale:
-        plt.yscale('log')
-    plt.xlabel('Time', fontsize=16)
-    plt.xticks(rotation=45,horizontalalignment='right')
-    plt.legend()
-    plt.title('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
-    plt.grid()
-    if filename != None:
-        plt.savefig(filename, format=fileformat)
+def forecast_k(predictions_dict: dict, k=10, train_fit='m2', forecast_days=37):
+    top_k_losses, top_k_params = top_k_trials(predictions_dict[train_fit], k=k)
+    predictions = []
+    dots = ['.']
+    simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + datetime.timedelta(days=forecast_days)
+    print("getting forecasts ..")
+    for i, params_dict in tqdm(enumerate(top_k_params)):
+        predictions.append(get_forecast(
+            predictions_dict, best_params=params_dict, train_fit=train_fit, simulate_till=simulate_till, verbose=False))
+    return predictions, top_k_losses, top_k_params
 
-    return ax
+def get_all_trials(predictions_dict, train_fit='m2', forecast_days=37):
+    predictions, losses, params = forecast_k(
+        predictions_dict, 
+        k=len(predictions_dict[train_fit]['trials']), 
+        train_fit=train_fit,
+        forecast_days=forecast_days
+    )
+    return predictions, losses, params

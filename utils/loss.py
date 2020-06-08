@@ -3,7 +3,7 @@ from sklearn.metrics import mean_squared_error, mean_squared_log_error
 
 def mape(y_true, y_pred):
     y_true, y_pred = np.array(y_true), np.array(y_pred)
-    return np.mean(np.abs((y_true - y_pred) / y_true))
+    return 100*np.mean(np.abs((y_true - y_pred) / y_true))
 
 def rmse(y_true, y_pred):
     return np.sqrt(mean_squared_error(y_true, y_pred))
