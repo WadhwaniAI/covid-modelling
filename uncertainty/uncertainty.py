@@ -1,5 +1,6 @@
 import os
 import pdb
+import json
 import argparse
 import numpy as np
 np.random.seed(10)
@@ -12,7 +13,7 @@ from mcmc import MCMC
 from mcmc_utils import predict, get_state
 
 
-def visualize(mcmc: MCMC, compartments: list, end_date: str = None, out_dir: str = ''): 
+def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, out_dir: str = ''): 
     data = pd.concat([mcmc.df_train, mcmc.df_val])
     result = predict(data, mcmc.chains, end_date)
 
@@ -71,24 +72,24 @@ def plot_chains(mcmc: MCMC, out_dir: str):
 
         plt.savefig(join(out_dir, '{}_{}_{}.png'.format(param, mcmc.district, mcmc.state)))
 
-def main(district: str, end_date: str, chains:int, iters: int, stamp: bool):
-    state = get_state(district)
-    mcmc = MCMC(state = state, district = district, n_chains = chains, iters = iters, fit_days=10, test_days=5, fit2new=True)
+def main(config: str):
+    cfg = json.load(open(join('cfg', config)))
+    mcmc = MCMC(cfg)
     mcmc.run()
-    sig = mcmc.timestamp.strftime("%d-%b-%Y (%H:%M:%S)") if stamp else ''
+    sig = mcmc.timestamp.strftime("%d-%b-%Y (%H:%M:%S)")
     out_dir = join('plots', sig)
     os.makedirs(out_dir, exist_ok=True)
+    with open(join(out_dir, config), 'w') as outfile:
+        json.dump(cfg, outfile)
+    with open(join(out_dir, "R_hat.json"), 'w') as outfile:
+        json.dump(mcmc.R_hat, outfile)
+
     plot_chains(mcmc, out_dir)
+    visualize_forecasts(mcmc, cfg["compartments"], end_date=cfg["end_date"], out_dir=out_dir)
 
-    compartments = ["total_infected"]
-    visualize(mcmc, compartments, end_date=end_date, out_dir=out_dir)
-
-if __name__=="__main__":
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'Uncertainty Estimation with MCMC', allow_abbrev=False)
-    parser.add_argument('-d', '--district', type=str, required=True, help = 'name of the district')
-    parser.add_argument('-e', '--end_date', type=str, default=None, help = 'forecast end date')
-    parser.add_argument('-c', '--chains', type=int, default=5, help = 'no. of mcmc chains')
-    parser.add_argument('-i', '--iters', type=int, default=25000, help = 'no. of iterations for mcmc')
-    parser.add_argument('-s', '--stamp', action='store_true', help = 'add timestamp to plots?')
+    parser.add_argument('-c', '--config', type=str, required=True, help = 'name config file')
     (args, _) = parser.parse_known_args()
-    main(args.district, args.end_date, args.chains, args.iters, args.stamp)
+    main(args.config)
+
