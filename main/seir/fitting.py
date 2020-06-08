@@ -304,7 +304,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
 def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_period=7, val_period=7, 
                          data_from_tracker=True, filename=None, data_format='new', N=1e7, num_evals=1500,
                          which_compartments=['hospitalised', 'total_infected'], initialisation='starting', 
-                         smooth_jump=False, smoothing_length=28, smoothing_method='uniform', smooth_plot=False):
+                         smooth_jump=False, smoothing_length=28, smoothing_method='uniform'):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -337,7 +337,7 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
     # Get data
     df_district, df_district_raw_data, extra = get_regional_data(dataframes, state, district, data_from_tracker, data_format,
                                                                          filename, smooth_jump=smooth_jump, smoothing_method=smoothing_method,
-                                                                         smoothing_length=smoothing_length, return_extra=smooth_plot)
+                                                                         smoothing_length=smoothing_length, return_extra=True)
     smoothed_plot = extra['ax']
     orig_df_district = extra['df_district_unsmoothed']
 
