@@ -100,3 +100,16 @@ class Loss_Calculator():
         else:
             del df_loss['val']
         return df_loss
+
+    def create_loss_dataframe_master(self, predictions_dict, train_fit='m1'):
+        starting_key = list(predictions_dict.keys())[0]
+        loss_columns = pd.MultiIndex.from_product([predictions_dict[starting_key][train_fit]['df_loss'].columns, 
+                                                   predictions_dict[starting_key][train_fit]['df_loss'].index])
+        loss_index = predictions_dict.keys()
+
+        df_loss_master = pd.DataFrame(columns=loss_columns, index=loss_index)
+        for key in predictions_dict.keys():
+            df_loss_master.loc[key, :] = np.around(
+                predictions_dict[key][train_fit]['df_loss'].values.T.flatten().astype('float'), decimals=2)
+            
+        return df_loss_master
