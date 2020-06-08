@@ -14,7 +14,7 @@ import datetime
 from joblib import Parallel, delayed
 
 from models.seir.seir_testing import SEIR_Testing
-from main.seir.losses import Loss_Calculator
+from utils.losses import Loss_Calculator
 
 class Optimiser():
     """Class which implements all optimisation related activites (training, evaluation, etc)
