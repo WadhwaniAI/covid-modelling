@@ -1,7 +1,7 @@
-import numpy as np
 import pandas as pd
 
-import datetime
+import pickle
+import argparse
 import copy
 import json
 import time
@@ -9,22 +9,13 @@ import time
 import sys
 sys.path.append('../../')
 
-from data.dataloader import get_covid19india_api_data
-from data.processing import get_data
-from models.ihme.dataloader import get_dataframes_cached
-
-from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
 from main.seir.fitting import calculate_loss, train_val_split
-from main.seir.forecast import get_forecast, create_decile_csv, write_csv
-from main.seir.forecast import order_trials, get_all_trials
-from utils.create_report import create_report, trials_to_df
+from main.seir.forecast import create_decile_csv
+from utils.create_report import create_report
 from utils.enums import Columns
-from viz import plot_forecast, plot_trials, plot_r0_multipliers
+from viz import plot_trials, plot_r0_multipliers
 from main.seir.uncertainty import get_all_ptiles, forecast_ptiles
 from main.seir.uncertainty import save_r0_mul, predict_r0_multipliers
-
-import pickle
-import argparse
 
 parser = argparse.ArgumentParser()
 t = time.time()
