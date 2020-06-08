@@ -14,7 +14,6 @@ from mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, 
 
 
 class MCMC(object):
-    # def __init__(self, state: str, district: str, n_chains: int, iters: int, dist: str, fit_days: int = 10, test_days: int = 5, fit2new: bool = False):
     def __init__(self, cfg, **ignored):
         self.timestamp = datetime.now()
         self.state = get_state(cfg["district"])
@@ -90,8 +89,8 @@ class MCMC(object):
         return np.log(prior)
 
     def _accept(self, theta_old, theta_new):    
-        x_new = self._log_likelihood(theta_new) #+ self._log_prior(theta_new)
-        x_old = self._log_likelihood(theta_old) #+ self._log_prior(theta_old)
+        x_new = self._log_likelihood(theta_new)
+        x_old = self._log_likelihood(theta_old)
         
         if (x_new) > (x_old):
             return True
