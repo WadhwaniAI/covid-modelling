@@ -47,6 +47,9 @@ class SEIR_Movement_Testing(SEIR):
         lockdown_R0: R0 value during lockdown (float)
         post_lockdown_R0: R0 value post-lockdown (float)
 
+        Movement params -
+        mu, Percentage of people moving out of S, E, I buckets daily (float)
+
         Transmission parameters - 
         T_inc: The incubation time of the infection (float)
         T_inf: The duration for which an individual is infectious (float)
@@ -89,15 +92,7 @@ class SEIR_Movement_Testing(SEIR):
         P_severe = 1 - P_fatal
         P_mild = 0
 
-        # define testing related parameters
-        T_inf_detected = T_inf
-        T_inc_detected = T_inc
-
-        P_mild_detected = P_mild
-        P_severe_detected = P_severe
-        P_fatal_detected = P_fatal
-
-        vanilla_params = {
+        params = {
             # R0 values
             'pre_lockdown_R0': pre_lockdown_R0, # R0 value pre-lockdown
             'lockdown_R0': lockdown_R0,  # R0 value during lockdown
@@ -128,16 +123,7 @@ class SEIR_Movement_Testing(SEIR):
 
             #Initialisation Params
             'E_hosp_ratio' : E_hosp_ratio, # Ratio for Exposed to hospitalised for initialisation
-            'I_hosp_ratio' : I_hosp_ratio # Ratio for Infected to hospitalised for initialisation
-        }
-
-        testing_params = {
-            'T_inc': T_inc_detected,
-            'T_inf': T_inf_detected,
-
-            'P_mild': P_mild_detected,
-            'P_severe': P_severe_detected,
-            'P_fatal': P_fatal_detected,
+            'I_hosp_ratio' : I_hosp_ratio, # Ratio for Infected to hospitalised for initialisation
 
             # Testing Parameters
             'q': q, # Perfection of quarantining : If q = 0, quarantining is perfect. q = 1. quarantining is absolutely imperfect
@@ -148,12 +134,8 @@ class SEIR_Movement_Testing(SEIR):
         }
 
         # Set all variables as attributes of self
-        for key in vanilla_params:
-            setattr(self, key, vanilla_params[key])
-
-        for key in testing_params:
-            suffix = '_D' if key in vanilla_params else ''
-            setattr(self, key + suffix, testing_params[key])
+        for key in params:
+            setattr(self, key, params[key])
 
         # Initialisation
         state_init_values = OrderedDict()
@@ -203,20 +185,19 @@ class SEIR_Movement_Testing(SEIR):
             self.R0 = self.pre_lockdown_R0
 
         self.T_trans = self.T_inf/self.R0
-        self.T_trans_D = self.T_inf_D/self.R0
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
 
         # Write differential equations
-        dydt[0] = - I * S / (self.T_trans) - (self.q / self.T_trans_D) * (S * D_I) - (self.mu*S) # S
-        dydt[1] = I * S / (self.T_trans) + (self.q / self.T_trans_D) * (S * D_I) - (E/ self.T_inc) - (self.theta_E * self.psi_E * E) - (self.mu*E) # E
+        dydt[0] = - ((I + self.q * D_I) * S) / (self.T_trans) - (self.mu*S) # S
+        dydt[1] = ((I + self.q * D_I) * S ) / (self.T_trans) - (E / self.T_inc) - (self.theta_E * self.psi_E * E) - (self.mu*E) # E
         dydt[2] = E / self.T_inc - I / self.T_inf - (self.theta_I * self.psi_I * I) - (self.mu*I) # I
-        dydt[3] = (self.theta_E * self.psi_E * E) - (1 / self.T_inc_D) * D_E # D_E
-        dydt[4] = (self.theta_I * self.psi_I * I) + (1 / self.T_inc_D) * D_E - (1 / self.T_inf_D) * D_I # D_I 
-        dydt[5] = (1/self.T_inf)*(self.P_mild*I) + (1/self.T_inf_D)*(self.P_mild_D*D_I) - R_mild/self.T_recov_mild # R_mild
-        dydt[6] = (1/self.T_inf)*(self.P_severe*I) + (1/self.T_inf_D)*(self.P_severe_D*D_I) - R_severe/self.T_recov_severe # R_severe
-        dydt[7] = (1/self.T_inf)*(self.P_fatal*I) + (1/self.T_inf_D)*(self.P_fatal_D*D_I) - R_fatal/self.T_death # R_fatal
+        dydt[3] = (self.theta_E * self.psi_E * E) - (1 / self.T_inc) * D_E # D_E
+        dydt[4] = (self.theta_I * self.psi_I * I) + (1 / self.T_inc) * D_E - (1 / self.T_inf) * D_I # D_I 
+        dydt[5] = (1/self.T_inf)*(self.P_mild*(I + D_I)) - R_mild/self.T_recov_mild # R_mild
+        dydt[6] = (1/self.T_inf)*(self.P_severe*(I + D_I)) - R_severe/self.T_recov_severe # R_severe
+        dydt[7] = (1/self.T_inf)*(self.P_fatal*(I + D_I)) - R_fatal/self.T_death # R_fatal
         dydt[8] = R_mild/self.T_recov_mild + R_severe/self.T_recov_severe # C
         dydt[9] = R_fatal/self.T_death # D
 
