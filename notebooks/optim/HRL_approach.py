@@ -72,7 +72,7 @@ class FittedQIteration(object):
 #                             for action, duration in itertools.product(range(self.simulator.num_actions), range(self.simulator.max_duration))])
 
 
-    def policy(self, state, eps=0.5):
+    def policy(self, state, eps=0.1):
         """Return the epsilon-greedy action based on the current policy (or a
         random action if the Q function hasn't yet been estimated."""
         a=np.zeros(2)
@@ -94,7 +94,7 @@ class FittedQIteration(object):
                 a[1]=cord[1]
             else:
                 a=[0,0]
-        Duration=a[1]*10+10
+        Duration=a[1]*self.simulator.duration_scale+self.simulator.minduration
         if state[3]<self.simulator.get_action_cost(a[0])*Duration:
             a[0]=0
         if state[4]+Duration>self.simulator.T:
@@ -105,7 +105,7 @@ class FittedQIteration(object):
         return a
 
 
-    def run_episode(self, eps=0.5):
+    def run_episode(self, eps=0.1):
         """Run a single episode on the SEIR_Discrete using the current policy.
         Can pass a custom `eps` to test out varying levels of randomness.
         Return the states visited, actions taken, and rewards received."""
@@ -127,10 +127,39 @@ class FittedQIteration(object):
             A.append(a)
             R.append(r)
             A_S=A_S+a_s
+        EP_length=R.copy()
+        for i in range(len(R)):
+            EP_length[i]=len(R)-i-1
 #        print(A)
-        return S, A, R, A_S
+        return S, A, R, A_S, EP_length
 
-
+    def run_episode_na(self, eps=0.1):
+        """Run a single episode on the SEIR_Discrete using the current policy.
+        Can pass a custom `eps` to test out varying levels of randomness.
+        Return the states visited, actions taken, and rewards received."""
+        S=[]
+        A=[]
+        R=[]
+        A_S=[]
+        self.simulator.reset()
+        s=self.simulator.STATE
+        S.append(s)
+        while self.simulator.STATE[6]==False:
+#            a=self.policy(s, eps=eps)
+#            print(a)
+#            print('-----------')
+            r, s_ , a_s= self.simulator.perform_leader(0,100)
+            s=s_
+#            print(s[4])
+            S.append(s)
+            A.append(0)
+            R.append(r)
+            A_S=A_S+a_s
+        EP_length=R.copy()
+        for i in range(len(R)):
+            EP_length[i]=len(R)-i-1
+#        print(A)
+        return S, A, R, A_S, EP_length
 
     def fit_Q(self, episodes, num_iters=10, discount=0.9999):
         """Fit and re-fit the Q function using historical data for the
@@ -139,16 +168,15 @@ class FittedQIteration(object):
         S2 = np.vstack([ep[0][1:] for ep in episodes])
         A = np.vstack([ep[1] for ep in episodes])
         R = np.hstack([ep[2] for ep in episodes])
+        L = np.hstack([ep[4] for ep in episodes])
         inputs = self.encode(S1, A)
-#        print(A)
-#        print(R)
 #        progress = tqdm(range(num_iters), file=sys.stdout,desc='num_iters')
         for iters in range(num_iters):
 #            progress.update(1)
-#            targets = R + discount * self.Q(S2).max(axis=1)
-            targets = R + discount * ((self.Q(S2).max(axis=2)).max(axis=1))
-#            targets = R
-#            print(targets)
+#            targets = R + discount * ((self.Q(S2).max(axis=2)).max(axis=1))
+            targets=R.copy()
+            for i in range(len(R)):               
+                targets[i]=sum(R[i:(i+L[i])])
 #            alpha=1
 #            targets = (self.Q(S1).max(axis=2)).max(axis=1)+alpha*(R + discount * (self.Q(S2).max(axis=2)).max(axis=1)-(self.Q(S1).max(axis=2)).max(axis=1))
 
@@ -157,35 +185,65 @@ class FittedQIteration(object):
 #        progress.close()
         
         
-        
-    def fit(self, num_refits=10, num_episodes=15, discount=0.9999, save=False):
+    def fit(self, num_refits=1, num_episodes=15, discount=0.9999, save=False):
         """Perform fitted-Q iteration. For `outer_iters` steps, gain
         `num_episodes` episodes worth of experience using the current policy
         (which is initially random), then fit or re-fit the Q-function. Return
         the full set of episode data."""
+        Pretrain=False
+        if(Pretrain):
+#            PreA=[[0,22],[1,10],[0,41],[1,50],[2,130],[0,254]]
+#            PreA=[[0,1],[1,0],[0,3],[1,4],[2,12],[0,24]]
+            PreA=[[0,2],[1,0],[0,6],[1,8],[2,24],[0,49]]
+            S=[]
+            R=[]
+            A_S=[]
+            self.simulator.reset()
+            s=self.simulator.STATE
+            S.append(s)
+            t=0
+            while self.simulator.STATE[6]==False:
+                a=PreA[t]
+                t=t+1
+                r, s_ , a_s= self.simulator.perform_leader(a[0],a[1])
+                s=s_
+                S.append(s)
+                R.append(r)
+                A_S=A_S+a_s
+            PreEP=[]
+            PreEP.append([S, PreA, R, A_S])
+            S1 = np.vstack([ep[0][:-1] for ep in PreEP])
+            A = np.vstack([ep[1] for ep in PreEP])
+            inputs = self.encode(S1, A)
+            targets=R.copy()
+            for i in range(len(R)):
+                targets[i]=sum(R[i:len(R)])
+#            print(targets)
+            self.regressor.fit(inputs, targets)
         episodes = []
-#        progress = tqdm(range(num_refits), file=sys.stdout,desc='num_refits')
+        progress = tqdm(range(num_refits), file=sys.stdout,desc='num_refits')
         for i in range(num_refits):
-#            progress.update(1)
+            progress.update(1)
 #            episodes = []
             for _ in range(num_episodes):
-                episodes.append(self.run_episode(eps=0.2))
+                episodes.append(self.run_episode(eps=0.1))
+#                episodes.append(self.run_episode(eps=1-(i/num_refits)))
 #                print('Round: {}-{}'.format(i,_))
                 ###
-                real_episodes=self.run_episode(eps=0)
-                R=real_episodes[2]
-                S=real_episodes[0]
-                A_S=real_episodes[3]
-                best_r=0
-                best_r2=0
-                for j in range(len(R)):
-                    best_r+=R[j]
-                for j in range(len(A_S)):
-                    best_r2+=A_S[j][1]
-                Q=0
-                if is_fitted(self.regressor):
-                    Q=((self.Q(S).max(axis=2)).max(axis=1))[0]
-                print('Round: {}-{} Reward 1: {} Reward 2:{} Estimate R:{}'.format(i,_,best_r,best_r2,Q))   
+            real_episodes=self.run_episode(eps=0)
+            R=real_episodes[2]
+            S=real_episodes[0]
+            A_S=real_episodes[3]
+            best_r=0
+            best_r2=0
+            for j in range(len(R)):
+                best_r+=R[j]
+            for j in range(len(A_S)):
+                best_r2+=A_S[j][1]
+            Q=0
+            if is_fitted(self.regressor):
+                Q=((self.Q(S).max(axis=2)).max(axis=1))[0]
+            print('Reward 1: {} Reward 2:{} Estimate R:{}'.format(best_r,best_r2,Q))   
                 ###
 #            print(real_episodes[1])
             self.fit_Q(episodes=episodes, discount=discount)
@@ -195,7 +253,7 @@ class FittedQIteration(object):
                     pickle.dump(self.regressor, f)
      
                     
-#        progress.close()
+        progress.close()
         # S=episodes[0]
         # R=episodes[2]
         # best_r=0
@@ -230,18 +288,17 @@ if __name__ == '__main__':
     print('Here goes nothing')
     discount=1
     num_refits=10
-    num_episodes=1000
-#    episode_length=10
+    num_episodes=2000
     First_time=True
     lam=0.0
     if First_time:
         env=FittedQIteration()
         episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,discount=discount)
      
-        with open('Result_{}_SIR_refits={}_episodes={}_H=0.1t.pickle'.format(lam,num_refits,num_episodes), 'wb') as f:
+        with open('Result_{}_SIR_refits={}_episodes={}_h=0.15.pickle'.format(lam,num_refits,num_episodes), 'wb') as f:
                     pickle.dump([env,episodes], f)
     else:            
-        with open('Result_{}_SIR_refits={}_episodes={}_H=0.1t.pickle'.format(lam,num_refits,num_episodes), 'rb') as f:
+        with open('Result_{}_SIR_refits={}_episodes={}_delay.pickle'.format(lam,num_refits,num_episodes), 'rb') as f:
             X = pickle.load(f)  
         env=X[0]
         episodes=X[1]
@@ -257,8 +314,11 @@ if __name__ == '__main__':
 #         best_r+=R[i]*discount**i
         # best_r+=S[i][0]+S[i][2]
         best_r+=R[i]
-
-    random_action_episodes=env.run_episode(eps=1)
+#    RR=0
+#    for i in range(len(A_S)):
+#        RR+=A_S[i][1]*A_S[i][4]
+#    print(RR)
+    random_action_episodes=env.run_episode_na(eps=1)
     S_r=random_action_episodes[0]
     A_r=random_action_episodes[1]
     R_r=random_action_episodes[2]

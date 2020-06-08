@@ -6,19 +6,19 @@ import math
 class SIR_Discrete(object):
     def __init__(self, S=0.999, I=0.001, R=0, B=60,t=0,switch_budgets=5,terminal=False):
         self.T=400
-        self.minduration=10
+        
         self.STATE=np.array([S, I, R, B,t,switch_budgets,terminal])
         self.R0 = 3
-        # self.T_inf = 2.9
-#        self.T_treat = 50
         self.T_treat = 30
         self.T_trans = self.T_treat/self.R0
         # self.T_treat = 15
         # self.N = 1e5
         # self.I0 = 100.0
         '''Intervention Relateted'''
+        self.minduration=10
+        self.duration_scale=10
         self.num_actions=4
-        self.max_duration=60
+        self.max_duration=20
         self.num_states=7
     def reset(self):
         self.STATE=np.array([0.999, 0.001, 0, 60,0,5,False])
@@ -56,7 +56,7 @@ class SIR_Discrete(object):
         a_s=[]
         reward=0
 #        Duration=+self.minduration
-        Duration=Duration+self.minduration
+        Duration=Duration*self.duration_scale+self.minduration
         Duration=int(Duration)
 #        print(self.STATE[4])
 #        print(Duration)
@@ -88,16 +88,22 @@ class SIR_Discrete(object):
         STATE_[3] = self.STATE[3]-self.get_action_cost(ACTION)
         STATE_[4]+=1
         self.STATE=STATE_.copy()
-        r=self.calc_reward()
+        r=self.calc_burden_reward()
         return r, self.STATE
 
-    def calc_reward(self):
-        reward=1-self.STATE[1]
-#        reward=0
-#        if self.STATE[1]>0.1:
+    def calc_QALY_reward(self):
+        reward=(1-self.STATE[1])/400
+        return reward
+    
+    def calc_burden_reward(self):
+        reward=0
+        if self.STATE[1]>0.15:
+            reward=-100
 #            reward=-100*(self.STATE[1]-0.15)
-        
-#        reward=1
+        return reward
+    
+    def calc_delay_reward(self):
+        reward=self.STATE[4]*self.STATE[1]
         return reward
     
     

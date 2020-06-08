@@ -20,9 +20,10 @@ from models.seir.seir_movement import SEIR_Movement
 from models.seir.seir_movement_testing import SEIR_Movement_Testing
 
 from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
-from main.seir.forecast import get_forecast, create_region_csv, create_all_csvs, write_csv, plot_forecast
-from main.seir.forecast import order_trials, plot_trials
-from utils.create_report import create_report
+from main.seir.forecast import get_forecast, create_region_csv, create_all_csvs, write_csv
+from main.seir.forecast import order_trials, get_all_trials
+from viz import plot_forecast, plot_trials
+from utils.create_report import create_report, trials_to_df
 from utils.enums import Columns
 
 '''
@@ -38,7 +39,7 @@ python3 generate_report.py --districts mumbai --ktrials 100 -i 1000 -f reporttes
 
 # --- turn into command line args
 parser = argparse.ArgumentParser()
-parser.add_argument("-t", "--use-tracker", help="district name", required=False, action='store_true')
+parser.add_argument("-t", "--use-tracker", help="whether to use covid19api tracker", required=False, action='store_true')
 parser.add_argument("-s", "--smooth-jump", help="smooth jump", required=False, action='store_true')
 parser.add_argument("-method", "--smooth-method", help="smooth method", required=False, default='weighted', type=str)
 parser.add_argument("-i", "--iterations", help="optimiser iterations", required=False, default=700, type=int)
@@ -46,7 +47,7 @@ parser.add_argument("-n", "--ndays", help="smoothing days", required=False, defa
 now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 parser.add_argument("-f", "--folder", help="folder name", required=False, default=str(now), type=str)
 parser.add_argument("-k", "--ktrials", help="k trials to forecast", required=False, default=10, type=int)
-parser.add_argument("-d", "--districts", help="districts", required=False, default='mumbai', type=str)
+parser.add_argument("-d", "--districts", help="districts", required=True, type=str)
 args = parser.parse_args()
 
 # dataframes = get_covid19india_api_data()
@@ -78,12 +79,14 @@ for state, district in districts_to_show:
         data_from_tracker=args.use_tracker, initialisation='intermediate', model=SEIR_Testing, 
         # filename='../../data/data/mumbai_2020_06_02.csv', data_format='new',
         smooth_jump=args.smooth_jump, smoothing_method=args.smooth_method, smoothing_length=args.ndays,
+        # which_compartments=['deceased', 'total_infected'])
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     predictions_dict[(state, district)]['m2'] = single_fitting_cycle(
         dataframes, state, district, train_period=7, val_period=0, num_evals=args.iterations,
         data_from_tracker=args.use_tracker, initialisation='intermediate', model=SEIR_Testing, 
         # filename='../../data/data/mumbai_2020_06_02.csv', data_format='new',
         smooth_jump=args.smooth_jump, smoothing_method=args.smooth_method, smoothing_length=args.ndays,
+        # which_compartments=['deceased', 'total_infected'])
         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     
     predictions_dict[(state, district)]['state'] = state
@@ -104,18 +107,36 @@ for train_fit in ['m1', 'm2']:
         df_loss_master.loc[key, :] = np.around(predictions_dict[key][train_fit]['df_loss'].values.T.flatten().astype('float'), decimals=2)
 
 for region in predictions_dict.keys():
-    predictions_dict[region]['forecast'] = {}
-    predictions_dict[region]['forecast']['forecast'] = plot_forecast(predictions_dict[region], region, both_forecasts=False, error_bars=True)
+    predictions_dict[region]['m2']['forecast'] = plot_forecast(predictions_dict[region], region, both_forecasts=False, error_bars=True)
     
-    params_array, losses_array = order_trials(predictions_dict[region]['m2'])
-    predictions_dict[region]['forecast']['params'] = params_array
-    predictions_dict[region]['forecast']['losses'] = losses_array
-    kforecasts = plot_trials(predictions_dict[region], which_compartments=[Columns.confirmed, Columns.active], k=args.ktrials)
-    predictions_dict[region]['forecast']['forecast_confirmed_topk'] = kforecasts[Columns.confirmed]
-    predictions_dict[region]['forecast']['forecast_active_topk'] = kforecasts[Columns.active]
+    predictions, losses, params = get_all_trials(predictions_dict[region], train_fit='m1')
+    predictions_dict[region]['m1']['params'] = params
+    predictions_dict[region]['m1']['losses'] = losses
+    predictions_dict[region]['m1']['predictions'] = predictions
+    predictions_dict[region]['m1']['all_trials'] = trials_to_df(predictions, losses, params)
+    predictions, losses, params = get_all_trials(predictions_dict[region], train_fit='m2')
+    predictions_dict[region]['m2']['params'] = params
+    predictions_dict[region]['m2']['losses'] = losses
+    predictions_dict[region]['m2']['predictions'] = predictions
+    predictions_dict[region]['m2']['all_trials'] = trials_to_df(predictions, losses, params)
+    kforecasts = plot_trials(
+        predictions_dict[region],
+        train_fit='m2',
+        predictions=predictions, 
+        losses=losses, params=params, 
+        k=args.ktrials,
+        which_compartments=[Columns.confirmed, Columns.active])
+    predictions_dict[region]['m2']['forecast_confirmed_topk'] = kforecasts[Columns.confirmed]
+    predictions_dict[region]['m2']['forecast_active_topk'] = kforecasts[Columns.active]
 
 for region in predictions_dict.keys():
     create_report(predictions_dict[region], ROOT_DIR=f'../../reports/{args.folder}') 
+    predictions_dict[region]['m1']['all_trials'].to_csv(f'../../reports/{args.folder}/m1-trials.csv')
+    predictions_dict[region]['m2']['all_trials'].to_csv(f'../../reports/{args.folder}/m2-trials.csv')
+    predictions_dict[region]['m2']['df_district_unsmoothed'].to_csv(f'../../reports/{args.folder}/true.csv')
+    predictions_dict[region]['m2']['df_district'].to_csv(f'../../reports/{args.folder}/smoothed.csv')
 
 df_output = create_all_csvs(predictions_dict, icu_fraction=0.02)
 write_csv(df_output, filename=f'../../reports/{args.folder}/output-{now}.csv')
+
+print(f"yeet. done: view files at ../../reports/{args.folder}/")
