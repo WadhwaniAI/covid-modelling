@@ -1,4 +1,4 @@
-from utils.losses import Loss_Calculator
+from utlis.loss import Loss_Calculator
 from copy import copy
 from models.ihme.model import IHME
 import numpy as np

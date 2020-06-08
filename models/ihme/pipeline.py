@@ -17,7 +17,7 @@ from curvefit.core.utils import data_translator
 
 sys.path.append('../..')
 from models.ihme.util import get_daily_vals
-from utils.losses import Loss_Calculator
+from utlis.loss import Loss_Calculator
 from utils.util import smooth
 from viz import setup_plt
 

@@ -23,7 +23,7 @@ from models.ihme.dataloader import get_district_timeseries_cached
 from backtesting import IHMEBacktest
 from optimiser import Optimiser
 from utils.util import train_test_split, rollingavg
-from utils.losses import Loss_Calculator
+from utlis.loss import Loss_Calculator
 from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
 from plotting import plot_results, plot_backtesting_results, plot_backtesting_errors
 from plotting import plot
