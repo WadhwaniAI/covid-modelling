@@ -26,11 +26,16 @@ def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, ou
     actual = data[data.index >= train_start_date]
     pred = result[result.index >= train_start_date]
     
-    color = plt.cm.rainbow(np.linspace(0,1,len(compartments)))
+    color = {
+            "total_infected": 'o',
+            "recovered": 'g',
+            "hospitalised": 'b',
+            "deceased": 'r'
+    }
 
     for i, bucket in enumerate(compartments):
-        plt.plot(actual.index.array, actual[bucket].tolist(), c=color[i], marker='o', label='Actual {}'.format(bucket))
-        plt.plot(pred.index.array, pred[bucket].tolist(), c=color[i], label='Estimated {}'.format(bucket))
+        plt.plot(actual.index.array, actual[bucket].tolist(), c=color[bucket], marker='o', label='Actual {}'.format(bucket))
+        plt.plot(pred.index.array, pred[bucket].tolist(), c=color[bucket], label='Estimated {}'.format(bucket))
         plt.plot(pred.index.array, pred['{}_low'.format(bucket)].tolist(), c=color[i], linestyle='dashdot')
         plt.plot(pred.index.array, pred['{}_high'.format(bucket)].tolist(), c=color[i], linestyle='dashdot')
     plt.axvline(x=train_end_date, c='k', linestyle='dashed', label='train ends')
