@@ -135,9 +135,9 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
     
     df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
     ax = None
+    orig_df_district = copy.copy(df_district)
 
     if smooth_jump:
-        orig_df_district = copy.copy(df_district)
         df_district = smooth_big_jump(
             df_district, smoothing_length=smoothing_length, 
             method=smoothing_method, data_from_tracker=data_from_tracker, t_recov=t_recov)
