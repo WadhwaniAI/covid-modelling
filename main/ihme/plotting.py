@@ -8,7 +8,7 @@ from datetime import timedelta
 
 import sys
 sys.path.append('../..')
-from utils.plotting import setup_plt
+from viz import setup_plt
 
 def plot_results(model, df, train_size, test, predictions, predictdate, testerr,
         file_prefix, val_size, draws=None, yaxis_name=None):

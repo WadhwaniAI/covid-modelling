@@ -15,7 +15,7 @@ from utils.create_report import create_report
 from utils.enums import Columns
 from viz import plot_trials, plot_r0_multipliers
 from main.seir.uncertainty import get_all_ptiles, forecast_ptiles
-from main.seir.uncertainty import save_r0_mul, predict_r0_multipliers
+from main.seir.forecast import save_r0_mul, predict_r0_multipliers
 
 parser = argparse.ArgumentParser()
 t = time.time()

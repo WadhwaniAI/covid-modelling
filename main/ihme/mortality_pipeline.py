@@ -16,7 +16,7 @@ sys.path.append('../..')
 from models.ihme.pipeline import WAIPipeline
 from models.ihme.util import get_mortality
 from models.ihme.params import Params
-from models.ihme.dataloader import get_district_timeseries_cached
+from data.processing import get_district_timeseries_cached
 pd.options.mode.chained_assignment = None
 
 # tuples: (district, state, census_area_name(s))

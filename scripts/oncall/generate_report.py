@@ -10,14 +10,9 @@ import argparse
 import sys
 sys.path.append('../../')
 
-from data.dataloader import get_covid19india_api_data
-from data.processing import get_data
-from models.ihme.dataloader import get_dataframes_cached
+from data.processing import get_data, get_dataframes_cached
 
-from models.seir.seir_testing import SEIR_Testing
-from models.seir.seirhd import SEIRHD
-from models.seir.seir_movement import SEIR_Movement
-from models.seir.seir_movement_testing import SEIR_Movement_Testing
+from models.seir import SEIR_Testing, SEIRHD, SEIR_Movement, SEIR_Movement_Testing
 
 from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
 from main.seir.forecast import get_forecast, create_region_csv, create_all_csvs, write_csv
@@ -50,7 +45,6 @@ parser.add_argument("-k", "--ktrials", help="k trials to forecast", required=Fal
 parser.add_argument("-d", "--districts", help="districts", required=True, type=str)
 args = parser.parse_args()
 
-# dataframes = get_covid19india_api_data()
 dataframes = get_dataframes_cached()
 
 predictions_dict = {}
