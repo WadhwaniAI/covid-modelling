@@ -23,7 +23,6 @@ from data.processing import get_data, get_district_time_series
 
 from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
-from main.seir.losses import Loss_Calculator
 
 from utils.enums import Columns, SEIRParams
 

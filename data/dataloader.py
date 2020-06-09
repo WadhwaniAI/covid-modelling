@@ -24,12 +24,6 @@ def _modify_dataframe(df, column_name='RecoveredCases'):
     df['Date'] = pd.to_datetime(df['Date'])
     return df
 
-def get_country_dataframe(df_master, country):
-    df_country = df_master[df_master['Country/Region'] == country].loc[:, 'Date':].groupby('Date').sum().reset_index()
-    df_country = df_country[df_country['ConfirmedCases'] > 0]
-    df_country.reset_index(drop=True, inplace=True)
-    return df_country
-
 # Loads time series case data for every country (and all provinces within certain countries) from JHU's github repo
 def get_jhu_data():
     """
@@ -133,7 +127,7 @@ def get_covid19india_api_data():
      - df_india_time_series : Time series of cases in India (nationwide)
      - df_districtwise : Today's snapshot of cases in India, districtwise
      - df_raw_data : Patient level information of cases
-     - df_raw_data_2 : Patient level information of deaths and recoveries
+     - df_deaths_recoveries : Patient level information of deaths and recoveries
      - [NOT UPDATED ANYMORE] df_travel_history : Travel history of some patients (Unofficial : from newsarticles, twitter, etc)
      - df_resources : Repository of testing labs, fundraising orgs, government helplines, etc
     """
