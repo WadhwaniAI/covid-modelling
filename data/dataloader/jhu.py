@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from data.dataloaders.base import BaseLoader
+from data.dataloader.base import BaseLoader
 
 class JHULoader(BaseLoader):
     def __init__(self):

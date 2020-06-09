@@ -5,7 +5,7 @@ import datetime
 from pyathena import connect
 from pyathena.pandas_cursor import PandasCursor
 
-from data.dataloaders.base import BaseLoader
+from data.dataloader.base import BaseLoader
 
 
 class AthenaLoader(BaseLoader):

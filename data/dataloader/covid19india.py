@@ -3,7 +3,7 @@ import numpy as np
 import datetime
 import requests
 
-from data.dataloaders.base import BaseLoader
+from data.dataloader.base import BaseLoader
 
 class Covid19IndiaLoader(BaseLoader):
     def __init__(self):
