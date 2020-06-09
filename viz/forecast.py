@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from adjustText import adjust_text
-
+import datetime
 import copy
 
 from main.seir.forecast import get_forecast, order_trials, top_k_trials, forecast_k
@@ -116,7 +116,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
 
 
 def plot_trials(predictions_dict, train_fit='m2', k=10,
-        predictions=None, losses=None, params=None, 
+        predictions=None, losses=None, params=None, vline=None,
         which_compartments=[Columns.active], plot_individual_curves=True):
     if predictions is not None:
         top_k_losses = losses[:k]
@@ -125,8 +125,8 @@ def plot_trials(predictions_dict, train_fit='m2', k=10,
     else:
         predictions, top_k_losses, top_k_params = forecast_k(predictions_dict, k=k, train_fit=train_fit)
     
-    df_master = pd.DataFrame(columns=predictions[0].columns)
-    for i, df in enumerate(predictions):
+    df_master = predictions[0]
+    for i, df in enumerate(predictions[1:]):
         df_master = pd.concat([df_master, df], ignore_index=True)
     df_true = predictions_dict[train_fit]['df_district']
     plots = {}
@@ -148,7 +148,8 @@ def plot_trials(predictions_dict, train_fit='m2', k=10,
             sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_master,
                          ls='-', label=f'{compartment.label}')
                 
-        
+        if vline:
+            plt.axvline(datetime.datetime.strptime(vline, '%Y-%m-%d'))
         ax.set_xlim(ax.get_xlim()[0], ax.get_xlim()[1] + 10)
         adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
         ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
@@ -163,3 +164,36 @@ def plot_trials(predictions_dict, train_fit='m2', k=10,
         plt.grid()
         plots[compartment] = ax
     return plots
+
+def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, multipliers):
+    df_true = region_dict['m2']['df_district']
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.plot(df_true['date'], df_true['hospitalised'],
+        '-o', color='orange', label='Active Cases (Observed)')
+    # all_plots = {}
+    for i, (mul, mul_dict) in enumerate(predictions_mul_dict.items()):
+        df_prediction = mul_dict['df_prediction']
+        true_r0 = mul_dict['params']['post_lockdown_R0']
+        # loss_value = np.around(np.sort(losses_array)[:10][i], 2)
+        
+        # df_loss = calculate_loss(df_train_nora, df_val_nora, df_predictions, train_period=7,
+        #         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
+        sns.lineplot(x="date", y="hospitalised", data=df_prediction,
+                    ls='-', label=f'Active Cases ({mul} - R0 {true_r0})')
+        plt.text(
+            x=df_prediction['date'].iloc[-1],
+            y=df_prediction['hospitalised'].iloc[-1], s=true_r0
+        )
+    ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
+    ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+    plt.ylabel('No of People', fontsize=16)
+    # plt.yscale('log')
+    plt.xticks(rotation=45,horizontalalignment='right')
+    plt.xlabel('Time', fontsize=16)
+    plt.legend()
+    state, dist = region_dict['state'], region_dict['dist']
+    plt.title(f'Forecast - ({state} {dist})', fontsize=16)
+        # plt.grid()
+        # all_plots[mul] = ax
+    return ax

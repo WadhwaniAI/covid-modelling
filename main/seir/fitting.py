@@ -111,7 +111,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     return df_train, df_val, df_true_fitting
     
 def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename, smooth_jump=False,
-                      smoothing_length=28, smoothing_method='uniform', t_recov=17, return_plot=False):
+                      smoothing_length=28, smoothing_method='uniform', t_recov=14, return_extra=False):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -133,16 +133,21 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
     
     df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
     ax = None
+    orig_df_district = copy.copy(df_district)
 
     if smooth_jump:
-        orig_df_district = copy.copy(df_district)
         df_district = smooth_big_jump(
             df_district, smoothing_length=smoothing_length, 
             method=smoothing_method, data_from_tracker=data_from_tracker, t_recov=t_recov)
-        if return_plot:
-            ax = plot_smoothing(orig_df_district, df_district, state, district, description=f'Smoothing: {smoothing_method}')
+        ax = plot_smoothing(orig_df_district, df_district, state, district, description=f'Smoothing: {smoothing_method}')
 
-    return df_district, df_district_raw_data, ax
+    if return_extra:
+        extra = {
+            'ax': ax,
+            'df_district_unsmoothed': orig_df_district
+        }
+        return df_district, df_district_raw_data, extra 
+    return df_district, df_district_raw_data 
 
 def smooth_big_jump(df_district, smoothing_length, data_from_tracker, t_recov=14, method='uniform'):
     if data_from_tracker:
@@ -300,7 +305,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
 def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_period=7, val_period=7, 
                          data_from_tracker=True, filename=None, data_format='new', N=1e7, num_evals=1500,
                          which_compartments=['hospitalised', 'total_infected'], initialisation='starting', 
-                         smooth_jump=False, smoothing_length=28, smoothing_method='uniform', smooth_plot=False):
+                         smooth_jump=False, smoothing_length=28, smoothing_method='uniform'):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -331,9 +336,11 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
     print('Performing {} fit ..'.format('m2' if val_period == 0 else 'm1'))
 
     # Get data
-    df_district, df_district_raw_data, smoothed_plot = get_regional_data(dataframes, state, district, data_from_tracker, data_format,
+    df_district, df_district_raw_data, extra = get_regional_data(dataframes, state, district, data_from_tracker, data_format,
                                                                          filename, smooth_jump=smooth_jump, smoothing_method=smoothing_method,
-                                                                         smoothing_length=smoothing_length, return_plot=smooth_plot)
+                                                                         smoothing_length=smoothing_length, return_extra=True)
+    smoothed_plot = extra['ax']
+    orig_df_district = extra['df_district_unsmoothed']
 
     # Process the data to get rolling averages and other stuff
     observed_dataframes = data_setup(
@@ -353,6 +360,7 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
 
     if smoothed_plot != None:
         predictions_dict['smoothing_plot'] = smoothed_plot
+    predictions_dict['df_district_unsmoothed'] = orig_df_district
 
     # record parameters for reproducability
     predictions_dict['run_params'] = run_params

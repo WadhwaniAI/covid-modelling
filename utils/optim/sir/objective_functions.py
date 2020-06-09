@@ -30,8 +30,8 @@ def get_impact(choice):
 
 def calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params=None):
 	if(params==None):
-		R0 = 2.2 
-		T_treat = 14
+		R0 = 3 
+		T_treat = 30
 	else:
 		R0 = params['R0']
 		T_treat = params['T_treat']
@@ -83,13 +83,21 @@ def calculate_opt_height(intervention_day, intervention_duration, intervention_c
 def calculate_opt_time(intervention_day, intervention_duration, intervention_choice, days, params=None):
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
 	infection_array = states_int_array[1]
-	maxy = int(np.max(infection_array)/0.01)
-	time = 0
-	for y in range(1,maxy+1):
-		x1 = np.argmax(infection_array>y*0.01)
-		x2 = len(infection_array)-np.argmax(infection_array[::-1]>y*0.01)-1
-		time = time + x1 + x2
-	time = time/(maxy*2)
+	# maxy = int(np.max(infection_array)/0.01)
+	# time = 0
+	# for y in range(1,maxy+1):
+	# 	x1 = np.argmax(infection_array>y*0.01)
+	# 	x2 = len(infection_array)-np.argmax(infection_array[::-1]>y*0.01)-1
+	# 	time = time + x1 + x2
+	# time = time/(maxy*2)
+	auci = np.sum(infection_array)
+	running_sum = np.ones(len(infection_array))
+	time_array = np.ones(10)
+	for i in range(len(infection_array)):
+		running_sum[i] = np.sum(infection_array[:i+1])
+	for i in range(1,11):
+		time_array[i-1] = np.argmax(running_sum>=auci*0.1*i)+1
+	time = np.mean(time_array)
 	return(time)
 
 def calculate_opt_burden(intervention_day, intervention_duration, intervention_choice, days, capacity=np.array([0.1]), params=None):
@@ -143,13 +151,21 @@ def hp_calculate_opt_time(variable_params, total_resource, days, params=None):
 	
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
 	infection_array = states_int_array[1]
-	maxy = int(np.max(infection_array)/0.01)
-	time = 0
-	for y in range(1,maxy+1):
-		x1 = np.argmax(infection_array>y*0.01)
-		x2 = len(infection_array)-np.argmax(infection_array[::-1]>y*0.01)-1
-		time = time + x1 + x2
-	time = time/(maxy*2)
+	# maxy = int(np.max(infection_array)/0.01)
+	# time = 0
+	# for y in range(1,maxy+1):
+	# 	x1 = np.argmax(infection_array>y*0.01)
+	# 	x2 = len(infection_array)-np.argmax(infection_array[::-1]>y*0.01)-1
+	# 	time = time + x1 + x2
+	# time = time/(maxy*2)
+	auci = np.sum(infection_array)
+	running_sum = np.ones(len(infection_array))
+	time_array = np.ones(10)
+	for i in range(len(infection_array)):
+		running_sum[i] = np.sum(infection_array[:i+1])
+	for i in range(1,11):
+		time_array[i-1] = np.argmax(running_sum>=auci*0.1*i)+1
+	time = np.mean(time_array)
 	time = -1 * time
 	return(time)
 
