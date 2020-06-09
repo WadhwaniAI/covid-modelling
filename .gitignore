@@ -6,6 +6,7 @@
 *.pyc
 *.pickle
 *.txt
+*.json
 
 # Junk / Hidden Files
 **.ipynb_checkpoints/
