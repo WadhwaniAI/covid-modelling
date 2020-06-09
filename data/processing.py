@@ -4,7 +4,7 @@ import copy
 import datetime
 from collections import defaultdict
 
-from data.dataloader import get_covid19india_api_data, get_rootnet_api_data, get_athena_dataframes
+from data.dataloaders import Covid19IndiaLoader, RootnetLoader, AthenaLoader
 
 def get_data(dataframes=None, state=None, district=None, use_dataframe='districts_daily', disable_tracker=False,
              filename=None, data_format='new'):
@@ -49,7 +49,8 @@ def get_data(dataframes=None, state=None, district=None, use_dataframe='district
 
 def get_custom_data_from_db(state='Maharashtra', district='Pune'):
     print('fetching from athenadb...')
-    dataframes = get_athena_dataframes()
+    loader = AthenaLoader()
+    dataframes = loader.get_athena_dataframes()
     df_result = copy.copy(dataframes['covid_case_summary'])
     df_result = df_result[np.logical_and(
         df_result['state'] == state.lower(), df_result['district'] == district.lower())]
@@ -74,7 +75,6 @@ def get_custom_data_from_db(state='Maharashtra', district='Pune'):
 #TODO add support of adding 0s column for the ones which don't exist
 def get_custom_data_from_file(filename, data_format='new'):
     if data_format == 'new':
-
         df_result = pd.read_csv(filename)
         del df_result['Ward/block name']
         del df_result['Ward number (if applicable)']
@@ -93,14 +93,14 @@ def get_custom_data_from_file(filename, data_format='new'):
         df_result = df_result.dropna(subset=['date'], how='all')
         return df_result
     if data_format == 'old':
-
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]
         df_result.columns = [x if x != 'confirmed' else 'total_infected' for x in df_result.columns]
         
 def get_state_time_series(state='Delhi'):
-    rootnet_dataframes = get_rootnet_api_data()
+    loader = RootnetLoader()
+    rootnet_dataframes = loader.get_rootnet_api_data()
     df_states = rootnet_dataframes['df_state_time_series']
     df_state = df_states[df_states['state'] == state]
     df_state = df_state.loc[df_state['date'] >= '2020-04-24', :]
@@ -108,7 +108,11 @@ def get_state_time_series(state='Delhi'):
     df_state.reset_index(inplace=True, drop=True)
     return df_state
 
-def get_district_time_series(dataframes, state='Karnataka', district='Bengaluru', use_dataframe='raw_data'):
+def get_district_time_series(dataframes=None, state='Karnataka', district='Bengaluru', use_dataframe='raw_data'):
+    if dataframes == None:
+        loader = Covid19IndiaLoader()
+        dataframes = loader.get_covid19india_api_data()
+    
     if use_dataframe == 'districts_daily':
         df_districts = copy.copy(dataframes['df_districts'])
         df_district = df_districts[np.logical_and(df_districts['state'] == state, df_districts['district'] == district)]
@@ -269,15 +273,12 @@ def get_concat_data(dataframes, state, district, new_district_name=None, concat=
             all_dfs = defaultdict(list)
             for dist in district:
                 raw = get_data(dataframes, state=state, district=dist, use_dataframe='raw_data')
-                # raw = get_district_time_series(dataframes, state, dist, use_dataframe='raw_data')
                 if len(raw) != 0:
                     all_dfs['from_df_raw_data'].append(raw)
                 dr = get_data(dataframes, state=state, district=dist, use_dataframe='deaths_recovs')
-                # dr = get_district_time_series(dataframes, state, dist, use_dataframe='deaths_recovs')
                 if len(dr) != 0:
                     all_dfs['from_df_deaths_recoveries'].append(dr)
                 dwise = get_data(dataframes, state=state, district=dist, use_dataframe='districts_daily')
-                # dwise = get_district_time_series(dataframes, state, dist, use_dataframe='districts_daily')
                 if len(dwise) != 0:
                     all_dfs['from_df_districtwise'].append(dwise)
             from_df_raw_data = combine_districts(all_dfs['from_df_raw_data'], new_district=new_district_name)
@@ -285,11 +286,8 @@ def get_concat_data(dataframes, state, district, new_district_name=None, concat=
             from_df_districtwise = combine_districts(all_dfs['from_df_districtwise'], new_district=new_district_name)
         else:
             from_df_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
-            # from_df_raw_data = get_district_time_series(dataframes, state, district, use_dataframe='raw_data')
             from_df_deaths_recoveries = get_data(dataframes, state=state, district=district, use_dataframe='deaths_recovs')
-            # from_df_deaths_recoveries = get_district_time_series(dataframes, state, district, use_dataframe='deaths_recovs')
             from_df_districtwise = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
-            # from_df_districtwise = get_district_time_series(dataframes, state, district, use_dataframe='districts_daily')
         return concat_sources(from_df_raw_data, from_df_deaths_recoveries, from_df_districtwise)
     else:
         if type(district) == list:
@@ -297,11 +295,9 @@ def get_concat_data(dataframes, state, district, new_district_name=None, concat=
             all_dfs = []
             for dist in district:
                 dwise = get_data(dataframes, state=state, district=dist, use_dataframe='districts_daily')
-                # dwise = get_district_time_series(dataframes, state, dist, use_dataframe='districts_daily')
                 if len(dwise) != 0:
                     all_dfs.append(dwise)
             from_df_districtwise = combine_districts(all_dfs, new_district=new_district_name)
         else:
             from_df_districtwise = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
-            # from_df_districtwise = get_district_time_series(dataframes, state, district, use_dataframe='districts_daily')
         return from_df_districtwise
