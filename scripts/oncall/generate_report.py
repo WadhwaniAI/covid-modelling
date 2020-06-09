@@ -10,9 +10,7 @@ import argparse
 import sys
 sys.path.append('../../')
 
-from data.dataloader import Covid19IndiaLoader, get_covid19india_api_data
-from data.processing import get_data
-from data.processing import get_dataframes_cached
+from data.processing import get_data, get_dataframes_cached
 
 from models.seir import SEIR_Testing, SEIRHD, SEIR_Movement, SEIR_Movement_Testing
 
@@ -47,7 +45,6 @@ parser.add_argument("-k", "--ktrials", help="k trials to forecast", required=Fal
 parser.add_argument("-d", "--districts", help="districts", required=True, type=str)
 args = parser.parse_args()
 
-# dataframes = get_covid19india_api_data()
 dataframes = get_dataframes_cached()
 
 predictions_dict = {}
