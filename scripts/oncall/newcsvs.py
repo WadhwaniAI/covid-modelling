@@ -105,7 +105,7 @@ with open(f'../../reports/{args.folder}/deciles-params.json', 'w+') as params_js
 df_reported.to_csv(f'../../reports/{args.folder}/true.csv')
 region_dict['m2']['df_district'].to_csv(f'../../reports/{args.folder}/smoothed.csv')
 
-from main.seir.uncertainty import predict_r0_multipliers, save_r0_mul
+from main.seir.forecast import predict_r0_multipliers, save_r0_mul
 
 # perform what-ifs on 80th percentile
 predictions_mul_dict = predict_r0_multipliers(params[deciles_idx[80]])
