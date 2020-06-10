@@ -29,7 +29,7 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
 def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, log_scale=False, filename=None,
                   which_compartments=['hospitalised',
                                       'total_infected', 'deceased', 'recovered'],
-                  fileformat='eps', error_bars=False):
+                  fileformat='eps', error_bars=False, days=30):
     """Function for plotting forecasts
 
     Arguments:
@@ -47,9 +47,9 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
     Returns:
         ax -- Matplotlib ax figure
     """
-    df_prediction = get_forecast(predictions_dict)
+    df_prediction = get_forecast(predictions_dict, days=days)
     if both_forecasts:
-        df_prediction_m1 = get_forecast(predictions_dict, train_fit='m1')
+        df_prediction_m1 = get_forecast(predictions_dict, train_fit='m1', days=days)
     df_true = predictions_dict['m1']['df_district']
 
     if error_bars:

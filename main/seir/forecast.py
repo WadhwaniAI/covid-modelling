@@ -23,7 +23,7 @@ from main.seir.optimiser import Optimiser
 
 from utils.enums import Columns, SEIRParams
 
-def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', best_params=None, verbose=True, lockdown_removal_date=None):
+def get_forecast(predictions_dict: dict, days: int=30, simulate_till=None, train_fit='m2', best_params=None, verbose=True, lockdown_removal_date=None):
     """Returns the forecasts for a given set of params of a particular geographical area
 
     Arguments:
@@ -40,7 +40,7 @@ def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', bes
     if verbose:
         print("getting forecasts ..")
     if simulate_till == None:
-        simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + datetime.timedelta(days=37)
+        simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + datetime.timedelta(days=days)
     if best_params == None:
         best_params = predictions_dict[train_fit]['best_params']
 
@@ -58,7 +58,7 @@ def get_forecast(predictions_dict: dict, simulate_till=None, train_fit='m2', bes
 
     return df_prediction
 
-def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_fraction=0.02, best_params=None):
+def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_fraction=0.02, best_params=None, days=30):
     """Created the CSV file for one particular geographical area in the format Keshav consumes
 
     Arguments:
@@ -81,7 +81,7 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_
                'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 'recovered_max', 'total_mean', 'total_min', 'total_max']
     df_output = pd.DataFrame(columns=columns)
 
-    df_prediction = get_forecast(predictions_dict, best_params=best_params)
+    df_prediction = get_forecast(predictions_dict, best_params=best_params, days=days)
     df_true = predictions_dict['m1']['df_district']
     prediction_daterange = np.union1d(df_true['date'], df_prediction['date'])
     no_of_data_points = len(prediction_daterange)
@@ -192,7 +192,7 @@ def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, reg
     # df_output = df_output[columns]
     return df_output
 
-def create_all_csvs(predictions_dict: dict, icu_fraction=0.02):
+def create_all_csvs(predictions_dict: dict, days=30, icu_fraction=0.02):
     """Creates the output for all geographical regions (not just one)
 
     Arguments:
@@ -212,10 +212,10 @@ def create_all_csvs(predictions_dict: dict, icu_fraction=0.02):
     for region in predictions_dict.keys():
         if region[1] == None:
             df_output = create_region_csv(predictions_dict[region], region=region[0], regionType='state', 
-                                          icu_fraction=icu_fraction)
+                                          icu_fraction=icu_fraction, days=days)
         else:
             df_output = create_region_csv(predictions_dict[region], region=region[1], regionType='district',
-                                        icu_fraction=icu_fraction)
+                                        icu_fraction=icu_fraction, days=days)
         df_final = pd.concat([df_final, df_output], ignore_index=True)
     
     return df_final
@@ -284,7 +284,7 @@ def set_r0_multiplier(params_dict, mul):
     new_params['post_lockdown_R0']= params_dict['lockdown_R0']*mul
     return new_params
 
-def predict_r0_multipliers(region_dict, params_dict, multipliers=[0.9, 1, 1.1, 1.25], lockdown_removal_date='2020-06-01'):
+def predict_r0_multipliers(region_dict, params_dict, days, multipliers=[0.9, 1, 1.1, 1.25], lockdown_removal_date='2020-06-01'):
     """
     Function to predict what-if scenarios with different post-lockdown R0s
 
@@ -312,7 +312,8 @@ def predict_r0_multipliers(region_dict, params_dict, multipliers=[0.9, 1, 1.1, 1
         predictions_mul_dict[mul]['df_prediction'] = get_forecast(region_dict,
             train_fit = "m2",
             best_params=new_params,
-            lockdown_removal_date=lockdown_removal_date)    
+            lockdown_removal_date=lockdown_removal_date,
+            days=days)    
     return predictions_mul_dict
 
 def save_r0_mul(predictions_mul_dict, folder):
