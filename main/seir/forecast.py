@@ -18,9 +18,6 @@ import datetime
 from joblib import Parallel, delayed
 import copy
 
-from data.dataloader import get_jhu_data, get_covid19india_api_data
-from data.processing import get_data, get_district_time_series
-
 from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
 
