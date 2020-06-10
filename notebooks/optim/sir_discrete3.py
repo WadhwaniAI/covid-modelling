@@ -4,21 +4,18 @@ import matplotlib.pyplot as plt
 import math
 
 class SIR_Discrete(object):
-    def __init__(self, S=0.999, I=0.001, R=0, B=60,t=0,switch_budgets=5,terminal=False):
+    def __init__(self, S=0.999, I=0.001, R=0, B=80,t=0,switch_budgets=5,terminal=False):
         self.T=400
         
         self.STATE=np.array([S, I, R, B,t,switch_budgets,terminal])
         self.R0 = 3
         self.T_treat = 30
         self.T_trans = self.T_treat/self.R0
-        # self.T_treat = 15
-        # self.N = 1e5
-        # self.I0 = 100.0
         '''Intervention Relateted'''
         self.minduration=10
-        self.duration_scale=10
+        self.duration_scale=5
         self.num_actions=4
-        self.max_duration=20
+        self.max_duration=40
         self.num_states=7
     def reset(self):
         self.STATE=np.array([0.999, 0.001, 0, 60,0,5,False])
@@ -55,11 +52,8 @@ class SIR_Discrete(object):
     def perform_leader(self, Strength, Duration):
         a_s=[]
         reward=0
-#        Duration=+self.minduration
         Duration=Duration*self.duration_scale+self.minduration
         Duration=int(Duration)
-#        print(self.STATE[4])
-#        print(Duration)
         if self.STATE[6]==False:
 #            if self.STATE[3]<=0:
 #                Strength=0
@@ -75,7 +69,6 @@ class SIR_Discrete(object):
                 self.STATE[5]-=1
         if self.STATE[4]>=self.T:
             self.STATE[6]=True
-#        print(self.STATE[4])
         return reward, self.STATE, a_s
     
     def perform(self,ACTION):
@@ -97,10 +90,11 @@ class SIR_Discrete(object):
     
     def calc_burden_reward(self):
         reward=0
-        if self.STATE[1]>0.15:
-            reward=-100
-#            reward=-100*(self.STATE[1]-0.15)
+        if self.STATE[1]>0.1:
+#            reward=-100
+            reward=-100*(self.STATE[1]-0.1)
         return reward
+    #0
     
     def calc_delay_reward(self):
         reward=self.STATE[4]*self.STATE[1]
@@ -111,7 +105,6 @@ if __name__ == '__main__':
     N = 1e5
     I0 = 100.0
     env=SIR_Discrete((N - I0)/N, I0/N, 0, 30)
-    # 0:S, 1:I, 2:R, 3:B
     S=[]
     R=[]
     I=[]
