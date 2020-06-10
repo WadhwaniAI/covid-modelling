@@ -10,7 +10,7 @@ from hyperopt import fmin, tpe, hp, Trials
 
 sys.path.append('../../')
 from main.seir.forecast import get_forecast
-from main.seir.fitting import calculate_loss, train_val_split
+from utils.loss import Loss_Calculator
 
 def avg_weighted_error(region_dict, hp):
     """
@@ -163,6 +163,6 @@ def forecast_ptiles(region_dict, ptile_dict):
         df_predictions = predictions[ptile_dict[key]]
         deciles_params[key] = params[ptile_dict[key]]
         deciles_forecast[key]['df_prediction'] = df_predictions
-        deciles_forecast[key]['df_loss'] = calculate_loss(df_train_nora, None, df_predictions, train_period=7,
+        deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(df_train_nora, None, df_predictions, train_period=7,
                         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     return deciles_params, deciles_forecast
