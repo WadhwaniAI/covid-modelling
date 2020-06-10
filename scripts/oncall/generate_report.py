@@ -43,6 +43,7 @@ now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 parser.add_argument("-f", "--folder", help="folder name", required=False, default=str(now), type=str)
 parser.add_argument("-k", "--ktrials", help="k trials to forecast", required=False, default=10, type=int)
 parser.add_argument("-d", "--districts", help="districts", required=True, type=str)
+parser.add_argument("--fdays",help="how many days to forecast for", required=False, default=30, type=int)
 args = parser.parse_args()
 
 dataframes = get_dataframes_cached()
@@ -101,14 +102,14 @@ for train_fit in ['m1', 'm2']:
         df_loss_master.loc[key, :] = np.around(predictions_dict[key][train_fit]['df_loss'].values.T.flatten().astype('float'), decimals=2)
 
 for region in predictions_dict.keys():
-    predictions_dict[region]['m2']['forecast'] = plot_forecast(predictions_dict[region], region, both_forecasts=False, error_bars=True)
+    predictions_dict[region]['m2']['forecast'] = plot_forecast(predictions_dict[region], region, both_forecasts=False, error_bars=True, days=args.fdays)
     
-    predictions, losses, params = get_all_trials(predictions_dict[region], train_fit='m1')
+    predictions, losses, params = get_all_trials(predictions_dict[region], train_fit='m1', forecast_days=args.fdays)
     predictions_dict[region]['m1']['params'] = params
     predictions_dict[region]['m1']['losses'] = losses
     predictions_dict[region]['m1']['predictions'] = predictions
     predictions_dict[region]['m1']['all_trials'] = trials_to_df(predictions, losses, params)
-    predictions, losses, params = get_all_trials(predictions_dict[region], train_fit='m2')
+    predictions, losses, params = get_all_trials(predictions_dict[region], train_fit='m2', forecast_days=args.fdays)
     predictions_dict[region]['m2']['params'] = params
     predictions_dict[region]['m2']['losses'] = losses
     predictions_dict[region]['m2']['predictions'] = predictions
@@ -130,7 +131,7 @@ for region in predictions_dict.keys():
     predictions_dict[region]['m2']['df_district_unsmoothed'].to_csv(f'../../reports/{args.folder}/true.csv')
     predictions_dict[region]['m2']['df_district'].to_csv(f'../../reports/{args.folder}/smoothed.csv')
 
-df_output = create_all_csvs(predictions_dict, icu_fraction=0.02)
+df_output = create_all_csvs(predictions_dict, icu_fraction=0.02, days=args.fdays)
 write_csv(df_output, filename=f'../../reports/{args.folder}/output-{now}.csv')
 
 print(f"yeet. done: view files at ../../reports/{args.folder}/")
