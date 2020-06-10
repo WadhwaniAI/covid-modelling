@@ -12,7 +12,7 @@ sys.path.append('../../')
 from main.seir.forecast import create_decile_csv
 from utils.create_report import create_report
 from utils.enums import Columns
-from viz import plot_trials, plot_r0_multipliers
+from viz import plot_ptiles, plot_r0_multipliers
 from main.seir.uncertainty import get_all_ptiles, forecast_ptiles
 from main.seir.forecast import save_r0_mul, predict_r0_multipliers
 
@@ -56,12 +56,9 @@ idxs = list(deciles_idx.values())
 predictions = region_dict['m2']['predictions']
 params = region_dict['m2']['params']
 losses = region_dict['m2']['losses']
-def get_idxs(l, idxs):
-    return [l[i] for i in idxs]
-plots = plot_trials(region_dict, 
-    k=len(deciles_idx), predictions=get_idxs(predictions,idxs), 
-    params=get_idxs(params,idxs), losses=get_idxs(losses,idxs), 
-    plot_individual_curves=True, vline=date_of_interest)
+def get_idxs(l):
+    return {ptile : l[deciles_idx[ptile]] for ptile in deciles_idx.keys()}
+plots = plot_ptiles(region_dict, get_idxs(predictions), vline=date_of_interest)
 plots[Columns.active].figure.savefig(f'../../reports/{args.folder}/deciles.png')
 forecast_dict['deciles_plot'] = plots[Columns.active]
 
