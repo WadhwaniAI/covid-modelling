@@ -39,14 +39,18 @@ elif args.district == 'mumbai':
 else:
     raise Exception("unknown district")
 
-deciles_idx, forecast_dict['beta'] = get_all_ptiles(region_dict, date_of_interest, args.iterations)
+from main.seir.middleclass import MCUncertainty
+uncertainty = MCUncertainty(region_dict, date_of_interest)
+deciles_idx = uncertainty.get_ptiles_idx()
+forecast_dict['beta'] = uncertainty.beta
 with open(f'../../reports/{args.folder}/deciles_idx.json', 'w+') as params_json:
     deciles_idx['beta'] = forecast_dict['beta']
     json.dump(deciles_idx, params_json, indent=4)
     del deciles_idx['beta']
 
 # forecast deciles to csv
-forecast_dict['decile_params'], deciles_forecast = forecast_ptiles(region_dict, deciles_idx)
+deciles_forecast = uncertainty.get_forecasts()
+forecast_dict['decile_params'] = {key: val['params'] for key, val in deciles_forecast.items()}
 df_output = create_decile_csv(deciles_forecast, df_reported, region_dict['dist'], 'district', icu_fraction=0.02)
 df_output.to_csv(f'../../reports/{args.folder}/deciles.csv')
 pd.DataFrame(forecast_dict['decile_params']).to_csv(f'../../reports/{args.folder}/deciles-params.csv')
