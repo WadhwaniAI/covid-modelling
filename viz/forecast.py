@@ -25,7 +25,6 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
     df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
     return df_prediction
 
-
 def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, log_scale=False, filename=None,
                   which_compartments=['hospitalised',
                                       'total_infected', 'deceased', 'recovered'],
@@ -113,7 +112,6 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
         plt.savefig(filename, format=fileformat)
 
     return ax
-
 
 def plot_trials(predictions_dict, train_fit='m2', k=10,
         predictions=None, losses=None, params=None, vline=None,
