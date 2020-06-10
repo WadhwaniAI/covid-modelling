@@ -3,7 +3,7 @@ import pdb
 import json
 import argparse
 import numpy as np
-np.random.seed(10)
+# np.random.seed(10)
 import pandas as pd
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -20,7 +20,7 @@ def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, ou
     data.set_index("date", inplace=True)
 
     plt.figure(figsize=(15, 10))
-    train_start_date = mcmc.df_train.iloc[-mcmc.fit_days, :]['date']
+    train_start_date = mcmc.df_train.iloc[0, :]['date']
     train_end_date = mcmc.df_train.iloc[-1, :]['date']
     
     actual = data[data.index >= train_start_date]
@@ -36,8 +36,8 @@ def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, ou
     for i, bucket in enumerate(compartments):
         plt.plot(actual.index.array, actual[bucket].tolist(), c=color[bucket], marker='o', label='Actual {}'.format(bucket))
         plt.plot(pred.index.array, pred[bucket].tolist(), c=color[bucket], label='Estimated {}'.format(bucket))
-        plt.plot(pred.index.array, pred['{}_low'.format(bucket)].tolist(), c=color[i], linestyle='dashdot')
-        plt.plot(pred.index.array, pred['{}_high'.format(bucket)].tolist(), c=color[i], linestyle='dashdot')
+        plt.plot(pred.index.array, pred['{}_low'.format(bucket)].tolist(), c=color[bucket], linestyle='dashdot')
+        plt.plot(pred.index.array, pred['{}_high'.format(bucket)].tolist(), c=color[bucket], linestyle='dashdot')
     plt.axvline(x=train_end_date, c='k', linestyle='dashed', label='train ends')
     plt.xticks(rotation=90)
     plt.legend()
