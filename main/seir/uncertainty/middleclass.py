@@ -8,10 +8,10 @@ import pandas as pd
 from functools import partial
 from hyperopt import fmin, tpe, hp, Trials
 
-sys.path.append('../../')
+sys.path.append('../../../')
 from main.seir.forecast import get_forecast
-from main.seir.fitting import calculate_loss, train_val_split
-from main.seir.uncertainty_base import Uncertainty
+from .uncertainty_base import Uncertainty
+from utils.loss import Loss_Calculator
 
 class MCUncertainty(Uncertainty):
     def __init__(self, region_dict, date_of_interest):
@@ -60,7 +60,7 @@ class MCUncertainty(Uncertainty):
         self.distribution = df
         return self.distribution
 
-    def get_forecasts(self, percentiles=None):
+    def get_forecasts(self, ptile_dict=None, percentiles=None):
         """
         Get forecasts at certain percentiles
 
@@ -70,22 +70,27 @@ class MCUncertainty(Uncertainty):
 
         Returns:
             dict: deciles_forecast, {percentile: {df_prediction: pd.DataFrame, df_loss: pd.DataFrame, params: dict}}
-        """   
-        ptile_dict = self.get_ptiles_idx(percentiles=percentiles)
+        """  
+        if ptile_dict is None: 
+            ptile_dict = self.get_ptiles_idx(percentiles=percentiles)
+        
         deciles_forecast = {}
         deciles_params = {}
+        
         predictions = self.region_dict['m2']['predictions']
         params = self.region_dict['m2']['params']
         df_district = self.region_dict['m2']['df_district']
         df_train_nora = df_district.set_index('date').loc[self.region_dict['m2']['df_train']['date'],:].reset_index()
+        
         for key in ptile_dict.keys():
             deciles_forecast[key] = {}
             df_predictions = predictions[ptile_dict[key]]
             deciles_params[key] = params[ptile_dict[key]]
             deciles_forecast[key]['df_prediction'] = df_predictions
             deciles_forecast[key]['params'] =  params[ptile_dict[key]]
-            deciles_forecast[key]['df_loss'] = calculate_loss(df_train_nora, None, df_predictions, train_period=7,
-                            which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
+            deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
+                df_train_nora, None, df_predictions, train_period=7,
+                which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
         return deciles_forecast
 
     def avg_weighted_error(self, hp):

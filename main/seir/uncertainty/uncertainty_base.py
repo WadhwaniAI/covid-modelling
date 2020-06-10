@@ -1,17 +1,6 @@
 
 import os
 import sys
-import json
-import datetime
-import numpy as np
-import pandas as pd
-from functools import partial
-from hyperopt import fmin, tpe, hp, Trials
-
-sys.path.append('../../')
-from main.seir.forecast import get_forecast
-from main.seir.fitting import calculate_loss, train_val_split
-
 from abc import abstractmethod
 
 class Uncertainty():

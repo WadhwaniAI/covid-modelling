@@ -92,8 +92,9 @@ df_reported = region_dict['m2']['df_district_unsmoothed'] # change this to df_di
 
 params = region_dict['m2']['params']
 
-from main.seir.uncertainty import forecast_ptiles
-deciles_params, deciles_forecast = forecast_ptiles(region_dict, deciles_idx)
+from main.seir.uncertainty import MCUncertainty
+uncertainty = MCUncertainty(region_dict, None)
+deciles_params, deciles_forecast = uncertainty.get_forecasts(ptile_dict=deciles_idx)
 
 # deciles to csv
 df_output = create_decile_csv(deciles_forecast, df_reported, region_dict['dist'], 'district', icu_fraction=0.02)
@@ -108,7 +109,7 @@ region_dict['m2']['df_district'].to_csv(f'../../reports/{args.folder}/smoothed.c
 from main.seir.forecast import predict_r0_multipliers, save_r0_mul
 
 # perform what-ifs on 80th percentile
-predictions_mul_dict = predict_r0_multipliers(params[deciles_idx[80]])
+predictions_mul_dict = predict_r0_multipliers(region_dict, params[deciles_idx[80]])
 save_r0_mul(predictions_mul_dict, folder=args.folder)
 
 ax = plot_r0_multipliers(region_dict, params[deciles_idx[80]], predictions_mul_dict, multipliers=[0.9, 1, 1.1, 1.25])
