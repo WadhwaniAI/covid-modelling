@@ -15,7 +15,7 @@ sys.path.append('../..')
 from models.ihme.pipeline import WAIPipeline
 from models.ihme.util import get_mortality
 from models.ihme.params import Params
-from models.ihme.dataloader import jhu
+from data.processing import jhu
 from models.ihme.population import standardise_age
 from main.ihme.mortality_pipeline import cities
 

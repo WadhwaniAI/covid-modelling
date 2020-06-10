@@ -19,11 +19,9 @@ from data.processing import get_data
 
 from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
-from main.seir.losses import Loss_Calculator
+from utils.loss import Loss_Calculator
 from utils.enums import Columns
 from viz import plot_smoothing, plot_fit
-
-now = str(datetime.datetime.now())
 
 def get_variable_param_ranges(initialisation='intermediate', as_str=False):
     """Returns the ranges for the variable params in the search space
@@ -135,9 +133,9 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
     
     df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
     ax = None
+    orig_df_district = copy.copy(df_district)
 
     if smooth_jump:
-        orig_df_district = copy.copy(df_district)
         df_district = smooth_big_jump(
             df_district, smoothing_length=smoothing_length, 
             method=smoothing_method, data_from_tracker=data_from_tracker, t_recov=t_recov)
@@ -274,7 +272,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
     variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
 
     # Perform Bayesian Optimisation
-    total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days + 1
+    total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
                                               num_evals=num_evals, loss_indices=[-train_period, None], method='mape',
                                               total_days=total_days, which_compartments=which_compartments)
@@ -282,12 +280,15 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
     print('best parameters\n', best_params)
 
     if not isinstance(df_val, pd.DataFrame):
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date']) 
+        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'],
+                                        model=model)
     else:
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'])
+        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'], 
+                                        model=model)
     
-    df_loss = calculate_loss(df_train_nora, df_val_nora, df_prediction, train_period, 
-                             which_compartments=which_compartments)
+    lc = Loss_Calculator()
+    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, train_period, 
+                                              which_compartments=which_compartments)
 
     ax = plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
                   which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'])
@@ -365,41 +366,3 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
     predictions_dict['run_params'] = run_params
 
     return predictions_dict
-
-def calculate_loss(df_train, df_val, df_prediction, train_period, which_compartments=['hospitalised', 'total_infected']):
-    """Helper function for calculating loss in training pipeline
-
-    Arguments:
-        df_train {pd.DataFrame} -- Train dataset
-        df_val {pd.DataFrame} -- Val dataset
-        df_prediction {pd.DataFrame} -- Model Prediction
-        train_period {int} -- Length of training Period
-
-    Keyword Arguments:
-        which_compartments {list} -- List of buckets to calculate loss on (default: {['hospitalised', 'total_infected']})
-
-    Returns:
-        pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
-    """
-    loss_calculator = Loss_Calculator()
-    df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
-
-    df_temp = df_prediction.loc[df_prediction['date'].isin(df_train['date']), [
-        'date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
-    df_temp.reset_index(inplace=True, drop=True)
-    df_train.reset_index(inplace=True, drop=True)
-    for compartment in df_loss.index:
-        df_loss.loc[compartment, 'train'] = loss_calculator._calc_mape(
-            np.array(df_train[compartment].iloc[-train_period:]), np.array(df_temp[compartment].iloc[-train_period:]))
-
-    if isinstance(df_val, pd.DataFrame):
-        df_temp = df_prediction.loc[df_prediction['date'].isin(df_val['date']), [
-            'date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
-        df_temp.reset_index(inplace=True, drop=True)
-        df_val.reset_index(inplace=True, drop=True)
-        for compartment in df_loss.index:
-            df_loss.loc[compartment, 'val'] = loss_calculator._calc_mape(
-                np.array(df_val[compartment]), np.array(df_temp[compartment]))
-    else:
-        del df_loss['val']
-    return df_loss

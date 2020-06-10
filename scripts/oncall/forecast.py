@@ -9,7 +9,6 @@ import time
 import sys
 sys.path.append('../../')
 
-from main.seir.fitting import calculate_loss, train_val_split
 from main.seir.forecast import create_decile_csv
 from utils.create_report import create_report
 from utils.enums import Columns

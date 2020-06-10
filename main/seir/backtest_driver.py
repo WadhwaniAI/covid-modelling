@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 import sys
 sys.path.append('../..')
-from data.dataloader import get_covid19india_api_data
+from data.dataloader import Covid19IndiaLoader()
 from main.seir.fitting import get_regional_data
 from main.seir.backtesting import SEIRBacktest
 
@@ -17,7 +17,8 @@ parser.add_argument("-d", "--district", help="district name", required=True)
 args = parser.parse_args()
 
 print('\rgetting dataframes...')
-dataframes = get_covid19india_api_data()
+loader = Covid19IndiaLoader()
+dataframes = loader.get_covid19india_api_data()
 state, district = 'Maharashtra', args.district.title()
 fit = 'm1' # 'm1' or 'm2'
 data_from_tracker=True

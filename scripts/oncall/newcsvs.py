@@ -83,7 +83,7 @@ else:
 
 
 from main.seir.fitting import get_regional_data
-from models.ihme.dataloader import get_dataframes_cached
+from data.processing import get_dataframes_cached
 
 # first one for mumbai, second for pune, third if pkl was produced after june 6
 # df_reported, _ = get_regional_data(get_dataframes_cached(), 'Maharashtra', 'Mumbai', False, None, None)

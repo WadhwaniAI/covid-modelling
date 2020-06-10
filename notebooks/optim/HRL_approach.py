@@ -82,6 +82,9 @@ class FittedQIteration(object):
         else:
             # Find index of maximum value from 2D numpy array
             Table=self.Q([state])[0]
+            #assign the illegal action cost TODO
+            
+            
 #            print(Table)
             result = np.where(Table== np.amax(Table))
 #            print(result)
@@ -165,7 +168,7 @@ class FittedQIteration(object):
         """Fit and re-fit the Q function using historical data for the
         specified number of `iters` at the specified `discount` factor"""
         S1 = np.vstack([ep[0][:-1] for ep in episodes])
-        S2 = np.vstack([ep[0][1:] for ep in episodes])
+        S2 = np.vstack([ep[0][1:] for ep in episodes])     
         A = np.vstack([ep[1] for ep in episodes])
         R = np.hstack([ep[2] for ep in episodes])
         L = np.hstack([ep[4] for ep in episodes])
@@ -224,9 +227,14 @@ class FittedQIteration(object):
         progress = tqdm(range(num_refits), file=sys.stdout,desc='num_refits')
         for i in range(num_refits):
             progress.update(1)
-#            episodes = []
+            episodes = []
             for _ in range(num_episodes):
+                if len(episodes)>20:
+                    self.fit_Q(episodes=episodes, discount=discount)
+                    episodes = []
                 episodes.append(self.run_episode(eps=0.1))
+                
+                #Tune epsilon latter TODO
 #                episodes.append(self.run_episode(eps=1-(i/num_refits)))
 #                print('Round: {}-{}'.format(i,_))
                 ###
@@ -244,9 +252,7 @@ class FittedQIteration(object):
             if is_fitted(self.regressor):
                 Q=((self.Q(S).max(axis=2)).max(axis=1))[0]
             print('Reward 1: {} Reward 2:{} Estimate R:{}'.format(best_r,best_r2,Q))   
-                ###
-#            print(real_episodes[1])
-            self.fit_Q(episodes=episodes, discount=discount)
+#            self.fit_Q(episodes=episodes, discount=discount)
             if save:
 #                with open('./fqi-regressor-iter-{}.pkl'.format(i+1), 'wb') as f:
                 with open('./fqi-regressor-iter.pkl', 'wb') as f:
@@ -288,14 +294,14 @@ if __name__ == '__main__':
     print('Here goes nothing')
     discount=1
     num_refits=10
-    num_episodes=2000
+    num_episodes=1000
     First_time=True
     lam=0.0
     if First_time:
         env=FittedQIteration()
         episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,discount=discount)
      
-        with open('Result_{}_SIR_refits={}_episodes={}_h=0.15.pickle'.format(lam,num_refits,num_episodes), 'wb') as f:
+        with open('Result_{}_SIR_refits={}_episodes={}_h=0.1.pickle'.format(lam,num_refits,num_episodes), 'wb') as f:
                     pickle.dump([env,episodes], f)
     else:            
         with open('Result_{}_SIR_refits={}_episodes={}_delay.pickle'.format(lam,num_refits,num_episodes), 'rb') as f:
