@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import copy
+import os
+import pickle
 import datetime
 from collections import defaultdict
 
@@ -200,7 +202,7 @@ def get_district_time_series(dataframes=None, state='Karnataka', district='Benga
         return out.reset_index()
 
 def get_dataframes_cached():
-    picklefn = "../../cache/dataframes_ts_{today}.pkl".format(today=datetime.today().strftime("%d%m%Y"))
+    picklefn = "../../cache/dataframes_ts_{today}.pkl".format(today=datetime.datetime.today().strftime("%d%m%Y"))
     try:
         print(picklefn)
         with open(picklefn, 'rb') as pickle_file:
@@ -217,7 +219,7 @@ def get_dataframes_cached():
 
 def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
     picklefn = "../../cache/{district}_ts_{today}.pkl".format(
-        district=district, today=datetime.today().strftime("%d%m%Y")
+        district=district, today=datetime.datetime.today().strftime("%d%m%Y")
     )	
     try:
         print(picklefn)
