@@ -29,11 +29,14 @@ class MCMC(object):
         self.df_district = get_district_time_series(dataframes, state=self.state, district=self.district, use_dataframe = 'districts_daily')
 
     def _split_data(self):
-        if self.fit_days:
-            self.df_train = self.df_district.iloc[-(self.fit_days+self.test_days) : -self.test_days, :]
-        else:
-            self.df_train = self.df_district.iloc[ : -self.test_days, :]
-        self.df_val = self.df_district.iloc[-self.test_days : , :]
+        N = len(self.df_district)
+        self.df_val = self.df_district.iloc[N - self.test_days:, :]
+        if self.fit_days is None:
+            self.fit_days = N - self.test_days
+        self.df_train = self.df_district.iloc[: N - self.test_days, :]
+
+        self.fit_start = N - self.test_days - self.fit_days
+        self.fit_end = N - self.test_days
 
     def _get_new_cases_array(self, cases):
         return np.array(cases[1:]) - np.array(cases[:-1])
@@ -73,8 +76,8 @@ class MCMC(object):
         sigma = theta['sigma']
 
         for compartment in self.compartments:
-            pred = np.array(df_prediction[compartment], dtype=np.int64)
-            true = np.array(self.df_train[compartment], dtype=np.int64)
+            pred = np.array(df_prediction[compartment][self.fit_start : self.fit_end], dtype=np.int64)
+            true = np.array(self.df_train[compartment][self.fit_start : self.fit_end], dtype=np.int64)
             if self.fit2new:
                 pred = self._get_new_cases_array(pred.copy())
                 true = self._get_new_cases_array(true.copy())
@@ -102,7 +105,7 @@ class MCMC(object):
             return (x < np.exp(x_new - x_old))
 
     def _metropolis(self, seed):
-        np.random.seed(seed)
+        # np.random.seed(seed)
         theta = self._param_init()
         accepted = [theta]
         rejected = list()

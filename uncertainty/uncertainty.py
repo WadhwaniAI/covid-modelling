@@ -3,11 +3,11 @@ import pdb
 import json
 import argparse
 import numpy as np
-# np.random.seed(10)
+np.random.seed(10)
 import pandas as pd
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from os.path import exists, join
+from os.path import exists, join, splitext
 
 from mcmc import MCMC
 from mcmc_utils import predict, get_state
@@ -20,7 +20,7 @@ def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, ou
     data.set_index("date", inplace=True)
 
     plt.figure(figsize=(15, 10))
-    train_start_date = mcmc.df_train.iloc[0, :]['date']
+    train_start_date = mcmc.df_train.iloc[mcmc.fit_start, :]['date']
     train_end_date = mcmc.df_train.iloc[-1, :]['date']
     
     actual = data[data.index >= train_start_date]
@@ -79,10 +79,11 @@ def plot_chains(mcmc: MCMC, out_dir: str):
 
 def main(config: str):
     cfg = json.load(open(join('cfg', config)))
+    exp_name = splitext(config)[0]
     mcmc = MCMC(cfg)
     mcmc.run()
     sig = mcmc.timestamp.strftime("%d-%b-%Y (%H:%M:%S)")
-    out_dir = join('plots', sig)
+    out_dir = join('plots', '{}_{}'.format(sig, exp_name))
     os.makedirs(out_dir, exist_ok=True)
     with open(join(out_dir, config), 'w') as outfile:
         json.dump(cfg, outfile)
