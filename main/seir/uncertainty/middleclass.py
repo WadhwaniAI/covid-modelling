@@ -113,7 +113,7 @@ class MCUncertainty(Uncertainty):
         for date in df_val.index:
             weighted_pred = (beta_loss*active_predictions[date]).sum() / beta_loss.sum()
             rel_error = (weighted_pred - df_val.loc[date,'hospitalised']) / df_val.loc[date,'hospitalised']
-            avg_rel_err += rel_error
+            avg_rel_err += abs(rel_error)
         avg_rel_err /= len(df_val)
         return avg_rel_err
 
