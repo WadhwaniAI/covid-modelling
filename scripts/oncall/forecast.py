@@ -19,26 +19,16 @@ from main.seir.forecast import save_r0_mul, predict_r0_multipliers
 parser = argparse.ArgumentParser()
 t = time.time()
 parser.add_argument("-f", "--folder", help="folder name", required=True, type=str)
-parser.add_argument("-d", "--district", help="district name", required=True, type=str)
 parser.add_argument("-i", "--iterations", help="number of trials for beta exploration", required=False, default=1500, type=int)
+parser.add_argument("-date", "--date", help="date YYYY-MM-DD to sort trials by for cdf", required=True, type=str)
 parser.add_argument("--fdays",help="how many days to forecast for", required=False, default=30, type=int)
 args = parser.parse_args()   
 
 with open(f'../../reports/{args.folder}/predictions_dict.pkl', 'rb') as pkl:
     region_dict = pickle.load(pkl)
 forecast_dict = {}
-
-if args.district == 'pune':
-    date_of_interest = '2020-06-15'
-    # df_reported = region_dict['m2']['df_district']
-    df_reported = region_dict['m2']['df_district_unsmoothed']
-elif args.district == 'mumbai':
-    date_of_interest = '2020-06-30'
-    # df_reported = pd.read_csv(f'../../reports/{args.folder}/true.csv')
-    # df_reported['date'] = pd.to_datetime(df_reported['date'])
-    df_reported = region_dict['m2']['df_district_unsmoothed']
-else:
-    raise Exception("unknown district")
+df_reported = region_dict['m2']['df_district_unsmoothed']
+date_of_interest = args.date
 
 deciles_idx, forecast_dict['beta'] = get_all_ptiles(region_dict, date_of_interest, args.iterations)
 with open(f'../../reports/{args.folder}/deciles_idx.json', 'w+') as params_json:

@@ -1,6 +1,6 @@
 # On Call Routine
 
-Last Updated: June 7, Vishwa
+Last Updated: June 10, Vishwa
 
 ## Typical Flow
 1. Keshav/Puskar emails you with an ops request
@@ -55,7 +55,7 @@ Command Line Parameters:
 
 `-f --folder`: where to find the pkl, addl assets will be saved in `reports/<folder>`; required
 
-`-d --district`: district name; required [mumbai, pune]
+`-date --date`: date to sort trials based on (for middle-class uncertainty method); required \[YYYY-MM-DD\]
 
 `-i -iterations`: iterations to run hyperopt for the beta search; optional, default 1000
 
