@@ -107,12 +107,13 @@ class MCUncertainty(Uncertainty):
         losses = self.region_dict['m1']['losses']
         df_val = self.region_dict['m1']['df_district'].set_index('date') \
             .loc[self.region_dict['m1']['df_val']['date'],:]
-        active_predictions = self.region_dict['m1']['all_trials'].loc[:, df_val.index]
+        compartment = self.region_dict['m1']['all_trials']['compartment'][0]
+        compartment_preds = self.region_dict['m1']['all_trials'].loc[:, df_val.index]
         beta_loss = np.exp(-beta*losses)
         avg_rel_err = 0
         for date in df_val.index:
-            weighted_pred = (beta_loss*active_predictions[date]).sum() / beta_loss.sum()
-            rel_error = (weighted_pred - df_val.loc[date,'hospitalised']) / df_val.loc[date,'hospitalised']
+            weighted_pred = (beta_loss*compartment_preds[date]).sum() / beta_loss.sum()
+            rel_error = (weighted_pred - df_val.loc[date,compartment]) / df_val.loc[date,compartment]
             avg_rel_err += abs(rel_error)
         avg_rel_err /= len(df_val)
         return avg_rel_err

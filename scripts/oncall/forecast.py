@@ -51,9 +51,10 @@ params = region_dict['m2']['params']
 losses = region_dict['m2']['losses']
 def get_idxs(l):
     return {ptile : l[deciles_idx[ptile]] for ptile in deciles_idx.keys()}
-plots = plot_ptiles(region_dict, get_idxs(predictions), vline=date_of_interest)
-plots[Columns.active].figure.savefig(f'../../reports/{args.folder}/deciles.png')
-forecast_dict['deciles_plot'] = plots[Columns.active]
+compartment = region_dict['m2']['all_trials']['compartment'][0]
+ax = plot_ptiles(region_dict, get_idxs(predictions), vline=date_of_interest, compartment=Columns.from_name(compartment))
+ax.figure.savefig(f'../../reports/{args.folder}/deciles.png')
+forecast_dict['deciles_plot'] = ax
 
 # perform what-ifs on 80th percentile
 predictions_mul_dict = predict_r0_multipliers(region_dict, params[deciles_idx[80]], days=args.fdays)
