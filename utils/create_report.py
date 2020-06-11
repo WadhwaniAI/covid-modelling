@@ -177,13 +177,14 @@ import copy
 from utils.enums import Columns
 
 def trials_to_df(predictions, losses, params, column=Columns.active):
-    cols = ['loss']
+    cols = ['loss', 'compartment']
     for key in params[0].keys():
         cols.append(key)
     trials = pd.DataFrame(columns=cols)
     for i in range(len(params)):
         to_add = copy.copy(params[i])
         to_add['loss'] = losses[i]
+        to_add['compartment'] = column.name
         trials = trials.append(to_add, ignore_index=True)
     pred = pd.DataFrame(columns=predictions[0]['date'])
     for i in range(len(params)):
