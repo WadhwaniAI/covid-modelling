@@ -9,7 +9,6 @@ import time
 import sys
 sys.path.append('../../')
 
-from main.seir.fitting import calculate_loss, train_val_split
 from main.seir.forecast import create_decile_csv
 from utils.create_report import create_report
 from utils.enums import Columns
@@ -22,6 +21,7 @@ t = time.time()
 parser.add_argument("-f", "--folder", help="folder name", required=True, type=str)
 parser.add_argument("-d", "--district", help="district name", required=True, type=str)
 parser.add_argument("-i", "--iterations", help="number of trials for beta exploration", required=False, default=1500, type=int)
+parser.add_argument("--fdays",help="how many days to forecast for", required=False, default=30, type=int)
 args = parser.parse_args()   
 
 with open(f'../../reports/{args.folder}/predictions_dict.pkl', 'rb') as pkl:
@@ -66,7 +66,7 @@ plots[Columns.active].figure.savefig(f'../../reports/{args.folder}/deciles.png')
 forecast_dict['deciles_plot'] = plots[Columns.active]
 
 # perform what-ifs on 80th percentile
-predictions_mul_dict = predict_r0_multipliers(region_dict, params[deciles_idx[80]])
+predictions_mul_dict = predict_r0_multipliers(region_dict, params[deciles_idx[80]], days=args.fdays)
 save_r0_mul(predictions_mul_dict, folder=args.folder)
 
 forecast_dict['what-ifs-plot'] = plot_r0_multipliers(region_dict, params[deciles_idx[80]], predictions_mul_dict, multipliers=[0.9, 1, 1.1, 1.25])
