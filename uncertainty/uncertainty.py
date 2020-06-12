@@ -45,7 +45,19 @@ def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, ou
     plt.tight_layout()
     
     plt.savefig(join(out_dir, 'forecasts_{}_{}.png'.format(mcmc.district, mcmc.state)))
-    plt.show()
+
+    plt.figure()
+
+    for i, bucket in enumerate(compartments):
+        plt.plot(actual.index.array, actual[bucket].tolist(), c=color[bucket], marker='o', label='Actual {}'.format(bucket))
+        plt.plot(pred.index.array, pred[bucket].tolist(), c=color[bucket], label='Estimated {}'.format(bucket))
+    plt.axvline(x=train_end_date, c='k', linestyle='dashed', label='train ends')
+    plt.xticks(rotation=90)
+    plt.legend()
+    plt.title("mean fit for {}, {}".format(mcmc.district, mcmc.state))
+    plt.tight_layout()
+    
+    plt.savefig(join(out_dir, 'mean_fit_{}_{}.png'.format(mcmc.district, mcmc.state)))
 
 def plot_chains(mcmc: MCMC, out_dir: str):
     color = plt.cm.rainbow(np.linspace(0, 1, mcmc.n_chains))
