@@ -16,7 +16,7 @@ class SEIR:
         [S, E, I, R_mild, R_severe, R_severe_hosp, R_fatal, C, D] = y
 
         # Init time parameters and probabilities
-        T_base, T_inc, T_inf, T_recov_mild, T_hosp, T_recov_severe, T_death = self.time_params
+        T_base, T_inc, T_inf, T_recov_mild, T_hosp, T_recov_severe, T_recov_fatal = self.time_params
         P_mild, P_severe, P_fatal = self.p_params
         
 
@@ -34,9 +34,9 @@ class SEIR:
         dydt[3] = (P_mild*I)/T_inf - R_mild/T_recov_mild
         dydt[4] = (P_severe*I)/T_inf - R_severe/T_hosp
         dydt[5] = R_severe/T_hosp - R_severe_hosp/T_recov_severe
-        dydt[6] = (P_fatal*I)/T_inf - R_fatal/T_death
+        dydt[6] = (P_fatal*I)/T_inf - R_fatal/T_recov_fatal
         dydt[7] = R_mild/T_recov_mild + R_severe_hosp/T_recov_severe
-        dydt[8] = R_fatal/T_death
+        dydt[8] = R_fatal/T_recov_fatal
 
         return dydt
 

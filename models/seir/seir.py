@@ -12,10 +12,10 @@ from utils.ode import ODE_Solver
 class SEIR(Model):
 
     @abstractmethod
-    def __init__(self, STATES, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, 
-                 T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6,
-                 lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', initialisation='intermediate',
-                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
+    def __init__(self, STATES, p_params, t_params, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None,
+                 T_inf=2.9, T_inc=5.2, P_severe=0.2, P_fatal=0.02, T_recov_mild=11, T_recov_severe=14, T_recov_fatal=32, 
+                 N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 
+                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
 
         # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
         if post_lockdown_R0 == None:
@@ -43,7 +43,7 @@ class SEIR(Model):
             # Clinical time parameters
             'T_recov_mild': T_recov_mild, # Time it takes for an individual with a mild infection to recover
             'T_recov_severe': T_recov_severe, # Time it takes for an individual with a severe infection to recover
-            'T_death': T_death, #Time it takes for an individual with a fatal infection to die
+            'T_recov_fatal': T_recov_fatal, #Time it takes for an individual with a fatal infection to die
 
             # Lockdown parameters
             'starting_date': starting_date,  # Datetime value that corresponds to Day 0 of modelling

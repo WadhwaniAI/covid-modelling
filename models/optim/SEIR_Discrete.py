@@ -12,7 +12,7 @@ class SEIR_Discrete(object):
         self.T_recov_mild = (14 - self.T_inf)
         self.T_hosp = 5
         self.T_recov_severe = (31.5 - self.T_inf)
-        self.T_death = 32    
+        self.T_recov_fatal = 32    
         self.P_severe = 0.2
         self.P_fatal = 0.02
         self.P_mild = 1 - self.P_severe - self.P_fatal
@@ -70,9 +70,9 @@ class SEIR_Discrete(object):
         STATE_[3] = self.STATE[3]+(self.P_mild*self.STATE[2])/self.T_inf - self.STATE[3]/self.T_recov_mild
         STATE_[4] = self.STATE[4]+(self.P_severe*self.STATE[2])/self.T_inf - self.STATE[4]/self.T_hosp
         STATE_[5] = self.STATE[5]+self.STATE[4]/self.T_hosp - self.STATE[5]/self.T_recov_severe
-        STATE_[6] = self.STATE[6]+(self.P_fatal*self.STATE[2])/self.T_inf - self.STATE[6]/self.T_death
+        STATE_[6] = self.STATE[6]+(self.P_fatal*self.STATE[2])/self.T_inf - self.STATE[6]/self.T_recov_fatal
         STATE_[7] = self.STATE[7]+self.STATE[3]/self.T_recov_mild + self.STATE[5]/self.T_recov_severe
-        STATE_[8] = self.STATE[8]+self.STATE[6]/self.T_death
+        STATE_[8] = self.STATE[8]+self.STATE[6]/self.T_recov_fatal
         STATE_[9] = self.STATE[9]-self.get_action_cost(ACTION)
         self.STATE=STATE_.copy()
         self.t+=1
