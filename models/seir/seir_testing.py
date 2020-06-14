@@ -82,9 +82,16 @@ class SEIR_Testing(SEIR):
         I_hosp_ratio : Ratio for Infected to hospitalised for initialisation
         """
         STATES = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
+        R_STATES = [x for x in STATES if 'R_' in x]
         input_args = copy.deepcopy(locals())
         del input_args['self']
         del input_args['kwargs']
+        p_params = {k: input_args[k] for k in input_args.keys() if 'P_' in k}
+        t_params = {k: input_args[k] for k in input_args.keys() if 'T_recov' in k}
+        p_params['P_severe'] = 1 - p_params['P_fatal']
+        p_params['P_mild'] = 0
+        input_args['p_params'] = p_params
+        input_args['t_params'] = t_params
         super().__init__(**input_args)
 
         extra_params = {
