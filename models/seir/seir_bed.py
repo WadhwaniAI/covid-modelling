@@ -10,7 +10,7 @@ import copy
 from models.seir.seir import SEIR
 from utils.ode import ODE_Solver
 
-class SEIRHD_Sev(SEIR):
+class SEIRHD_Bed(SEIR):
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_recov_death=32,
                  P_moderate=0.4, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, T_recov_moderate=11, 
                  N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 

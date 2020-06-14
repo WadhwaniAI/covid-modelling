@@ -82,24 +82,6 @@ class SEIRHD_Sev(SEIR):
         input_args['p_params'] = p_params
         input_args['t_params'] = t_params
         super().__init__(**input_args)
-        extra_params = {
-            # Probability of contracting different types of infections
-            'P_mild': P_mild,  # Probability of contracting a mild infection
-            'P_moderate': P_moderate,  # Probability of contracting a moderate infection
-            'P_severe': P_severe,  # Probability of contracting a severe infection
-            'P_fatal': P_fatal,  # Probability of contracting a fatal infection
-
-            # Clinical time parameters
-            'T_recov_mild': T_recov_mild, # Time it takes for an individual with a mild infection to recover
-            'T_recov_moderate': T_recov_moderate, # Time it takes for an individual with a moderate infection to recover
-            'T_recov_severe': T_recov_severe, # Time it takes for an individual with a severe infection to recover
-            'T_recov_death': T_recov_death, #Time it takes for an individual with a fatal infection to die
-
-        }
-
-        # Set all variables as attributes of self
-        for key in extra_params:
-            setattr(self, key, extra_params[key])
 
 
     def get_derivative(self, t, y):
