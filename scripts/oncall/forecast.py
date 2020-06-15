@@ -19,7 +19,6 @@ from main.seir.forecast import save_r0_mul, predict_r0_multipliers
 parser = argparse.ArgumentParser()
 t = time.time()
 parser.add_argument("-f", "--folder", help="folder name", required=True, type=str)
-parser.add_argument("-i", "--iterations", help="number of trials for beta exploration", required=False, default=1500, type=int)
 parser.add_argument("-date", "--date", help="date YYYY-MM-DD to sort trials by for cdf", required=True, type=str)
 parser.add_argument("--fdays",help="how many days to forecast for", required=False, default=30, type=int)
 args = parser.parse_args()   
