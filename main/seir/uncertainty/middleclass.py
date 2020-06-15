@@ -12,6 +12,7 @@ sys.path.append('../../../')
 from main.seir.forecast import get_forecast
 from .uncertainty_base import Uncertainty
 from utils.loss import Loss_Calculator
+from utils.enums import Columns
 
 class MCUncertainty(Uncertainty):
     def __init__(self, region_dict, date_of_interest):
@@ -93,7 +94,7 @@ class MCUncertainty(Uncertainty):
                 which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
         return deciles_forecast
 
-    def avg_weighted_error(self, hp):
+    def avg_weighted_error(self, hp, loss_method='mape'):
         """
         Loss function to optimize beta
 
@@ -107,13 +108,20 @@ class MCUncertainty(Uncertainty):
         losses = self.region_dict['m1']['losses']
         df_val = self.region_dict['m1']['df_district'].set_index('date') \
             .loc[self.region_dict['m1']['df_val']['date'],:]
-        compartment = self.region_dict['m1']['all_trials']['compartment'][0]
-        compartment_preds = self.region_dict['m1']['all_trials'].loc[:, df_val.index]
         beta_loss = np.exp(-beta*losses)
         avg_rel_err = 0
+        lc = Loss_Calculator()
+
+        predictions = self.region_dict['m1']['predictions']
+        allcols = ['hospitalised', 'recovered', 'deceased', 'total_infected']
+        bydate = {date: predictions[trial].set_index('date').loc[date, allcols] for date in predictions[0]['date'] for trial in range(len(predictions))}
+        beta_loss_df = pd.DataFrame(columns=allcols)
+        for col in allcols:
+            beta_loss_df.loc[:,col] = beta_loss
+
         for date in df_val.index:
-            weighted_pred = (beta_loss*compartment_preds[date]).sum() / beta_loss.sum()
-            rel_error = (weighted_pred - df_val.loc[date,compartment]) / df_val.loc[date,compartment]
+            weighted_pred = (bydate[date]*beta_loss_df).sum() / beta_loss.sum()
+            rel_error = lc.calc_loss(weighted_pred, df_val.loc[date,allcols], method=loss_method)
             avg_rel_err += abs(rel_error)
         avg_rel_err /= len(df_val)
         return avg_rel_err
