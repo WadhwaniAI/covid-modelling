@@ -1,28 +1,21 @@
-import os
-import sys
-import argparse
 import pandas as pd
 import numpy as np 
 from datetime import timedelta, datetime
 from copy import copy
-
-import matplotlib.pyplot as plt
-from pandas.plotting import register_matplotlib_converters
-from matplotlib.dates import DateFormatter
-import pandas as pd
-from sklearn.metrics import r2_score, mean_squared_log_error
 
 import curvefit
 from curvefit.pipelines.basic_model import BasicModel
 from curvefit.core.functions import *
 from curvefit.core.utils import data_translator
 
-# from models.ihme.util import smooth, get_daily_vals
-from models.ihme.util import get_daily_vals
-from utils.util import smooth, rollingavg
+import sys
+sys.path.append('../../')
 
-# class IHME(ModelWrapperBase):
-class IHME():
+from models.ihme.util import get_daily_vals
+from utils.util import rollingavg
+from models import Model
+
+class IHME(Model):
 
     def __init__(self, model_parameters: dict):
         self.model_parameters = model_parameters
@@ -102,10 +95,6 @@ class IHME():
             },
         )
       
-    def is_black_box(self):
-        # what is this supposed to mean
-        return True
-
     def run(self, n_days, pipeline_args=None):
         p_args = self.pipeline_args
         if pipeline_args is not None:
