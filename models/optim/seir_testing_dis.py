@@ -8,7 +8,7 @@ from collections import OrderedDict
 class SEIR_Testing():
 
     def __init__(self, R0=3, T_inf=3.3, T_inc=4.5, T_hosp=5, 
-                 T_death=32, P_severe=0.8, P_fatal=0.11, T_recov_severe=26, T_recov_mild=11, N=7e6, init_infected=1,
+                 T_recov_fatal=32, P_severe=0.8, P_fatal=0.11, T_recov_severe=26, T_recov_mild=11, N=7e6, init_infected=1,
                  q=0, theta_E=0, psi_E=1, theta_I=0, psi_I=1, initialisation='starting', observed_values=None, 
                  E_hosp_ratio=0.5, I_hosp_ratio=0.39, factor=(1.77/1.23), int_vec=None, ** kwargs):
         """
@@ -56,7 +56,7 @@ class SEIR_Testing():
         T_recov_mild: Time it takes for an individual with a mild infection to recover (float)
         T_recov_severe: Time it takes for an individual with a severe infection to recover (float)
         T_hosp: Time it takes for an individual to get hospitalised, after they have been diagnosed (float)
-        T_death: Time it takes for an individual with a fatal infection to die (float)
+        T_recov_fatal: Time it takes for an individual with a fatal infection to die (float)
 
         Testing Parameters - 
         'q': Perfection of quarantining 
@@ -105,7 +105,7 @@ class SEIR_Testing():
             'T_recov_mild': T_recov_mild, # Time it takes for an individual with a mild infection to recover
             'T_recov_severe': T_recov_severe, # Time it takes for an individual with a severe infection to recover
             'T_hosp': T_hosp, # Time it takes for an individual to get hospitalised, after they have been diagnosed
-            'T_death': T_death, #Time it takes for an individual with a fatal infection to die
+            'T_recov_fatal': T_recov_fatal, #Time it takes for an individual with a fatal infection to die
 
             'N': N,
             'factor': factor,
@@ -210,9 +210,9 @@ class SEIR_Testing():
         dydt[5] = (1/self.T_inf)*(self.P_mild*I) + (1/self.T_inf_D)*(self.P_mild_D*D_I) - R_mild/self.T_recov_mild # R_mild
         dydt[6] = (1/self.T_inf)*(self.P_severe*I) + (1/self.T_inf_D)*(self.P_severe_D*D_I) - R_severe_home/self.T_hosp # R_severe_home
         dydt[7] = R_severe_home/self.T_hosp - R_severe_hosp/self.T_recov_severe # R_severe_hosp
-        dydt[8] = (1/self.T_inf)*(self.P_fatal*I) + (1/self.T_inf_D)*(self.P_fatal_D*D_I) - R_fatal/self.T_death # R_fatal
+        dydt[8] = (1/self.T_inf)*(self.P_fatal*I) + (1/self.T_inf_D)*(self.P_fatal_D*D_I) - R_fatal/self.T_recov_fatal # R_fatal
         dydt[9] = R_mild/self.T_recov_mild + R_severe_hosp/self.T_recov_severe # C
-        dydt[10] = R_fatal/self.T_death # D
+        dydt[10] = R_fatal/self.T_recov_fatal # D
 
         return dydt
 

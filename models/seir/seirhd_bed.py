@@ -10,15 +10,13 @@ import copy
 from models.seir.seir import SEIR
 from utils.ode import ODE_Solver
 
-class SEIR_Testing(SEIR):
-
-    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
-                 T_recov_fatal=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6,
-                 q=0, theta_E=0, psi_E=1, theta_I=0, psi_I=1, lockdown_day=10, lockdown_removal_day=75,
-                 starting_date='2020-03-09', initialisation='intermediate', observed_values=None, 
-                 E_hosp_ratio=0.5, I_hosp_ratio=0.5, ** kwargs):
+class SEIRHD_Bed(SEIR):
+    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_recov_death=32,
+                 P_moderate=0.4, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, T_recov_moderate=11, 
+                 N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 
+                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
         """
-        This class implements SEIR + Hospitalisation + Severity Levels + Testing 
+        This class implements SEIR + Hospitalisation + Severity Levels 
         The model further implements 
         - pre, post, and during lockdown behaviour 
         - different initialisations : intermediate and starting 
@@ -28,10 +26,9 @@ class SEIR_Testing(SEIR):
         S : No of susceptible people
         E : No of exposed people
         I : No of infected people
-        D_E : No of exposed people (detected)
-        D_I : No of infected people (detected)
         R_mild : No of people recovering from a mild version of the infection
-        R_severe : No of people recovering from a fatal version of the infection (at hospital)
+        R_moderate : No of people recovering from a moderate version of the infection
+        R_severe : No of people recovering from a severe version of the infection
         R_fatal : No of people recovering from a fatal version of the infection
         C : No of recovered people
         D : No of deceased people 
@@ -54,21 +51,15 @@ class SEIR_Testing(SEIR):
 
         Probability of contracting different types of infections - 
         P_mild: Probability of contracting a mild infection (float - [0, 1])
+        P_moderate: Probability of contracting a moderate infection (float - [0, 1])
         P_severe: Probability of contracting a severe infection (float - [0, 1])
         P_fatal: Probability of contracting a fatal infection (float - [0, 1])
 
         Clinical time parameters - 
         T_recov_mild: Time it takes for an individual with a mild infection to recover (float)
+        T_recov_moderate: Time it takes for an individual with a moderate infection to recover (float)
         T_recov_severe: Time it takes for an individual with a severe infection to recover (float)
-        T_recov_fatal: Time it takes for an individual with a fatal infection to die (float)
-
-        Testing Parameters - 
-        'q': Perfection of quarantining 
-        If q = 0, quarantining is perfect. q = 1. quarantining is absolutely imperfect
-        'theta_E': Percentage of people in the Exposed bucket that are tested daily
-        'psi_E': Sensitivity of test that Exposed people undergo
-        'theta_I': Percentage of people in the Infected bucket that are tested daily
-        'psi_I': Sensitivity of test that Infected people undergo
+        T_recov_death: Time it takes for an individual with a fatal infection to die (float)
 
         Lockdown parameters - 
         starting_date: Datetime value that corresponds to Day 0 of modelling (datetime/str)
@@ -78,44 +69,47 @@ class SEIR_Testing(SEIR):
         Misc - 
         N: Total population
         initialisation : method of initialisation ('intermediate'/'starting')
-        E_hosp_ratio : Ratio for Exposed to hospitalised for initialisation
-        I_hosp_ratio : Ratio for Infected to hospitalised for initialisation
         """
-        STATES = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
+        STATES = ['S', 'E', 'I', 'R_mild', 'R_moderate', 'R_severe', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]
         input_args = copy.deepcopy(locals())
         del input_args['self']
         del input_args['kwargs']
         p_params = {k: input_args[k] for k in input_args.keys() if 'P_' in k}
         t_params = {k: input_args[k] for k in input_args.keys() if 'T_recov' in k}
-        p_params['P_severe'] = 1 - p_params['P_fatal']
-        p_params['P_mild'] = 0
+        P_mild = 1 - sum(p_params.values())
+        p_params['P_mild'] = P_mild
         input_args['p_params'] = p_params
         input_args['t_params'] = t_params
         super().__init__(**input_args)
-
         extra_params = {
-            # Testing Parameters
-            'q': q, # Perfection of quarantining : If q = 0, quarantining is perfect. q = 1. quarantining is absolutely imperfect
-            'theta_E': theta_E, # Percentage of people in the Exposed bucket that are tested daily
-            'psi_E': psi_E, # Sensitivity of test that Exposed people undergo
-            'theta_I': theta_I, # Percentage of people in the Infected bucket that are tested daily
-            'psi_I': psi_I # Sensitivity of test that Infected people undergo
+            # Probability of contracting different types of infections
+            'P_mild': P_mild,  # Probability of contracting a mild infection
+            'P_moderate': P_moderate,  # Probability of contracting a moderate infection
+            'P_severe': P_severe,  # Probability of contracting a severe infection
+            'P_fatal': P_fatal,  # Probability of contracting a fatal infection
+
+            # Clinical time parameters
+            'T_recov_mild': T_recov_mild, # Time it takes for an individual with a mild infection to recover
+            'T_recov_moderate': T_recov_moderate, # Time it takes for an individual with a moderate infection to recover
+            'T_recov_severe': T_recov_severe, # Time it takes for an individual with a severe infection to recover
+            'T_recov_death': T_recov_death, #Time it takes for an individual with a fatal infection to die
+
         }
 
         # Set all variables as attributes of self
         for key in extra_params:
             setattr(self, key, extra_params[key])
 
+
     def get_derivative(self, t, y):
         """
         Calculates derivative at time t
         """
-
         # Init state variables
         for i, _ in enumerate(y):
             y[i] = max(y[i], 0)
-        S, E, I, D_E, D_I, R_mild, R_severe, R_fatal, C, D = y
+        S, E, I, R_mild, R_moderate, R_severe, R_fatal, C, D = y
 
         # Modelling the behaviour post-lockdown
         if t >= self.lockdown_removal_day:
@@ -133,16 +127,15 @@ class SEIR_Testing(SEIR):
         dydt = np.zeros(y.shape)
 
         # Write differential equations
-        dydt[0] = - ((I + self.q * D_I) * S) / (self.T_trans)  # S
-        dydt[1] = ((I + self.q * D_I) * S ) / (self.T_trans) - (E / self.T_inc) - (self.theta_E * self.psi_E * E)  # E
-        dydt[2] = E / self.T_inc - I / self.T_inf - (self.theta_I * self.psi_I * I) # I
-        dydt[3] = (self.theta_E * self.psi_E * E) - (1 / self.T_inc) * D_E # D_E
-        dydt[4] = (self.theta_I * self.psi_I * I) + (1 / self.T_inc) * D_E - (1 / self.T_inf) * D_I # D_I 
-        dydt[5] = (1/self.T_inf)*(self.P_mild*(I + D_I)) - R_mild/self.T_recov_mild # R_mild
-        dydt[6] = (1/self.T_inf)*(self.P_severe*(I + D_I)) - R_severe/self.T_recov_severe # R_severe
-        dydt[7] = (1/self.T_inf)*(self.P_fatal*(I + D_I)) - R_fatal/self.T_recov_fatal # R_fatal
-        dydt[8] = R_mild/self.T_recov_mild + R_severe/self.T_recov_severe # C
-        dydt[9] = R_fatal/self.T_recov_fatal # D
+        dydt[0] = - I * S / (self.T_trans)  # S
+        dydt[1] = I * S / (self.T_trans) - (E/ self.T_inc)  # E
+        dydt[2] = E / self.T_inc - I / self.T_inf  # I
+        dydt[3] = (1/self.T_inf)*(self.P_mild*I) - R_mild/self.T_recov_mild # R_mild
+        dydt[4] = (1/self.T_inf)*(self.P_moderate*I) - R_moderate/self.T_recov_moderate #R_moderate
+        dydt[5] = (1/self.T_inf)*(self.P_severe*I) - R_severe/self.T_recov_severe #R_severe
+        dydt[6] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_recov_death # R_fatal
+        dydt[7] = R_mild/self.T_recov_mild + R_moderate/self.T_recov_moderate + R_severe/self.T_recov_severe  # C
+        dydt[8] = R_fatal/self.T_recov_death # D
 
         return dydt
 
@@ -154,9 +147,9 @@ class SEIR_Testing(SEIR):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['hospitalised'] = df_prediction['R_severe'] + df_prediction['R_fatal']
+        df_prediction['hospitalised'] = df_prediction['R_mild'] + \
+            df_prediction['R_moderate'] + df_prediction['R_severe'] + df_prediction['R_fatal']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['infectious_unknown'] = df_prediction['I'] + df_prediction['D_I']
         df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction
