@@ -21,6 +21,7 @@ from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
 from utils.loss import Loss_Calculator
 from utils.enums import Columns
+from utils.smooth_jump import smooth_big_jump
 from viz import plot_smoothing, plot_fit
 
 def get_variable_param_ranges(initialisation='intermediate', as_str=False):
@@ -149,62 +150,6 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
         return df_district, df_district_raw_data, extra 
     return df_district, df_district_raw_data 
 
-def smooth_big_jump(df_district, smoothing_length, data_from_tracker, t_recov=14, method='uniform'):
-    if data_from_tracker:
-        d1, d2 = '2020-05-29', '2020-05-30'
-    else:
-        d1, d2 = '2020-05-28', '2020-05-29'
-    df_district['date'] = pd.to_datetime(df_district['date'])
-    df_district = df_district.set_index('date')
-    big_jump = df_district.loc[d2, 'recovered'] - df_district.loc[d1, 'recovered']
-    print(big_jump)
-    if method == 'uniform':
-        for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
-            date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
-            offset = np.random.binomial(1, (big_jump%smoothing_length)/smoothing_length)
-            df_district.loc[date, 'recovered'] += ((i+1)*big_jump)//smoothing_length + offset
-            df_district.loc[date, 'hospitalised'] -= ((i+1)*big_jump)//smoothing_length + offset
-
-    elif method == 'weighted':
-        newcases = df_district['total_infected'].shift(t_recov) - df_district['total_infected'].shift(t_recov + 1)
-        valid_idx = newcases.first_valid_index()
-        window_start = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=smoothing_length - 1)
-        newcases = newcases.loc[max(valid_idx, window_start):d1]
-        truncated = df_district.loc[max(valid_idx, window_start):d1, :]
-        smoothing_length = len(truncated)
-        print(f'smoothing length truncated to {smoothing_length}')
-        invpercent = newcases.sum()/newcases
-        for day_number in range(smoothing_length-1, -1, -1):
-            date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
-            offset = np.random.binomial(1, (big_jump%invpercent.loc[date])/invpercent.loc[date])
-            truncated.loc[date:, 'recovered'] += (big_jump // invpercent.loc[date]) + offset
-            truncated.loc[date:, 'hospitalised'] -= (big_jump // invpercent.loc[date]) + offset
-        df_district.loc[truncated.index, 'recovered'] = truncated['recovered'].astype('int64')
-        df_district.loc[truncated.index, 'hospitalised'] = truncated['hospitalised'].astype('int64')
-
-    elif method == 'weighted-recov':
-        newcases = df_district['recovered'].shift(0) - df_district['recovered'].shift(1)
-        valid_idx = newcases.first_valid_index()
-        window_start = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=smoothing_length - 1)
-        newcases = newcases.loc[max(valid_idx, window_start):d1]
-        truncated = df_district.loc[max(valid_idx, window_start):d1, :]
-        smoothing_length = len(truncated)
-        print(f'smoothing length truncated to {smoothing_length}')
-        invpercent = newcases.sum()/newcases
-        for day_number in range(smoothing_length-1, -1, -1):
-            date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
-            offset = np.random.binomial(1, (big_jump%invpercent.loc[date])/invpercent.loc[date])
-            truncated.loc[date:, 'recovered'] += (big_jump // invpercent.loc[date]) + offset
-            truncated.loc[date:, 'hospitalised'] -= (big_jump // invpercent.loc[date]) + offset
-        df_district.loc[truncated.index, 'recovered'] = truncated['recovered'].astype('int64')
-        df_district.loc[truncated.index, 'hospitalised'] = truncated['hospitalised'].astype('int64')
-
-    else:
-        raise Exception("unknown smoothing method provided")
-    
-    assert((df_district['total_infected'] == df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']).all())
-    return df_district.reset_index()
-
 def data_setup(df_district, df_district_raw_data, val_period, which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
     """Helper function for single_fitting_cycle which sets up the data including doing the train val split
 
@@ -227,9 +172,10 @@ def data_setup(df_district, df_district_raw_data, val_period, which_columns=['ho
         observed_dataframes[name] = eval(name)
     return observed_dataframes
 
-def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_from_tracker=True, train_period=7, 
-              which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], num_evals=1500, N=1e7, 
-              initialisation='starting'):
+
+def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, train_period=7,
+              data_from_tracker=True, which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], 
+              num_evals=1500, N=1e7, initialisation='starting'):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -269,7 +215,8 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
                                                        train_period=train_period)
 
     # Get/create searchspace of variable params
-    variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
+    if variable_param_ranges == None:
+        variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
 
     # Perform Bayesian Optimisation
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
