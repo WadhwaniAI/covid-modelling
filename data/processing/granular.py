@@ -49,11 +49,11 @@ def get_custom_data_from_file(filename):
     #Column renaming and pruning
     df = df.drop([x for x in df.columns if '_capacity' in x], axis=1)
     df.columns = [x.replace('_occupied', '') for x in df.columns]
-    df = df.rename({'city': 'district', 'total_cases': 'total', 'active_cases': 'active',
+    df = df.rename({'city': 'district', 'total_cases': 'total_infected', 'active_cases': 'hospitalised',
                     'icu_beds': 'icu', 'ventilator_beds': 'ventilator', 
                     'recoveries': 'recovered', 'deaths': 'deceased'}, axis='columns')
     # New column creation
-    df['hq'] = df['active'] - df['total_beds']
+    df['hq'] = df['hospitalised'] - df['total_beds']
     df['non_o2_beds'] = df['total_beds'] - (df['o2_beds']+df['icu'])
 
     # Rearranging columns
@@ -67,10 +67,10 @@ def get_custom_data_from_file(filename):
     df.insert(int(np.where(df.columns == 'o2_beds')[0][0]), 'non_o2_beds', col)
 
     #Data checks
-    beds_check = sum(df.loc[:, ['hq', 'non_o2_beds', 'o2_beds', 'icu']].sum(axis=1) == df['active'])
+    beds_check = sum(df.loc[:, ['hq', 'non_o2_beds', 'o2_beds', 'icu']].sum(axis=1) == df['hospitalised'])
     facility_check = sum(df.loc[:, ['ccc2', 'dchc', 'dch']].sum(axis=1) == df['total_beds'])
-    severity_check = sum(df.loc[:, [
-                         'stable_asymptomatic', 'stable_symptomatic', 'critical']].sum(axis=1) == df['active'])
+    severity_check = sum(df.loc[:, ['stable_asymptomatic', 'stable_symptomatic', 
+                                    'critical']].sum(axis=1) == df['hospitalised'])
     return df
 
 def get_custom_data_from_db():
