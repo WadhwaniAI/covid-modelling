@@ -6,18 +6,16 @@ import argparse
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import matplotlib.pyplot as plt
 
 import curvefit
-from curvefit.core.functions import *
+from curvefit.core.functions import erf, log_erf
 
 sys.path.append('../..')
-from models.ihme.pipeline import WAIPipeline
-from models.ihme.util import get_mortality
+from models.ihme.model import IHME
+from models.ihme.util import get_mortality, cities
 from models.ihme.params import Params
 from data.processing import jhu
 from models.ihme.population import standardise_age
-from main.ihme.mortality_pipeline import cities
 
 # -------------------
 
@@ -73,6 +71,7 @@ def find_init(country, triple):
         pargs['ycols'] = {k: v.__name__ for k, v in pargs['ycols'].items()}
         json.dump(pargs, pfile)
 
+    # IHME TODO: call optimiser
     best = {}
     bounds = params.pargs['priors']['fe_bounds']
     step = 5
@@ -90,8 +89,8 @@ def find_init(country, triple):
                 'fe_bounds': params.pargs['priors']['fe_bounds']
             }
         }, default_label=label)
-        pipeline = WAIPipeline(df, ycol, params, covs, fname)
-        pipeline.run()
+        pipeline = IHME(params)
+        pipeline.fit(df)
         p, _ = pipeline.predict()
         best[pipeline.calc_error(p)['overall']['rmse']] = inits
     print (best)
