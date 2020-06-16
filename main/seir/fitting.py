@@ -57,8 +57,7 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
 
     return variable_param_ranges
    
-def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5, 
-                    which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
+def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5):
     """Creates train val split on dataframe
 
     # TODO : Add support for creating train val test split
@@ -71,13 +70,15 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
         val_rollingmean {bool} -- If true, apply rolling mean on val (default: {False})
         val_size {int} -- Size of val set (default: {5})
         rolling_window {int} -- Size of rolling window. The rolling window is centered (default: {5})
-        which_columns {list} -- Which columnns to do the rolling average over (default: {['hospitalised', 'total_infected', 'deceased', 'recovered']})
 
     Returns:
         pd.DataFrame, pd.DataFrame, pd.DataFrame -- train dataset, val dataset, concatenation of rolling average dfs
     """
     print("splitting data ..")
     df_true_fitting = copy.copy(df_district)
+    # Perform rolling average on all columns with numeric datatype
+    df_true_fitting = df_true_fitting.infer_objects()
+    which_columns = df_true_fitting.select_dtypes(include='number').columns
     for column in which_columns:
         df_true_fitting[column] = df_true_fitting[column].rolling(
             rolling_window, center=True).mean()
@@ -86,20 +87,19 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     # use the true observations instead (as rolling averages for those offset days don't exist)
     offset_window = rolling_window // 2
 
-    df_true_fitting = df_true_fitting[np.logical_not(
-        df_true_fitting['total_infected'].isna())]
+    df_true_fitting.dropna(axis=0, how='any', inplace=True)
     df_true_fitting.reset_index(inplace=True, drop=True)
 
     if train_rollingmean:
         if val_size == 0:
             df_train = pd.concat(
                 [df_true_fitting, df_district.iloc[-(val_size+offset_window):, :]], ignore_index=True)
-            return df_train, None, df_true_fitting
+            return df_train, None
         else:
             df_train = df_true_fitting.iloc[:-(val_size-offset_window), :]
     else:
         if val_size == 0:
-            return df_district, None, df_true_fitting
+            return df_district, None
         else:
             df_train = df_district.iloc[:-val_size, :]
 
@@ -109,7 +109,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     else:
         df_val = df_district.iloc[-val_size:, :]
     df_val.reset_index(inplace=True, drop=True)
-    return df_train, df_val, df_true_fitting
+    return df_train, df_val
     
 def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename, smooth_jump=False,
                       smoothing_length=28, smoothing_method='uniform', t_recov=14, return_extra=False):
@@ -150,7 +150,7 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
         return df_district, df_district_raw_data, extra 
     return df_district, df_district_raw_data 
 
-def data_setup(df_district, df_district_raw_data, val_period, which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
+def data_setup(df_district, df_district_raw_data, val_period):
     """Helper function for single_fitting_cycle which sets up the data including doing the train val split
 
     Arguments:
@@ -162,10 +162,10 @@ def data_setup(df_district, df_district_raw_data, val_period, which_columns=['ho
         dict(pd.DataFrame) -- Dict of pd.DataFrame objects
     """
     # Get train val split
-    df_train, df_val, df_true_fitting = train_val_split(
-        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period, which_columns=which_columns)
-    df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-        df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period, which_columns=which_columns)
+    df_train, df_val = train_val_split(
+        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
+    df_train_nora, df_val_nora = train_val_split(
+        df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
 
     observed_dataframes = {}
     for name in ['df_district', 'df_district_raw_data', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
@@ -284,15 +284,13 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
 
     # Get data
     df_district, df_district_raw_data, extra = get_regional_data(dataframes, state, district, data_from_tracker, data_format,
-                                                                         filename, smooth_jump=smooth_jump, smoothing_method=smoothing_method,
-                                                                         smoothing_length=smoothing_length, return_extra=True)
+                                                                 filename, smooth_jump=smooth_jump, smoothing_method=smoothing_method,
+                                                                 smoothing_length=smoothing_length, return_extra=True)
     smoothed_plot = extra['ax']
     orig_df_district = extra['df_district_unsmoothed']
 
     # Process the data to get rolling averages and other stuff
-    observed_dataframes = data_setup(
-        df_district, df_district_raw_data, 
-        val_period, which_columns=which_compartments)
+    observed_dataframes = data_setup(df_district, df_district_raw_data, val_period)
 
     print('train\n', observed_dataframes['df_train'].tail())
     print('val\n', observed_dataframes['df_val'])
