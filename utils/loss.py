@@ -5,6 +5,11 @@ from sklearn.metrics import mean_squared_error, mean_squared_log_error
 
 class Loss_Calculator():
 
+    def __init__(self):
+      self.columns = ['hospitalised', 'recovered', 'deceased', 'total_infected', 'total', 'active', 
+                      'stable_asymptomatic', 'stable_symptomatic', 'critical', 'ccc2', 'dchc', 'dch', 'hq', 
+                      'non_o2_beds', 'o2_beds', 'icu', 'ventilator']
+
     def _calc_rmse(self, y_pred, y_true, log=False):
         if log:
             y_true = np.log(y_true)
@@ -29,7 +34,7 @@ class Loss_Calculator():
             calculate = lambda x, y : self._calc_mape(x, y)
         
         losses = {}
-        for compartment in ['hospitalised', 'recovered', 'deceased', 'total_infected']:
+        for compartment in self.columns:
             try:
                 losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
             except Exception:
