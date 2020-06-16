@@ -132,7 +132,6 @@ class SEIR_Movement(SEIR):
         df_prediction['hospitalised'] = df_prediction['R_severe'] + df_prediction['R_fatal']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['infectious_unknown'] = df_prediction['I']
         df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction
 
