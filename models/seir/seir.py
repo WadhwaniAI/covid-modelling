@@ -63,7 +63,7 @@ class SEIR(Model):
             for state in R_STATES:
                 statename = state.split('R_')[1]
                 P_keyname = [k for k in p_params.keys() if k.split('P_')[1] == statename][0]
-                state_init_values[statename] = p_params[P_keyname] * observed_values['hospitalised']
+                state_init_values[state] = p_params[P_keyname] * observed_values['hospitalised']
             
             state_init_values['C'] = observed_values['recovered']
             state_init_values['D'] = observed_values['deceased']
