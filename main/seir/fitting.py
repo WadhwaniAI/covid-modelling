@@ -24,7 +24,7 @@ from utils.enums import Columns
 from utils.smooth_jump import smooth_big_jump
 from viz import plot_smoothing, plot_fit
 
-def get_variable_param_ranges(initialisation='intermediate', as_str=False):
+def get_variable_param_ranges(variable_param_ranges=None, initialisation='intermediate', as_str=False):
     """Returns the ranges for the variable params in the search space
 
     Keyword Arguments:
@@ -35,19 +35,19 @@ def get_variable_param_ranges(initialisation='intermediate', as_str=False):
     Returns:
         dict -- dict of ranges of variable params
     """
-    variable_param_ranges = {
-        'lockdown_R0': (1, 1.5),
-        'T_inc': (4, 5),
-        'T_inf': (3, 4),
-        'T_recov_severe': (5, 60),
-        'P_fatal': (0, 0.3)
-    }
-    if initialisation == 'intermediate':
-        extra_params = {
+    if variable_param_ranges == None:
+        variable_param_ranges = {
+            'lockdown_R0': (1, 1.5),
+            'T_inc': (4, 5),
+            'T_inf': (3, 4),
+            'T_recov_severe': (5, 60),
+            'P_fatal': (0, 0.3),
             'E_hosp_ratio': (0, 2),
             'I_hosp_ratio': (0, 1)
         }
-        variable_param_ranges.update(extra_params)
+    if initialisation != 'intermediate':
+        del variable_param_ranges['E_hosp_ratio']
+        del variable_param_ranges['I_hosp_ratio']
     if as_str:
         return str(variable_param_ranges)
 
