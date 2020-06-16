@@ -11,10 +11,12 @@ from models.seir.seir import SEIR
 from utils.ode import ODE_Solver
 
 class SEIRHD_Bed(SEIR):
-    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_recov_death=32,
-                 P_moderate=0.4, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, T_recov_moderate=11, 
+    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
+                 P_nonoxy=0.4, P_oxy=0.2, P_icu=0.02, P_vent=0.02, P_fatal=0.02, 
+                 T_recov_hq=14, T_recov_nonoxy=14, T_recov_oxy=14, T_recov_icu=14, T_recov_vent=14, T_recov_fatal=14,
                  N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 
                  initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
+        
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
         The model further implements 
@@ -26,9 +28,11 @@ class SEIRHD_Bed(SEIR):
         S : No of susceptible people
         E : No of exposed people
         I : No of infected people
-        R_mild : No of people recovering from a mild version of the infection
-        R_moderate : No of people recovering from a moderate version of the infection
-        R_severe : No of people recovering from a severe version of the infection
+        R_hq : No of people recovering from a hq version of the infection
+        R_nonoxy : No of people recovering from a nonoxy version of the infection
+        R_oxy : No of people recovering from a oxy version of the infection
+        R_icu : No of people recovering from a icu version of the infection
+        R_vent : No of people recovering from a vent version of the infection
         R_fatal : No of people recovering from a fatal version of the infection
         C : No of recovered people
         D : No of deceased people 
@@ -50,16 +54,20 @@ class SEIRHD_Bed(SEIR):
         T_inf: The duration for which an individual is infectious (float)
 
         Probability of contracting different types of infections - 
-        P_mild: Probability of contracting a mild infection (float - [0, 1])
-        P_moderate: Probability of contracting a moderate infection (float - [0, 1])
-        P_severe: Probability of contracting a severe infection (float - [0, 1])
+        P_HQ: Probability of contracting a HQ infection (float - [0, 1])
+        P_nonoxy: Probability of contracting a nonoxy infection (float - [0, 1])
+        P_oxy: Probability of contracting a oxy infection (float - [0, 1])
+        P_icu: Probability of contracting a icu infection (float - [0, 1])
+        P_vent: Probability of contracting a vent infection (float - [0, 1])
         P_fatal: Probability of contracting a fatal infection (float - [0, 1])
 
         Clinical time parameters - 
-        T_recov_mild: Time it takes for an individual with a mild infection to recover (float)
-        T_recov_moderate: Time it takes for an individual with a moderate infection to recover (float)
-        T_recov_severe: Time it takes for an individual with a severe infection to recover (float)
-        T_recov_death: Time it takes for an individual with a fatal infection to die (float)
+        T_recov_hq: Time it takes for an individual with a hq infection to recover (float)
+        T_recov_nonoxy: Time it takes for an individual with a nonoxy infection to recover (float)
+        T_recov_oxy: Time it takes for an individual with a oxy infection to recover (float)
+        T_recov_icu: Time it takes for an individual with a icu infection to recover (float)
+        T_recov_vent: Time it takes for an individual with a vent infection to recover (float)
+        T_recov_fatal: Time it takes for an individual with a fatal infection to die (float)
 
         Lockdown parameters - 
         starting_date: Datetime value that corresponds to Day 0 of modelling (datetime/str)
@@ -70,7 +78,7 @@ class SEIRHD_Bed(SEIR):
         N: Total population
         initialisation : method of initialisation ('intermediate'/'starting')
         """
-        STATES = ['S', 'E', 'I', 'R_mild', 'R_moderate', 'R_severe', 'R_fatal', 'C', 'D']
+        STATES = ['S', 'E', 'I', 'R_hq', 'R_nonoxy', 'R_oxy', 'R_icu', 'R_vent', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]
         input_args = copy.deepcopy(locals())
         del input_args['self']
@@ -78,29 +86,10 @@ class SEIRHD_Bed(SEIR):
         p_params = {k: input_args[k] for k in input_args.keys() if 'P_' in k}
         t_params = {k: input_args[k] for k in input_args.keys() if 'T_recov' in k}
         P_mild = 1 - sum(p_params.values())
-        p_params['P_mild'] = P_mild
+        p_params['P_hq'] = P_mild
         input_args['p_params'] = p_params
         input_args['t_params'] = t_params
         super().__init__(**input_args)
-        extra_params = {
-            # Probability of contracting different types of infections
-            'P_mild': P_mild,  # Probability of contracting a mild infection
-            'P_moderate': P_moderate,  # Probability of contracting a moderate infection
-            'P_severe': P_severe,  # Probability of contracting a severe infection
-            'P_fatal': P_fatal,  # Probability of contracting a fatal infection
-
-            # Clinical time parameters
-            'T_recov_mild': T_recov_mild, # Time it takes for an individual with a mild infection to recover
-            'T_recov_moderate': T_recov_moderate, # Time it takes for an individual with a moderate infection to recover
-            'T_recov_severe': T_recov_severe, # Time it takes for an individual with a severe infection to recover
-            'T_recov_death': T_recov_death, #Time it takes for an individual with a fatal infection to die
-
-        }
-
-        # Set all variables as attributes of self
-        for key in extra_params:
-            setattr(self, key, extra_params[key])
-
 
     def get_derivative(self, t, y):
         """
@@ -109,7 +98,7 @@ class SEIRHD_Bed(SEIR):
         # Init state variables
         for i, _ in enumerate(y):
             y[i] = max(y[i], 0)
-        S, E, I, R_mild, R_moderate, R_severe, R_fatal, C, D = y
+        S, E, I, R_hq, R_nonoxy, R_oxy, R_icu, R_vent, R_fatal, C, D = y
 
         # Modelling the behaviour post-lockdown
         if t >= self.lockdown_removal_day:
@@ -130,12 +119,14 @@ class SEIRHD_Bed(SEIR):
         dydt[0] = - I * S / (self.T_trans)  # S
         dydt[1] = I * S / (self.T_trans) - (E/ self.T_inc)  # E
         dydt[2] = E / self.T_inc - I / self.T_inf  # I
-        dydt[3] = (1/self.T_inf)*(self.P_mild*I) - R_mild/self.T_recov_mild # R_mild
-        dydt[4] = (1/self.T_inf)*(self.P_moderate*I) - R_moderate/self.T_recov_moderate #R_moderate
-        dydt[5] = (1/self.T_inf)*(self.P_severe*I) - R_severe/self.T_recov_severe #R_severe
-        dydt[6] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_recov_death # R_fatal
-        dydt[7] = R_mild/self.T_recov_mild + R_moderate/self.T_recov_moderate + R_severe/self.T_recov_severe  # C
-        dydt[8] = R_fatal/self.T_recov_death # D
+        dydt[3] = (1/self.T_inf)*(self.P_hq*I) - R_hq/self.T_recov_hq # R_hq
+        dydt[4] = (1/self.T_inf)*(self.P_nonoxy*I) - R_nonP_nonoxy/self.T_recov_nonP_nonoxy #R_nonP_nonoxy
+        dydt[5] = (1/self.T_inf)*(self.P_oxy*I) - R_oxy/self.T_recov_oxy #R_oxy
+        dydt[6] = (1/self.T_inf)*(self.P_icu*I) - R_icu/self.T_recov_icu # R_icu
+        dydt[7] = (1/self.T_inf)*(self.P_vent*I) - R_vent/self.T_recov_vent #R_vent
+        dydt[8] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_recov_fatal # R_fatal
+        dydt[9] = R_mild/self.T_recov_mild + R_moderate/self.T_recov_moderate + R_severe/self.T_recov_severe  # C
+        dydt[10] = R_fatal/self.T_recov_fatal # D
 
         return dydt
 
@@ -147,8 +138,13 @@ class SEIRHD_Bed(SEIR):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['hospitalised'] = df_prediction['R_mild'] + \
-            df_prediction['R_moderate'] + df_prediction['R_severe'] + df_prediction['R_fatal']
+        df_prediction['hq'] = df_prediction['R_hq']
+        df_prediction['non_o2_beds'] = df_prediction['R_nonoxy']
+        df_prediction['o2_beds'] = df_prediction['R_oxy']
+        df_prediction['icu'] = df_prediction['R_icu'] + df_prediction['R_vent']
+        df_prediction['ventilator'] = df_prediction['R_vent']
+        df_prediction['hospitalised'] = df_prediction['hq'] + df_prediction['non_o2_beds'] + \
+            df_prediction['o2_beds'] + df_prediction['icu']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
         df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
