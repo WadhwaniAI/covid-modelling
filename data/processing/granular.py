@@ -66,6 +66,11 @@ def get_custom_data_from_file(filename):
     col = df.pop('non_o2_beds')
     df.insert(int(np.where(df.columns == 'o2_beds')[0][0]), 'non_o2_beds', col)
 
+    #Data checks
+    beds_check = sum(df.loc[:, ['hq', 'non_o2_beds', 'o2_beds', 'icu']].sum(axis=1) == df['active'])
+    facility_check = sum(df.loc[:, ['ccc2', 'dchc', 'dch']].sum(axis=1) == df['total_beds'])
+    severity_check = sum(df.loc[:, [
+                         'stable_asymptomatic', 'stable_symptomatic', 'critical']].sum(axis=1) == df['active'])
     return df
 
 def get_custom_data_from_db():
