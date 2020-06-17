@@ -20,9 +20,21 @@ class Columns(Enum):
         return self.value.color
 
     date = Column('date', 'date', None)
+    critical = Column('critical', 'Critical', 'brown')
+    stable_symptomatic = Column('stable_symptomatic', 'Stable Symptomatic', 'yellow')
+    stable_asymptomatic = Column('stable_asymptomatic', 'Stable Asymptomatic', 'cyan')
     recovered = Column('recovered', 'Recovered Cases', 'green')
     deceased = Column('deceased', 'Deceased Cases', 'red')
     active = Column('hospitalised', 'Active Cases', 'orange')
     confirmed = Column('total_infected', 'Confirmed Cases', 'C0')
-    # tested = Column('tested')
     
+enums = [
+    Column('date', 'date', None),
+    Column('critical', 'Critical', 'brown'),
+    Column('stable_symptomatic', 'Stable Symptomatic', 'yellow'),
+    Column('stable_asymptomatic', 'Stable Asymptomatic', 'cyan'),
+    Column('recovered', 'Recovered Cases', 'green'),
+    Column('deceased', 'Deceased Cases', 'red'),
+    Column('hospitalised', 'Active Cases', 'orange'),
+    Column('total_infected', 'Confirmed Cases', 'C0')
+]
