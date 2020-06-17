@@ -38,7 +38,7 @@ pd.options.mode.chained_assignment = None
 warnings.filterwarnings('ignore', module='pandas', category=RuntimeWarning) #, message='invalid value encountered in')
 warnings.filterwarnings('ignore', module='curvefit', category=RuntimeWarning) #, message='invalid value encountered in')
 
-increment = 10
+increment = 3
 future_days = 7
 val_size = 7
 test_size = 7
