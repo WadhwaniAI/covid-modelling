@@ -19,6 +19,7 @@ from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
 
 from main.ihme.plotting import plot_results
 from main.ihme.fitting import setup, create_output_folder, run_cycle
+from utils.util import read_config
 
 import warnings
 pd.options.mode.chained_assignment = None
@@ -31,19 +32,17 @@ min_days = 7
 scoring = 'mape'
 # -------------------
 
-def run_pipeline(dist, st, area_names, args):
-    label = 'log_mortality' if args.log else 'mortality'
-    
+def run_pipeline(dist, st, area_names, config, model_params):
     start_time = time.time()
-    dataframes, dtp, model_params, file_prefix = setup(dist, st, area_names, label)
+    dataframes, dtp, model_params, file_prefix = setup(dist, st, area_names, config, model_params)
     output_folder = create_output_folder(f'{file_prefix}')
     
-    xform_func = lograte_to_cumulative if args.log else rate_to_cumulative
+    xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
     train, test, df = dataframes['train'], dataframes['test'], dataframes['df']
     results_dict = run_cycle(
-        dataframes, model_params, predict_days=args.fdays, 
-        max_evals=args.max_evals, num_hyperopt_runs=args.hyperopt, 
-        min_days=min_days, scoring=scoring, val_size=val_size, 
+        dataframes, model_params, predict_days=config['forecast_days'], 
+        max_evals=config['max_evals'], num_hyperopt_runs=config['num_hyperopt'], 
+        min_days=config['min_days'], scoring=config['scoring'], val_size=config['val_size'], 
         dtp=dtp, xform_func=xform_func)
     predictions = results_dict['predictions']['predictions']
     runtime = time.time() - start_time
@@ -68,13 +67,8 @@ def run_pipeline(dist, st, area_names, args):
     # SAVE PARAMS INFO
     with open(f'{output_folder}/params.json', 'w') as pfile:
         pargs = copy(model_params)
+        pargs.update(config)
         pargs['func'] = pargs['func'].__name__
-        del pargs['ycols']
-        pargs['hyperopt'] = args.hyperopt
-        pargs['max_evals'] = args.max_evals
-        pargs['sd'] = args.sd
-        pargs['smoothing'] = args.smoothing
-        pargs['log'] = args.log
         pargs['priors']['fe_init'] = results_dict['fe_init']
         pargs['n_days_train'] = int(results_dict['n_days'])
         pargs['error'] = results_dict['error']
@@ -90,15 +84,9 @@ def run_pipeline(dist, st, area_names, args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser() 
     parser.add_argument("-d", "--district", help="district name", required=True)
-    parser.add_argument("-l", "--log", help="fit on log", required=False, action='store_true')
-    parser.add_argument("-sd", "--sd", help="use social distance covariate", required=False, action='store_true')
-    parser.add_argument("-s", "--smoothing", help="how much to smooth, else no smoothing", required=False, type=int)
-    parser.add_argument("-hp", "--hyperopt", help="[single run only] number of times to do hyperparam optimization", required=False, type=int, default=1)
-    parser.add_argument("-i", "--max_evals", help="max evals on each hyperopt run", required=False, default=50, type=int)
-    parser.add_argument("-dt", "--disable_tracker", help="disable tracker (use athena instead)", required=False, action='store_true')
-    parser.add_argument("--fdays",help="how many days to forecast for", required=False, default=30, type=int)
+    parser.add_argument("-c", "--config", help="config file name", required=True)
     args = parser.parse_args()
-
+    config, model_params = read_config(args.config)
     dist, st, area_names = cities[args.district]
-    run_pipeline(dist, st, area_names, args)
+    run_pipeline(dist, st, area_names, config, model_params)
 # -------------------

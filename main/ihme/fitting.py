@@ -22,31 +22,21 @@ from utils.loss import Loss_Calculator
 
 from main.ihme.optimiser import Optimiser
 
-def get_params(label):
-    with open('params.json', "r") as paramsfile:
-        params = json.load(paramsfile)
-        if label not in params:
-            print("entry not found in params.json")
-            sys.exit(0)
-    pargs = params['default']
-    pargs.update(params[label])
-    return pargs
-
-def get_regional_data(dist, st, area_names, ycol, test_size=7, smooth_window=5, use_tracker=False):
-    district_timeseries = get_district_timeseries_cached(dist, st, disable_tracker=not use_tracker)
+def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker):
+    district_timeseries = get_district_timeseries_cached(dist, st, disable_tracker=disable_tracker)
     df, dtp = get_mortality(district_timeseries, st, area_names)
     
     df.loc[:,'sd'] = df['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
 
     smoothedcol = f'{ycol}_smoothed'
-    df[smoothedcol] = rollingavg(df[ycol], smooth_window)
-    df = df.dropna(subset=[smoothedcol])
+    if smooth_window > 0:
+        df[smoothedcol] = rollingavg(df[ycol], smooth_window)
+        df = df.dropna(subset=[smoothedcol])
     
     startday = df['date'][df['mortality'].gt(1e-15).idxmax()]
     df = df.loc[df['mortality'].gt(1e-15).idxmax():,:]
     df = df.reset_index()
     df.loc[:, 'day'] = (df['date'] - np.min(df['date'])).apply(lambda x: x.days)
-    
     threshold = df['date'].max() - timedelta(days=test_size)
     train, test = train_test_split(df, threshold)
     dataframes = {
@@ -56,14 +46,15 @@ def get_regional_data(dist, st, area_names, ycol, test_size=7, smooth_window=5, 
     }
     return dataframes, dtp, smoothedcol
     
-def setup(dist, st, area_names, label, smooth=False, sd=False, test_size=7, smooth_window=5, use_tracker=False):
-    model_params = get_params(label)
+def setup(dist, st, area_names, config, model_params):
     model_params['func'] = getattr(functions, model_params['func'])
-    # IHME TODO: move covs to params.json
-    model_params['covs'] = ['covs', 'sd', 'covs'] if sd else ['covs', 'covs', 'covs']
-
-    dataframes, dtp, smoothedcol = get_regional_data(dist, st, area_names, model_params["ycol"], smooth_window=smooth_window, test_size=test_size)
-    if smooth:
+    model_params['covs'] = ['covs', 'sd', 'covs'] if config['sd'] else ['covs', 'covs', 'covs']
+    dataframes, dtp, smoothedcol = get_regional_data(
+        dist, st, area_names, ycol=model_params['ycol'], 
+        smooth_window=config['smooth'], test_size=config['test_size'],
+        disable_tracker=config['disable_tracker'])
+        
+    if config['smooth'] > 0:
         model_params['ycol'] = smoothedcol
     
     fname = f'{dist}_deaths'
@@ -168,12 +159,11 @@ def run_cycle(dataframes, model_params, predict_days=30,
 
     return result_dict
 
-def single_cycle(dist, st, area_names, label, predict_days, min_days, scoring, 
-        val_size, max_evals, 
-        num_hyperopt_runs, xform_func=None, 
-        smooth=False, sd=False, test_size=7, smooth_window=5, use_tracker=False):
-    dataframes, dtp, model_params, fname = setup(dist, st, area_names, label, smooth, sd, test_size, smooth_window, use_tracker)
+def single_cycle(dist, st, area_names, config, model_params):
+    dataframes, dtp, model_params, fname = setup(dist, st, area_names, config, model_params)
     create_output_folder(fname)
-    return run_cycle(dataframes, model_params, predict_days=predict_days,
-        max_evals=max_evals, num_hyperopt_runs=num_hyperopt_runs, val_size=val_size,
-        min_days=min_days, scoring=scoring, dtp=dtp, xform_func=xform_func)
+    xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
+    return run_cycle(dataframes, model_params, predict_days=config['forecast_days'],
+        max_evals=config['max_evals'], num_hyperopt_runs=config['num_hyperopt'], 
+        val_size=config['forecast_days'], min_days=config['min_days'], 
+        scoring=config['scoring'], dtp=dtp, xform_func=xform_func)
