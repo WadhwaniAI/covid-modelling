@@ -17,7 +17,7 @@ from data.processing import jhu
 from models.ihme.population import standardise_age
 
 from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
-from main.ihme.fitting import get_params, run_cycle
+from main.ihme.fitting import get_params, run_cycle, create_output_folder
 from utils.util import train_test_split
 # -------------------
 
@@ -49,7 +49,7 @@ def find_init(country, triple):
     
     # output
     today = datetime.today()
-    output_folder = f'output/mortality/{fname}/{today}'
+    output_folder = create_output_folder(f'mortality/{fname}/{today}')
     if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
