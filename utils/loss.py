@@ -41,7 +41,8 @@ class Loss_Calculator():
                 continue
         return losses
 
-    def calc_loss(self, df_prediction, df_true, which_compartments=['hospitalised', 'recovered', 'total_infected', 'deceased'], method='rmse'):
+    def calc_loss(self, df_prediction, df_true, method='rmse', 
+                  which_compartments=['hospitalised', 'recovered', 'total_infected', 'deceased']):
         losses = self.calc_loss_dict(df_prediction, df_true, method)
         loss = 0
         for compartment in which_compartments:
@@ -83,24 +84,24 @@ class Loss_Calculator():
         Returns:
             pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
         """
-        loss_calculator = Loss_Calculator()
         df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
 
-        df_temp = df_prediction.loc[df_prediction['date'].isin(df_train['date']), [
-            'date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
+        df_temp = df_prediction.loc[df_prediction['date'].isin(
+            df_train['date']), ['date']+which_compartments]
         df_temp.reset_index(inplace=True, drop=True)
+        df_train = df_train.loc[df_train['date'].isin(df_temp['date']), :]
         df_train.reset_index(inplace=True, drop=True)
         for compartment in df_loss.index:
-            df_loss.loc[compartment, 'train'] = loss_calculator._calc_mape(
-                np.array(df_train[compartment].iloc[-train_period:]), np.array(df_temp[compartment].iloc[-train_period:]))
+            df_loss.loc[compartment, 'train'] = self._calc_mape(
+                np.array(df_train[compartment]), np.array(df_temp[compartment]))
 
         if isinstance(df_val, pd.DataFrame):
-            df_temp = df_prediction.loc[df_prediction['date'].isin(df_val['date']), [
-                'date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
+            df_temp = df_prediction.loc[df_prediction['date'].isin(
+                df_val['date']), ['date']+which_compartments]
             df_temp.reset_index(inplace=True, drop=True)
             df_val.reset_index(inplace=True, drop=True)
             for compartment in df_loss.index:
-                df_loss.loc[compartment, 'val'] = loss_calculator._calc_mape(
+                df_loss.loc[compartment, 'val'] = self._calc_mape(
                     np.array(df_val[compartment]), np.array(df_temp[compartment]))
         else:
             del df_loss['val']
