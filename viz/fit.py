@@ -34,7 +34,7 @@ def plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_
         df_true_plotting_rolling = df_train
         df_true_plotting = df_train_nora
     df_predicted_plotting = df_prediction.loc[df_prediction['date'].isin(
-        df_true_plotting['date']), ['date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
+        df_true_plotting['date']), ['date']+which_compartments]
 
     if 'total_infected' in which_compartments:
         ax.plot(df_true_plotting['date'], df_true_plotting['total_infected'],
@@ -64,6 +64,27 @@ def plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_
                 '-', color='red', label='Deceased Cases (Obs RA)')
         ax.plot(df_predicted_plotting['date'], df_predicted_plotting['deceased'],
                 '-.', color='red', label='Deceased Cases (Predicted)')
+    if 'stable_asymptomatic' in which_compartments:
+        ax.plot(df_true_plotting['date'], df_true_plotting['stable_asymptomatic'],
+                '-o', color='cyan', label='Stable Asymptomatic (Observed)')
+        ax.plot(df_true_plotting_rolling['date'], df_true_plotting_rolling['stable_asymptomatic'],
+                '-', color='cyan', label='Stable Asymptomatic (Obs RA)')
+        ax.plot(df_predicted_plotting['date'], df_predicted_plotting['stable_asymptomatic'],
+                '-.', color='cyan', label='Stable Asymptomatic (Predicted)')
+    if 'stable_symptomatic' in which_compartments:
+        ax.plot(df_true_plotting['date'], df_true_plotting['stable_symptomatic'],
+                '-o', color='magenta', label='Stable Symptomatic (Observed)')
+        ax.plot(df_true_plotting_rolling['date'], df_true_plotting_rolling['stable_symptomatic'],
+                '-', color='magenta', label='Stable Symptomatic (Obs RA)')
+        ax.plot(df_predicted_plotting['date'], df_predicted_plotting['stable_symptomatic'],
+                '-.', color='magenta', label='Stable Symptomatic (Predicted)')
+    if 'critical' in which_compartments:
+        ax.plot(df_true_plotting['date'], df_true_plotting['critical'],
+                '-o', color='brown', label='Critical (Observed)')
+        ax.plot(df_true_plotting_rolling['date'], df_true_plotting_rolling['critical'],
+                '-', color='brown', label='Critical (Obs RA)')
+        ax.plot(df_predicted_plotting['date'], df_predicted_plotting['critical'],
+                '-.', color='brown', label='Critical (Predicted)')
 
     ax.plot([df_train.iloc[-train_period, :]['date'], df_train.iloc[-train_period, :]['date']],
             [min(df_train['deceased']), max(df_train['total_infected'])], '--', color='brown', label='Train starts')
