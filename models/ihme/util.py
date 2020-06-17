@@ -4,6 +4,7 @@ import pandas as pd
 import sys
 sys.path.append('../..')
 from models.ihme.population import get_district_population
+from utils.enums import Columns
 
 # tuples: (district, state, census_area_name(s))
 mumbai = 'Mumbai', 'Maharashtra', ['District - Mumbai (23)', 'District - Mumbai Suburban (22)']
@@ -25,11 +26,12 @@ cities = {
 def get_daily_vals(df, col):
         return df[col] - df[col].shift(1)
 
-def get_mortality(district_timeseries, state, area_names):
+def get_rates(district_timeseries, state, area_names):
     data = district_timeseries.set_index('date')
     district_total_pop = get_district_population(state, area_names)
-    data['mortality'] = data['deceased']/district_total_pop
-    data[f'log_mortality'] = data['mortality'].apply(np.log)
+    for col in Columns.which_compartments():
+        data[f'{col.name}_rate'] = data[col.name]/district_total_pop
+        data[f'log_{col.name}_rate'] = data[f'{col.name}_rate'].apply(np.log)
     data.loc[:,'group'] = len(data) * [ 1.0 ]
     data.loc[:,'covs'] = len(data) * [ 1.0 ]
     data = data.reset_index()

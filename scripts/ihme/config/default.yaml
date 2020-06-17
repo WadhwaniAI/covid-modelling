@@ -18,7 +18,7 @@ model_params:
   xcol: day
   date: date
   groupcol: group
-  ycol: log_mortality
+  ycol: log_deceased_rate
   func: log_erf
   priors: # for when log is TRUE
     fe_init: [-1.1, 16.0, -9.0]

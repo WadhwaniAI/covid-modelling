@@ -11,7 +11,7 @@ from curvefit.core import functions
 
 sys.path.append('../..')
 from models.ihme.model import IHME
-from models.ihme.util import get_mortality
+from models.ihme.util import get_rates
 from data.processing import get_district_timeseries_cached
 from utils.util import train_test_split, rollingavg
 
@@ -25,7 +25,7 @@ from main.ihme.optimiser import Optimiser
 def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker):
     district_timeseries = get_district_timeseries_cached(
         dist, st, disable_tracker=disable_tracker)
-    df, dtp = get_mortality(district_timeseries, st, area_names)
+    df, dtp = get_rates(district_timeseries, st, area_names)
     
     df.loc[:,'sd'] = df['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
 
@@ -34,8 +34,8 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
         df[smoothedcol] = rollingavg(df[ycol], smooth_window)
         df = df.dropna(subset=[smoothedcol])
     
-    startday = df['date'][df['mortality'].gt(1e-15).idxmax()]
-    df = df.loc[df['mortality'].gt(1e-15).idxmax():,:]
+    startday = df['date'][df['deceased_rate'].gt(1e-15).idxmax()]
+    df = df.loc[df['deceased_rate'].gt(1e-15).idxmax():,:]
     df = df.reset_index()
     df.loc[:, 'day'] = (df['date'] - np.min(df['date'])).apply(lambda x: x.days)
     threshold = df['date'].max() - timedelta(days=test_size)
