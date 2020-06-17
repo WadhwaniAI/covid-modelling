@@ -143,5 +143,5 @@ def run_model(model, run_day, fit_data, val_data, max_evals, hyperopt_val_size, 
     dataframes = {'train': fit_data, 'test': val_data}
     result_dict = run_cycle(dataframes, copy(model.model_parameters), 
         dtp=dtp, max_evals=max_evals, min_days=min_days, scoring=scoring, 
-        val_size=hyperopt_val_size, xform_func=xform_func, predict_days=0)
+        val_size=hyperopt_val_size, xform_func=xform_func, forecast_days=0)
     return run_day, result_dict

@@ -34,16 +34,13 @@ scoring = 'mape'
 
 def run_pipeline(dist, st, area_names, config, model_params):
     start_time = time.time()
-    dataframes, dtp, model_params, file_prefix = setup(dist, st, area_names, config, model_params)
+    dataframes, dtp, model_params, file_prefix = setup(dist, st, area_names, model_params, **config)
     output_folder = create_output_folder(f'{file_prefix}')
     
     xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
     train, test, df = dataframes['train'], dataframes['test'], dataframes['df']
     results_dict = run_cycle(
-        dataframes, model_params, predict_days=config['forecast_days'], 
-        max_evals=config['max_evals'], num_hyperopt_runs=config['num_hyperopt'], 
-        min_days=config['min_days'], scoring=config['scoring'], val_size=config['val_size'], 
-        dtp=dtp, xform_func=xform_func)
+        dataframes, model_params, dtp=dtp, xform_func=xform_func, **config)
     predictions = results_dict['predictions']['predictions']
     runtime = time.time() - start_time
     print('runtime:', runtime)

@@ -29,7 +29,7 @@ warnings.filterwarnings('ignore', module='curvefit', category=RuntimeWarning) #,
 # -------------------
 
 def backtest(dist, st, area_names, config, model_params):
-    dataframes, dtp, model_params, file_prefix = setup(dist, st, area_names, config, model_params)
+    dataframes, dtp, model_params, file_prefix = setup(dist, st, area_names, model_params, **config)
     output_folder = create_output_folder(f'backtesting/{file_prefix}')
     df = dataframes['df']
     
@@ -88,7 +88,7 @@ def replot_backtest(dist, st, area_names, folder):
     
     backtester = IHMEBacktest(model, df, dist, st)
     
-    backtester.plot_results(file_prefix, results=results['results'], scoring=scoring, transform_y=xform, dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
+    backtester.plot_results(file_prefix, results=results['results'], scoring=config['scoring'], transform_y=xform, dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
     backtester.plot_errors(file_prefix, results=results['results'], scoring='mape', use_xform=True, savepath=f'{output_folder}/backtesting_mape.png') 
     backtester.plot_errors(file_prefix, results=results['results'], scoring='rmse', use_xform=True, savepath=f'{output_folder}/backtesting_rmse.png') 
     backtester.plot_errors(file_prefix, results=results['results'], scoring='rmsle', use_xform=True, savepath=f'{output_folder}/backtesting_rmsle.png') 

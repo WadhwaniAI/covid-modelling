@@ -23,7 +23,8 @@ from utils.loss import Loss_Calculator
 from main.ihme.optimiser import Optimiser
 
 def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker):
-    district_timeseries = get_district_timeseries_cached(dist, st, disable_tracker=disable_tracker)
+    district_timeseries = get_district_timeseries_cached(
+        dist, st, disable_tracker=disable_tracker)
     df, dtp = get_mortality(district_timeseries, st, area_names)
     
     df.loc[:,'sd'] = df['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
@@ -46,15 +47,16 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     }
     return dataframes, dtp, smoothedcol
     
-def setup(dist, st, area_names, config, model_params):
+def setup(dist, st, area_names, model_params, 
+        sd, smooth, test_size, disable_tracker, **config):
     model_params['func'] = getattr(functions, model_params['func'])
-    model_params['covs'] = ['covs', 'sd', 'covs'] if config['sd'] else ['covs', 'covs', 'covs']
+    model_params['covs'] = ['covs', 'sd', 'covs'] if sd else ['covs', 'covs', 'covs']
     dataframes, dtp, smoothedcol = get_regional_data(
         dist, st, area_names, ycol=model_params['ycol'], 
-        smooth_window=config['smooth'], test_size=config['test_size'],
-        disable_tracker=config['disable_tracker'])
+        smooth_window=smooth, test_size=test_size,
+        disable_tracker=disable_tracker)
         
-    if config['smooth'] > 0:
+    if smooth > 0:
         model_params['ycol'] = smoothedcol
     
     fname = f'{dist}_deaths'
@@ -67,31 +69,31 @@ def create_output_folder(fname):
         os.makedirs(output_folder)
     return output_folder
 
-def run_cycle(dataframes, model_params, predict_days=30, 
-    max_evals=1000, num_hyperopt_runs=1, val_size=7,
-    min_days=7, scoring='mape', dtp=None, xform_func=None):
+def run_cycle(dataframes, model_params, forecast_days=30, 
+    max_evals=1000, num_hyperopt=1, val_size=7,
+    min_days=7, scoring='mape', dtp=None, xform_func=None, **kwargs):
     model = IHME(model_params)
     train, test = dataframes['train'], dataframes['test']
 
     # OPTIMIZE HYPERPARAMS
     hyperopt_runs = {}
     trials_dict = {}
-    kwargs = {
+    args = {
         'bounds': copy(model.priors['fe_bounds']), 
         'iterations': max_evals,
         'scoring': scoring, 
         'val_size': val_size,
         'min_days': min_days,
     }
-    o = Optimiser(model, train, kwargs)
+    o = Optimiser(model, train, args)
 
-    if num_hyperopt_runs == 1:
+    if num_hyperopt == 1:
         (best_init, n_days), err, trials = o.optimisestar(0)
         hyperopt_runs[err] = (best_init, n_days)
         trials_dict[0] = trials
     else:
         pool = Pool(processes=5)
-        for i, ((best_init, n_days), err, trials) in enumerate(pool.map(o.optimisestar, list(range(num_hyperopt_runs)))):
+        for i, ((best_init, n_days), err, trials) in enumerate(pool.map(o.optimisestar, list(range(num_hyperopt)))):
             hyperopt_runs[err] = (best_init, n_days)
             trials_dict[i] = trials
     (fe_init, n_days_train) = hyperopt_runs[min(hyperopt_runs.keys())]
@@ -107,10 +109,10 @@ def run_cycle(dataframes, model_params, predict_days=30,
     model.fit(train)
 
     predictions = pd.DataFrame(columns=[model.date, model.ycol])
-    n_days = (test[model.date].max() - train[model.date].min() + timedelta(days=1+predict_days)).days
+    n_days = (test[model.date].max() - train[model.date].min() + timedelta(days=1+forecast_days)).days
     predictions.loc[:, model.date] = pd.to_datetime(pd.Series([timedelta(days=x)+train[model.date].min() for x in range(n_days)]))
     predictions.loc[:, model.ycol] = model.predict(train[model.date].min(),
-        test[model.date].max() + timedelta(days=predict_days))
+        test[model.date].max() + timedelta(days=forecast_days))
 
     # LOSS
     lc = Loss_Calculator()
@@ -159,11 +161,8 @@ def run_cycle(dataframes, model_params, predict_days=30,
 
     return result_dict
 
-def single_cycle(dist, st, area_names, config, model_params):
-    dataframes, dtp, model_params, fname = setup(dist, st, area_names, config, model_params)
+def single_cycle(dist, st, area_names, model_params, **config):
+    dataframes, dtp, model_params, fname = setup(dist, st, area_names, model_params, config)
     create_output_folder(fname)
     xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
-    return run_cycle(dataframes, model_params, predict_days=config['forecast_days'],
-        max_evals=config['max_evals'], num_hyperopt_runs=config['num_hyperopt'], 
-        val_size=config['forecast_days'], min_days=config['min_days'], 
-        scoring=config['scoring'], dtp=dtp, xform_func=xform_func)
+    return run_cycle(dataframes, model_params, dtp=dtp, xform_func=xform_func, **config)
