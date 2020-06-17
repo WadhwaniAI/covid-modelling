@@ -11,11 +11,12 @@ from models.seir.seir import SEIR
 from utils.ode import ODE_Solver
 
 class SEIRHD_Severity(SEIR):
-    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, 
-                 P_moderate=0.4, P_severe=0.2, P_fatal=0.02, 
-                 T_recov_severe=14, T_recov_mild=11, T_recov_moderate=11, T_recov_fatal=32,
-                 N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 
-                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
+    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, #Transmission
+                 P_moderate=0.4, P_severe=0.2, P_fatal=0.02,  #Clinical Probabs
+                 T_recov_severe=14, T_recov_mild=11, T_recov_moderate=11, T_recov_fatal=32, #Clinical Time
+                 N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', #Misc
+                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, #Init
+                 super_init=False, **kwargs): #Init
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
         The model further implements 
@@ -83,6 +84,35 @@ class SEIRHD_Severity(SEIR):
         input_args['p_params'] = p_params
         input_args['t_params'] = t_params
         super().__init__(**input_args)
+
+        # Initialisation
+        state_init_values = OrderedDict()
+        for key in STATES:
+            state_init_values[key] = 0
+        if initialisation == 'starting':
+            init_infected = max(observed_values['init_infected'], 1)
+            state_init_values['S'] = (self.N - init_infected)/self.N
+            state_init_values['I'] = init_infected/self.N
+
+        if initialisation == 'intermediate':
+            
+            state_init_values['R_mild'] = observed_values['stable_asymptomatic']
+            state_init_values['R_moderate'] = observed_values['stable_symptomatic']
+            state_init_values['R_severe'] = observed_values['critical']
+            state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['hospitalised']
+            
+            state_init_values['C'] = observed_values['recovered']
+            state_init_values['D'] = observed_values['deceased']
+
+            state_init_values['E'] = self.E_hosp_ratio * observed_values['hospitalised']
+            state_init_values['I'] = self.I_hosp_ratio * observed_values['hospitalised']
+            
+            nonSsum = sum(state_init_values.values())
+            state_init_values['S'] = (self.N - nonSsum)
+            for key in state_init_values.keys():
+                state_init_values[key] = state_init_values[key]/self.N
+        
+        self.state_init_values = state_init_values
 
 
     def get_derivative(self, t, y):
