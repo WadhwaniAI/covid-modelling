@@ -58,9 +58,9 @@ class Optimiser():
         # fmin returns index for hp.choice
         # n_days_range = np.arange(min_days, 1 + len(data) - val_size, dtype=int)
         
+        # TODO: decide, and remove n from hyperopt search if it remains consistent
         # force only min_days for n
         n_days_range = np.arange(min_days, 1 + min_days, dtype=int)
-        
         space['n'] = hp.choice('n', n_days_range)
 
         trials = Trials()
@@ -73,6 +73,8 @@ class Optimiser():
         fe_init = []
         for i, param in enumerate(model.param_names):
             fe_init.append(best[param])
+        
+        # returns index of range provided to hp.choice for n
         best['n'] = n_days_range[best['n']]
         
         min_loss = min(trials.losses())

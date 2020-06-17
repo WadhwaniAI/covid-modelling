@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import datetime
 import os
@@ -125,4 +126,11 @@ def standardise_age(timeseries, country, state, area_names):
     checker['age_std_mortality'] = age_std_mortality
     checker['mortality'] = daily_observed_mortality
     checker.index.name = 'date'
+
+    checker[f'log_age_std_mortality'] = checker['age_std_mortality'].apply(np.log)
+    checker[f'log_mortality'] = checker['mortality'].apply(np.log)
+    checker['day'] = [x for x in range(len(checker))]
+    checker.loc[:,'group'] = len(checker) * [ 1.0 ]
+    checker.loc[:,'covs'] = len(checker) * [ 1.0 ]
+    
     return checker.reset_index(), country_total_pop

@@ -6,8 +6,8 @@ import pickle
 import os
 
 sys.path.append('../..')
-from data.dataloader import Covid19IndiaLoader
-from data.processing import get_concat_data, get_data
+from data.dataloader import Covid19IndiaLoader, JHULoader
+from data.processing import get_concat_data, get_data, get_dataframes_cached
 
 def bbmp():
     df = pd.read_csv('../../data/data/bbmp.csv')
@@ -21,7 +21,7 @@ def bbmp():
     return df
 
 def india_all():
-    df = get_dataframes_cached()['df_india_time_series']
+    dataframes = get_dataframes_cached()['df_india_time_series']
     df = dataframes['df_india_time_series']
     # df.dtypes
     df = df[['date', 'totalconfirmed', 'totaldeceased','totalrecovered']]
@@ -29,7 +29,7 @@ def india_all():
     return df
 
 def india_all_state():
-    df = get_dataframes_cached()['df_india_time_series']
+    dataframes = get_dataframes_cached()['df_india_time_series']
     df = dataframes['df_districts']
     df = df.groupby(['state', 'date']).sum()
     df.reset_index()
@@ -46,7 +46,7 @@ def india_states(states):
     return all_states
 
 def jhu(country):
-    df_master = get_jhu_data()
+    df_master = JHULoader().get_jhu_data()
     # print(df_master['Country/Region'].unique())
     # Province/State            object
     # Country/Region            object

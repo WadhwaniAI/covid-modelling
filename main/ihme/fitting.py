@@ -75,7 +75,7 @@ def create_output_folder(fname):
         os.makedirs(output_folder)
     return output_folder
 
-def run_cycle(min_days, scoring, val_size, dataframes, model_params, dtp, max_evals, num_hyperopt_runs, xform_func=lograte_to_cumulative):
+def run_cycle(dataframes, model_params, dtp, max_evals=1000, num_hyperopt_runs=1, min_days=7, scoring='mape', val_size=7, xform_func=lograte_to_cumulative):
     model = IHME(model_params)
     train, test = dataframes['train'], dataframes['test']
     fe_init, n_days_train = model.priors['fe_init'], min_days
@@ -145,3 +145,11 @@ def run_cycle(min_days, scoring, val_size, dataframes, model_params, dtp, max_ev
     predictions.loc[:,model_params['ycol']] = all_preds
 
     return model, predictions, draws, error, trials_dict
+
+def single_cycle(dist, st, area_names, label, min_days, scoring, 
+        val_size, dataframes, model_params, dtp, max_evals, 
+        num_hyperopt_runs, xform_func=lograte_to_cumulative, 
+        smooth=False, sd=False, test_size=7, smooth_window=5, use_tracker=False):
+    dataframes, dtp, model_params, fname = setup(dist, st, area_names, label, smooth, sd, test_size, smooth_window, use_tracker)
+    create_output_folder(fname)
+    return run_cycle(min_days, scoring, val_size, dataframes, model_params, dtp, max_evals, num_hyperopt_runs, xform_func)
