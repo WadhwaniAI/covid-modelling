@@ -69,7 +69,7 @@ class IHME(Model):
     def predict(self, start_date, end_date, **kwargs):
         data = self.pipeline.all_data.set_index('date')
         day0 = data.loc[data.index[0], 'day']
-        start = day0 + (start_date - data.index[0]).days
+        start = int(day0) + (start_date - data.index[0]).days
         n_days = (end_date - start_date).days
         
         predictx = np.array([x for x in range(start, 1+start+n_days)])

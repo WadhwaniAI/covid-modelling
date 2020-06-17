@@ -19,12 +19,14 @@ from utils.util import train_test_split, rollingavg
 from models.ihme.model import IHME
 from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
 from utils.loss import Loss_Calculator
-
+from utils.enums import Columns
 from main.ihme.optimiser import Optimiser
+from main.seir.fitting import smooth_big_jump
 
 def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker):
     district_timeseries = get_district_timeseries_cached(
         dist, st, disable_tracker=disable_tracker)
+    district_timeseries = smooth_big_jump(district_timeseries, 33, not disable_tracker, method='weighted')
     df, dtp = get_rates(district_timeseries, st, area_names)
     
     df.loc[:,'sd'] = df['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
@@ -59,8 +61,7 @@ def setup(dist, st, area_names, model_params,
     if smooth > 0:
         model_params['ycol'] = smoothedcol
     
-    fname = f'{dist}_deaths'
-    return dataframes, dtp, model_params, fname
+    return dataframes, dtp, model_params
 
 def create_output_folder(fname):
     today = datetime.today()
@@ -109,22 +110,31 @@ def run_cycle(dataframes, model_params, forecast_days=30,
     model.fit(train)
 
     predictions = pd.DataFrame(columns=[model.date, model.ycol])
-    n_days = (test[model.date].max() - train[model.date].min() + timedelta(days=1+forecast_days)).days
+    if len(test) == 0:
+        n_days = (train[model.date].max() - train[model.date].min() + timedelta(days=1+forecast_days)).days
+        predictions.loc[:, model.ycol] = model.predict(train[model.date].min(),
+            train[model.date].max() + timedelta(days=forecast_days))
+    else:
+        n_days = (test[model.date].max() - train[model.date].min() + timedelta(days=1+forecast_days)).days
+        predictions.loc[:, model.ycol] = model.predict(train[model.date].min(),
+            test[model.date].max() + timedelta(days=forecast_days))
     predictions.loc[:, model.date] = pd.to_datetime(pd.Series([timedelta(days=x)+train[model.date].min() for x in range(n_days)]))
-    predictions.loc[:, model.ycol] = model.predict(train[model.date].min(),
-        test[model.date].max() + timedelta(days=forecast_days))
 
     # LOSS
     lc = Loss_Calculator()
     train_pred = predictions[model.ycol][:len(train)]
     trainerr = lc.evaluate(train[model.ycol], train_pred)
-    test_pred = predictions[model.ycol][len(train):len(train) + len(test)]
-    testerr = lc.evaluate(test[model.ycol], test_pred)
+    testerr = None
+    if len(test) != 0:
+        test_pred = predictions[model.ycol][len(train):len(train) + len(test)]
+        testerr = lc.evaluate(test[model.ycol], test_pred)
     if xform_func != None:
         xform_trainerr = lc.evaluate(xform_func(train[model.ycol], dtp),
             xform_func(train_pred, dtp))
-        xform_testerr = lc.evaluate(xform_func(test[model.ycol], dtp),
-            xform_func(test_pred, dtp))
+        xform_testerr = None
+        if len(test) != 0:
+            xform_testerr = lc.evaluate(xform_func(test[model.ycol], dtp),
+                xform_func(test_pred, dtp))
     else: 
         xform_trainerr, xform_testerr = None, None
     
@@ -156,13 +166,53 @@ def run_cycle(dataframes, model_params, forecast_days=30,
         },
         'trials': trials_dict,
         'draws': draws,
-        'mod.params': model.pipeline.mod.params
+        'mod.params': model.pipeline.mod.params,
+        'train': train,
+        'test': test,
+        'df': dataframes['df'],
+        'district_total_pop': dtp,
     }
 
     return result_dict
 
 def single_cycle(dist, st, area_names, model_params, **config):
-    dataframes, dtp, model_params, fname = setup(dist, st, area_names, model_params, **config)
-    create_output_folder(fname)
+    dataframes, dtp, model_params = setup(dist, st, area_names, model_params, **config)
+    # create_output_folder(dist)
     xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
     return run_cycle(dataframes, model_params, dtp=dtp, xform_func=xform_func, **config)
+
+def single_cycle_multiple(dist, st, area_names, model_params, which_compartments=Columns.which_compartments(), **config):
+    dataframes, dtp, model_params = setup(dist, st, area_names, model_params, **config)
+    xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
+    results = {}
+    
+    for col in which_compartments:
+        col_params = copy(model_params)
+        col_params['ycol'] = '{log}{colname}_rate'.format(log='log_' if config['log'] else '', colname=col.name)
+        results[col.name] = run_cycle(dataframes, col_params, dtp=dtp, xform_func=xform_func, **config)
+
+    base = results[which_compartments[0].name]
+    
+    predictions = pd.DataFrame(index=results['deceased']['predictions']['predictions'].index)
+    for key in results.keys():
+        pred = results[key]['predictions']['predictions']
+        predictions.loc[pred.index, key] = pred['{log}{colname}_rate'.format(log='log_' if config['log'] else '', colname=key)]
+    
+    predictions = xform_func(predictions, dtp)
+
+    final = {
+        'individual_results': results,
+        'predictions': {
+            'start': base['predictions']['start'],
+            'fit_dates': base['predictions']['fit_dates'],
+            'val_dates': base['predictions']['val_dates'],
+            'future_dates': base['predictions']['future_dates'],
+            'predictions': predictions,
+        },
+        'train': base['train'],
+        'test': base['test'],
+        'df': base['df'],
+        'district_total_pop': base['district_total_pop'],
+    }
+
+    return final    

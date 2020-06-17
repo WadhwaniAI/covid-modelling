@@ -29,8 +29,8 @@ warnings.filterwarnings('ignore', module='curvefit', category=RuntimeWarning) #,
 # -------------------
 
 def backtest(dist, st, area_names, config, model_params):
-    dataframes, dtp, model_params, file_prefix = setup(dist, st, area_names, model_params, **config)
-    output_folder = create_output_folder(f'backtesting/{file_prefix}')
+    dataframes, dtp, model_params = setup(dist, st, area_names, model_params, **config)
+    output_folder = create_output_folder(f'backtesting/{dist}')
     df = dataframes['df']
     
     start_time = time.time()
@@ -46,10 +46,10 @@ def backtest(dist, st, area_names, config, model_params):
     with open(picklefn, 'wb') as pickle_file:
             pickle.dump(results, pickle_file)
             
-    backtester.plot_results(file_prefix, scoring=config['scoring'], transform_y=xform, dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
-    backtester.plot_errors(file_prefix, scoring='mape', use_xform=True, savepath=f'{output_folder}/backtesting_mape.png') 
-    backtester.plot_errors(file_prefix, scoring='rmse', use_xform=True, savepath=f'{output_folder}/backtesting_rmse.png') 
-    backtester.plot_errors(file_prefix, scoring='rmsle', use_xform=True, savepath=f'{output_folder}/backtesting_rmsle.png') 
+    backtester.plot_results(dist, scoring=config['scoring'], transform_y=xform, dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
+    backtester.plot_errors(dist, scoring='mape', use_xform=True, savepath=f'{output_folder}/backtesting_mape.png') 
+    backtester.plot_errors(dist, scoring='rmse', use_xform=True, savepath=f'{output_folder}/backtesting_rmse.png') 
+    backtester.plot_errors(dist, scoring='rmsle', use_xform=True, savepath=f'{output_folder}/backtesting_rmsle.png') 
 
     dates = pd.Series(list(results['results'].keys())).apply(lambda x: results['df']['date'].min() + timedelta(days=x))
     plot(dates, [d['n_days'] for d in results['results'].values()], 'n_days_train', 'n_days')

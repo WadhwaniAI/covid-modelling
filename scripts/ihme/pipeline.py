@@ -18,7 +18,7 @@ from models.ihme.util import cities
 from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
 
 from main.ihme.plotting import plot_results
-from main.ihme.fitting import setup, create_output_folder, run_cycle
+from main.ihme.fitting import create_output_folder, single_cycle
 from utils.util import read_config
 
 import warnings
@@ -34,14 +34,12 @@ scoring = 'mape'
 
 def run_pipeline(dist, st, area_names, config, model_params):
     start_time = time.time()
-    dataframes, dtp, model_params, file_prefix = setup(dist, st, area_names, model_params, **config)
-    output_folder = create_output_folder(f'{file_prefix}')
-    
-    xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
-    train, test, df = dataframes['train'], dataframes['test'], dataframes['df']
-    results_dict = run_cycle(
-        dataframes, model_params, dtp=dtp, xform_func=xform_func, **config)
+    results_dict = single_cycle(dist, st, area_names, model_params, **config)
+    output_folder = create_output_folder(f'forecast/{dist}')
     predictions = results_dict['predictions']['predictions']
+    train, test, df = results_dict['train'], results_dict['test'], results_dict['df']
+    xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
+    dtp = results_dict['district_total_pop']
     runtime = time.time() - start_time
     print('runtime:', runtime)
     
@@ -53,11 +51,11 @@ def run_pipeline(dist, st, area_names, config, model_params):
     xform_draws = xform_func(results_dict['draws'], dtp)
 
     plot_results(model_params, results_dict['mod.params'], plot_df, len(train), plot_test, predicted_cumulative_deaths, 
-        predictions.index, results_dict['xform_error']['test'], f'new_{file_prefix}', val_size, draws=xform_draws, yaxis_name='cumulative deaths')
+        predictions.index, results_dict['xform_error']['test'], dist, val_size, draws=xform_draws, yaxis_name='cumulative deaths')
     plt.savefig(f'{output_folder}/results.png')
     plt.clf()
     plot_results(model_params, results_dict['mod.params'], df, len(train), test, predictions[model_params['ycol']], 
-        predictions.index, results_dict['error']['test'], f'new_{file_prefix}', val_size, draws=results_dict['draws'])
+        predictions.index, results_dict['error']['test'], dist, val_size, draws=results_dict['draws'])
     plt.savefig(f'{output_folder}/results_notransform.png')
     plt.clf()
 
@@ -77,6 +75,7 @@ def run_pipeline(dist, st, area_names, config, model_params):
     with open(picklefn, 'wb') as pickle_file:
         pickle.dump(results_dict, pickle_file)
 
+    return results_dict
 # -------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser() 
