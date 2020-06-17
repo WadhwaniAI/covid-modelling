@@ -113,6 +113,32 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
 
     return ax
 
+def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False, filename=None,
+         model_name='M2', which_compartments=Columns.which_compartments()):
+    fig, ax = plt.subplots(figsize=(12, 12))
+    for col in Columns.which_compartments():
+        if col in which_compartments:
+            ax.plot(df_true['date'], df_true[col.name],
+                '-o', color=col.color, label=f'{col.label} (Observed)')
+            sns.lineplot(x="date", y=col.name, data=df_prediction,
+                     ls='-', color=col.color, label=f'{col.label} ({model_name} Forecast)')
+
+    ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
+    ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    plt.ylabel('No of People', fontsize=16)
+    if log_scale:
+        plt.yscale('log')
+    plt.xlabel('Time', fontsize=16)
+    plt.xticks(rotation=45, horizontalalignment='right')
+    plt.legend()
+    plt.title('Forecast - ({} {})'.format(dist, state), fontsize=16)
+    plt.grid()
+    if filename != None:
+        plt.savefig(filename)
+
+    return ax
+
 def plot_trials(predictions_dict, train_fit='m2', k=10,
         predictions=None, losses=None, params=None, vline=None,
         which_compartments=[Columns.active], plot_individual_curves=True):
