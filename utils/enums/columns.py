@@ -26,3 +26,6 @@ class Columns(Enum):
     confirmed = Column('total_infected', 'Confirmed Cases', 'C0')
     # tested = Column('tested')
     
+    @classmethod
+    def which_compartments(cls):
+        return [cls.recovered, cls.deceased, cls.active, cls.confirmed]
