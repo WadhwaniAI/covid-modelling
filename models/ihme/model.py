@@ -66,12 +66,14 @@ class IHME(Model):
     # def supported_forecast_variables(self):
     #     return [ForecastVariable.deceased]
 
-    def predict(self, start_date: str, end_date: str, **kwargs):
-        # vars
-        n_days = (end_date - start_date).days + 1
-        self.run(n_days)
-        # n_days = (datetime.strptime(end_date, "%m/%d/%y") - datetime.strptime(start_date, "%m/%d/%y")).days + 1
-        predictx = np.array([x+1 for x in range(n_days)])
+    def predict(self, start_date, end_date, **kwargs):
+        data = self.pipeline.all_data.set_index('date')
+        day0 = data.loc[data.index[0], 'day']
+        start = day0 + (start_date - data.index[0]).days
+        n_days = (end_date - start_date).days
+        
+        predictx = np.array([x for x in range(start, 1+start+n_days)])
+        self.run(predictx)
         return self.pipeline.predict(times=predictx, predict_space=self.predict_space, predict_group='all')
 
     def fit(self, data: pd.DataFrame):
@@ -95,14 +97,13 @@ class IHME(Model):
             },
         )
       
-    def run(self, n_days, pipeline_args=None):
+    def run(self, predictx, pipeline_args=None):
         p_args = self.pipeline_args
         if pipeline_args is not None:
             p_args.update(pipeline_args)
         
         # pipeline
         self.pipeline.setup_pipeline()
-        predictx = pd.Series(range(1, 1 + n_days))
         self.pipeline.run(n_draws=p_args['n_draws'], prediction_times=predictx, 
             cv_threshold=p_args['cv_threshold'], smoothed_radius=p_args['smoothed_radius'], 
             num_smooths=p_args['num_smooths'], exclude_groups=p_args['exclude_groups'], 
