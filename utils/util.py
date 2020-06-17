@@ -24,7 +24,8 @@ def rollingavg(series, window):
     return series.rolling(window).mean()
 
 def read_config(path, backtesting=False):
-    with open('config/default.yaml') as default:
+    default_path = os.path.join(os.path.dirname(path), 'default.yaml')
+    with open(default_path) as default:
         config = yaml.load(default, Loader=yaml.SafeLoader)
     with open(path) as configfile:
         new = yaml.load(configfile, Loader=yaml.SafeLoader)
