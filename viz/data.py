@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
 
+from utils.enums.columns import *
 
 def plot_smoothing(orig_df_district, new_df_district, state, district,
                    which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], description='Smoothing'):
