@@ -12,13 +12,13 @@ from curvefit.core import functions
 
 sys.path.append('../..')
 from models.ihme.model import IHME
-from models.ihme.util import get_mortality, cities
+from models.ihme.util import cities
 from data.processing import jhu
 from models.ihme.population import standardise_age
 
 from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
-from main.ihme.fitting import get_params, run_cycle, create_output_folder
-from utils.util import train_test_split
+from main.ihme.fitting import run_cycle, create_output_folder
+from utils.util import train_test_split, read_config
 # -------------------
 
 def find_init(country, triple):
@@ -28,8 +28,9 @@ def find_init(country, triple):
 
     timeseries = jhu(country.title())
     df, dtp = standardise_age(timeseries, country, indian_state, area_names)
-    label = 'log_mortality' if args.log else 'mortality'
-    params = get_params(label)
+
+    label = 'default' if args.log else 'rate'
+    _ , params = read_config(f'config/{label}.yaml')
 
     ycol = 'age_std_mortality'
     params['ycol'] = f'log_{ycol}' if args.log else ycol
@@ -69,8 +70,8 @@ def find_init(country, triple):
         'train': train,
         'test': test,
     }
-    model, predictions, draws, error, trials_dict = run_cycle(dataframes, params, dtp, xform_func=xform_func, max_evals=args.max_evals)
-
+    results = run_cycle(dataframes, params, dtp=dtp, xform_func=xform_func, max_evals=args.max_evals)
+    trials_dict = results['trials']
     best_loss, best_params = float('inf'), None
     for run in trials_dict.keys():
         trials = trials_dict[run]
