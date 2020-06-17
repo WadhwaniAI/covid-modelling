@@ -162,7 +162,7 @@ def run_cycle(dataframes, model_params, forecast_days=30,
     return result_dict
 
 def single_cycle(dist, st, area_names, model_params, **config):
-    dataframes, dtp, model_params, fname = setup(dist, st, area_names, model_params, config)
+    dataframes, dtp, model_params, fname = setup(dist, st, area_names, model_params, **config)
     create_output_folder(fname)
     xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
     return run_cycle(dataframes, model_params, dtp=dtp, xform_func=xform_func, **config)
