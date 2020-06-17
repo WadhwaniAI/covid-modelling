@@ -13,9 +13,9 @@ import matplotlib as mpl
 
 import sys
 sys.path.append('../..')
-from utils.util import HidePrints, train_test_split
+from utils.util import HidePrints
 from viz import setup_plt
-from main.ihme.optimiser import Optimiser
+from main.ihme.fitting import run_cycle
 
 class IHMEBacktest:
     def __init__(self, model: IHME, data: pd.DataFrame, district, state):
@@ -64,7 +64,7 @@ class IHMEBacktest:
         }
         return self.results
 
-    def plot_results(self, file_prefix, results=None, transform_y=None, dtp=None, axis_name=None, savepath=None):
+    def plot_results(self, file_prefix, scoring='mape', results=None, transform_y=None, dtp=None, axis_name=None, savepath=None):
         results = self.results['results'] if results is None else results
         ycol = self.model.ycol
         title = f'{file_prefix} {ycol}' +  ' backtesting'
@@ -85,26 +85,23 @@ class IHMEBacktest:
         for i, run_day in enumerate(results.keys()):
             pred_dict = results[run_day]['predictions']
             if transform_y is not None:
-                val_preds = transform_y(pred_dict['val_preds'], dtp)
-                fit_preds = transform_y(pred_dict['fit_preds'], dtp)
-                # fit_preds = transform_y(pred_dict['fit_preds'][-14:], dtp)
+                preds = transform_y(pred_dict['predictions'], dtp)
             else:
-                val_preds = pred_dict['val_preds']
-                fit_preds = pred_dict['fit_preds']#[-14:]
+                preds = pred_dict['predictions']
             val_dates = pred_dict['val_dates']
-            fit_dates = pred_dict['fit_dates']#[-14:]
+            fit_dates = pred_dict['fit_dates']
             
             color = cmap(i/len(results.keys()))
-            plt.plot(val_dates, val_preds, ls='dashed', c=color,
+            plt.plot(val_dates, preds.loc[val_dates, ycol], ls='dashed', c=color,
                 label=f'run day: {run_day}')
-            plt.plot(fit_dates, fit_preds, ls='solid', c=color,
+            plt.plot(fit_dates, preds.loc[fit_dates, ycol], ls='solid', c=color,
                 label=f'run day: {run_day}')
-            plt.errorbar(val_dates, val_preds,
-                yerr=val_preds*results[run_day][errkey]['mape']/100, lw=0.5,
-                color='lightcoral', barsabove='False', label='MAPE')
-            plt.errorbar(fit_dates, fit_preds,
-                yerr=fit_preds*results[run_day][errkey]['mape']/100, lw=0.5,
-                color='lightcoral', barsabove='False', label='MAPE')
+            plt.errorbar(val_dates, preds.loc[val_dates, ycol],
+                yerr=preds.loc[val_dates, ycol]*(results[run_day][errkey]['test'][scoring]/100), lw=0.5,
+                color='lightcoral', barsabove='False', label=scoring)
+            plt.errorbar(fit_dates, preds.loc[fit_dates, ycol],
+                yerr=preds.loc[fit_dates, ycol]*(results[run_day][errkey]['test'][scoring]/100), lw=0.5,
+                color='lightcoral', barsabove='False', label=scoring)
 
         # plot data we fit on
         plt.scatter(self.data[self.model.date], self.data[ycol], c='crimson', marker='+', label='data')
@@ -129,7 +126,7 @@ class IHMEBacktest:
 
         # plot error
         dates = [start + timedelta(days=run_day) for run_day in results.keys()]
-        errs = [results[run_day][errkey][scoring] for run_day in results.keys()]
+        errs = [results[run_day][errkey]['test'][scoring] for run_day in results.keys()]
         plt.plot(dates, errs, ls='-', c='crimson',
             label=scoring)
         plt.legend()
@@ -141,49 +138,10 @@ class IHMEBacktest:
 def run_model_unpack(kwargs):
     return run_model(**kwargs)
 
-def run_model(model, run_day, fit_data, val_data, max_evals, hyperopt_val_size,min_days, xform_func, dtp, scoring):
+def run_model(model, run_day, fit_data, val_data, max_evals, hyperopt_val_size, min_days, xform_func, dtp, scoring):
     print ("\rbacktesting for", run_day, end="")
-    incremental_model = model.generate()
-    
-    # # OPTIMIZE HYPERPARAMS
-    kwargs = {
-        'bounds': copy(incremental_model.priors['fe_bounds']), 
-        'iterations': max_evals,
-        'scoring': scoring, 
-        'val_size': hyperopt_val_size,
-        'min_days': min_days,
-    }
-    o = Optimiser(incremental_model, fit_data, kwargs)
-    ((best_init, n_days), err, trials) = o.optimisestar(0)
-    
-    fit_data = fit_data[-n_days:]
-    fit_data.loc[:, 'day'] = (fit_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
-    val_data.loc[:, 'day'] = (val_data['date'] - np.min(fit_data['date'])).apply(lambda x: x.days)
-    incremental_model.priors['fe_init'] = best_init
-    
-    # FIT/PREDICT
-    incremental_model.fit(fit_data)
-    predictions = incremental_model.predict(fit_data[model.date].min(),
-        val_data[model.date].max())
-    # print (predictions)
-    lc = Loss_Calculator()
-    err = lc.evaluate(val_data[model.ycol], predictions[len(fit_data):])
-    xform_err = None
-    if xform_func is not None:
-        xform_err = lc.evaluate(xform_func(val_data[model.ycol], dtp),
-            xform_func(predictions[len(fit_data):], dtp))
-    result_dict = {
-        'fe_init': best_init,
-        'n_days': n_days,
-        'error': err,
-        'xform_error': xform_err,
-        'predictions': {
-            'start': fit_data[model.date].min(),
-            'fit_dates': fit_data[model.date],
-            'val_dates': val_data[model.date],
-            'fit_preds': predictions[:len(fit_data)],
-            'val_preds': predictions[len(fit_data):],
-        },
-        'trials': trials,
-    }
+    dataframes = {'train': fit_data, 'test': val_data}
+    result_dict = run_cycle(dataframes, copy(model.model_parameters), 
+        dtp=dtp, max_evals=max_evals, min_days=min_days, scoring=scoring, 
+        val_size=hyperopt_val_size, xform_func=xform_func, predict_days=0)
     return run_day, result_dict

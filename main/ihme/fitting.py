@@ -44,6 +44,7 @@ def get_regional_data(dist, st, area_names, ycol, test_size=7, smooth_window=5, 
     
     startday = df['date'][df['mortality'].gt(1e-15).idxmax()]
     df = df.loc[df['mortality'].gt(1e-15).idxmax():,:]
+    df = df.reset_index()
     df.loc[:, 'day'] = (df['date'] - np.min(df['date'])).apply(lambda x: x.days)
     
     threshold = df['date'].max() - timedelta(days=test_size)
@@ -75,13 +76,15 @@ def create_output_folder(fname):
         os.makedirs(output_folder)
     return output_folder
 
-def run_cycle(dataframes, model_params, dtp, max_evals=1000, num_hyperopt_runs=1, min_days=7, scoring='mape', val_size=7, xform_func=lograte_to_cumulative):
+def run_cycle(dataframes, model_params, predict_days=30, 
+    max_evals=1000, num_hyperopt_runs=1, val_size=7,
+    min_days=7, scoring='mape', dtp=None, xform_func=None):
     model = IHME(model_params)
     train, test = dataframes['train'], dataframes['test']
-    fe_init, n_days_train = model.priors['fe_init'], min_days
+
+    # OPTIMIZE HYPERPARAMS
     hyperopt_runs = {}
     trials_dict = {}
-    pool = Pool(processes=5)
     kwargs = {
         'bounds': copy(model.priors['fe_bounds']), 
         'iterations': max_evals,
@@ -90,44 +93,48 @@ def run_cycle(dataframes, model_params, dtp, max_evals=1000, num_hyperopt_runs=1
         'min_days': min_days,
     }
     o = Optimiser(model, train, kwargs)
-    for i, ((best_init, n_days), err, trials) in enumerate(pool.map(o.optimisestar, list(range(num_hyperopt_runs)))):
+
+    if num_hyperopt_runs == 1:
+        (best_init, n_days), err, trials = o.optimisestar(0)
         hyperopt_runs[err] = (best_init, n_days)
-        trials_dict[i] = trials
+        trials_dict[0] = trials
+    else:
+        pool = Pool(processes=5)
+        for i, ((best_init, n_days), err, trials) in enumerate(pool.map(o.optimisestar, list(range(num_hyperopt_runs)))):
+            hyperopt_runs[err] = (best_init, n_days)
+            trials_dict[i] = trials
     (fe_init, n_days_train) = hyperopt_runs[min(hyperopt_runs.keys())]
     
     train = train[-n_days_train:]
     train.loc[:, 'day'] = (train['date'] - np.min(train['date'])).apply(lambda x: x.days)
     test.loc[:, 'day'] = (test['date'] - np.min(train['date'])).apply(lambda x: x.days)
+    train.reset_index(inplace=True)
+    test.index = range(1 + train.index[-1], 1 + train.index[-1] + len(test))
     model.priors['fe_init'] = fe_init
 
+    # FIT/PREDICT
     model.fit(train)
 
-    n_days = (test[model_params['date']].max() - train[model_params['date']].min() + timedelta(days=1+model_params['daysforward'])).days
-    all_preds_dates = pd.to_datetime(pd.Series([timedelta(days=x)+train[model_params['date']].min() for x in range(n_days)]))
-    all_preds = model.predict(train[model_params['date']].min(), test[model_params['date']].max() + timedelta(days=model_params['daysforward']))
-    
+    predictions = pd.DataFrame(columns=[model.date, model.ycol])
+    n_days = (test[model.date].max() - train[model.date].min() + timedelta(days=1+predict_days)).days
+    predictions.loc[:, model.date] = pd.to_datetime(pd.Series([timedelta(days=x)+train[model.date].min() for x in range(n_days)]))
+    predictions.loc[:, model.ycol] = model.predict(train[model.date].min(),
+        test[model.date].max() + timedelta(days=predict_days))
+
+    # LOSS
     lc = Loss_Calculator()
-
-    train_pred = all_preds[:len(train)]
-    trainerr = lc.evaluate(train[model_params['ycol']], train_pred)
-    test_pred = all_preds[len(train):len(train) + len(test)]
-    testerr = lc.evaluate(test[model_params['ycol']], test_pred)
-    # future_pred = all_preds[len(train) + len(test):]
-    err = {
-        'train': trainerr,
-        "test": testerr
-    }
-
-    xform_err = None
-    xform_trainerr = lc.evaluate(xform_func(train[model_params['ycol']], dtp),
-        xform_func(train_pred, dtp))
-    xform_testerr = lc.evaluate(xform_func(test[model_params['ycol']], dtp),
-        xform_func(test_pred, dtp))
-    xform_err = {
-        'train': xform_trainerr,
-        "test": xform_testerr
-    }
-
+    train_pred = predictions[model.ycol][:len(train)]
+    trainerr = lc.evaluate(train[model.ycol], train_pred)
+    test_pred = predictions[model.ycol][len(train):len(train) + len(test)]
+    testerr = lc.evaluate(test[model.ycol], test_pred)
+    if xform_func != None:
+        xform_trainerr = lc.evaluate(xform_func(train[model.ycol], dtp),
+            xform_func(train_pred, dtp))
+        xform_testerr = lc.evaluate(xform_func(test[model.ycol], dtp),
+            xform_func(test_pred, dtp))
+    else: 
+        xform_trainerr, xform_testerr = None, None
+    
     # UNCERTAINTY
     draws_dict = model.calc_draws()
     for k in draws_dict.keys():
@@ -136,20 +143,37 @@ def run_cycle(dataframes, model_params, dtp, max_evals=1000, num_hyperopt_runs=1
         # TODO: group handling
         draws = np.vstack((low, up))   
 
-    error = {
-        'xform': xform_err,
-        'original': err,
+    result_dict = {
+        'fe_init': fe_init,
+        'n_days': n_days_train,
+        'error': {
+            'train': trainerr,
+            "test": testerr
+        },
+        'xform_error': {
+            'train': xform_trainerr,
+            "test": xform_testerr
+        },
+        'predictions': {
+            'start': train[model.date].min(),
+            'fit_dates': train[model.date],
+            'val_dates': test[model.date],
+            'future_dates': predictions[model.date][len(train) + len(test):],
+            'predictions': predictions.set_index(model.date),
+        },
+        'trials': trials_dict,
+        'draws': draws,
+        'mod.params': model.pipeline.mod.params
     }
-    predictions = pd.DataFrame(columns=[model_params['date'], model_params['ycol']])
-    predictions.loc[:,model_params['date']] = all_preds_dates
-    predictions.loc[:,model_params['ycol']] = all_preds
 
-    return model, predictions, draws, error, trials_dict
+    return result_dict
 
-def single_cycle(dist, st, area_names, label, min_days, scoring, 
-        val_size, dataframes, model_params, dtp, max_evals, 
-        num_hyperopt_runs, xform_func=lograte_to_cumulative, 
+def single_cycle(dist, st, area_names, label, predict_days, min_days, scoring, 
+        val_size, max_evals, 
+        num_hyperopt_runs, xform_func=None, 
         smooth=False, sd=False, test_size=7, smooth_window=5, use_tracker=False):
     dataframes, dtp, model_params, fname = setup(dist, st, area_names, label, smooth, sd, test_size, smooth_window, use_tracker)
     create_output_folder(fname)
-    return run_cycle(min_days, scoring, val_size, dataframes, model_params, dtp, max_evals, num_hyperopt_runs, xform_func)
+    return run_cycle(dataframes, model_params, predict_days=predict_days,
+        max_evals=max_evals, num_hyperopt_runs=num_hyperopt_runs, val_size=val_size,
+        min_days=min_days, scoring=scoring, dtp=dtp, xform_func=xform_func)

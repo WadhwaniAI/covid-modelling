@@ -28,7 +28,7 @@ from main.ihme.backtesting import IHMEBacktest
 from main.ihme.optimiser import Optimiser
 from main.ihme.plotting import plot_results, plot_backtesting_results, plot_backtesting_errors
 from main.ihme.plotting import plot
-from main.ihme.fitting import setup, create_output_folder, run_cycle
+from main.ihme.fitting import setup, create_output_folder
 
 from utils.util import train_test_split, rollingavg
 from utils.loss import Loss_Calculator
@@ -38,7 +38,7 @@ pd.options.mode.chained_assignment = None
 warnings.filterwarnings('ignore', module='pandas', category=RuntimeWarning) #, message='invalid value encountered in')
 warnings.filterwarnings('ignore', module='curvefit', category=RuntimeWarning) #, message='invalid value encountered in')
 
-increment = 3
+increment = 10
 future_days = 7
 val_size = 7
 test_size = 7
@@ -65,7 +65,7 @@ def backtest(dist, st, area_names, args):
     with open(picklefn, 'wb') as pickle_file:
             pickle.dump(results, pickle_file)
             
-    backtester.plot_results(file_prefix, transform_y=xform, dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
+    backtester.plot_results(file_prefix, scoring=scoring, transform_y=xform, dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
     backtester.plot_errors(file_prefix, scoring='mape', use_xform=True, savepath=f'{output_folder}/backtesting_mape.png') 
     backtester.plot_errors(file_prefix, scoring='rmse', use_xform=True, savepath=f'{output_folder}/backtesting_rmse.png') 
     backtester.plot_errors(file_prefix, scoring='rmsle', use_xform=True, savepath=f'{output_folder}/backtesting_rmsle.png') 
@@ -112,7 +112,7 @@ def replot_backtest(dist, st, area_names, folder, args):
     
     backtester = IHMEBacktest(model, df, dist, st)
     
-    backtester.plot_results(file_prefix, results=results['results'], transform_y=xform, dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
+    backtester.plot_results(file_prefix, results=results['results'], scoring=scoring, transform_y=xform, dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
     backtester.plot_errors(file_prefix, results=results['results'], scoring='mape', use_xform=True, savepath=f'{output_folder}/backtesting_mape.png') 
     backtester.plot_errors(file_prefix, results=results['results'], scoring='rmse', use_xform=True, savepath=f'{output_folder}/backtesting_rmse.png') 
     backtester.plot_errors(file_prefix, results=results['results'], scoring='rmsle', use_xform=True, savepath=f'{output_folder}/backtesting_rmsle.png') 

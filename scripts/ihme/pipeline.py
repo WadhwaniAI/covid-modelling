@@ -40,7 +40,12 @@ def run_pipeline(dist, st, area_names, args):
     
     xform_func = lograte_to_cumulative if args.log else rate_to_cumulative
     train, test, df = dataframes['train'], dataframes['test'], dataframes['df']
-    model, predictions, draws, error, trials_dict = run_cycle(min_days, scoring, val_size, dataframes, model_params, dtp, args.max_evals, args.hyperopt, xform_func=xform_func)
+    results_dict = run_cycle(
+        dataframes, model_params, predict_days=args.fdays, 
+        max_evals=args.max_evals, num_hyperopt_runs=args.hyperopt, 
+        min_days=min_days, scoring=scoring, val_size=val_size, 
+        dtp=dtp, xform_func=xform_func)
+    predictions = results_dict['predictions']['predictions']
     runtime = time.time() - start_time
     print('runtime:', runtime)
     
@@ -49,14 +54,14 @@ def run_pipeline(dist, st, area_names, args):
     plot_df[model_params['ycol']] = xform_func(plot_df[model_params['ycol']], dtp)
     plot_test[model_params['ycol']] = xform_func(plot_test[model_params['ycol']], dtp)
     predicted_cumulative_deaths = xform_func(predictions[model_params['ycol']], dtp)
-    xform_draws = xform_func(draws, dtp)
+    xform_draws = xform_func(results_dict['draws'], dtp)
 
-    plot_results(model, plot_df, len(train), plot_test, predicted_cumulative_deaths, 
-        predictions[model_params['date']], error['xform']['test'], f'new_{file_prefix}', val_size, draws=xform_draws, yaxis_name='cumulative deaths')
+    plot_results(model_params, results_dict['mod.params'], plot_df, len(train), plot_test, predicted_cumulative_deaths, 
+        predictions.index, results_dict['xform_error']['test'], f'new_{file_prefix}', val_size, draws=xform_draws, yaxis_name='cumulative deaths')
     plt.savefig(f'{output_folder}/results.png')
     plt.clf()
-    plot_results(model, df, len(train), test, predictions[model_params['ycol']], 
-        predictions[model_params['date']], error['original']['test'], f'new_{file_prefix}', val_size, draws=draws)
+    plot_results(model_params, results_dict['mod.params'], df, len(train), test, predictions[model_params['ycol']], 
+        predictions.index, results_dict['error']['test'], f'new_{file_prefix}', val_size, draws=results_dict['draws'])
     plt.savefig(f'{output_folder}/results_notransform.png')
     plt.clf()
 
@@ -70,25 +75,16 @@ def run_pipeline(dist, st, area_names, args):
         pargs['sd'] = args.sd
         pargs['smoothing'] = args.smoothing
         pargs['log'] = args.log
-        pargs['priors']['fe_init'] = [int(i) for i in model.priors['fe_init']]
-        pargs['n_days_train'] = len(model.pipeline.all_data)
-        pargs['error'] = error
+        pargs['priors']['fe_init'] = results_dict['fe_init']
+        pargs['n_days_train'] = int(results_dict['n_days'])
+        pargs['error'] = results_dict['error']
         pargs['runtime'] = runtime
         json.dump(pargs, pfile)
 
     # SAVE DATA, PREDICTIONS
     picklefn = f'{output_folder}/data.pkl'
     with open(picklefn, 'wb') as pickle_file:
-        data = {
-            'data': df,
-            'train': train,
-            'test': test,
-            'dates': predictions[model_params['date']],
-            'predictions': predictions[model_params['ycol']],
-            'cumulative_predictions': predicted_cumulative_deaths,
-            'trials': trials_dict
-        }
-        pickle.dump(data, pickle_file)
+        pickle.dump(results_dict, pickle_file)
 
 # -------------------
 if __name__ == "__main__":
@@ -100,6 +96,7 @@ if __name__ == "__main__":
     parser.add_argument("-hp", "--hyperopt", help="[single run only] number of times to do hyperparam optimization", required=False, type=int, default=1)
     parser.add_argument("-i", "--max_evals", help="max evals on each hyperopt run", required=False, default=50, type=int)
     parser.add_argument("-dt", "--disable_tracker", help="disable tracker (use athena instead)", required=False, action='store_true')
+    parser.add_argument("--fdays",help="how many days to forecast for", required=False, default=30, type=int)
     args = parser.parse_args()
 
     dist, st, area_names = cities[args.district]

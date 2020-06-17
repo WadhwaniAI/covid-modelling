@@ -14,7 +14,7 @@ sys.path.append('../..')
 from utils.util import HidePrints, train_test_split
 
 class Optimiser():
-    def __init__(self, model: IHME, data: pd.DataFrame, args):
+    def __init__(self, model: IHME, data: pd.DataFrame, args=None):
         self.model = model
         self.data = data
         self.args = args
