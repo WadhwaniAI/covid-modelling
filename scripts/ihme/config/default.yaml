@@ -1,5 +1,5 @@
 base:
-  log: FALSE # fit on log of model_params: ycol
+  log: TRUE # fit on log of model_params: ycol
   disable_tracker: TRUE # use athena instead of covid19api
   max_evals: 100 # optimiser evals (trials)
   sd: FALSE # use social distancing covariate for beta
@@ -18,14 +18,11 @@ model_params:
   xcol: day
   date: date
   groupcol: group
-  ycol: mortality
-  func: erf
-  priors: # for when log is FALSE
-    fe_init: [0.01, 3.2, 0.5]
-    fe_bounds: [[-10, 0], [1, 100], [3, 5]]
-  # log_priors: # for when log is TRUE
-  #   fe_init: [-1.1, 16.0, -9.0]
-  #   fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
+  ycol: log_mortality
+  func: log_erf
+  priors: # for when log is TRUE
+    fe_init: [-1.1, 16.0, -9.0]
+    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
   pipeline_args:
     n_draws: 20
     cv_threshold: 1.e-2

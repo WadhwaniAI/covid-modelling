@@ -1,9 +1,0 @@
-base:
-  log: TRUE # fit on log of model_params: ycol
-  smooth: 0 # window to smooth data (rolling avg) - 0 means no smoothing
-model_params:
-  ycol: log_mortality
-  func: log_erf
-  priors:
-    fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
