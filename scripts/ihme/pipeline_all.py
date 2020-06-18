@@ -24,6 +24,7 @@ from utils.enums import Columns
 
 from main.ihme.fitting import single_cycle, create_output_folder
 from utils.enums import Columns
+from viz.fit import plot_fit
 from viz.forecast import plot_forecast_agnostic as plot_forecast
 
 
@@ -40,29 +41,41 @@ output_folder = create_output_folder(f'forecast/{folder}')
 
 start_time = time.time()
 
+which_compartments = Columns.curve_fit_compartments()
 # m1
-m1_results = single_cycle(dist, st, area_names, copy(model_params), which_compartments=Columns.curve_fit_compartments(), **config)
-
+m1_results = single_cycle(dist, st, area_names, copy(model_params), which_compartments=which_compartments, **config)
+df_train, df_val = m1_results['df_train'], m1_results['df_val']
+df_train_nora, df_val_nora = m1_results['df_train_nora'], m1_results['df_val_nora']
 df_true = m1_results['df_district']
 df_pred = m1_results['df_prediction']
 
 makesum = copy(df_pred)
 makesum['total_infected'] = df_pred['recovered'] + df_pred['deceased'] + df_pred['hospitalised']
 
-plot_forecast(df_true, makesum.reset_index(), model_name='IHME M1', dist=dist, state=st, filename=os.path.join(output_folder, 'm1.png'))
+plot_fit(
+    makesum.reset_index(), df_train, df_val, df_train_nora, df_val_nora, 
+    m1_results['n_days'][which_compartments[0].name], st, dist, which_compartments=[c.name for c in which_compartments],
+    savepath=os.path.join(output_folder, 'm1.png'))
+plot_forecast(df_true, makesum.reset_index(), model_name='IHME M1', dist=dist, state=st, filename=os.path.join(output_folder, 'm1-forecast.png'))
 
 # m2
 m2_config = copy(config)
 m2_config['test_size'] = 0
-m2_results = single_cycle(dist, st, area_names, copy(model_params), which_compartments=Columns.curve_fit_compartments(), **m2_config)
+m2_results = single_cycle(dist, st, area_names, copy(model_params), which_compartments=which_compartments, **m2_config)
 
+df_train, df_val = m2_results['df_train'], m2_results['df_val']
+df_train_nora, df_val_nora = m2_results['df_train_nora'], m2_results['df_val_nora']
 df_true = m2_results['df_district']
 df_pred = m2_results['df_prediction']
 
 makesum = copy(df_pred)
 makesum['total_infected'] = df_pred['recovered'] + df_pred['deceased'] + df_pred['hospitalised']
 
-plot_forecast(df_true, makesum.reset_index(), model_name='IHME M2', dist=dist, state=st, filename=os.path.join(output_folder, 'm2.png'))
+plot_fit(
+    makesum.reset_index(), df_train, df_val, df_train_nora, df_val_nora, 
+    m2_results['n_days'][which_compartments[0].name], st, dist, which_compartments=[c.name for c in which_compartments],
+    savepath=os.path.join(output_folder, 'm2.png'))
+plot_forecast(df_true, makesum.reset_index(), model_name='IHME M2', dist=dist, state=st, filename=os.path.join(output_folder, 'm2-forecast.png'))
 
 runtime = time.time() - start_time
 print('time:', runtime)

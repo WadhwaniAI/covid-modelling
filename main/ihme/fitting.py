@@ -25,47 +25,54 @@ from utils.smooth_jump import smooth_big_jump
 
 def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker,
             smooth_jump, smooth_jump_method, smooth_jump_days):
-    district_timeseries = get_district_timeseries_cached(
+    district_timeseries_nora = get_district_timeseries_cached(
         dist, st, disable_tracker=disable_tracker)
     if smooth_jump:
-        district_timeseries = smooth_big_jump(district_timeseries, smooth_jump_days, not disable_tracker, method=smooth_jump_method)
+        district_timeseries = smooth_big_jump(district_timeseries_nora, smooth_jump_days, not disable_tracker, method=smooth_jump_method)
+    df_nora, _ = get_rates(district_timeseries_nora, st, area_names)
     df, dtp = get_rates(district_timeseries, st, area_names)
     
     df.loc[:,'sd'] = df['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
+    df_nora.loc[:,'sd'] = df_nora['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
 
-    smoothedcol = f'{ycol}_smoothed'
     if smooth_window > 0:
-        df[smoothedcol] = rollingavg(df[ycol], smooth_window)
-        df = df.dropna(subset=[smoothedcol])
+        df[ycol] = rollingavg(df[ycol], smooth_window)
+        df = df.dropna(subset=[ycol])
     
     startday = df['date'][df['deceased_rate'].gt(1e-15).idxmax()]
-    df = df.loc[df['deceased_rate'].gt(1e-15).idxmax():,:]
-    df = df.reset_index()
+    
+    df = df.loc[df['deceased_rate'].gt(1e-15).idxmax():,:].reset_index()
+    df_nora = df_nora.loc[df_nora['deceased_rate'].gt(1e-15).idxmax():,:].reset_index()
+
     df.loc[:, 'day'] = (df['date'] - np.min(df['date'])).apply(lambda x: x.days)
+    df_nora.loc[:, 'day'] = (df_nora['date'] - np.min(df_nora['date'])).apply(lambda x: x.days)
+    
     threshold = df['date'].max() - timedelta(days=test_size)
+    
     train, test = train_test_split(df, threshold)
+    train_nora, test_nora = train_test_split(df_nora, threshold)
     dataframes = {
         'train': train,
         'test': test,
         'df': df,
+        'train_nora': train_nora,
+        'test_nora': test_nora,
+        'df_nora': df_nora,
     }
-    return dataframes, dtp, smoothedcol
+    return dataframes, dtp
     
 def setup(dist, st, area_names, model_params, 
         sd, smooth, test_size, disable_tracker, 
         smooth_jump, smooth_jump_method, smooth_jump_days, **config):
     model_params['func'] = getattr(functions, model_params['func'])
     model_params['covs'] = ['covs', 'sd', 'covs'] if sd else ['covs', 'covs', 'covs']
-    dataframes, dtp, smoothedcol = get_regional_data(
+    dataframes, dtp = get_regional_data(
         dist, st, area_names, ycol=model_params['ycol'], 
         smooth_window=smooth, test_size=test_size,
         disable_tracker=disable_tracker,
         smooth_jump=smooth_jump, smooth_jump_method=smooth_jump_method, 
         smooth_jump_days=smooth_jump_days)
         
-    if smooth > 0:
-        model_params['ycol'] = smoothedcol
-    
     return dataframes, dtp, model_params
 
 def create_output_folder(fname):
@@ -158,6 +165,9 @@ def run_cycle(dataframes, model_params, forecast_days=30,
         'df_district': dataframes['df'],
         'df_train': train,
         'df_val': test,
+        'df_district_nora': dataframes['df_nora'],
+        'df_train_nora': dataframes['train_nora'],
+        'df_val_nora': dataframes['test_nora'],
         'df_loss': pd.DataFrame({
             'train': xform_trainerr,
             "val": xform_testerr,
@@ -208,6 +218,9 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
     df_train = dataframes['train'][compartment_names + list(ycols.values()) + [model_params['date']]]
     df_val = dataframes['test'][compartment_names + list(ycols.values()) + [model_params['date']]]
     df_district = dataframes['df'][compartment_names + list(ycols.values()) + [model_params['date']]]
+    df_train_nora = dataframes['train_nora'][compartment_names + list(ycols.values()) + [model_params['date']]]
+    df_val_nora = dataframes['test_nora'][compartment_names + list(ycols.values()) + [model_params['date']]]
+    df_district_nora = dataframes['df_nora'][compartment_names + list(ycols.values()) + [model_params['date']]]
     
     final = {
         'best_params': {col.name: results[col.name]['best_params'] for col in which_compartments},
@@ -217,6 +230,9 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
         'df_district': df_district,
         'df_train': df_train,
         'df_val': df_val,
+        'df_district_nora': df_district_nora,
+        'df_train_nora': df_train_nora,
+        'df_val_nora': df_val_nora,
         'df_loss': df_loss,
         'data_last_date': df_district[model_params['date']].max(),
         'draws': {

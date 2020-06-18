@@ -4,7 +4,7 @@ import pandas as pd
 from utils.enums.columns import *
 
 def plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
-                 which_compartments=['hospitalised', 'total_infected'], description=''):
+                 which_compartments=['hospitalised', 'total_infected'], description='', savepath=None):
     """Helper function for creating plots for the training pipeline
 
     Arguments:
@@ -47,11 +47,13 @@ def plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_
                     '-.', color=compartment.color, label='{} (Predicted)'.format(compartment.label))
     
 
-    ax.plot([df_train.iloc[-train_period, :]['date'], df_train.iloc[-train_period, :]['date']],
-            [min(df_train['deceased']), max(df_train['total_infected'])], '--', color='brown', label='Train starts')
-    if isinstance(df_val, pd.DataFrame):
-        ax.plot([df_val.iloc[0, :]['date'], df_val.iloc[0, :]['date']],
-                [min(df_val['deceased']), max(df_val['total_infected'])], '--', color='black', label='Val starts')
+    ax.axvline(x=df_train.iloc[-train_period, :]['date'], ls='--', color='brown', label='Train starts')
+    # ax.plot([df_train.iloc[-train_period, :]['date'], df_train.iloc[-train_period, :]['date']],
+    #         [min(df_train['deceased']), max(df_train['total_infected'])], '--', color='brown', label='Train starts')
+    if isinstance(df_val, pd.DataFrame) and len(df_val) > 0:
+        ax.axvline(x=df_val.iloc[0, ]['date'], ls='--', color='black', label='Val starts')
+        # ax.plot([df_val.iloc[0, :]['date'], df_val.iloc[0, :]['date']],
+        #         [min(df_val['deceased']), max(df_val['total_infected'])], '--', color='black', label='Val starts')
 
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=5))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
@@ -63,4 +65,6 @@ def plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_
     plt.title('{} - ({} {})'.format(description, state, district))
     plt.grid()
 
+    if savepath is not None:
+        plt.savefig(savepath)
     return ax
