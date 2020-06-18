@@ -93,12 +93,14 @@ def get_custom_data_from_file(filename, data_format='new'):
             'total_infected', 'hospitalised', 'recovered', 'deceased']].apply(pd.to_numeric)
         df_result = df_result[['date', 'state', 'district', 'total_infected', 'hospitalised', 'recovered', 'deceased']]
         df_result = df_result.dropna(subset=['date'], how='all')
-        return df_result
+        
     if data_format == 'old':
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]
         df_result.columns = [x if x != 'confirmed' else 'total_infected' for x in df_result.columns]
+        
+    return df_result
         
 def get_state_time_series(state='Delhi'):
     loader = RootnetLoader()

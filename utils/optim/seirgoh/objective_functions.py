@@ -33,7 +33,7 @@ def calculate_opt(intervention_day, intervention_duration, intervention_choice, 
 		R0 = 3 
 		T_inf = 30
 		T_inc = 5
-		T_death = 50
+		T_recov_fatal = 50
 		T_recov_mild = (50 - T_inf)
 		T_hosp = 10
 		T_recov_severe = (50 - T_inf)		
@@ -42,7 +42,7 @@ def calculate_opt(intervention_day, intervention_duration, intervention_choice, 
 		R0 = params['R0']
 		T_inf = params['T_inf']
 		T_inc = params['T_inc']
-		T_death = params['T_death']
+		T_recov_fatal = params['T_recov_fatal']
 		T_recov_mild = params['T_recov_mild']
 		T_hosp = params['T_hosp']
 		T_recov_severe = params['T_recov_severe']
@@ -63,7 +63,7 @@ def calculate_opt(intervention_day, intervention_duration, intervention_choice, 
 		for i in range(intervention_day[intvn],min(intervention_day[intvn]+intervention_duration[intvn],days)):
 			int_vec[i] = get_impact(intervention_choice[intvn])
 	
-	params = [T_trans, T_inc, T_inf, T_recov_mild, T_hosp, T_recov_severe, T_death, 
+	params = [T_trans, T_inc, T_inf, T_recov_mild, T_hosp, T_recov_severe, T_recov_fatal, 
               P_mild, P_severe, P_fatal, N, int_vec]
 
 	state_init_values = [(N - I0)/N, 0, I0/N, 0, 0, 0, 0, 0, 0]
@@ -203,7 +203,7 @@ def run_seir(int_vec, days, params=None):
 		R0 = 3 
 		T_inf = 30
 		T_inc = 5
-		T_death = 50
+		T_recov_fatal = 50
 		T_recov_mild = (50 - T_inf)
 		T_hosp = 10
 		T_recov_severe = (50 - T_inf)		
@@ -212,7 +212,7 @@ def run_seir(int_vec, days, params=None):
 		R0 = params['R0']
 		T_inf = params['T_inf']
 		T_inc = params['T_inc']
-		T_death = params['T_death']
+		T_recov_fatal = params['T_recov_fatal']
 		T_recov_mild = params['T_recov_mild']
 		T_hosp = params['T_hosp']
 		T_recov_severe = params['T_recov_severe']
@@ -224,7 +224,7 @@ def run_seir(int_vec, days, params=None):
 	N = 1e5
 	I0 = 100.0
 	
-	params = [T_trans, T_inc, T_inf, T_recov_mild, T_hosp, T_recov_severe, T_death, 
+	params = [T_trans, T_inc, T_inf, T_recov_mild, T_hosp, T_recov_severe, T_recov_fatal, 
               P_mild, P_severe, P_fatal, N, int_vec]
 
 	state_init_values = [(N - I0)/N, 0, I0/N, 0, 0, 0, 0, 0, 0]
