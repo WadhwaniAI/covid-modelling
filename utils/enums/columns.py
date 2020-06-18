@@ -32,6 +32,21 @@ class Columns(Enum):
     def which_compartments(cls):
         return [cls.recovered, cls.deceased, cls.active, cls.confirmed]
 
+    @classmethod
+    def total_compartments(cls):
+        return [cls.recovered, cls.deceased, cls.active]
+    
+    @classmethod
+    def active_compartments(cls):
+        return [cls.stable_asymptomatic, cls.stable_symptomatic, cls.critical]
+
+    @classmethod
+    def curve_fit_compartments(cls):
+        # TODO: we only want to fit the curve fits on the first three and calc confirmed as sum
+            # the scripts don't accomodate this yet because confirmed is left out of df_true
+        return [cls.recovered, cls.deceased, cls.active, cls.confirmed]
+
+
 compartments = [
     Column('date', 'date', None),
     Column('critical', 'Critical', 'brown'),
