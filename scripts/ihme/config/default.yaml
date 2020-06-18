@@ -8,9 +8,12 @@ base:
   scoring: mape
   val_size: 7 # val set for hyperopt
   min_days: 7 # min days to train on
+  smooth_jump: FALSE
+  smooth_jump_method: weighted
+  smooth_jump_days: 33
 run:
   forecast_days: 30
-  num_hyperopt: 3 # number of times to run optimiser - done in parallel
+  num_hyperopt: 1 # number of times to run optimiser - done in parallel
 backtesting:
   increment: 3 # how often to run backtesting
   forecast_days: 7
@@ -18,7 +21,7 @@ model_params:
   xcol: day
   date: date
   groupcol: group
-  ycol: log_deceased_rate
+  ycol: deceased
   func: log_erf
   priors: # for when log is TRUE
     fe_init: [-1.1, 16.0, -9.0]

@@ -18,6 +18,8 @@ from models.ihme.util import cities
 from main.ihme.backtesting import IHMEBacktest
 from main.ihme.plotting import plot
 from main.ihme.fitting import setup, create_output_folder
+from viz import plot_backtest, plot_backtest_errors
+from utils.enums import Columns
 
 from utils.util import read_config
 
@@ -28,33 +30,35 @@ warnings.filterwarnings('ignore', module='curvefit', category=RuntimeWarning) #,
 
 # -------------------
 
-def backtest(dist, st, area_names, config, model_params):
+def backtest(dist, st, area_names, config, model_params, folder):
     dataframes, dtp, model_params = setup(dist, st, area_names, model_params, **config)
-    output_folder = create_output_folder(f'backtesting/{dist}')
+    output_folder = create_output_folder(f'backtesting/{folder}')
     df = dataframes['df']
     
     start_time = time.time()
     # df = df[df[model.date] > datetime(year=2020, month=4, day=14)]
-    xform = lograte_to_cumulative if config['log'] else rate_to_cumulative
     model = IHME(model_params)
+    which_compartments = Columns.which_compartments()
     backtester = IHMEBacktest(model, df, dist, st)
-    results = backtester.test(future_days=config['forecast_days'], 
+    xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
+    res = backtester.test(future_days=config['forecast_days'], 
         hyperopt_val_size=config['val_size'],
-        max_evals=config['max_evals'], increment=config['increment'], xform_func=xform,
-        dtp=dtp, min_days=config['min_days'])
+        max_evals=config['max_evals'], increment=config['increment'], xform_func=xform_func,
+        dtp=dtp, min_days=config['min_days'], which_compartments=which_compartments)
     picklefn = f'{output_folder}/backtesting.pkl'
     with open(picklefn, 'wb') as pickle_file:
-            pickle.dump(results, pickle_file)
-            
-    backtester.plot_results(dist, scoring=config['scoring'], transform_y=xform, dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
-    backtester.plot_errors(dist, scoring='mape', use_xform=True, savepath=f'{output_folder}/backtesting_mape.png') 
-    backtester.plot_errors(dist, scoring='rmse', use_xform=True, savepath=f'{output_folder}/backtesting_rmse.png') 
-    backtester.plot_errors(dist, scoring='rmsle', use_xform=True, savepath=f'{output_folder}/backtesting_rmsle.png') 
+            pickle.dump(res, pickle_file)
+    
+    plot_backtest(
+        res['results'], res['df'], dist, which_compartments=which_compartments,
+        scoring=config['scoring'], axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
+    
+    plot_backtest_errors(
+        res['results'], res['df'], dist, which_compartments=which_compartments,
+        scoring=config['scoring'], savepath='{fldr}/backtesting_{scoring}.png'.format(fldr=output_folder, scoring=config['scoring'])) 
 
-    dates = pd.Series(list(results['results'].keys())).apply(lambda x: results['df']['date'].min() + timedelta(days=x))
-    plot(dates, [d['n_days'] for d in results['results'].values()], 'n_days_train', 'n_days')
-    plt.savefig(f'{output_folder}/backtesting_ndays.png')
-    plt.clf()
+    # dates = pd.Series(list(res['results'].keys())).apply(lambda x: res['df']['date'].min() + timedelta(days=x))
+    # plot(dates, [d['n_days'] for d in res['results'].values()], 'n_days_train', 'n_days', savepath=f'{output_folder}/backtesting_ndays.png')
 
     runtime = time.time() - start_time
     print('time:', runtime)
@@ -66,53 +70,53 @@ def backtest(dist, st, area_names, config, model_params):
         pargs['func'] = pargs['func'].__name__
         pargs['runtime'] = runtime
         json.dump(pargs, pfile)
+    print(f"yee we done see results here: {output_folder}")
 
 def replot_backtest(dist, st, area_names, folder):
     dtp = get_district_population(st, area_names)
     file_prefix = f'{dist}_deaths'
-    root_folder = create_output_folder(f'backtesting/{file_prefix}/{folder}')
-    output_folder = os.path.join(root_folder, '/replotted/')
+    output_folder = create_output_folder(f'backtesting/{folder}/replotted')
+    root_folder = os.path.dirname(output_folder)
     start_time = time.time()
 
     paramsjson = f'{root_folder}/params.json'
     with open(paramsjson, 'r') as paramsfile:
         config = json.load(paramsfile)
 
-    xform = lograte_to_cumulative if config['log'] else rate_to_cumulative
-            
     picklefn = f'{root_folder}/backtesting.pkl'
     with open(picklefn, 'rb') as pickle_file:
         results = pickle.load(pickle_file)
-    model = results['model']
-    df = results['df']
-    
-    backtester = IHMEBacktest(model, df, dist, st)
-    
-    backtester.plot_results(file_prefix, results=results['results'], scoring=config['scoring'], transform_y=xform, dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
-    backtester.plot_errors(file_prefix, results=results['results'], scoring='mape', use_xform=True, savepath=f'{output_folder}/backtesting_mape.png') 
-    backtester.plot_errors(file_prefix, results=results['results'], scoring='rmse', use_xform=True, savepath=f'{output_folder}/backtesting_rmse.png') 
-    backtester.plot_errors(file_prefix, results=results['results'], scoring='rmsle', use_xform=True, savepath=f'{output_folder}/backtesting_rmsle.png') 
 
-    dates = pd.Series(list(results['results'].keys())).apply(lambda x: results['df']['date'].min() + timedelta(days=x))
-    plot(dates, [d['n_days'] for d in results['results'].values()], 'n_days_train', 'n_days')
-    plt.savefig(f'{output_folder}/backtesting_ndays.png')
-    plt.clf()
+        plot_backtest(
+            results['results'], results['df'], config['ycol'], file_prefix, 
+            scoring=config['scoring'], dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
+        plot_backtest_errors(
+            results['results'], results['df'], config['ycol'], file_prefix, 
+            scoring=config['scoring'], savepath='{fldr}/backtesting_{scoring}.png'.format(fldr=output_folder, scoring=config['scoring'])) 
+
+        # dates = pd.Series(list(results['results'].keys())).apply(lambda x: results['df']['date'].min() + timedelta(days=x))
+        # plot(dates, [d['n_days'] for d in results['results'].values()], 'n_days_train', 'n_days', savepath=f'{output_folder}/backtesting_ndays.png')
 
     runtime = time.time() - start_time
     print('time:', runtime)
+    print(f"yee we done see results here: {output_folder}")
 
 # -------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser() 
     parser.add_argument("-d", "--district", help="district name", required=True)
     parser.add_argument("-c", "--config", help="config file name", required=True)
-    parser.add_argument("-re", "--replot", help="folder of backtest run to replot, must also run with -b", required=False)
+    parser.add_argument("-re", "--replot", help="folder of backtest run to replot", required=False)
+    parser.add_argument("-f", "--folder", help="folder name (to save in or to replot from)", required=False, default=None, type=str)
     args = parser.parse_args()
     config, model_params = read_config(args.config, backtesting=True)
     dist, st, area_names = cities[args.district]
 
+    now = datetime.now().strftime("%Y%m%d-%H%M%S")
+    folder = f'{args.district}/{str(now)}' if args.folder is None else args.folder
+
     if args.replot:
         replot_backtest(dist, st, area_names, args.replot)
     else:
-        backtest(dist, st, area_names, config, model_params)
+        backtest(dist, st, area_names, config, model_params, folder)
 # -------------------

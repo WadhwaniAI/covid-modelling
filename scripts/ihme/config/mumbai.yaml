@@ -1,0 +1,4 @@
+base:
+  smooth_jump: TRUE
+  smooth_jump_method: weighted
+  smooth_jump_days: 33

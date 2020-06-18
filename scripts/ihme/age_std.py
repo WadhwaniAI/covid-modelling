@@ -49,8 +49,8 @@ def find_init(country, triple):
     df = df.loc[df['mortality'].gt(1e-15).idxmax():,:]
     
     # output
-    today = datetime.today()
-    output_folder = create_output_folder(f'mortality/{fname}/{today}')
+    now = datetime.now().strftime("%Y%m%d-%H%M%S")
+    output_folder = create_output_folder(f'age_std/{country}-{indian_district}/{now}')
     if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 

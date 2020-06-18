@@ -13,7 +13,7 @@ from viz import setup_plt
 def plot_results(model_params, converged_params, df, train_size, test, predictions, predictdate, testerr,
         file_prefix, val_size, draws=None, yaxis_name=None):
     ycol = model_params['ycol']
-    maperr = testerr['mape']
+    maperr = testerr[model_params['ycol']]
     title = f'{file_prefix} {ycol}' +  ' fit to {}'
     # plot predictions against actual
     yaxis_name = yaxis_name if yaxis_name is not None else ycol
@@ -110,7 +110,7 @@ def plot_backtesting_errors(model_params, df, start_date, results, file_prefix,
     plt.legend()
     return
 
-def plot(x, y, title, yaxis_name=None, log=False, scatter=False):
+def plot(x, y, title, yaxis_name=None, log=False, scatter=False, savepath=None):
     plt.title(title)
     setup_plt(yaxis_name)
     yscale = 'log' if log else "linear"
@@ -121,4 +121,6 @@ def plot(x, y, title, yaxis_name=None, log=False, scatter=False):
         plt.scatter(x,y,c='dodgerblue', marker='+')
     else:
         plt.plot(x, y, ls='-', c='crimson')
+    if savepath is not None:
+        plt.savefig(savepath)
     return
