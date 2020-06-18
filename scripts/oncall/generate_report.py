@@ -81,22 +81,22 @@ predictions_dict['data_last_date'] = predictions_dict['m2']['data_last_date']
 
 predictions_dict['m2']['forecast'] = plot_forecast(predictions_dict, (state, district), both_forecasts=False, error_bars=True, days=config['forecast_days'])
     
-predictions, losses, params = get_all_trials(predictions_dict, train_fit='m1', forecast_days=config['forecast_days'])
+predictions, losses, params = get_all_trials(predictions_dict, train_fit='m1', forecast_days=args.fdays)
 predictions_dict['m1']['params'] = params
 predictions_dict['m1']['losses'] = losses
 predictions_dict['m1']['predictions'] = predictions
-predictions_dict['m1']['all_trials'] = trials_to_df(predictions, losses, params)
-predictions, losses, params = get_all_trials(predictions_dict, train_fit='m2', forecast_days=config['forecast_days'])
+predictions_dict['m1']['all_trials'] = trials_to_df(predictions, losses, params, column=Columns.active)
+predictions, losses, params = get_all_trials(predictions_dict, train_fit='m2', forecast_days=args.fdays)
 predictions_dict['m2']['params'] = params
 predictions_dict['m2']['losses'] = losses
 predictions_dict['m2']['predictions'] = predictions
-predictions_dict['m2']['all_trials'] = trials_to_df(predictions, losses, params)
+predictions_dict['m2']['all_trials'] = trials_to_df(predictions, losses, params, column=Columns.active)
 kforecasts = plot_trials(
     predictions_dict,
     train_fit='m2',
     predictions=predictions, 
     losses=losses, params=params, 
-    k=config['ktrials'],
+    k=args.ktrials,
     which_compartments=[Columns.confirmed, Columns.active])
 predictions_dict['m2']['forecast_confirmed_topk'] = kforecasts[Columns.confirmed]
 predictions_dict['m2']['forecast_active_topk'] = kforecasts[Columns.active]
