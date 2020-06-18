@@ -46,6 +46,20 @@ class Columns(Enum):
             # the scripts don't accomodate this yet because confirmed is left out of df_true
         return [cls.recovered, cls.deceased, cls.active, cls.confirmed]
 
+    @staticmethod
+    def from_name(name):
+        if name == 'date':
+            return Columns.date
+        elif name == 'recovered':
+            return Columns.recovered
+        elif name == 'deceased':
+            return Columns.deceased
+        elif name == 'hospitalised':
+            return Columns.active
+        elif name == 'total_infected':
+            return Columns.confirmed
+        else:
+            raise Exception(f"Enum for name {name} not found")
 
 compartments = [
     Column('date', 'date', None),
