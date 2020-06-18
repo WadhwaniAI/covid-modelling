@@ -35,18 +35,14 @@ python3 generate_report.py --districts mumbai --ktrials 100 -i 1000 -f reporttes
 
 # --- turn into command line args
 parser = argparse.ArgumentParser()
-parser.add_argument("-t", "--use-tracker", help="whether to use covid19api tracker", required=False, action='store_true')
-parser.add_argument("-s", "--smooth-jump", help="smooth jump", required=False, action='store_true')
-parser.add_argument("-method", "--smooth-method", help="smooth method", required=False, default='weighted', type=str)
-parser.add_argument("-i", "--iterations", help="optimiser iterations", required=False, default=700, type=int)
-parser.add_argument("-n", "--ndays", help="smoothing days", required=False, default=33, type=int)
 now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+parser.add_argument("-d", "--district", help="district name", required=True, type=str)
+parser.add_argument("-c", "--config", help="path to config file", required=True, type=str)
 parser.add_argument("-f", "--folder", help="folder name", required=False, default=str(now), type=str)
-parser.add_argument("-k", "--ktrials", help="k trials to forecast", required=False, default=10, type=int)
-parser.add_argument("-d", "--districts", help="districts", required=True, type=str)
-parser.add_argument("--fdays",help="how many days to forecast for", required=False, default=30, type=int)
 args = parser.parse_args()
 
+config, model_params = read_config(args.config)
+print(config.keys())
 dataframes = get_dataframes_cached()
 
 predictions_dict = {}
@@ -59,20 +55,20 @@ districts_dict = {
     'bengaluru': ('Karnataka', 'Bengaluru Urban'),
     'delhi': ('Delhi', None)
 }
-state, district = districts_dict[args.districts.strip().lower()]
+state, district = districts_dict[args.district.strip().lower()]
 
 predictions_dict['m1'] = single_fitting_cycle(
-    dataframes, state, district, train_period=7, val_period=7, num_evals=args.iterations,
-    data_from_tracker=args.use_tracker, initialisation='intermediate', model=SEIR_Testing, 
+    dataframes, state, district, train_period=7, val_period=7, num_evals=config['max_evals'],
+    data_from_tracker=not config['disable_tracker'], initialisation='intermediate', model=SEIR_Testing, 
     # filename='../../data/data/mumbai_2020_06_02.csv', data_format='new',
-    smooth_jump=args.smooth_jump, smoothing_method=args.smooth_method, smoothing_length=args.ndays,
+    smooth_jump=config['smooth_jump'], smoothing_method=config['smooth_method'], smoothing_length=config['smooth_ndays'],
     # which_compartments=['deceased', 'total_infected'])
     which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
 predictions_dict['m2'] = single_fitting_cycle(
-    dataframes, state, district, train_period=7, val_period=0, num_evals=args.iterations,
-    data_from_tracker=args.use_tracker, initialisation='intermediate', model=SEIR_Testing, 
+    dataframes, state, district, train_period=7, val_period=0, num_evals=config['max_evals'],
+    data_from_tracker=not config['disable_tracker'], initialisation='intermediate', model=SEIR_Testing, 
     # filename='../../data/data/mumbai_2020_06_02.csv', data_format='new',
-    smooth_jump=args.smooth_jump, smoothing_method=args.smooth_method, smoothing_length=args.ndays,
+    smooth_jump=config['smooth_jump'], smoothing_method=config['smooth_method'], smoothing_length=config['smooth_ndays'],
     # which_compartments=['deceased', 'total_infected'])
     which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
     
@@ -83,14 +79,14 @@ predictions_dict['datasource'] = 'covid19api' if predictions_dict['m1']['data_fr
 predictions_dict['variable_param_ranges'] = predictions_dict['m1']['variable_param_ranges']
 predictions_dict['data_last_date'] = predictions_dict['m2']['data_last_date']
 
-predictions_dict['m2']['forecast'] = plot_forecast(predictions_dict, (state, district), both_forecasts=False, error_bars=True, days=args.fdays)
+predictions_dict['m2']['forecast'] = plot_forecast(predictions_dict, (state, district), both_forecasts=False, error_bars=True, days=config['forecast_days'])
     
-predictions, losses, params = get_all_trials(predictions_dict, train_fit='m1', forecast_days=args.fdays)
+predictions, losses, params = get_all_trials(predictions_dict, train_fit='m1', forecast_days=config['forecast_days'])
 predictions_dict['m1']['params'] = params
 predictions_dict['m1']['losses'] = losses
 predictions_dict['m1']['predictions'] = predictions
 predictions_dict['m1']['all_trials'] = trials_to_df(predictions, losses, params)
-predictions, losses, params = get_all_trials(predictions_dict, train_fit='m2', forecast_days=args.fdays)
+predictions, losses, params = get_all_trials(predictions_dict, train_fit='m2', forecast_days=config['forecast_days'])
 predictions_dict['m2']['params'] = params
 predictions_dict['m2']['losses'] = losses
 predictions_dict['m2']['predictions'] = predictions
@@ -100,7 +96,7 @@ kforecasts = plot_trials(
     train_fit='m2',
     predictions=predictions, 
     losses=losses, params=params, 
-    k=args.ktrials,
+    k=config['ktrials'],
     which_compartments=[Columns.confirmed, Columns.active])
 predictions_dict['m2']['forecast_confirmed_topk'] = kforecasts[Columns.confirmed]
 predictions_dict['m2']['forecast_active_topk'] = kforecasts[Columns.active]
@@ -111,7 +107,7 @@ predictions_dict['m2']['all_trials'].to_csv(f'../../reports/{args.folder}/m2-tri
 predictions_dict['m2']['df_district_unsmoothed'].to_csv(f'../../reports/{args.folder}/true.csv')
 predictions_dict['m2']['df_district'].to_csv(f'../../reports/{args.folder}/smoothed.csv')
 
-df_output = create_region_csv(predictions_dict, region=district, regionType='district', icu_fraction=0.02, days=args.fdays)
+df_output = create_region_csv(predictions_dict, region=district, regionType='district', icu_fraction=0.02, days=config['forecast_days'])
 write_csv(df_output, filename=f'../../reports/{args.folder}/output-{now}.csv')
 
 print(f"yeet. done: view files at ../../reports/{args.folder}/")
