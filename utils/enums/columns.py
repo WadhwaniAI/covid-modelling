@@ -27,6 +27,21 @@ class Columns(Enum):
     deceased = Column('deceased', 'Deceased Cases', 'red')
     active = Column('hospitalised', 'Active Cases', 'orange')
     confirmed = Column('total_infected', 'Confirmed Cases', 'C0')
+
+    @staticmethod
+    def from_name(name):
+        if name == 'date':
+            return Columns.date
+        elif name == 'recovered':
+            return Columns.recovered
+        elif name == 'deceased':
+            return Columns.deceased
+        elif name == 'hospitalised':
+            return Columns.active
+        elif name == 'total_infected':
+            return Columns.confirmed
+        else:
+            raise Exception(f"Enum for name {name} not found")
     
 compartments = [
     Column('date', 'date', None),

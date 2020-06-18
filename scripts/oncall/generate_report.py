@@ -108,12 +108,12 @@ for region in predictions_dict.keys():
     predictions_dict[region]['m1']['params'] = params
     predictions_dict[region]['m1']['losses'] = losses
     predictions_dict[region]['m1']['predictions'] = predictions
-    predictions_dict[region]['m1']['all_trials'] = trials_to_df(predictions, losses, params)
+    predictions_dict[region]['m1']['all_trials'] = trials_to_df(predictions, losses, params, column=Columns.active)
     predictions, losses, params = get_all_trials(predictions_dict[region], train_fit='m2', forecast_days=args.fdays)
     predictions_dict[region]['m2']['params'] = params
     predictions_dict[region]['m2']['losses'] = losses
     predictions_dict[region]['m2']['predictions'] = predictions
-    predictions_dict[region]['m2']['all_trials'] = trials_to_df(predictions, losses, params)
+    predictions_dict[region]['m2']['all_trials'] = trials_to_df(predictions, losses, params, column=Columns.active)
     kforecasts = plot_trials(
         predictions_dict[region],
         train_fit='m2',
