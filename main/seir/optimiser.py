@@ -85,12 +85,13 @@ class Optimiser():
         """
         params_dict = {**variable_params, **default_params}
         
-        # Returning a very high loss value for the cases where the sampled values of P_severe and P_fatal are > 1
-        # if params_dict['P_severe'] + params_dict['P_fatal'] > 1:
-        #     return 1e10
+        # Returning a very high loss value for the cases where the sampled values of probabilities are > 1
+        P_keys = [k for k in params_dict.keys() if k[:2] == 'P_']
+        P_values = [params_dict[k] for k in params_dict.keys() if k[:2] == 'P_']
+        if sum(P_values) > 1:
+            return 1e10
 
         solver = model(**params_dict)
-        # solver.solve_ode(total_no_of_days=total_days - 1, time_step=1, method='Radau')
         df_prediction = solver.predict(total_days=total_days)
 
         # Choose which indices to calculate loss on

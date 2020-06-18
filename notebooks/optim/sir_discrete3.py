@@ -6,7 +6,7 @@ import math
 class SIR_Discrete(object):
     def __init__(self, S=0.999, I=0.001, R=0, B=80,t=0,switch_budgets=5,terminal=False):
         self.T=400
-        
+        self.H=0
         self.STATE=np.array([S, I, R, B,t,switch_budgets,terminal])
         self.R0 = 3
         self.T_treat = 30
@@ -18,6 +18,7 @@ class SIR_Discrete(object):
         self.max_duration=40
         self.num_states=7
     def reset(self):
+        self.H=0
         self.STATE=np.array([0.999, 0.001, 0, 80,0,5,False])
     
     def is_action_legal(self,ACTION):
@@ -81,20 +82,28 @@ class SIR_Discrete(object):
         STATE_[3] = self.STATE[3]-self.get_action_cost(ACTION)
         STATE_[4]+=1
         self.STATE=STATE_.copy()
-        r=self.calc_burden_reward()
+        r=self.calc_QALY_reward()
+        # r=self.calc_burden_reward()
+        # r=self.calc_peak_reward()
+        # r=self.calc_delay_reward()
         return r, self.STATE
 
     def calc_QALY_reward(self):
-        reward=(1-self.STATE[1])/400
+        reward=-self.STATE[1]
         return reward
     
     def calc_burden_reward(self):
         reward=0
         if self.STATE[1]>0.1:
-#            reward=-100
-            reward=-100*(self.STATE[1]-0.1)
+#            reward=-1000
+            reward=-1000*(self.STATE[1]-0.1)
         return reward
-    #0
+    def calc_peak_reward(self):
+        reward=0
+        if self.STATE[1]>self.H:
+            reward=-1000*(self.STATE[1]-self.H)
+            self.H=self.STATE[1]
+        return reward
     
     def calc_delay_reward(self):
         reward=self.STATE[4]*self.STATE[1]

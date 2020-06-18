@@ -10,6 +10,7 @@ import copy
 
 from main.seir.forecast import get_forecast, order_trials, top_k_trials, forecast_k
 from utils.enums import Columns, SEIRParams
+from utils.enums.columns import *
 
 
 
@@ -60,43 +61,17 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
 
     fig, ax = plt.subplots(figsize=(12, 12))
 
-    if 'total_infected' in which_compartments:
-        ax.plot(df_true['date'], df_true['total_infected'],
-                '-o', color='C0', label='Confirmed Cases (Observed)')
-        sns.lineplot(x="date", y="total_infected", data=df_prediction,
-                     ls='-', color='C0', label='Confirmed Cases (M2 Forecast)')
-        if both_forecasts:
-            sns.lineplot(x="date", y="total_infected", data=df_prediction_m1,
-                         color='C0', label='Confirmed Cases (M1 Forecast)')
-            ax.lines[-1].set_linestyle("--")
-    if 'hospitalised' in which_compartments:
-        ax.plot(df_true['date'], df_true['hospitalised'],
-                '-o', color='orange', label='Active Cases (Observed)')
-        sns.lineplot(x="date", y="hospitalised", data=df_prediction,
-                     ls='-', color='orange', label='Active Cases (M2 Forecast)')
-        if both_forecasts:
-            sns.lineplot(x="date", y="hospitalised", data=df_prediction_m1,
-                         color='orange', label='Active Cases (M1 Forecast)')
-            ax.lines[-1].set_linestyle("--")
-    if 'recovered' in which_compartments:
-        ax.plot(df_true['date'], df_true['recovered'],
-                '-o', color='green', label='Recovered Cases (Observed)')
-        sns.lineplot(x="date", y="recovered", data=df_prediction,
-                     ls='-', color='green', label='Recovered Cases (M2 Forecast)')
-        if both_forecasts:
-            sns.lineplot(x="date", y="recovered", data=df_prediction_m1,
-                         color='green', label='Recovered Cases (M1 Forecast)')
-            ax.lines[-1].set_linestyle("--")
-    if 'deceased' in which_compartments:
-        ax.plot(df_true['date'], df_true['deceased'],
-                '-o', color='red', label='Deceased Cases (Observed)')
-        sns.lineplot(x="date", y="deceased", data=df_prediction,
-                     ls='-', color='red', label='Deceased Cases (M2 Forecast)')
-        if both_forecasts:
-            sns.lineplot(x="date", y="deceased", data=df_prediction_m1,
-                         color='red', label='Deceased Cases (M1 Forecast)')
-            ax.lines[-1].set_linestyle("--")
-
+    for compartment in compartments:
+        if compartment.name in which_compartments:
+            ax.plot(df_true[compartments[0].name], df_true[compartment.name],
+                    '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
+            sns.lineplot(x=compartments[0].name, y=compartment.name, data=df_prediction,
+                        ls='-', color=compartment.color, label='{} (M2 Forecast)'.format(compartment.label))
+            if both_forecasts:
+                sns.lineplot(x=compartments[0].name, y=compartment.name, data=df_prediction_m1,
+                            color=compartment.color, label='{} (M1 Forecast)'.format(compartment.label))
+                ax.lines[-1].set_linestyle("--")
+    
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))

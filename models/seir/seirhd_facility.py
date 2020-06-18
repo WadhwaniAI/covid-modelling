@@ -10,7 +10,7 @@ import copy
 from models.seir.seir import SEIR
 from utils.ode import ODE_Solver
 
-class SEIRHD_Bed(SEIR):
+class SEIRHD_Facility(SEIR):
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
                  P_nonoxy=0.4, P_oxy=0.2, P_icu=0.02, P_vent=0.02, P_fatal=0.02, 
                  T_recov_hq=14, T_recov_nonoxy=14, T_recov_oxy=14, T_recov_icu=14, T_recov_vent=14, T_recov_fatal=14,

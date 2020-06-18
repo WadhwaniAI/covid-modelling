@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
 
+from utils.enums.columns import *
 
 def plot_smoothing(orig_df_district, new_df_district, state, district,
                    which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], description='Smoothing'):
@@ -24,26 +25,12 @@ def plot_smoothing(orig_df_district, new_df_district, state, district,
     # Create plots
     fig, ax = plt.subplots(figsize=(12, 12))
 
-    if 'total_infected' in which_compartments:
-        ax.plot(orig_df_district['date'], orig_df_district['total_infected'],
-                '-o', color='C0', label='Confirmed Cases (Observed)')
-        ax.plot(new_df_district['date'], new_df_district['total_infected'],
-                '-', color='C0', label='Confirmed Cases (Smoothed)')
-    if 'hospitalised' in which_compartments:
-        ax.plot(orig_df_district['date'], orig_df_district['hospitalised'],
-                '-o', color='orange', label='Active Cases (Observed)')
-        ax.plot(new_df_district['date'], new_df_district['hospitalised'],
-                '-', color='orange', label='Active Cases (Smoothed)')
-    if 'recovered' in which_compartments:
-        ax.plot(orig_df_district['date'], orig_df_district['recovered'],
-                '-o', color='green', label='Recovered Cases (Observed)')
-        ax.plot(new_df_district['date'], new_df_district['recovered'],
-                '-', color='green', label='Recovered Cases (SmoothedA)')
-    if 'deceased' in which_compartments:
-        ax.plot(orig_df_district['date'], orig_df_district['deceased'],
-                '-o', color='red', label='Deceased Cases (Observed)')
-        ax.plot(new_df_district['date'], new_df_district['deceased'],
-                '-', color='red', label='Deceased Cases (Smoothed)')
+    for compartment in compartments:
+        if compartment.name in which_compartments:
+                ax.plot(orig_df_district[compartments[0].name], orig_df_district[compartment.name],
+                        '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
+                ax.plot(new_df_district[compartments[0].name], new_df_district[compartment.name],
+                        '-', color=compartment.color, label='{} (Smoothed)'.format(compartment.label))
 
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=5))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
