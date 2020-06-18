@@ -41,7 +41,7 @@ output_folder = create_output_folder(f'forecast/{folder}')
 start_time = time.time()
 
 # m1
-m1_results = single_cycle(dist, st, area_names, copy(model_params), which_compartments=Columns.which_compartments(), **config)
+m1_results = single_cycle(dist, st, area_names, copy(model_params), which_compartments=Columns.curve_fit_compartments(), **config)
 
 df_true = m1_results['df_district']
 df_pred = m1_results['df_prediction']
@@ -54,7 +54,7 @@ plot_forecast(df_true, makesum.reset_index(), model_name='IHME M1', dist=dist, s
 # m2
 m2_config = copy(config)
 m2_config['test_size'] = 0
-m2_results = single_cycle(dist, st, area_names, copy(model_params), which_compartments=Columns.which_compartments(), **m2_config)
+m2_results = single_cycle(dist, st, area_names, copy(model_params), which_compartments=Columns.curve_fit_compartments(), **m2_config)
 
 df_true = m2_results['df_district']
 df_pred = m2_results['df_prediction']

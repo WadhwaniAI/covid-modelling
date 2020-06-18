@@ -178,7 +178,7 @@ def run_cycle(dataframes, model_params, forecast_days=30,
 
     return result_dict
 
-def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.which_compartments(), forecast_days=30, 
+def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.curve_fit_compartments(), forecast_days=30, 
     max_evals=1000, num_hyperopt=1, val_size=7,
     min_days=7, scoring='mape', dtp=None, xform_func=None, log=True, **config):
 
@@ -232,6 +232,6 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
 
     return final  
 
-def single_cycle(dist, st, area_names, model_params, which_compartments=Columns.which_compartments(), **config):
+def single_cycle(dist, st, area_names, model_params, which_compartments=Columns.curve_fit_compartments(), **config):
     dataframes, dtp, model_params = setup(dist, st, area_names, model_params, **config)
     return run_cycle_compartments(dataframes, model_params, dtp=dtp, which_compartments=which_compartments, **config)

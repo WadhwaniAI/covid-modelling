@@ -38,7 +38,7 @@ def backtest(dist, st, area_names, config, model_params, folder):
     start_time = time.time()
     # df = df[df[model.date] > datetime(year=2020, month=4, day=14)]
     model = IHME(model_params)
-    which_compartments = Columns.which_compartments()
+    which_compartments = Columns.curve_fit_compartments()
     backtester = IHMEBacktest(model, df, dist, st)
     xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
     res = backtester.test(future_days=config['forecast_days'], 
@@ -48,6 +48,11 @@ def backtest(dist, st, area_names, config, model_params, folder):
     picklefn = f'{output_folder}/backtesting.pkl'
     with open(picklefn, 'wb') as pickle_file:
             pickle.dump(res, pickle_file)
+
+    for runday in res['results'].keys():
+        pred = res['results'][runday]['df_prediction']
+        # res['results']['df_prediction'][Columns.active.name] = pred[Columns.stable_asymptomatic.name] + pred[Columns.stable_asymptomatic.name] + pred[Columns.critical.name]
+        res['results'][runday]['df_prediction'][Columns.confirmed.name] = pred[Columns.active.name] + pred[Columns.recovered.name] + pred[Columns.deceased.name]
     
     plot_backtest(
         res['results'], res['df'], dist, which_compartments=which_compartments,

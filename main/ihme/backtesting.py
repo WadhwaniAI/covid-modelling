@@ -27,7 +27,7 @@ class IHMEBacktest:
 
     def test(self, increment=5, future_days=10, 
         hyperopt_val_size=7, max_evals=100, xform_func=None,
-        dtp=None, min_days=7, scoring='mape', which_compartments=Columns.which_compartments()):
+        dtp=None, min_days=7, scoring='mape', which_compartments=Columns.curve_fit_compartments()):
         runtime_s = time.time()
         start = self.data[self.model.date].min()
         end =  self.data[self.model.date].max()
