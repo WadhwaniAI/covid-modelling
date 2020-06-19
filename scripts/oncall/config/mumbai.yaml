@@ -1,6 +1,6 @@
 base:
   smooth_jump: TRUE
-  smooth_method: uniform
+  smooth_method: weighted
   smooth_ndays: 33
   ktrials: 10
 run:
