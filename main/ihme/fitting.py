@@ -25,6 +25,24 @@ from utils.smooth_jump import smooth_big_jump
 
 def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker,
             smooth_jump, smooth_jump_method, smooth_jump_days):
+    """
+    Function to get regional data and shape it for IHME consumption
+
+    Args:
+        dist ([type]): district
+        st ([type]): state
+        area_names ([type]): census area_names for the district
+        ycol ([type]): name of ycol
+        test_size ([type]): size of test set
+        smooth_window ([type]): apply rollingavg smoothing
+        disable_tracker ([type]): disable covid19api, use athena instead
+        smooth_jump (boolean): whether to smooth_big_jump
+        smooth_jump_method ([type]): passed to smooth_big_jump
+        smooth_jump_days ([type]): passed to smooth_big_jump
+
+    Returns:
+        dict: contains smoothed and unsmoothed dataframes: train, test, df
+    """    
     district_timeseries_nora = get_district_timeseries_cached(
         dist, st, disable_tracker=disable_tracker)
     if smooth_jump:
@@ -64,6 +82,25 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
 def setup(dist, st, area_names, model_params, 
         sd, smooth, test_size, disable_tracker, 
         smooth_jump, smooth_jump_method, smooth_jump_days, **config):
+    """
+    gets data and sets up the model_parameters to be ready for IHME consumption
+
+    Args:
+        dist (str): district
+        st (str): state
+        area_names (list): census area_names for the district
+        model_params (dict): model_params
+        sd (boolean): use social distancing covariates
+        smooth (int): apply rollingavg smoothing
+        test_size (int): size of test set
+        disable_tracker (boolean): disable covid19api, use athena instead
+        smooth_jump (boolean): whether to smooth_big_jump
+        smooth_jump_method ([type]): passed to smooth_big_jump
+        smooth_jump_days ([type]): passed to smooth_big_jump
+
+    Returns:
+        tuple: dataframes dict, district_total_population, and model_params (modified)
+    """    
     model_params['func'] = getattr(functions, model_params['func'])
     model_params['covs'] = ['covs', 'sd', 'covs'] if sd else ['covs', 'covs', 'covs']
     dataframes, dtp = get_regional_data(
@@ -76,6 +113,15 @@ def setup(dist, st, area_names, model_params,
     return dataframes, dtp, model_params
 
 def create_output_folder(fname):
+    """
+    creates folder in outputs/ihme/
+
+    Args:
+        fname (ste): name of folder within outputs/ihme
+
+    Returns:
+        str: output_folder path
+    """    
     output_folder = f'../../outputs/ihme/{fname}'
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -84,6 +130,24 @@ def create_output_folder(fname):
 def run_cycle(dataframes, model_params, forecast_days=30, 
     max_evals=1000, num_hyperopt=1, val_size=7,
     min_days=7, scoring='mape', dtp=None, xform_func=None, **kwargs):
+    """
+    runs a fitting cycle for 1 compartment
+
+    Args:
+        dataframes (dict): contains smoothed and unsmoothed dataframes: train, test, df
+        model_params (dict): model_params
+        forecast_days (int, optional): how far to predict. Defaults to 30.
+        max_evals (int, optional): num evals in hyperparam optimisation. Defaults to 1000.
+        num_hyperopt (int, optional): number of times to run hyperopt in parallel. Defaults to 1.
+        val_size (int, optional): val size - hyperopt. Defaults to 7.
+        min_days (int, optional): min train_period. Defaults to 7.
+        scoring (str, optional): 'mape', 'rmse', or 'rmsle. Defaults to 'mape'.
+        dtp ([type], optional): district total population. Defaults to None.
+        xform_func ([type], optional): function to transform the data back to # cases. Defaults to None.
+
+    Returns:
+        dict: results_dict
+    """    
     model = IHME(model_params)
     train, test = dataframes['train'], dataframes['test']
 
@@ -191,7 +255,27 @@ def run_cycle(dataframes, model_params, forecast_days=30,
 def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.curve_fit_compartments(), forecast_days=30, 
     max_evals=1000, num_hyperopt=1, val_size=7,
     min_days=7, scoring='mape', dtp=None, xform_func=None, log=True, **config):
+    """
+    runs fitting cycles for all compartments in which_compartments
+    model_params['ycol'] is ignored here
 
+    Args:
+        dataframes (dict): contains smoothed and unsmoothed dataframes: train, test, df
+        model_params (dict): model_params
+        which_compartments (list, optional): List of compartments to fit. Defaults to Columns.curve_fit_compartments().
+        forecast_days (int, optional): how far to predict. Defaults to 30.
+        max_evals (int, optional): num evals in hyperparam optimisation. Defaults to 1000.
+        num_hyperopt (int, optional): number of times to run hyperopt in parallel. Defaults to 1.
+        val_size (int, optional): val size - hyperopt. Defaults to 7.
+        min_days (int, optional): min train_period. Defaults to 7.
+        scoring (str, optional): 'mape', 'rmse', or 'rmsle. Defaults to 'mape'.
+        dtp ([type], optional): district total population. Defaults to None.
+        xform_func ([type], optional): function to transform the data back to # cases. Defaults to None.
+        log (bool, optional): whether to fit to log(rate). Defaults to True.
+
+    Returns:
+        dict: results_dict
+    """
     xform_func = lograte_to_cumulative if log else rate_to_cumulative
     compartment_names = [col.name for col in which_compartments]
     results = {}
@@ -249,5 +333,17 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
     return final  
 
 def single_cycle(dist, st, area_names, model_params, which_compartments=Columns.curve_fit_compartments(), **config):
+    """[summary]
+
+    Args:
+        dist (str): district
+        st (str): state
+        area_names (list): census area_names for the district
+        model_params (dict): model_params
+        which_compartments (list, optional): List of compartments to fit. Defaults to Columns.curve_fit_compartments().
+
+    Returns:
+        dict: results_dict
+    """
     dataframes, dtp, model_params = setup(dist, st, area_names, model_params, **config)
     return run_cycle_compartments(dataframes, model_params, dtp=dtp, which_compartments=which_compartments, **config)

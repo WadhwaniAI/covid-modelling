@@ -18,6 +18,41 @@ from models import Model
 class IHME(Model):
 
     def __init__(self, model_parameters: dict):
+        """
+        This model uses the curvefit module published by IHME (Wadhwani AI fork) to
+        find an optimal param set for the specified function based on
+        the initialization values and bounds specified
+
+        This curve is then used to generate predictions.
+
+        model_parameters must contain:
+            xcol: str where df[xcol] is of type int, number of days from the beginning
+            ycol: str where df[ycol] is the y to fit to, could be # cases, log(mortality), etc
+            func: function to fit to
+            date: str - column with date
+            groupcol: str - column with group (state, etc) if wanting to fit to multiple groups
+            priors: {
+                'fe_init': list - required
+                'fe_bounds': list - optional
+                # see curvefit module docs for more priors
+            }
+            pipeline_args: {
+                args to be passed into pipeline.run()
+                n_draws, cv_threshold, smoothed_radius, num_smooths, 
+                exclude_groups, exclude_below, exp_smoothing, max_last
+            }
+            covs: list, covariate column names
+            predict_space: function to predict in (optional, default to func)
+
+        The link functions are fixed at
+            alpha: exp
+            beta: identity
+            p: exp
+        ALl var link functions are set to identity
+
+        Args:
+            model_parameters (dict): model parameters dict, as specified above
+        """        
         self.model_parameters = model_parameters
         self.xcol = model_parameters.get('xcol')
         self.ycol = model_parameters.get('ycol')
@@ -26,8 +61,6 @@ class IHME(Model):
         self.groupcol = model_parameters.get('groupcol')
         self.priors = model_parameters.get('priors')
         self.pipeline_args = model_parameters.get('pipeline_args')
-        self.smoothing = model_parameters.get('smoothing')
-        # self.daysback, self.daysforward = model_parameters.get('daysback'), model_parameters.get('daysforward')
         self.covs = model_parameters.get('covs')
 
         self.param_names  = [ 'alpha', 'beta', 'p' ]
@@ -38,35 +71,19 @@ class IHME(Model):
         exp_fun = lambda x : np.exp(x)
         self.link_fun = [ exp_fun, identity_fun, exp_fun ]
         self.var_link_fun = [ identity_fun, identity_fun, identity_fun ]
-
-        # self.data = df
-        # self.agg_data = self.data.groupby(self.date).sum().reset_index(col_fill=self.date)
         
-        self.deriv_col = f'daily_{self.ycol}'
-        # self._daily_init()
-        
-        # if self.smoothing:
-        #     self.orig_ycol = self.ycol
-        #     self.df[:, self.orig_ycol] = self.df[self.ycol]
-            
-        #     self.ycol = f'{self.ycol}_smooth'
-        #     self.df[:, self.ycol] = rollingavg(self.df[self.ycol], self.smoothing)
-        
-        # self.predictdate = pd.to_datetime(pd.Series([timedelta(days=x)+self.data[self.date].iloc[0] for x in range(-self.daysback,self.daysforward)]))
-        # self.predictx = np.array([x+1 for x in range(-self.daysback,self.daysforward)])
-
         self.pipeline = None
 
-        self.derivs = {
-            erf: derf,
-            # gaussian_cdf: gaussian_pdf,
-            log_erf: log_derf,
-        }
-
-    # def supported_forecast_variables(self):
-    #     return [ForecastVariable.deceased]
-
     def predict(self, start_date, end_date, **kwargs):
+        """[summary]
+
+        Args:
+            start_date (Timestamp): date to start predictions
+            end_date (Timestamp): date to end predictions
+
+        Returns:
+            pd.DataFrame: predictions
+        """        
         data = self.pipeline.all_data.set_index('date')
         day0 = data.loc[data.index[0], 'day']
         start = int(day0) + (start_date - data.index[0]).days
@@ -77,6 +94,13 @@ class IHME(Model):
         return self.pipeline.predict(times=predictx, predict_space=self.predict_space, predict_group='all')
 
     def fit(self, data: pd.DataFrame):
+        """
+        Creates the underlying model with data as input
+
+        Args:
+            data (pd.DataFrame): dataframe to train model with, 
+                containing columns specified in init function parameters
+        """        
         self.pipeline = BasicModel(
             all_data=data, #: (pd.DataFrame) of *all* the data that will go into this modeling pipeline
             col_t=self.xcol, #: (str) name of the column with time
@@ -98,6 +122,17 @@ class IHME(Model):
         )
       
     def run(self, predictx, pipeline_args=None):
+        """
+        Function to actually fit the model, requires prediction dates
+
+        Args:
+            predictx (np.array): xcol values
+            pipeline_args (dict, optional): additional args to override those specified in init.
+                Defaults to None.
+
+        Returns:
+            BasicModel: instance of the curvefit model, fitted.
+        """        
         p_args = self.pipeline_args
         if pipeline_args is not None:
             p_args.update(pipeline_args)
@@ -112,13 +147,13 @@ class IHME(Model):
         )
         return self.pipeline
 
-    # def _daily_init(self):
-    #     self.df.sort_values(self.groupcol)
-    #     self.agg_df[self.deriv_col] = get_daily_vals(self.agg_df, self.ycol)
-    #     dailycol_dfs = [get_daily_vals(self.df[self.df[self.groupcol] == grp], self.ycol) for grp in self.df[self.groupcol].unique()]
-    #     self.df.loc[:, self.deriv_col] = pd.concat(dailycol_dfs)
-
     def calc_draws(self):
+        """
+        Retrieves the draws for all groups
+
+        Returns:
+            [dict]: dict containing lower and upper (2.5% and 97.5%) percentiles
+        """        
         draws_dict = {}
         for group in self.pipeline.groups:
             draws = self.pipeline.draws[group].copy()
@@ -144,6 +179,12 @@ class IHME(Model):
         return draws_dict
 
     def generate(self):
+        """
+        generates an untrained copy of the model
+
+        Returns:
+            self: copy of the untrained model 
+        """        
         out = IHME(self.model_parameters)
         out.xcol = self.xcol
         out.ycol = self.ycol
@@ -152,7 +193,6 @@ class IHME(Model):
         out.groupcol = self.groupcol
         out.priors = copy(self.priors)
         out.pipeline_args = copy(self.pipeline_args)
-        out.smoothing = self.smoothing
         out.covs = copy(self.covs)
 
         out.param_names  = copy(self.param_names)
@@ -160,9 +200,6 @@ class IHME(Model):
 
         out.link_fun = copy(self.link_fun)
         out.var_link_fun = copy(self.var_link_fun)
-        
-        out.deriv_col = self.deriv_col
-        out.derivs = copy(self.derivs)
         
         out.pipeline = None
         return out
