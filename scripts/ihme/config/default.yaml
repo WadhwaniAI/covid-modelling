@@ -15,8 +15,8 @@ run:
   forecast_days: 30
   num_hyperopt: 1 # number of times to run optimiser - done in parallel
 backtesting:
-  increment: 3 # how often to run backtesting
-  forecast_days: 7
+  increment: 7 # how often to run backtesting
+  forecast_days: 14
 model_params:
   xcol: day
   date: date
