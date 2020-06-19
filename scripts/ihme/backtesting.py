@@ -16,9 +16,8 @@ from models.ihme.population import get_district_population
 from models.ihme.util import cities
 
 from main.ihme.backtesting import IHMEBacktest
-from main.ihme.plotting import plot
 from main.ihme.fitting import setup, create_output_folder
-from viz import plot_backtest, plot_backtest_errors
+from viz import plot_backtest, plot_backtest_errors, plot
 from utils.enums import Columns
 
 from utils.util import read_config

@@ -17,7 +17,7 @@ from models.ihme.model import IHME
 from models.ihme.util import cities
 from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
 
-from main.ihme.plotting import plot_results
+from viz import plot_ihme_results
 from main.ihme.fitting import create_output_folder, single_cycle
 from utils.util import read_config
 from utils.enums import Columns
@@ -47,7 +47,7 @@ def run_pipeline(dist, st, area_names, config, model_params, folder):
     plot_df[ycol] = plot_df[ycol]
     plot_test[ycol] = plot_test[xform_col]
 
-    plot_results(model_params, results_dict['mod.params'], plot_df, len(train), plot_test, predictions[ycol], 
+    plot_ihme_results(model_params, results_dict['mod.params'], plot_df, len(train), plot_test, predictions[ycol], 
         predictions['date'], results_dict['df_loss']['val'], dist, val_size, draws=results_dict['draws'][ycol]['draws'], yaxis_name='cumulative deaths')
     plt.savefig(f'{output_folder}/results.png')
     plt.clf()
