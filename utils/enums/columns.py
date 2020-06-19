@@ -60,14 +60,25 @@ class Columns(Enum):
             return Columns.confirmed
         else:
             raise Exception(f"Enum for name {name} not found")
-
+    
 compartments = [
     Column('date', 'date', None),
+
+    # Severity
     Column('critical', 'Critical', 'brown'),
     Column('stable_symptomatic', 'Stable Symptomatic', 'magenta'),
     Column('stable_asymptomatic', 'Stable Asymptomatic', 'cyan'),
+
+    # Base
     Column('recovered', 'Recovered Cases', 'green'),
     Column('deceased', 'Deceased Cases', 'red'),
     Column('hospitalised', 'Active Cases', 'orange'),
-    Column('total_infected', 'Confirmed Cases', 'C0')
+    Column('total_infected', 'Confirmed Cases', 'C0'),
+
+    # Bed
+    Column('icu', 'ICU Beds', 'tomato'),
+    Column('ventilator', 'Ventilator Beds', 'darkslategray'),
+    Column('o2_beds', 'O2 Beds', 'rosybrown'),
+    Column('non_o2_beds', 'Non O2 Beds', 'darkgoldenrod'),
+    Column('hq', 'Home Quarantine', 'midnightblue')
 ]
