@@ -11,13 +11,13 @@ from curvefit.core import functions
 
 sys.path.append('../..')
 from models.ihme.model import IHME
-from models.ihme.util import get_rates
+from utils.data import get_rates
 from data.processing import get_district_timeseries_cached
 from utils.util import train_test_split, rollingavg
 
 
 from models.ihme.model import IHME
-from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
+from utils.data import lograte_to_cumulative, rate_to_cumulative
 from utils.loss import Loss_Calculator
 from utils.enums import Columns
 from main.ihme.optimiser import Optimiser

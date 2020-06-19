@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 
 sys.path.append('../..')
 from models.ihme.model import IHME
-from models.ihme.util import lograte_to_cumulative, rate_to_cumulative
-from models.ihme.population import get_district_population
-from models.ihme.util import cities
+from utils.data import lograte_to_cumulative, rate_to_cumulative
+from utils.population import get_district_population
+from utils.data import cities
 
 from main.ihme.backtesting import IHMEBacktest
 from main.ihme.fitting import setup, create_output_folder
