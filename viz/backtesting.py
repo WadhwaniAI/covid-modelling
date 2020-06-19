@@ -20,36 +20,38 @@ def plot_backtest(results, data, dist, which_compartments=Columns.which_compartm
     setup_plt(axis_name)
     plt.yscale("linear")
     plt.title(title)
-    errkey = 'val'
     def div(series):
         if scoring=='mape':
             return series/100
         return series
     
+    fig, ax = plt.subplots(figsize=(12, 12))
     # plot predictions
     cmap = mpl.cm.get_cmap('winter')
     for col in which_compartments:
         for i, run_day in enumerate(results.keys()):
             run_dict = results[run_day]
             preds = run_dict['df_prediction'].set_index('date')
-            val_dates = run_dict['df_val']['date']
+            val_dates = run_dict['df_val']['date'] if run_dict['df_val'] is not None and len(run_dict['df_val']) > 0 else None
+            errkey = 'val' if val_dates is not None else 'train'
             fit_dates = [n for n in run_dict['df_train']['date'] if n in preds.index]
             # fit_dates = run_dict['df_train']['date']
             
             color = cmap(i/len(results.keys()))
-            plt.plot(val_dates, preds.loc[val_dates, col.name], ls='dashed', c=color,
-                label=f'run day: {run_day}')
-            plt.plot(fit_dates, preds.loc[fit_dates, col.name], ls='solid', c=color)
-
-            plt.errorbar(val_dates, preds.loc[val_dates, col.name],
-                yerr=preds.loc[val_dates, col.name]*(div(run_dict['df_loss'].loc[col.name, errkey])), lw=0.5,
-                color='lightcoral', barsabove='False', label=scoring)
-            plt.errorbar(fit_dates, preds.loc[fit_dates, col.name],
+            ax.plot(fit_dates, preds.loc[fit_dates, col.name], ls='solid', c=color)
+            ax.errorbar(fit_dates, preds.loc[fit_dates, col.name],
                 yerr=preds.loc[fit_dates, col.name]*(div(run_dict['df_loss'].loc[col.name, errkey])), lw=0.5,
                 color='lightcoral', barsabove='False', label=scoring)
-
+            if val_dates is not None:
+                ax.plot(val_dates, preds.loc[val_dates, col.name], ls='dashed', c=color,
+                    label=f'run day: {run_day}')
+                ax.errorbar(val_dates, preds.loc[val_dates, col.name],
+                    yerr=preds.loc[val_dates, col.name]*(div(run_dict['df_loss'].loc[col.name, errkey])), lw=0.5,
+                    color='lightcoral', barsabove='False', label=scoring)
+                
+            
         # plot data we fit on
-        plt.scatter(data['date'].values, data[col.name].values, c='crimson', marker='+', label='data')
+        ax.scatter(data['date'].values, data[col.name].values, c='crimson', marker='+', label='data')
         plt.text(x=data['date'].iloc[-1], y=data[col.name].iloc[-1], s=col.name)
         
     # plt.legend()
