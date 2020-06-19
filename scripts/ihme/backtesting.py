@@ -54,10 +54,12 @@ def backtest(dist, st, area_names, config, model_params, folder):
         # res['results']['df_prediction'][Columns.active.name] = pred[Columns.stable_asymptomatic.name] + pred[Columns.stable_asymptomatic.name] + pred[Columns.critical.name]
         res['results'][runday]['df_prediction'][Columns.confirmed.name] = pred[Columns.active.name] + pred[Columns.recovered.name] + pred[Columns.deceased.name]
     
+    plt.clf()
     plot_backtest(
         res['results'], res['df'], dist, which_compartments=which_compartments,
         scoring=config['scoring'], axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
     
+    plt.clf()
     plot_backtest_errors(
         res['results'], res['df'], dist, which_compartments=which_compartments,
         scoring=config['scoring'], savepath='{fldr}/backtesting_{scoring}.png'.format(fldr=output_folder, scoring=config['scoring'])) 
@@ -79,7 +81,6 @@ def backtest(dist, st, area_names, config, model_params, folder):
 
 def replot_backtest(dist, st, area_names, folder):
     dtp = get_district_population(st, area_names)
-    file_prefix = f'{dist}_deaths'
     output_folder = create_output_folder(f'backtesting/{folder}/replotted')
     root_folder = os.path.dirname(output_folder)
     start_time = time.time()
@@ -92,15 +93,14 @@ def replot_backtest(dist, st, area_names, folder):
     with open(picklefn, 'rb') as pickle_file:
         results = pickle.load(pickle_file)
 
-        plot_backtest(
-            results['results'], results['df'], config['ycol'], file_prefix, 
-            scoring=config['scoring'], dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
-        plot_backtest_errors(
-            results['results'], results['df'], config['ycol'], file_prefix, 
-            scoring=config['scoring'], savepath='{fldr}/backtesting_{scoring}.png'.format(fldr=output_folder, scoring=config['scoring'])) 
-
-        # dates = pd.Series(list(results['results'].keys())).apply(lambda x: results['df']['date'].min() + timedelta(days=x))
-        # plot(dates, [d['n_days'] for d in results['results'].values()], 'n_days_train', 'n_days', savepath=f'{output_folder}/backtesting_ndays.png')
+    plt.clf()
+    plot_backtest(
+        results['results'], results['df'], dist, 
+        scoring=config['scoring'], dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
+    plt.clf()
+    plot_backtest_errors(
+        results['results'], results['df'], dist, 
+        scoring=config['scoring'], savepath='{fldr}/backtesting_{scoring}.png'.format(fldr=output_folder, scoring=config['scoring'])) 
 
     runtime = time.time() - start_time
     print('time:', runtime)

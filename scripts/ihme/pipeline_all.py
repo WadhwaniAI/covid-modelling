@@ -80,6 +80,17 @@ plot_forecast(df_true, makesum.reset_index(), model_name='IHME M2', dist=dist, s
 runtime = time.time() - start_time
 print('time:', runtime)
 
+# SAVE LOSS
+with open(f'{output_folder}/loss.json', 'w') as pfile:
+    l = {
+        'm1': m1_results['df_loss'].to_dict(),
+        'm2': m2_results['df_loss'].to_dict(),
+    }
+    json.dump(l, pfile)
+
+m1_results['df_prediction'].to_csv(os.path.join(output_folder, 'm1-pred.csv'))
+m2_results['df_prediction'].to_csv(os.path.join(output_folder, 'm2-pred.csv'))
+
 # SAVE CONFIG
 with open(f'{output_folder}/params.json', 'w') as pfile:
     pargs = copy(model_params)
