@@ -93,7 +93,15 @@ def run_model_unpack(kwargs):
 
 def run_model(model, run_day, fit_data, val_data, max_evals, hyperopt_val_size, min_days, xform_func, dtp, scoring, which_compartments):
     print ("\rbacktesting for", run_day, end="")
-    dataframes = {'train': fit_data, 'test': val_data, 'df': pd.concat([fit_data, val_data], axis=1)}
+    df = pd.concat([fit_data, val_data], axis=1)
+    dataframes = {
+        'train': fit_data, 
+        'test': val_data, 
+        'df': df,
+        'df_nora': pd.DataFrame(columns=df.columns, index=df.index),
+        'train_nora': pd.DataFrame(columns=fit_data.columns, index=fit_data.index),
+        'test_nora': pd.DataFrame(columns=val_data.columns, index=val_data.index)
+    }
     result_dict = run_cycle_compartments(dataframes, copy(model.model_parameters), 
         dtp=dtp, max_evals=max_evals, min_days=min_days, scoring=scoring, 
         val_size=hyperopt_val_size, xform_func=xform_func, forecast_days=0)
