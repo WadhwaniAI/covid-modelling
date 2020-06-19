@@ -6,56 +6,68 @@
 
 [IMHE paper](https://www.medrxiv.org/content/10.1101/2020.03.27.20043752v1.full.pdf)
 
-[waiting for] IMHE technical writeup
+[IMHE technical writeup](http://www.healthdata.org/sites/default/files/files/Projects/COVID/RA_COVID-forecasting-USA-EEA_042120.pdf)
 
 [IMHE dashboard - US/Europe](https://covid19.healthdata.org/united-states-of-america)
 
-# Code Implementation
-
-## run_pipeline.py
-
-usage: `python3 run_pipeline.py -p <key from params.json>`
-try `python3 run_pipeline.py -p india_all`
-
-This runs `BasicModel` on the params specified in `params.json`.
-
-Outputs plots and a csv in `output/pipeline/<params_key>`.
-
-**Future explorations required:**
+# Future explorations
 - BasicModel versus the other defined (more complex) models in the curvefit code
 - What is controlling the range of the draws here? Unclear, and Indian data overall had a much smaller range than the IHME dashboard's US predictions' range.
+- Try social distancing/intervention related covariates
+  - weighted based on # interventions
+  - weighted based on mobility change (FB colocation data)
+  - weighted based on both; weigh an intervention according to the corresponding mobility change
+    - i.e. schools being closed --> 0.2, night curfew --> 0.05
+  - See [this notebook](../notebooks/ihme/mobility.ipynb) for a start
+- IHME as a synthetic data generator: feed 1 week IHME predictions to SEIR, measure SEIR improvement/longevity. Also try the same with feeding SEIR into SEIR. See [this notebook](../notebooks/ihme/synth.ipynb) for a start
 
-## data.py
+# Scripts
 
-Houses methods that read and clean up data to be in the following format, ready for consumption by run_pipeline.py. Column Names must be specified accordingly in `params.json`. Recommended names are:
-- `date`: datetime
-- `day`: int
-- `group`: str or int
-- `cases`: cumulative cases
-- `deaths`: cumulative deaths
+## [pipeline.py](../scripts/ihme/pipeline.py)
 
-## params.json
+usage: `python3 pipeline.py -d mumbai -c config/mumbai.yaml>`
+can also specify `-f path/to/output`
 
-Top level keys are names passed into the command line argument for `run_pipeline`. The rest are as follows:
-- `data_func`: corresponding function in `data.py` that will return the dataframe,
-- `data_func_args`: any args that must be passed into `data_func`,
-- `test_size`: number of rows to withhold as a test set from the end of the data,
-- `alpha_true`: true alpha,
-- `beta_true`: true beta,
-- `p_true`: true p,
-- `xcol`: name of the _day_ columne,
-- `date`: name of the column with the datetime date,
-- `groupcol`: name of the column used for grouping,
-- `ycols`: dictionary where keys are names of the columns to use as `y`, such as cases or deaths, and values are string names of functions from `curvefit.utils.functions` such as “erf”, “derf”, “log_erf”, etc.
-- `daysforward`: number of days forward to predict,
-- `daysback`: number of days before the start of the data to predict,
-- `n_draws`: number of draws,
-- `cv_threshold`: 1e-2,
-- `smoothed_radius`: [2,2],
-- `num_smooths`: 3,
-- `exclude_groups`: [],
-- `exclude_below`: 0,
-- `exp_smoothing`: null,
-- `max_last`: null
+This runs the model [here](../models/ihme/model.py) on the params specified in `<config>.yaml` / `default.yaml`.
 
-See `params.json["template"]` for an example.
+Outputs plots and csv in `outputs/ihme/forecast/`.
+
+## [pipeline_all.py](../scripts/ihme/pipeline_all.py)
+
+usage: `python3 pipeline_all.py -c config/mumbai.yaml -d mumbai`
+can also specify `-f path/to/output`
+
+This runs the model ` on the params specified in `<config>.yaml` / `default.yaml`, but ignores ycol and instead fits to all compartments
+
+Outputs plots and csv in `outputs/ihme/forecast/`.
+
+## [backtesting.py](../scripts/ihme/backtesting.py)
+
+usage: `python3 backtesting.py -c config/mumbai.yaml -d mumbai`
+can also specify `-f path/to/output`
+
+This runs backtesting with the params specified in `<config>.yaml` / `default.yaml`, but ignores ycol and instead fits to all compartments. This model is rerun at the `increment` specified in the config, over all historical data, predicting `forecast_days` into the future.
+
+Outputs plots and csv in `outputs/ihme/backtesting/`.
+
+## [default.yaml](../scripts/ihme/config/default.yaml)
+
+This is where the default config lives. Any other config files added in this directory will build off of the default one.
+
+# main/ihme
+## [fitting.py](../main/ihme/fitting.py)
+Here lives the code to get the data, shape it, consume the model_parameters and config to set up appropriate arguments for the functions that run the model, which also live here.
+Forecast and fitting are not separate exercises in this case, so there is no separation into a `forecast.py` here.
+
+## [optmiser.py](../main/ihme/optmiser.py)
+The hyperparameters in this case are the `fe_init` values, and support for n_days_train exists as well. Currently, there is a line in `optmiser.py` that forces the searchspace for `n_days` to be `(min_days, min_day+1)`, effectively seeting it to `min_days`. This was done to set it to be the minimum, as is done with the SEIR model.
+
+## [backtesting.py](../main/ihme/backtesting.py)
+This is where the backtester class lives, calling `IHMEBacktest.test` runs the backtesting.
+This is powered under the hood by code from `fitting.py`
+
+# models/ihme
+
+## [model.py](../models/ihme/model.py)
+This is the core model code. Uses `BasicModel` from `curvefit`.
+- True fitting is currently done in `model.run()`, which is called in `model.predict()`. It takes a start/end date - evaluate if these dates should be different, and if so, move the call to `pipeline.run()` into `predict`.
