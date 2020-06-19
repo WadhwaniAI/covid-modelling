@@ -12,14 +12,14 @@ class Loss_Calculator():
 
     def _calc_rmse(self, y_pred, y_true, log=False):
         if log:
-            y_true = np.log(y_true)
-            y_pred = np.log(y_pred)
+            y_true = np.log(y_true[y_true > 0])
+            y_pred = np.log(y_pred[y_true > 0])
         loss = np.sqrt(np.mean((y_true - y_pred)**2))
         return loss
 
     def _calc_mape(self, y_pred, y_true):
-        y_pred = y_pred[y_true > 0]
-        y_true = y_true[y_true > 0]
+        y_pred = y_pred[y_true != 0]
+        y_true = y_true[y_true != 0]
 
         ape = np.abs((y_true - y_pred + 0) / y_true) *  100
         loss = np.mean(ape)
@@ -60,10 +60,10 @@ class Loss_Calculator():
             dict: Dict of losses
         """
         err = {}
-        err['mape'] = _calc_mape(y_true, y_pred)
-        err['rmse'] = _calc_rmse(y_true, y_pred)
+        err['mape'] = self._calc_mape(y_true, y_pred)
+        err['rmse'] = self._calc_rmse(y_true, y_pred)
         try:
-            err['rmsle'] = _calc_rmse(y_true, y_pred, log=True)
+            err['rmsle'] = self._calc_rmse(y_true, y_pred, log=True)
         except:
             err['rmsle'] = None
         return err

@@ -15,6 +15,7 @@ run:
   lockdown_removal_date: 2020-06-30
   # num_hyperopt: 3 # number of times to run optimiser - done in parallel
 backtesting:
-  increment: 3 # how often to run backtesting
-  forecast_days: 7
+  increment: 7 # how often to run backtesting
+  forecast_days: 14
+  fit: m1
 model_params:
