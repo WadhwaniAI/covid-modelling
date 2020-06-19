@@ -91,6 +91,37 @@ class SEIRHD_Bed(SEIR):
         input_args['t_params'] = t_params
         super().__init__(**input_args)
 
+        # Initialisation
+        state_init_values = OrderedDict()
+        for key in STATES:
+            state_init_values[key] = 0
+        if initialisation == 'starting':
+            init_infected = max(observed_values['init_infected'], 1)
+            state_init_values['S'] = (self.N - init_infected)/self.N
+            state_init_values['I'] = init_infected/self.N
+
+        if initialisation == 'intermediate':
+            
+            state_init_values['R_hq'] = observed_values['hq']
+            state_init_values['R_nonoxy'] = observed_values['non_o2_beds']
+            state_init_values['R_oxy'] = observed_values['o2_beds']
+            state_init_values['R_icu'] = observed_values['icu'] - observed_values['ventilator']
+            state_init_values['R_vent'] = observed_values['ventilator']
+            # state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['hospitalised']
+            
+            state_init_values['C'] = observed_values['recovered']
+            state_init_values['D'] = observed_values['deceased']
+
+            state_init_values['E'] = self.E_hosp_ratio * observed_values['hospitalised']
+            state_init_values['I'] = self.I_hosp_ratio * observed_values['hospitalised']
+            
+            nonSsum = sum(state_init_values.values())
+            state_init_values['S'] = (self.N - nonSsum)
+            for key in state_init_values.keys():
+                state_init_values[key] = state_init_values[key]/self.N
+        
+        self.state_init_values = state_init_values
+
     def get_derivative(self, t, y):
         """
         Calculates derivative at time t
@@ -120,12 +151,13 @@ class SEIRHD_Bed(SEIR):
         dydt[1] = I * S / (self.T_trans) - (E/ self.T_inc)  # E
         dydt[2] = E / self.T_inc - I / self.T_inf  # I
         dydt[3] = (1/self.T_inf)*(self.P_hq*I) - R_hq/self.T_recov_hq # R_hq
-        dydt[4] = (1/self.T_inf)*(self.P_nonoxy*I) - R_nonP_nonoxy/self.T_recov_nonP_nonoxy #R_nonP_nonoxy
+        dydt[4] = (1/self.T_inf)*(self.P_nonoxy*I) - R_nonoxy/self.T_recov_nonoxy #R_nonoxy
         dydt[5] = (1/self.T_inf)*(self.P_oxy*I) - R_oxy/self.T_recov_oxy #R_oxy
         dydt[6] = (1/self.T_inf)*(self.P_icu*I) - R_icu/self.T_recov_icu # R_icu
         dydt[7] = (1/self.T_inf)*(self.P_vent*I) - R_vent/self.T_recov_vent #R_vent
         dydt[8] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_recov_fatal # R_fatal
-        dydt[9] = R_mild/self.T_recov_mild + R_moderate/self.T_recov_moderate + R_severe/self.T_recov_severe  # C
+        dydt[9] = R_hq/self.T_recov_hq + R_nonoxy/self.T_recov_nonoxy + \
+            R_oxy/self.T_recov_oxy + R_icu/self.T_recov_icu + R_vent/self.T_recov_vent  # C
         dydt[10] = R_fatal/self.T_recov_fatal # D
 
         return dydt
