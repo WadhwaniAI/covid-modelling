@@ -12,6 +12,7 @@ sys.path.append('../../')
 from main.seir.forecast import create_decile_csv
 from utils.create_report import create_report
 from utils.enums import Columns
+from utils.util import read_config
 from viz import plot_ptiles, plot_r0_multipliers
 from main.seir.uncertainty import MCUncertainty
 from main.seir.forecast import save_r0_mul, predict_r0_multipliers
@@ -20,14 +21,14 @@ parser = argparse.ArgumentParser()
 t = time.time()
 parser.add_argument("-f", "--folder", help="folder name", required=True, type=str)
 parser.add_argument("-date", "--date", help="date YYYY-MM-DD to sort trials by for cdf", required=True, type=str)
-parser.add_argument("--fdays",help="how many days to forecast for", required=False, default=30, type=int)
 args = parser.parse_args()   
+config, model_params = read_config(args.config)
 
 with open(f'../../reports/{args.folder}/predictions_dict.pkl', 'rb') as pkl:
     region_dict = pickle.load(pkl)
 forecast_dict = {}
 df_reported = region_dict['m2']['df_district_unsmoothed']
-date_of_interest = args.date
+date_of_interest = config['date_of_interest']
 
 uncertainty = MCUncertainty(region_dict, date_of_interest)
 deciles_idx = uncertainty.get_ptiles_idx()
@@ -56,7 +57,7 @@ ax.figure.savefig(f'../../reports/{args.folder}/deciles.png')
 forecast_dict['deciles_plot'] = ax
 
 # perform what-ifs on 80th percentile
-predictions_mul_dict = predict_r0_multipliers(region_dict, params[deciles_idx[80]], days=args.fdays)
+predictions_mul_dict = predict_r0_multipliers(region_dict, params[deciles_idx[80]], days=config['forecast_days'], lockdown_removal_date=config['lockdown_removal_date'])
 save_r0_mul(predictions_mul_dict, folder=args.folder)
 
 forecast_dict['what-ifs-plot'] = plot_r0_multipliers(region_dict, params[deciles_idx[80]], predictions_mul_dict, multipliers=[0.9, 1, 1.1, 1.25])

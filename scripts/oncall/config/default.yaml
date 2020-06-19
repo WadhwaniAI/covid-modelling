@@ -1,0 +1,20 @@
+base:
+  disable_tracker: TRUE # use athena instead of covid19api
+  max_evals: 1000 # optimiser evals (trials)
+  test_size: 7 # witheld from model entirely
+  scoring: mape
+  val_size: 7 # val set for hyperopt
+  min_days: 7 # days to train on
+  smooth_jump: FALSE
+  smooth_method: weighted
+  smooth_ndays: 33
+  ktrials: 10
+run:
+  forecast_days: 30
+  date_of_interest: 2020-06-30
+  lockdown_removal_date: 2020-06-30
+  # num_hyperopt: 3 # number of times to run optimiser - done in parallel
+backtesting:
+  increment: 3 # how often to run backtesting
+  forecast_days: 7
+model_params:
