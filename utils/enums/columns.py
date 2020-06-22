@@ -2,6 +2,8 @@ import enum
 
 from enum import Enum
 from collections import namedtuple
+import numpy as np
+import matplotlib.pyplot as plt
 
 Column = namedtuple('Column', ['name', 'label', 'color'])
 
@@ -61,24 +63,29 @@ class Columns(Enum):
         else:
             raise Exception(f"Enum for name {name} not found")
     
-compartments = [
-    Column('date', 'date', None),
+cmap = plt.get_cmap('plasma')
+bed_colors = [cmap(i) for i in np.linspace(0, 0.8, 5)]
 
-    # Severity
-    Column('critical', 'Critical', 'brown'),
-    Column('stable_symptomatic', 'Stable Symptomatic', 'magenta'),
-    Column('stable_asymptomatic', 'Stable Asymptomatic', 'cyan'),
-
-    # Base
-    Column('recovered', 'Recovered Cases', 'green'),
-    Column('deceased', 'Deceased Cases', 'red'),
-    Column('hospitalised', 'Active Cases', 'orange'),
-    Column('total_infected', 'Confirmed Cases', 'C0'),
-
-    # Bed
-    Column('icu', 'ICU Beds', 'tomato'),
-    Column('ventilator', 'Ventilator Beds', 'darkslategray'),
-    Column('o2_beds', 'O2 Beds', 'rosybrown'),
-    Column('non_o2_beds', 'Non O2 Beds', 'darkgoldenrod'),
-    Column('hq', 'Home Quarantine', 'midnightblue')
-]
+cmap = plt.get_cmap('RdPu')
+severity_colors = [cmap(i) for i in np.linspace(0.4, 0.9, 3)]
+compartments = {
+    'date': [Column('date', 'date', None)],
+    'base': [
+        Column('recovered', 'Recovered Cases', 'green'),
+        Column('deceased', 'Deceased Cases', 'red'),
+        Column('hospitalised', 'Active Cases', 'orange'),
+        Column('total_infected', 'Confirmed Cases', 'C0')
+    ],
+    'severity': [
+        Column('critical', 'Critical', severity_colors[0]),
+        Column('stable_symptomatic', 'Stable Symptomatic', severity_colors[1]),
+        Column('stable_asymptomatic', 'Stable Asymptomatic', severity_colors[2])
+    ],
+    'bed': [
+        Column('ventilator', 'Ventilator Beds', bed_colors[0]),
+        Column('icu', 'ICU Beds', bed_colors[1]),
+        Column('o2_beds', 'O2 Beds', bed_colors[2]),
+        Column('non_o2_beds', 'Non O2 Beds', bed_colors[3]),
+        Column('hq', 'Home Quarantine', bed_colors[4])
+    ]
+}
