@@ -109,7 +109,7 @@ def plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_
         if isinstance(df_val, pd.DataFrame) and len(df_val) > 0:
             ax.axvline(x=df_val.iloc[0, ]['date'], ls=':', color='black', label='Val starts')
         
-        axis_formatter(ax, legend_elements, custom_legend=True)
+        axis_formatter(ax, legend_elements, custom_legend=False)
         i += 1
         
     plt.tight_layout()
