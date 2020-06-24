@@ -10,11 +10,13 @@ import copy
 from models.seir.seir import SEIR
 from utils.ode import ODE_Solver
 
-class SEIRHD_Sev(SEIR):
-    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_recov_death=32,
-                 P_moderate=0.4, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, T_recov_moderate=11, 
-                 N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 
-                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
+class SEIRHD_Severity(SEIR):
+    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, #Transmission
+                 P_moderate=0.4, P_severe=0.2, P_fatal=0.02,  #Clinical Probabs
+                 T_recov_severe=14, T_recov_mild=11, T_recov_moderate=11, T_recov_fatal=32, #Clinical Time
+                 N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', #Misc
+                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, #Init
+                 super_init=False, **kwargs): #Init
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
         The model further implements 
@@ -59,7 +61,7 @@ class SEIRHD_Sev(SEIR):
         T_recov_mild: Time it takes for an individual with a mild infection to recover (float)
         T_recov_moderate: Time it takes for an individual with a moderate infection to recover (float)
         T_recov_severe: Time it takes for an individual with a severe infection to recover (float)
-        T_recov_death: Time it takes for an individual with a fatal infection to die (float)
+        T_recov_fatal: Time it takes for an individual with a fatal infection to die (float)
 
         Lockdown parameters - 
         starting_date: Datetime value that corresponds to Day 0 of modelling (datetime/str)
@@ -82,6 +84,35 @@ class SEIRHD_Sev(SEIR):
         input_args['p_params'] = p_params
         input_args['t_params'] = t_params
         super().__init__(**input_args)
+
+        # Initialisation
+        state_init_values = OrderedDict()
+        for key in STATES:
+            state_init_values[key] = 0
+        if initialisation == 'starting':
+            init_infected = max(observed_values['init_infected'], 1)
+            state_init_values['S'] = (self.N - init_infected)/self.N
+            state_init_values['I'] = init_infected/self.N
+
+        if initialisation == 'intermediate':
+            
+            state_init_values['R_mild'] = observed_values['stable_asymptomatic']
+            state_init_values['R_moderate'] = observed_values['stable_symptomatic']
+            state_init_values['R_severe'] = observed_values['critical']
+            state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['hospitalised']
+            
+            state_init_values['C'] = observed_values['recovered']
+            state_init_values['D'] = observed_values['deceased']
+
+            state_init_values['E'] = self.E_hosp_ratio * observed_values['hospitalised']
+            state_init_values['I'] = self.I_hosp_ratio * observed_values['hospitalised']
+            
+            nonSsum = sum(state_init_values.values())
+            state_init_values['S'] = (self.N - nonSsum)
+            for key in state_init_values.keys():
+                state_init_values[key] = state_init_values[key]/self.N
+        
+        self.state_init_values = state_init_values
 
 
     def get_derivative(self, t, y):
@@ -115,9 +146,9 @@ class SEIRHD_Sev(SEIR):
         dydt[3] = (1/self.T_inf)*(self.P_mild*I) - R_mild/self.T_recov_mild # R_mild
         dydt[4] = (1/self.T_inf)*(self.P_moderate*I) - R_moderate/self.T_recov_moderate #R_moderate
         dydt[5] = (1/self.T_inf)*(self.P_severe*I) - R_severe/self.T_recov_severe #R_severe
-        dydt[6] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_recov_death # R_fatal
+        dydt[6] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_recov_fatal # R_fatal
         dydt[7] = R_mild/self.T_recov_mild + R_moderate/self.T_recov_moderate + R_severe/self.T_recov_severe  # C
-        dydt[8] = R_fatal/self.T_recov_death # D
+        dydt[8] = R_fatal/self.T_recov_fatal # D
 
         return dydt
 
@@ -130,7 +161,10 @@ class SEIRHD_Sev(SEIR):
                                         time_step=time_step, method=method)
 
         df_prediction['hospitalised'] = df_prediction['R_mild'] + \
-            df_prediction['R_moderate'] + df_prediction['R_severe'] + df_prediction['R_fatal']
+            df_prediction['R_moderate'] + df_prediction['R_severe']
+        df_prediction['stable_asymptomatic'] = df_prediction['R_mild']
+        df_prediction['stable_symptomatic'] = df_prediction['R_moderate']
+        df_prediction['critical'] = df_prediction['R_severe']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
         df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']

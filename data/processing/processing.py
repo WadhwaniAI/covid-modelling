@@ -57,18 +57,12 @@ def get_custom_data_from_db(state='Maharashtra', district='Pune'):
     df_result = df_result[np.logical_and(
         df_result['state'] == state.lower(), df_result['district'] == district.lower())]
     df_result['date'] = pd.to_datetime(df_result['date'])
-    del df_result['ward_name']
-    del df_result['ward_no']
-    del df_result['mild']
-    del df_result['moderate']
-    del df_result['severe']
-    del df_result['critical']
-    del df_result['partition_0']
-    df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]
-    df_result.columns = [x if x != 'confirmed' else 'total_infected' for x in df_result.columns]
-    df_result.columns = [x if x != 'total' else 'total_infected' for x in df_result.columns]
+    df_result.drop(['ward_name', 'ward_no', 'mild', 'moderate',
+                    'severe', 'critical', 'partition_0'], axis=1)
+    df_result.rename({'total': 'total_infected', 'confirmed': 'total_infected', 
+                      'active_cases': 'hospitalised'}, axis='columns')
     df_result = df_result.dropna(subset=['date'], how='any')
-    # df_result = df_result.dropna(subset=['date', 'hospitalised', 'total_infected', 'recovered', 'deceased'], how='any')
+    df_result = df_result.infer_objects()
     for col in df_result.columns:
         if col in ['hospitalised', 'total_infected', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
@@ -77,28 +71,28 @@ def get_custom_data_from_db(state='Maharashtra', district='Pune'):
 #TODO add support of adding 0s column for the ones which don't exist
 def get_custom_data_from_file(filename, data_format='new'):
     if data_format == 'new':
-        df_result = pd.read_csv(filename)
-        del df_result['Ward/block name']
-        del df_result['Ward number (if applicable)']
-        del df_result['Mild cases (isolated)']
-        del df_result['Moderate cases (hospitalized)']
-        del df_result['Severe cases (In ICU)']
-        del df_result['Critical cases (ventilated patients)']
+        df_result = pd.read_csv(filename) 
+        df_result = df_result.drop(['Ward/block name', 'Ward number (if applicable)', 'Mild cases (isolated)',
+                                    'Moderate cases (hospitalized)', 'Severe cases (In ICU)', 
+                                    'Critical cases (ventilated patients)'], axis=1)
         df_result.columns = ['state', 'district', 'date', 'total_infected', 'hospitalised', 'recovered', 'deceased']
         df_result.drop(np.arange(3), inplace=True)
         df_result['date'] = pd.to_datetime(df_result['date'], format='%m-%d-%Y')
-        df_result = df_result[np.logical_not(df_result['state'].isna())]
+        df_result = df_result.dropna(subset=['state'], how='any')
+        # df_result = df_result[np.logical_not(df_result['state'].isna())]
         df_result.reset_index(inplace=True, drop=True)
         df_result.loc[:, ['total_infected', 'hospitalised', 'recovered', 'deceased']] = df_result[[
             'total_infected', 'hospitalised', 'recovered', 'deceased']].apply(pd.to_numeric)
         df_result = df_result[['date', 'state', 'district', 'total_infected', 'hospitalised', 'recovered', 'deceased']]
         df_result = df_result.dropna(subset=['date'], how='all')
-        return df_result
+        
     if data_format == 'old':
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]
         df_result.columns = [x if x != 'confirmed' else 'total_infected' for x in df_result.columns]
+        
+    return df_result
         
 def get_state_time_series(state='Delhi'):
     loader = RootnetLoader()
@@ -218,22 +212,23 @@ def get_dataframes_cached():
     return dataframes
 
 def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
-    picklefn = "../../cache/{district}_ts_{today}.pkl".format(
-        district=district, today=datetime.datetime.today().strftime("%d%m%Y")
-    )	
+    picklefn = "../../cache/{district}_ts_{src}_{today}.pkl".format(
+        district=district, today=datetime.datetime.today().strftime("%d%m%Y"), 
+        src='athena' if disable_tracker else 'tracker'
+    )
     try:
         print(picklefn)
         with open(picklefn, 'rb') as pickle_file:
             district_timeseries = pickle.load(pickle_file)
     except:
-        new_district = district
-        if district == 'Bengaluru':
-            district = ['Bengaluru Urban', 'Bengaluru Rural']
-        elif district == 'Delhi':
-            district = ['East Delhi', 'New Delhi', 'North Delhi', 
-            'North East Delhi','North West Delhi', 'South Delhi', 
-            'South West Delhi','West Delhi', 'Unknown', 'Central Delhi', 
-            'Shahdara','South East Delhi','']
+        if not disable_tracker:
+            if district == 'Bengaluru':
+                district = ['Bengaluru Urban', 'Bengaluru Rural']
+            elif district == 'Delhi':
+                district = ['East Delhi', 'New Delhi', 'North Delhi', 
+                'North East Delhi','North West Delhi', 'South Delhi', 
+                'South West Delhi','West Delhi', 'Unknown', 'Central Delhi', 
+                'Shahdara','South East Delhi','']
         dataframes = get_dataframes_cached()
         district_timeseries = get_data(dataframes, state=state, 
             district=district, disable_tracker=disable_tracker, 

@@ -16,14 +16,16 @@ from joblib import Parallel, delayed
 import copy
 
 from data.processing import get_data
+from data.processing import granular
 
 from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
 from utils.loss import Loss_Calculator
 from utils.enums import Columns
+from utils.smooth_jump import smooth_big_jump
 from viz import plot_smoothing, plot_fit
 
-def get_variable_param_ranges(initialisation='intermediate', as_str=False):
+def get_variable_param_ranges(variable_param_ranges=None, initialisation='intermediate', as_str=False):
     """Returns the ranges for the variable params in the search space
 
     Keyword Arguments:
@@ -34,19 +36,19 @@ def get_variable_param_ranges(initialisation='intermediate', as_str=False):
     Returns:
         dict -- dict of ranges of variable params
     """
-    variable_param_ranges = {
-        'lockdown_R0': (1, 1.5),
-        'T_inc': (4, 5),
-        'T_inf': (3, 4),
-        'T_recov_severe': (5, 60),
-        'P_fatal': (0, 0.3)
-    }
-    if initialisation == 'intermediate':
-        extra_params = {
+    if variable_param_ranges == None:
+        variable_param_ranges = {
+            'lockdown_R0': (1, 1.5),
+            'T_inc': (4, 5),
+            'T_inf': (3, 4),
+            'T_recov_severe': (5, 60),
+            'P_fatal': (0, 0.3),
             'E_hosp_ratio': (0, 2),
             'I_hosp_ratio': (0, 1)
         }
-        variable_param_ranges.update(extra_params)
+    if initialisation != 'intermediate':
+        del variable_param_ranges['E_hosp_ratio']
+        del variable_param_ranges['I_hosp_ratio']
     if as_str:
         return str(variable_param_ranges)
 
@@ -56,8 +58,7 @@ def get_variable_param_ranges(initialisation='intermediate', as_str=False):
 
     return variable_param_ranges
    
-def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5, 
-                    which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
+def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5):
     """Creates train val split on dataframe
 
     # TODO : Add support for creating train val test split
@@ -70,13 +71,15 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
         val_rollingmean {bool} -- If true, apply rolling mean on val (default: {False})
         val_size {int} -- Size of val set (default: {5})
         rolling_window {int} -- Size of rolling window. The rolling window is centered (default: {5})
-        which_columns {list} -- Which columnns to do the rolling average over (default: {['hospitalised', 'total_infected', 'deceased', 'recovered']})
 
     Returns:
         pd.DataFrame, pd.DataFrame, pd.DataFrame -- train dataset, val dataset, concatenation of rolling average dfs
     """
     print("splitting data ..")
     df_true_fitting = copy.copy(df_district)
+    # Perform rolling average on all columns with numeric datatype
+    df_true_fitting = df_true_fitting.infer_objects()
+    which_columns = df_true_fitting.select_dtypes(include='number').columns
     for column in which_columns:
         df_true_fitting[column] = df_true_fitting[column].rolling(
             rolling_window, center=True).mean()
@@ -85,20 +88,19 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     # use the true observations instead (as rolling averages for those offset days don't exist)
     offset_window = rolling_window // 2
 
-    df_true_fitting = df_true_fitting[np.logical_not(
-        df_true_fitting['total_infected'].isna())]
+    df_true_fitting.dropna(axis=0, how='any', inplace=True)
     df_true_fitting.reset_index(inplace=True, drop=True)
 
     if train_rollingmean:
         if val_size == 0:
             df_train = pd.concat(
                 [df_true_fitting, df_district.iloc[-(val_size+offset_window):, :]], ignore_index=True)
-            return df_train, None, df_true_fitting
+            return df_train, None
         else:
             df_train = df_true_fitting.iloc[:-(val_size-offset_window), :]
     else:
         if val_size == 0:
-            return df_district, None, df_true_fitting
+            return df_district, None
         else:
             df_train = df_district.iloc[:-val_size, :]
 
@@ -108,10 +110,12 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     else:
         df_val = df_district.iloc[-val_size:, :]
     df_val.reset_index(inplace=True, drop=True)
-    return df_train, df_val, df_true_fitting
+    return df_train, df_val
     
-def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename, smooth_jump=False,
-                      smoothing_length=28, smoothing_method='uniform', t_recov=14, return_extra=False):
+
+def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename, granular_data=False, 
+                      smooth_jump=False, smoothing_length=28, smoothing_method='uniform', t_recov=14, #Smoothing params
+                      return_extra=False):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -125,20 +129,21 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
     Returns:
         pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
     """
-    if data_from_tracker:
-        df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
+    if granular_data:
+        df_district = granular.get_data(filename=filename)
     else:
-        df_district = get_data(state=state, district=district, disable_tracker=True, filename=filename, 
-                               data_format=data_format)
+        if data_from_tracker:
+            df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
+        else:
+            df_district = get_data(state=state, district=district, disable_tracker=True, filename=filename, 
+                                data_format=data_format)
     
     df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
     ax = None
     orig_df_district = copy.copy(df_district)
 
     if smooth_jump:
-        df_district = smooth_big_jump(
-            df_district, smoothing_length=smoothing_length, 
-            method=smoothing_method, data_from_tracker=data_from_tracker, t_recov=t_recov)
+        df_district = smooth_big_jump(df_district, method=smoothing_method, data_from_tracker=data_from_tracker)
         ax = plot_smoothing(orig_df_district, df_district, state, district, description=f'Smoothing: {smoothing_method}')
 
     if return_extra:
@@ -149,63 +154,7 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
         return df_district, df_district_raw_data, extra 
     return df_district, df_district_raw_data 
 
-def smooth_big_jump(df_district, smoothing_length, data_from_tracker, t_recov=14, method='uniform'):
-    if data_from_tracker:
-        d1, d2 = '2020-05-29', '2020-05-30'
-    else:
-        d1, d2 = '2020-05-28', '2020-05-29'
-    df_district['date'] = pd.to_datetime(df_district['date'])
-    df_district = df_district.set_index('date')
-    big_jump = df_district.loc[d2, 'recovered'] - df_district.loc[d1, 'recovered']
-    print(big_jump)
-    if method == 'uniform':
-        for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
-            date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
-            offset = np.random.binomial(1, (big_jump%smoothing_length)/smoothing_length)
-            df_district.loc[date, 'recovered'] += ((i+1)*big_jump)//smoothing_length + offset
-            df_district.loc[date, 'hospitalised'] -= ((i+1)*big_jump)//smoothing_length + offset
-
-    elif method == 'weighted':
-        newcases = df_district['total_infected'].shift(t_recov) - df_district['total_infected'].shift(t_recov + 1)
-        valid_idx = newcases.first_valid_index()
-        window_start = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=smoothing_length - 1)
-        newcases = newcases.loc[max(valid_idx, window_start):d1]
-        truncated = df_district.loc[max(valid_idx, window_start):d1, :]
-        smoothing_length = len(truncated)
-        print(f'smoothing length truncated to {smoothing_length}')
-        invpercent = newcases.sum()/newcases
-        for day_number in range(smoothing_length-1, -1, -1):
-            date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
-            offset = np.random.binomial(1, (big_jump%invpercent.loc[date])/invpercent.loc[date])
-            truncated.loc[date:, 'recovered'] += (big_jump // invpercent.loc[date]) + offset
-            truncated.loc[date:, 'hospitalised'] -= (big_jump // invpercent.loc[date]) + offset
-        df_district.loc[truncated.index, 'recovered'] = truncated['recovered'].astype('int64')
-        df_district.loc[truncated.index, 'hospitalised'] = truncated['hospitalised'].astype('int64')
-
-    elif method == 'weighted-recov':
-        newcases = df_district['recovered'].shift(0) - df_district['recovered'].shift(1)
-        valid_idx = newcases.first_valid_index()
-        window_start = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=smoothing_length - 1)
-        newcases = newcases.loc[max(valid_idx, window_start):d1]
-        truncated = df_district.loc[max(valid_idx, window_start):d1, :]
-        smoothing_length = len(truncated)
-        print(f'smoothing length truncated to {smoothing_length}')
-        invpercent = newcases.sum()/newcases
-        for day_number in range(smoothing_length-1, -1, -1):
-            date = datetime.datetime.strptime(d1, '%Y-%m-%d') - datetime.timedelta(days=day_number)
-            offset = np.random.binomial(1, (big_jump%invpercent.loc[date])/invpercent.loc[date])
-            truncated.loc[date:, 'recovered'] += (big_jump // invpercent.loc[date]) + offset
-            truncated.loc[date:, 'hospitalised'] -= (big_jump // invpercent.loc[date]) + offset
-        df_district.loc[truncated.index, 'recovered'] = truncated['recovered'].astype('int64')
-        df_district.loc[truncated.index, 'hospitalised'] = truncated['hospitalised'].astype('int64')
-
-    else:
-        raise Exception("unknown smoothing method provided")
-    
-    assert((df_district['total_infected'] == df_district['hospitalised'] + df_district['deceased'] + df_district['recovered']).all())
-    return df_district.reset_index()
-
-def data_setup(df_district, df_district_raw_data, val_period, which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
+def data_setup(df_district, df_district_raw_data, val_period):
     """Helper function for single_fitting_cycle which sets up the data including doing the train val split
 
     Arguments:
@@ -217,19 +166,20 @@ def data_setup(df_district, df_district_raw_data, val_period, which_columns=['ho
         dict(pd.DataFrame) -- Dict of pd.DataFrame objects
     """
     # Get train val split
-    df_train, df_val, df_true_fitting = train_val_split(
-        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period, which_columns=which_columns)
-    df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-        df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period, which_columns=which_columns)
+    df_train, df_val = train_val_split(
+        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
+    df_train_nora, df_val_nora = train_val_split(
+        df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
 
     observed_dataframes = {}
     for name in ['df_district', 'df_district_raw_data', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
         observed_dataframes[name] = eval(name)
     return observed_dataframes
 
-def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_from_tracker=True, train_period=7, 
-              which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], num_evals=1500, N=1e7, 
-              initialisation='starting'):
+
+def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, train_period=7,
+              data_from_tracker=True, which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], 
+              num_evals=1500, N=1e7, initialisation='starting'):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -269,14 +219,14 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
                                                        train_period=train_period)
 
     # Get/create searchspace of variable params
-    variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
+    if variable_param_ranges == None:
+        variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
 
     # Perform Bayesian Optimisation
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
                                               num_evals=num_evals, loss_indices=[-train_period, None], method='mape',
                                               total_days=total_days, which_compartments=which_compartments)
-
     print('best parameters\n', best_params)
 
     if not isinstance(df_val, pd.DataFrame):
@@ -291,7 +241,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
                                               which_compartments=which_compartments)
 
     ax = plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
-                  which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'])
+                  which_compartments=which_compartments)
 
     results_dict = {}
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
@@ -302,10 +252,12 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_fro
 
     return results_dict
 
-def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_period=7, val_period=7, 
-                         data_from_tracker=True, filename=None, data_format='new', N=1e7, num_evals=1500,
-                         which_compartments=['hospitalised', 'total_infected'], initialisation='starting', 
-                         smooth_jump=False, smoothing_length=28, smoothing_method='uniform'):
+
+def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, variable_param_ranges=None, #Main 
+                         data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
+                         train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', #Misc
+                         which_compartments=['hospitalised', 'total_infected'], #Compartments
+                         smooth_jump=False, smoothing_length=28, smoothing_method='uniform'): #Smoothing
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -336,24 +288,25 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
     print('Performing {} fit ..'.format('m2' if val_period == 0 else 'm1'))
 
     # Get data
-    df_district, df_district_raw_data, extra = get_regional_data(dataframes, state, district, data_from_tracker, data_format,
-                                                                         filename, smooth_jump=smooth_jump, smoothing_method=smoothing_method,
-                                                                         smoothing_length=smoothing_length, return_extra=True)
+    df_district, df_district_raw_data, extra = get_regional_data(
+        dataframes, state, district, 
+        data_from_tracker, data_format, filename, granular_data, 
+        smooth_jump=smooth_jump, smoothing_method=smoothing_method, 
+        smoothing_length=smoothing_length, return_extra=True
+    )
     smoothed_plot = extra['ax']
     orig_df_district = extra['df_district_unsmoothed']
 
     # Process the data to get rolling averages and other stuff
-    observed_dataframes = data_setup(
-        df_district, df_district_raw_data, 
-        val_period, which_columns=which_compartments)
+    observed_dataframes = data_setup(df_district, df_district_raw_data, val_period)
 
     print('train\n', observed_dataframes['df_train'].tail())
     print('val\n', observed_dataframes['df_val'])
     
     predictions_dict = run_cycle(
         state, district, observed_dataframes, 
-        data_from_tracker=data_from_tracker, 
-        model=model, train_period=train_period, 
+        model=model, variable_param_ranges=variable_param_ranges,
+        data_from_tracker=data_from_tracker, train_period=train_period, 
         which_compartments=which_compartments, N=N,
         num_evals=num_evals, initialisation=initialisation
     )
@@ -362,7 +315,7 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, train_
         predictions_dict['smoothing_plot'] = smoothed_plot
     predictions_dict['df_district_unsmoothed'] = orig_df_district
 
-    # record parameters for reproducability
+    # record parameters for reproducibility
     predictions_dict['run_params'] = run_params
 
     return predictions_dict
