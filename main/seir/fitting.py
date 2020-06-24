@@ -22,10 +22,11 @@ from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
 from utils.loss import Loss_Calculator
 from utils.enums import Columns
-from utils.smooth_jump import smooth_big_jump
+from utils.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
 from viz import plot_smoothing, plot_fit
 
-def get_variable_param_ranges(variable_param_ranges=None, initialisation='intermediate', as_str=False):
+def get_variable_param_ranges(variable_param_ranges=None, initialisation='intermediate', as_str=False, 
+                              mode='hyperopt', searchspace_len=21):
     """Returns the ranges for the variable params in the search space
 
     Keyword Arguments:
@@ -52,9 +53,15 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
     if as_str:
         return str(variable_param_ranges)
 
-    for key in variable_param_ranges.keys():
-        variable_param_ranges[key] = hp.uniform(
-            key, variable_param_ranges[key][0], variable_param_ranges[key][1])
+    if mode == 'hyperopt':
+        for key in variable_param_ranges.keys():
+            variable_param_ranges[key] = hp.uniform(
+                key, variable_param_ranges[key][0], variable_param_ranges[key][1])
+
+    if mode == 'gridsearch':
+        for key in variable_param_ranges.keys():
+            variable_param_ranges[key] = np.linspace(
+                variable_param_ranges[key][0], variable_param_ranges[key][1], searchspace_len)
 
     return variable_param_ranges
    
@@ -113,9 +120,9 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     return df_train, df_val
     
 
-def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename, granular_data=False, 
-                      smooth_jump=False, smoothing_length=28, smoothing_method='uniform', t_recov=14, #Smoothing params
-                      return_extra=False):
+def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename, which_compartments,
+                      granular_data=False, smooth_jump=False, smoothing_length=28, smoothing_method='uniform', 
+                      t_recov=14, return_extra=False):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -143,8 +150,13 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
     orig_df_district = copy.copy(df_district)
 
     if smooth_jump:
-        df_district = smooth_big_jump(df_district, method=smoothing_method, data_from_tracker=data_from_tracker)
-        ax = plot_smoothing(orig_df_district, df_district, state, district, description=f'Smoothing: {smoothing_method}')
+        if granular_data:
+            df_district = smooth_big_jump_stratified(df_district)
+        else:
+            df_district = smooth_big_jump(df_district, method=smoothing_method, data_from_tracker=data_from_tracker)
+
+        ax = plot_smoothing(orig_df_district, df_district, state, district,
+                            which_compartments=which_compartments, description=f'Smoothing: {smoothing_method}')
 
     if return_extra:
         extra = {
@@ -289,8 +301,8 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, variab
 
     # Get data
     df_district, df_district_raw_data, extra = get_regional_data(
-        dataframes, state, district, 
-        data_from_tracker, data_format, filename, granular_data, 
+        dataframes, state, district, data_from_tracker, data_format, filename, 
+        which_compartments=which_compartments, granular_data=granular_data,
         smooth_jump=smooth_jump, smoothing_method=smoothing_method, 
         smoothing_length=smoothing_length, return_extra=True
     )
