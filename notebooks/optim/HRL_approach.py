@@ -9,6 +9,7 @@ import itertools
 #from models.optim.sir_discrete import SIR_Discrete
 # from utils.optim.sir import objective_functions
 from sir_discrete3 import SIR_Discrete
+from seir_dis_RL import SEIR_Discrete
 from sklearn.ensemble import ExtraTreesRegressor
 import pickle
 import time
@@ -26,8 +27,8 @@ class FittedQIteration(object):
         """Initialize simulator and regressor. Can optionally pass a custom
         `regressor` model (which must implement `fit` and `predict` -- you can
         use this to try different models like linear regression or NNs)"""
-        # self.simulator = SEIR_Discrete()
-        self.simulator = SIR_Discrete()
+        self.simulator = SEIR_Discrete()
+        # self.simulator = SIR_Discrete()
         self.regressor = regressor or ExtraTreesRegressor()
 
     def Q(self, states):
@@ -330,10 +331,10 @@ if __name__ == '__main__':
         env=FittedQIteration()
         episodes=env.fit( num_refits=num_refits, num_episodes=num_episodes,discount=discount)
      
-        with open('Result_{}_SIR_refits={}_episodes={}_peak_t.pickle'.format(lam,num_refits,num_episodes), 'wb') as f:
+        with open('Result_{}_SEIR_refits={}_episodes={}_delay.pickle'.format(lam,num_refits,num_episodes), 'wb') as f:
                     pickle.dump([env,episodes], f)
     else:            
-        with open('Result_{}_SIR_refits={}_episodes={}_peak.pickle'.format(lam,num_refits,num_episodes), 'rb') as f:
+        with open('Result_{}_SEIR_refits={}_episodes={}_delay.pickle'.format(lam,num_refits,num_episodes), 'rb') as f:
             X = pickle.load(f)  
         env=X[0]
         episodes=X[1]

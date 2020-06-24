@@ -24,9 +24,9 @@ class SEIR_Discrete(object):
         self.psi_I=1
         self.initialisation='starting'
         self.observed_values=None
-        self.E_hosp_ratio=0.5
-        self.I_hosp_ratio=0.39
-        self.factor=(1.77/1.23)
+        self.E_hosp_ratio=0.5 #####
+        self.I_hosp_ratio=0.39 #####
+        self.factor=(1.77/1.23) #####
 
         self.T=400
         self.H=0
@@ -150,7 +150,7 @@ class SEIR_Discrete(object):
             T_trans_c=2 
         elif ACTION==3:
             T_trans_c=3 
-        return T_trans_c*self.T_treat/self.R0    
+        return T_trans_c    
     
     
     def perform_leader(self, Strength, Duration):
@@ -177,60 +177,82 @@ class SEIR_Discrete(object):
     
     def perform(self,ACTION):
         STATE_=self.STATE.copy()
-        # 0:S, 1:I, 2:R, 3:B 4:t 5:switch_budgets 6:pAction
-        T_trans=self.get_action_T(ACTION)
-        STATE_[0] = self.STATE[0]-self.STATE[1]*self.STATE[0]/(T_trans)
-        STATE_[1] = self.STATE[1]+self.STATE[1]*self.STATE[0]/(T_trans) - self.STATE[1]/self.T_treat
-        STATE_[2] = self.STATE[2]+self.STATE[1]/self.T_treat
-        STATE_[3] = self.STATE[3]-self.get_action_cost(ACTION)
-        STATE_[4]+=1
+        # [S, E, I, D_E, D_I, R_mild, R_severe_home, R_severe_hosp, R_fatal, C, D]
+        #################
+        self.T_inf_D=self.T_inf 
+        self.T_inc_D=self.T_inc 
+        self.P_mild_D=self.P_mild
+        self.P_severe_D=self.P_severe
+        self.P_fatal_D=self.P_fatal
+        #################
+        
+        
+        T_trans=self.get_action_T(ACTION)*self.T_inf/self.R0
+        T_trans_D=self.get_action_T(ACTION)*self.T_inf_D/self.R0
+
+        
+
+        STATE_=self.STATE.copy()     
+        STATE_[0] += - STATE_[2] * self.STATE[0] / (T_trans) - (self.q / T_trans_D) * (self.STATE[0] * self.STATE[4]) # S
+        STATE_[1] += STATE_[2] * self.STATE[0] / (T_trans) + (self.q / T_trans_D) * (self.STATE[0] * self.STATE[4]) - (self.STATE[1]/ self.T_inc) - (self.theta_E * self.psi_E * self.STATE[1]) # E
+        STATE_[2] += self.STATE[1] / self.T_inc - STATE_[2] / self.T_inf - (self.theta_I * self.psi_I * STATE_[2]) # I
+        STATE_[3] += (self.theta_E * self.psi_E * self.STATE[1]) - (1 / self.T_inc_D) * self.STATE[3] # D_E
+        STATE_[4] += (self.theta_I * self.psi_I * STATE_[2]) + (1 / self.T_inc_D) * self.STATE[3] - (1 / self.T_inf_D) * self.STATE[4] # D_I 
+        STATE_[5] += (1/self.T_inf)*(self.P_mild*STATE_[2]) + (1/self.T_inf_D)*(self.P_mild_D*self.STATE[4]) - self.STATE[5]/self.T_recov_mild # R_mild
+        STATE_[6] += (1/self.T_inf)*(self.P_severe*STATE_[2]) + (1/self.T_inf_D)*(self.P_severe_D*self.STATE[4]) - self.STATE[6]/self.T_hosp # R_severe_home
+        STATE_[7] += self.STATE[6]/self.T_hosp - self.STATE[7]/self.T_recov_severe # R_severe_hosp
+        STATE_[8] += (1/self.T_inf)*(self.P_fatal*STATE_[2]) + (1/self.T_inf_D)*(self.P_fatal_D*self.STATE[4]) - self.STATE[8]/self.T_recov_fatal # R_fatal
+        STATE_[9] += self.STATE[5]/self.T_recov_mild + self.STATE[7]/self.T_recov_severe # C
+        STATE_[10] += self.STATE[8]/self.T_recov_fatal # D
+        STATE_[11] += -self.get_action_cost(ACTION)
+        STATE_[12] += 1
         self.STATE=STATE_.copy()
-        r=self.calc_QALY_reward()
+        
+
+        # r=self.calc_QALY_reward()
         # r=self.calc_burden_reward()
         # r=self.calc_peak_reward()
-        # r=self.calc_delay_reward()
+        r=self.calc_delay_reward()
         return r, self.STATE
 
     def calc_QALY_reward(self):
         # reward=-self.STATE[1]*1000
-        reward=1-self.STATE[1]
+        reward=1-self.STATE[2]
         return reward
     
     def calc_burden_reward(self):
         reward=0
-        if self.STATE[1]>0.1:
+        if self.STATE[2]>0.1:
 #            reward=-1000
-            reward=-1000*(self.STATE[1]-0.1)
+            reward=-1000*(self.STATE[2]-0.1)
         return reward
     def calc_peak_reward(self):
         reward=0
-        if self.STATE[1]>self.H:
-            reward=-1000*(self.STATE[1]-self.H)
-            self.H=self.STATE[1]
+        if self.STATE[2]>self.H:
+            reward=-1000*(self.STATE[2]-self.H)
+            self.H=self.STATE[2]
         return reward
     
     def calc_delay_reward(self):
-        reward=self.STATE[4]*self.STATE[1]
+        reward=self.STATE[12]*self.STATE[2]
         return reward
     
     
 if __name__ == '__main__':
     N = 1e5
     I0 = 100.0
-    env=SIR_Discrete((N - I0)/N, I0/N, 0, 30)
+    env=SEIR_Discrete(B=80)
     S=[]
-    R=[]
+    E=[]
     I=[]
     for i in range(400):
         env.perform(0)
         state=env.STATE
-#        S.append(state[0])
-        I.append(state[1])
+        S.append(state[0])
+        E.append(state[1])
+        I.append(state[2])
 #        R.append(state[2])
-#    plt.plot(range(len(S)),S)
+    plt.plot(range(len(S)),S)
+    plt.plot(range(len(E)),E)
     plt.plot(range(len(I)),I)
-#    plt.plot(range(len(R)),R)
-    reward=0
-    for i in range(len(I)):
-        reward+=I[i]
-    print(reward)
+
