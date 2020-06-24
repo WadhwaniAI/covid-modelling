@@ -13,7 +13,7 @@ def axis_formatter(ax, legend_elements, custom_legend=False):
     """Helper function for formatting axis
 
     Arguments:
-        ax -- Matplotlib ax objectx
+        ax -- Matplotlib ax object
     """
     
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=5))
@@ -115,4 +115,4 @@ def plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_
     plt.tight_layout()
     if savepath is not None:
         plt.savefig(savepath)
-    return ax
+    return axs
