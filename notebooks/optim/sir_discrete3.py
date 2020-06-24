@@ -82,14 +82,15 @@ class SIR_Discrete(object):
         STATE_[3] = self.STATE[3]-self.get_action_cost(ACTION)
         STATE_[4]+=1
         self.STATE=STATE_.copy()
-        r=self.calc_QALY_reward()
+        # r=self.calc_QALY_reward()
         # r=self.calc_burden_reward()
-        # r=self.calc_peak_reward()
+        r=self.calc_peak_reward()
         # r=self.calc_delay_reward()
         return r, self.STATE
 
     def calc_QALY_reward(self):
-        reward=-self.STATE[1]
+        # reward=-self.STATE[1]*1000
+        reward=1-self.STATE[1]
         return reward
     
     def calc_burden_reward(self):
@@ -100,9 +101,13 @@ class SIR_Discrete(object):
         return reward
     def calc_peak_reward(self):
         reward=0
+        # if self.STATE[1]>0.1:
+        #     reward=-1000
         if self.STATE[1]>self.H:
             reward=-1000*(self.STATE[1]-self.H)
             self.H=self.STATE[1]
+        
+            
         return reward
     
     def calc_delay_reward(self):
