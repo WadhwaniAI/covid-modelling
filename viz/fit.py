@@ -115,4 +115,4 @@ def plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_
     plt.tight_layout()
     if savepath is not None:
         plt.savefig(savepath)
-    return axs
+    return fig

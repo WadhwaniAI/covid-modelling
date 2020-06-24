@@ -73,7 +73,7 @@ def plot_smoothing(orig_df_district, new_df_district, state, district,
         axis_formatter(ax)
         i += 1
     plt.tight_layout()
-    return axs
+    return fig
 
 def plot(x, y, title, yaxis_name=None, log=False, scatter=False, savepath=None):
     plt.title(title)
