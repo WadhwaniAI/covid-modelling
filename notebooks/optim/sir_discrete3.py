@@ -18,7 +18,7 @@ class SIR_Discrete(object):
         self.max_duration=40
         self.num_states=7
     def reset(self):
-        self.STATE=np.array([0.999, 0.001, 0, 60,0,5,False])
+        self.STATE=np.array([0.999, 0.001, 0, 80,0,5,False])
     
     def is_action_legal(self,ACTION):
         if(self.get_action_cost(ACTION)<=self.STATE[3]):
