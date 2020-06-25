@@ -6,6 +6,7 @@
 *.pyc
 *.pickle
 *.txt
+*.json
 
 # Junk / Hidden Files
 **.ipynb_checkpoints/
@@ -36,6 +37,7 @@ cache/
 
 # Exceptions
 !data/data/*.csv
+!data/data/mumbai/*.csv
 *output/
 **output/
 **/output

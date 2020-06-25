@@ -143,12 +143,13 @@ def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, reg
                'current_deceased', 'current_hospitalised', 'current_icu', 'current_ventilator', 'predictionDate']
     
     for decile in decile_dict.keys():
-        columns += [f'active_{decile}', f'active_{decile}_error', 
-            f'hospitalised_{decile}', f'hospitalised_{decile}_error', 
-            f'icu_{decile}', f'icu_{decile}_error', 
-            f'recovered_{decile}', f'recovered_{decile}_error', 
-            f'deceased_{decile}', f'deceased_{decile}_error', 
-            f'total_{decile}', f'total_{decile}_error'
+        columns += [f'active_{decile}',
+            f'hospitalised_{decile}',
+            f'icu_{decile}',
+            f'recovered_{decile}',
+            f'deceased_{decile}',
+            f'total_{decile}',
+            f'error_{decile}',
         ]
 
     df_output = pd.DataFrame(columns=columns)
@@ -170,17 +171,12 @@ def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, reg
         df_prediction = df_prediction.set_index('date')
         df_loss = decile_dict[decile]['df_loss']
         df_output.loc[df_prediction.index, f'active_{decile}'] = df_prediction['hospitalised']
-        df_output.loc[df_prediction.index, f'active_{decile}_error'] = df_loss.loc['hospitalised', 'train']
         df_output.loc[df_prediction.index, f'hospitalised_{decile}'] = df_prediction['hospitalised']
-        df_output.loc[df_prediction.index, f'hospitalised_{decile}_error'] = df_loss.loc['hospitalised', 'train']
         df_output.loc[df_prediction.index, f'icu_{decile}'] = icu_fraction*df_prediction['hospitalised']
-        df_output.loc[df_prediction.index, f'icu_{decile}_error'] = df_loss.loc['hospitalised', 'train']
         df_output.loc[df_prediction.index, f'recovered_{decile}'] = df_prediction['recovered']
-        df_output.loc[df_prediction.index, f'recovered_{decile}_error'] = df_loss.loc['recovered', 'train']
         df_output.loc[df_prediction.index, f'deceased_{decile}'] = df_prediction['deceased']
-        df_output.loc[df_prediction.index, f'deceased_{decile}_error'] = df_loss.loc['deceased', 'train']
         df_output.loc[df_prediction.index, f'total_{decile}'] = df_prediction['total_infected']
-        df_output.loc[df_prediction.index, f'total_{decile}_error'] = df_loss.loc['total_infected', 'train']
+        df_output.loc[df_prediction.index, f'error_{decile}'] = df_loss.loc[:, 'train'].sum()
 
     df_true = df_true.set_index('date')
     df_output.loc[df_true.index, 'current_total'] = df_true['total_infected'].to_numpy()

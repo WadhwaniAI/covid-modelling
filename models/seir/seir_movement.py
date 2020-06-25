@@ -12,7 +12,7 @@ from utils.ode import ODE_Solver
 
 class SEIR_Movement(SEIR):
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
-                T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6,
+                T_recov_fatal=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6,
                  lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', initialisation='intermediate', 
                  observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, mu=0, **kwargs):
         """
@@ -59,7 +59,7 @@ class SEIR_Movement(SEIR):
         Clinical time parameters - 
         T_recov_mild: Time it takes for an individual with a mild infection to recover (float)
         T_recov_severe: Time it takes for an individual with a severe infection to recover (float)
-        T_death: Time it takes for an individual with a fatal infection to die (float)
+        T_recov_fatal: Time it takes for an individual with a fatal infection to die (float)
 
         Lockdown parameters - 
         starting_date: Datetime value that corresponds to Day 0 of modelling (datetime/str)
@@ -115,9 +115,9 @@ class SEIR_Movement(SEIR):
         dydt[2] = E / self.T_inc - I / self.T_inf - self.mu*I  # I
         dydt[3] = (1/self.T_inf)*(self.P_mild*I) - R_mild/self.T_recov_mild # R_mild
         dydt[4] = (1/self.T_inf)*(self.P_severe*I) - R_severe/self.T_recov_severe # R_severe
-        dydt[5] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_death # R_fatal
+        dydt[5] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_recov_fatal # R_fatal
         dydt[6] = R_mild/self.T_recov_mild + R_severe/self.T_recov_severe # C
-        dydt[7] = R_fatal/self.T_death # D
+        dydt[7] = R_fatal/self.T_recov_fatal # D
 
         return dydt
 
@@ -129,10 +129,11 @@ class SEIR_Movement(SEIR):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['hospitalised'] = df_prediction['R_severe'] + df_prediction['R_fatal']
+        df_prediction['hospitalised'] = df_prediction['R_mild'] + \
+            df_prediction['R_severe'] + df_prediction['R_fatal']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['infectious_unknown'] = df_prediction['I']
-        df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
+        df_prediction['total_infected'] = df_prediction['hospitalised'] + \
+            df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction
 

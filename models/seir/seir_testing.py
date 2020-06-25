@@ -13,7 +13,7 @@ from utils.ode import ODE_Solver
 class SEIR_Testing(SEIR):
 
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
-                 T_death=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6,
+                 T_recov_fatal=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6,
                  q=0, theta_E=0, psi_E=1, theta_I=0, psi_I=1, lockdown_day=10, lockdown_removal_day=75,
                  starting_date='2020-03-09', initialisation='intermediate', observed_values=None, 
                  E_hosp_ratio=0.5, I_hosp_ratio=0.5, ** kwargs):
@@ -60,7 +60,7 @@ class SEIR_Testing(SEIR):
         Clinical time parameters - 
         T_recov_mild: Time it takes for an individual with a mild infection to recover (float)
         T_recov_severe: Time it takes for an individual with a severe infection to recover (float)
-        T_death: Time it takes for an individual with a fatal infection to die (float)
+        T_recov_fatal: Time it takes for an individual with a fatal infection to die (float)
 
         Testing Parameters - 
         'q': Perfection of quarantining 
@@ -82,9 +82,16 @@ class SEIR_Testing(SEIR):
         I_hosp_ratio : Ratio for Infected to hospitalised for initialisation
         """
         STATES = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
+        R_STATES = [x for x in STATES if 'R_' in x]
         input_args = copy.deepcopy(locals())
         del input_args['self']
         del input_args['kwargs']
+        p_params = {k: input_args[k] for k in input_args.keys() if 'P_' in k}
+        t_params = {k: input_args[k] for k in input_args.keys() if 'T_recov' in k}
+        p_params['P_severe'] = 1 - p_params['P_fatal']
+        p_params['P_mild'] = 0
+        input_args['p_params'] = p_params
+        input_args['t_params'] = t_params
         super().__init__(**input_args)
 
         extra_params = {
@@ -133,9 +140,9 @@ class SEIR_Testing(SEIR):
         dydt[4] = (self.theta_I * self.psi_I * I) + (1 / self.T_inc) * D_E - (1 / self.T_inf) * D_I # D_I 
         dydt[5] = (1/self.T_inf)*(self.P_mild*(I + D_I)) - R_mild/self.T_recov_mild # R_mild
         dydt[6] = (1/self.T_inf)*(self.P_severe*(I + D_I)) - R_severe/self.T_recov_severe # R_severe
-        dydt[7] = (1/self.T_inf)*(self.P_fatal*(I + D_I)) - R_fatal/self.T_death # R_fatal
+        dydt[7] = (1/self.T_inf)*(self.P_fatal*(I + D_I)) - R_fatal/self.T_recov_fatal # R_fatal
         dydt[8] = R_mild/self.T_recov_mild + R_severe/self.T_recov_severe # C
-        dydt[9] = R_fatal/self.T_death # D
+        dydt[9] = R_fatal/self.T_recov_fatal # D
 
         return dydt
 
@@ -147,9 +154,10 @@ class SEIR_Testing(SEIR):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['hospitalised'] = df_prediction['R_severe'] + df_prediction['R_fatal']
+        df_prediction['hospitalised'] = df_prediction['R_mild'] + \
+            df_prediction['R_severe'] + df_prediction['R_fatal']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['infectious_unknown'] = df_prediction['I'] + df_prediction['D_I']
-        df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
+        df_prediction['total_infected'] = df_prediction['hospitalised'] + \
+            df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction
