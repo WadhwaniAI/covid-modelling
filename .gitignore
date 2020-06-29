@@ -5,7 +5,7 @@
 *.pyc
 *temp/
 *mcmc/
-*v*.json
+cfg/v*.json
 *params/
 **.ipynb_checkpoints/
 *.ipynb_checkpoints/
