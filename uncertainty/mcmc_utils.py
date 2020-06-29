@@ -51,7 +51,7 @@ def predict(data: pd.DataFrame, mcmc_runs: list, end_date: str = None) -> pd.Dat
     
     pred_dfs = list()
     for i in tqdm(sample_indices):
-        pred_dfs.append(optimiser.solve(combined_acc[int(i)], default_params, data, end_date=end_date))
+        pred_dfs.append(optimiser.solve(combined_acc[int(i)], default_params, data, initialisation='intermediate', loss_indices=[0, -1], end_date=end_date))
 
     for df in pred_dfs:
         df.set_index('date', inplace=True)

@@ -20,7 +20,7 @@ def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, ou
     data.set_index("date", inplace=True)
 
     plt.figure(figsize=(15, 10))
-    train_start_date = mcmc.df_train.iloc[mcmc.fit_start, :]['date']
+    train_start_date = mcmc.df_train.iloc[0, :]['date']
     train_end_date = mcmc.df_train.iloc[-1, :]['date']
     
     actual = data[data.index >= train_start_date]
@@ -80,8 +80,11 @@ def plot_chains(mcmc: MCMC, out_dir: str):
 
         for i, chain in enumerate(mcmc.chains):
             df = pd.DataFrame(chain[1])
-            samples = np.array(df[param])
-            plt.scatter(list(range(len(samples))), samples, s=10, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+            try:
+                samples = np.array(df[param])
+                plt.scatter(list(range(len(samples))), samples, s=10, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+            except:
+                continue
 
         plt.xlabel("iterations")
         plt.title("Rejected {} samples".format(param))
