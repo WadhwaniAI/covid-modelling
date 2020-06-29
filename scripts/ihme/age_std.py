@@ -3,15 +3,11 @@ import sys
 import json
 import copy
 import argparse
-import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 
-import curvefit
 from curvefit.core import functions
 
 sys.path.append('../..')
-from models.ihme.model import IHME
 from utils.data import cities
 from data.processing import jhu
 from utils.population import standardise_age
@@ -59,7 +55,7 @@ def find_init(country, triple):
         pargs['sd'] = args.sd
         pargs['smoothing'] = args.smoothing
         pargs['log'] = args.log
-        json.dump(pargs, pfile)
+        json.dump(pargs, pfile, indent=4)
 
     params['func'] = getattr(functions, params['func'])
     xform_func = lograte_to_cumulative if args.log else rate_to_cumulative

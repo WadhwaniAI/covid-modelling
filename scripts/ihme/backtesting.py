@@ -75,7 +75,7 @@ def backtest(dist, st, area_names, config, model_params, folder):
         pargs.update(config)
         pargs['func'] = pargs['func'].__name__
         pargs['runtime'] = runtime
-        json.dump(pargs, pfile)
+        json.dump(pargs, pfile, indent=4)
     print(f"yee we done see results here: {output_folder}")
 
 def replot_backtest(dist, st, area_names, folder):

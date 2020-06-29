@@ -61,7 +61,7 @@ def run_pipeline(dist, st, area_names, config, model_params, folder):
         pargs['n_days_train'] = int(results_dict['n_days'][ycol])
         pargs['error'] = results_dict['df_loss'].to_dict()
         pargs['runtime'] = runtime
-        json.dump(pargs, pfile)
+        json.dump(pargs, pfile, indent=4)
 
     # SAVE DATA, PREDICTIONS
     picklefn = f'{output_folder}/data.pkl'

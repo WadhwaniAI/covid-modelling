@@ -1,26 +1,15 @@
 import os
 import json
 from copy import copy
-import pandas as pd
-import numpy as np
 import dill as pickle
 import time
 import argparse
 from datetime import datetime, timedelta
 
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import pandas as pd
-import numpy as np
-import seaborn as sns
-from adjustText import adjust_text
-
 import sys
 sys.path.append('../..')
 from utils.data import cities
 from utils.util import read_config
-from main.seir.forecast import get_forecast, order_trials, top_k_trials, forecast_k
-from utils.enums import Columns
 
 from main.ihme.fitting import single_cycle, create_output_folder
 from utils.enums import Columns
@@ -86,7 +75,7 @@ with open(f'{output_folder}/loss.json', 'w') as pfile:
         'm1': m1_results['df_loss'].to_dict(),
         'm2': m2_results['df_loss'].to_dict(),
     }
-    json.dump(l, pfile)
+    json.dump(l, pfile, indent=4)
 
 m1_results['df_prediction'].to_csv(os.path.join(output_folder, 'm1-pred.csv'))
 m2_results['df_prediction'].to_csv(os.path.join(output_folder, 'm2-pred.csv'))
@@ -96,7 +85,7 @@ with open(f'{output_folder}/params.json', 'w') as pfile:
     pargs = copy(model_params)
     pargs.update(config)
     # pargs['func'] = pargs['func'].__name__
-    json.dump(pargs, pfile)
+    json.dump(pargs, pfile, indent=4)
 
 # SAVE DATA, PREDICTIONS
 picklefn = f'{output_folder}/data.pkl'
