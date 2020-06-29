@@ -21,7 +21,7 @@ def smooth(y, smoothing_window):
     return y_smooth
 
 def rollingavg(series, window):
-    return series.rolling(window).mean()
+    return series.rolling(window, center=True).mean()
 
 def read_config(path, backtesting=False):
     default_path = os.path.join(os.path.dirname(path), 'default.yaml')
