@@ -6,9 +6,6 @@ import numpy as np
 import pandas as pd
 from datetime import timedelta
 
-# from pathos.multiprocessing import ProcessingPool as Pool
-# from pathos.multiprocessing import ThreadPool
-
 import sys
 sys.path.append('../..')
 from utils.util import HidePrints, train_test_split
