@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import pandas as pd
 import numpy as np
 from copy import copy
@@ -10,11 +9,9 @@ from pathos.multiprocessing import ProcessingPool as Pool
 from curvefit.core import functions
 
 sys.path.append('../..')
-from models.ihme.model import IHME
 from utils.data import get_rates
 from data.processing import get_district_timeseries_cached
 from utils.util import train_test_split, rollingavg
-
 
 from models.ihme.model import IHME
 from utils.data import lograte_to_cumulative, rate_to_cumulative
@@ -24,7 +21,7 @@ from main.ihme.optimiser import Optimiser
 from utils.smooth_jump import smooth_big_jump
 
 def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker,
-            smooth_jump, smooth_jump_method, smooth_jump_days):
+            smooth_jump, smooth_jump_method, smooth_jump_days, start_date=None, period=0):
     """
     Function to get regional data and shape it for IHME consumption
 
@@ -47,28 +44,51 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
         dist, st, disable_tracker=disable_tracker)
     if smooth_jump:
         district_timeseries = smooth_big_jump(district_timeseries_nora, smooth_jump_days, not disable_tracker, method=smooth_jump_method)
+    else:
+        district_timeseries = copy(district_timeseries_nora)
+
     df_nora, _ = get_rates(district_timeseries_nora, st, area_names)
     df, dtp = get_rates(district_timeseries, st, area_names)
     
     df.loc[:,'sd'] = df['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
     df_nora.loc[:,'sd'] = df_nora['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
 
+    col_names = [c.name for c in Columns.curve_fit_compartments()]
     if smooth_window > 0:
-        df[ycol] = rollingavg(df[ycol], smooth_window)
-        df = df.dropna(subset=[ycol])
+        for col in col_names:
+            df[col] = rollingavg(df[col], smooth_window)
     
     startday = df['date'][df['deceased_rate'].gt(1e-15).idxmax()]
     
-    df = df.loc[df['deceased_rate'].gt(1e-15).idxmax():,:].reset_index()
+    df = df.loc[df['deceased_rate'].gt(1e-15).idxmax():, :].reset_index()
     df_nora = df_nora.loc[df_nora['deceased_rate'].gt(1e-15).idxmax():,:].reset_index()
 
     df.loc[:, 'day'] = (df['date'] - np.min(df['date'])).apply(lambda x: x.days)
     df_nora.loc[:, 'day'] = (df_nora['date'] - np.min(df_nora['date'])).apply(lambda x: x.days)
+
+    if start_date is None:
+        start_date = df['date'].min()
+    else:
+        start_date = pd.to_datetime(start_date, dayfirst=False)
+
+    print("Start date", start_date)
+
+    threshold = start_date - timedelta(1)
+
+    _, df_ = train_test_split(df, threshold)
+    _, df_nora_ = train_test_split(df_nora, threshold)
+
+    if period == 0:
+        period = df.shape[0]
+
+    df_ = df_.head(period)
+    df_nora_ = df_nora_.head(period)
+
+    threshold = df_['date'].max() - timedelta(days=test_size)
     
-    threshold = df['date'].max() - timedelta(days=test_size)
-    
-    train, test = train_test_split(df, threshold)
-    train_nora, test_nora = train_test_split(df_nora, threshold)
+    train, test = train_test_split(df_, threshold)
+    train_nora, test_nora = train_test_split(df_nora_, threshold)
+
     dataframes = {
         'train': train,
         'test': test,
@@ -81,7 +101,7 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     
 def setup(dist, st, area_names, model_params, 
         sd, smooth, test_size, disable_tracker, 
-        smooth_jump, smooth_jump_method, smooth_jump_days, **config):
+        smooth_jump, smooth_jump_method, smooth_jump_days, start_date, period, **config):
     """
     gets data and sets up the model_parameters to be ready for IHME consumption
 
@@ -108,7 +128,9 @@ def setup(dist, st, area_names, model_params,
         smooth_window=smooth, test_size=test_size,
         disable_tracker=disable_tracker,
         smooth_jump=smooth_jump, smooth_jump_method=smooth_jump_method, 
-        smooth_jump_days=smooth_jump_days)
+        smooth_jump_days=smooth_jump_days,
+        start_date=start_date, period=period
+    )
         
     return dataframes, dtp, model_params
 
@@ -151,6 +173,8 @@ def run_cycle(dataframes, model_params, forecast_days=30,
     model = IHME(model_params)
     train, test = dataframes['train'], dataframes['test']
 
+    n_days_optimize = kwargs.get("n_days_optimize", False)
+
     # OPTIMIZE HYPERPARAMS
     hyperopt_runs = {}
     trials_dict = {}
@@ -173,11 +197,13 @@ def run_cycle(dataframes, model_params, forecast_days=30,
             hyperopt_runs[err] = (best_init, n_days)
             trials_dict[i] = trials
     (fe_init, n_days_train) = hyperopt_runs[min(hyperopt_runs.keys())]
-    
-    train = train[-n_days_train:]
+
+    if n_days_optimize:
+        train = train[-n_days_train:]
     train.loc[:, 'day'] = (train['date'] - np.min(train['date'])).apply(lambda x: x.days)
     test.loc[:, 'day'] = (test['date'] - np.min(train['date'])).apply(lambda x: x.days)
-    train.reset_index(inplace=True)
+    if n_days_optimize:
+        train.reset_index(inplace=True)
     test.index = range(1 + train.index[-1], 1 + train.index[-1] + len(test))
     model.priors['fe_init'] = fe_init
 
@@ -198,17 +224,19 @@ def run_cycle(dataframes, model_params, forecast_days=30,
     # LOSS
     lc = Loss_Calculator()
     train_pred = predictions[model.ycol][:len(train)]
-    trainerr = lc.evaluate(train[model.ycol], train_pred)
+    train_model_ycol_numpy = train[model.ycol].to_numpy()
+    trainerr = lc.evaluate(train_model_ycol_numpy, train_pred)
     testerr = None
     if len(test) != 0:
         test_pred = predictions[model.ycol][len(train):len(train) + len(test)]
-        testerr = lc.evaluate(test[model.ycol], test_pred)
+        test_model_ycol_numpy = test[model.ycol].to_numpy()
+        testerr = lc.evaluate(test_model_ycol_numpy, test_pred)
     if xform_func != None:
-        xform_trainerr = lc.evaluate(xform_func(train[model.ycol], dtp),
+        xform_trainerr = lc.evaluate(xform_func(train_model_ycol_numpy, dtp),
             xform_func(train_pred, dtp))
         xform_testerr = None
         if len(test) != 0:
-            xform_testerr = lc.evaluate(xform_func(test[model.ycol], dtp),
+            xform_testerr = lc.evaluate(xform_func(test_model_ycol_numpy, dtp),
                 xform_func(test_pred, dtp))
     else:
         xform_trainerr, xform_testerr = None, None
