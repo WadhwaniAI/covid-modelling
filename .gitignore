@@ -37,6 +37,7 @@ cache/
 
 # Exceptions
 !data/data/*.csv
+!data/data/mumbai/*.csv
 *output/
 **output/
 **/output

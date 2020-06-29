@@ -17,6 +17,8 @@ Last Updated: June 10, Vishwa
 ## Scripts
 see [scripts/oncall](https://github.com/WadhwaniAI/covid-modelling/tree/master/scripts/oncall)
 
+For these, you'll want to also check `scripts/*config/` and see if there's anything there you need to modify. You can create a new one, change whatever is different from default, and run with that config. They all build on top of `default.yaml`.
+
 ### [generate_report.py](../scripts/oncall/generate_report.py)
 Creates V1 of the report (see #4 above)-- none of the uncertainty estimation is in here; you'll see plots of M1 and M2 fits, M2 forecast based on M1, and top 10 trials/plots for those
 
@@ -26,23 +28,11 @@ Command Line Parameters:
 
 `-f --folder`: reports/assets will be stored in `reports/<folder>`; required
 
-`-d --districts`: districts (but you should really just pass one, run twice); required [mumbai, pune]
+`-d --district`: district; required [mumbai or pune]
 
-`-k --ktrials`: top k trials to plot on forecast graph; optional, default: 10
-
-`-t --use-tracker`: uses the covid19api tracker; optional, default: FALSE
-
-`-i -iterations`: iterations to run hyperopt for the model; optional, default 700
-
-`-s --smooth-jump`: smooths the mumbai recoveries jump; optional, default: FALSE
-
-`-method --smooth-method`: smooth method for the mumbai jump; optional, default: weighted
-
-`-n -ndays`: num days to smooth mumbai jump; optional, default 33
-
+`-c --config`: path to config file; required [see `scripts/*/config`]
 
 Things you may want to change IN the script
-- Make this script only take 1 district-- we don't need to aggregate results across districts, and everywhere in the code we actually only ever need `predictions_dict[region]` anyway.
 - You may want to try running with different parameters.
   - `which_compartments` just deceased and total_infected
   - maybe we'll want to play with the train_period?
@@ -55,9 +45,7 @@ Command Line Parameters:
 
 `-f --folder`: where to find the pkl, addl assets will be saved in `reports/<folder>`; required
 
-`-date --date`: date to sort trials based on (for middle-class uncertainty method); required \[YYYY-MM-DD\]
-
-`-i -iterations`: iterations to run hyperopt for the beta search; optional, default 1000
+`-c --config`: path to config file; required [see `scripts/*/config`]
 
 
 ### [regenerate_report.py](../scripts/oncall/regenerate_report.py)
