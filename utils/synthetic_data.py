@@ -130,7 +130,7 @@ def get_experiment_dataset(original_data, generated_data, state, district, use_a
         district (str): name of district
         use_actual (bool, optional): whether to use ground truth data in custom dataset (default: True)
         use_synthetic (bool, optional): whether to use synthetic data in custom dataset (default: True)
-        start_date (str, optional): date from which custom dataset should start (default: None)
+        start_date (str, optional): date from which custom dataset should start including allowance (default: None)
         allowance (int, optional): number of days of ground data before train split to prevent nan when rolling average
             is taken (default: 5)
         s1 (int, optional): length of series 1 (default: 15)

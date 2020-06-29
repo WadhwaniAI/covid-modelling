@@ -100,9 +100,11 @@ def run_experiments(ihme_config, data_config):
     # Get custom datasets for experiments
     df, train, test, dataset_prop = dict(), dict(), dict(), dict()
     for exp in range(num_exp):
-        df[exp], train[exp], test[exp], dataset_prop[exp] = get_experiment_dataset(original_data,
-                                                                                   exp_config[exp]['generated_data'],
-                                                                                   state, district)
+        df[exp], train[exp], test[exp], dataset_prop[exp] = get_experiment_dataset(
+            original_data, exp_config[exp]['generated_data'], state, district,
+            use_actual=exp_config[exp]['use_actual'], use_synthetic=exp_config[exp]['use_synthetic'],
+            start_date=dataset_start_date, allowance=allowance, s1=s1, s2=s2, s3=s3
+        )
 
     # Get SEIR input dataframes
     input_df = get_regional_data(dataframes, state, district, (not disable_tracker), None, None, granular_data=False,

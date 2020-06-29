@@ -104,8 +104,8 @@ def log_experiment_local(output_folder, ihme_config, ihme_model_params, ihme_syn
     }
 
     for i in datasets:
-        filename = 'dataset ' + str(i) + '.csv'
-        datasets[i].to_csv(filename)
+        filename = 'dataset_' + str(i+1) + '.csv'
+        datasets[i].to_csv(output_folder+filename)
 
     c1 = seir_synthetic_data['m1']['df_loss'].T[which_compartments]
     c1.to_csv(output_folder + "seir_loss.csv")
