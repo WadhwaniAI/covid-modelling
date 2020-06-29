@@ -1,0 +1,14 @@
+base:
+  district: Pune
+  state: Maharashtra
+  disable_tracker: TRUE
+  use_synthetic: TRUE
+  use_actual: TRUE
+  allowance: 5
+  s1: 15
+  s2: 15
+  s3: 15
+  shift: 0
+  i1_val_size: 5
+  c2_train_period: 7
+
