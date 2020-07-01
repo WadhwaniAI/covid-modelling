@@ -130,6 +130,8 @@ def plot_all_experiments(df_true, predictions_dict, district,
             filename = output_folder + which_compartments[col].name
             fig.savefig(filename)
 
+    plt.close()
+
 
 def plot_fit_uncertainty(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, test_period,
                          state, district, draws=None, which_compartments=['hospitalised', 'total_infected'],
@@ -203,7 +205,7 @@ def plot_fit_uncertainty(df_prediction, df_train, df_val, df_train_nora, df_val_
                     ax.errorbar(df_prediction['date'][train_period:train_period+test_period],
                                 df_prediction[compartment.name][train_period:train_period+test_period],
                                 yerr=draws[compartment.name]['draws'][:, train_period:train_period+test_period],
-                                lw=1.0, color='lightcoral', barsabove='False', label='draws')
+                                lw=1.0, ls='-.', color='lightcoral', barsabove='False', label='draws')
 
                 legend_elements.append(
                     Line2D([0], [0], color=compartment.color, label=compartment.label))
@@ -220,4 +222,7 @@ def plot_fit_uncertainty(df_prediction, df_train, df_val, df_train_nora, df_val_
     plt.tight_layout()
     if savepath is not None:
         plt.savefig(savepath)
+
+    plt.close()
+
     return fig
