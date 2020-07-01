@@ -1,5 +1,6 @@
 import argparse
 import sys
+import numpy as np
 
 from datetime import timedelta, datetime
 
@@ -17,7 +18,7 @@ from main.seir.fitting import get_regional_data
 from viz.synthetic_data import plot_all_experiments
 
 
-def run_experiments(ihme_config, data_config):
+def run_experiments(ihme_config, data_config, multiple, shift_forward):
     data_config = read_synth_data_config(data_config)
 
     # Unpack parameters from config and set local parameters
@@ -28,7 +29,10 @@ def run_experiments(ihme_config, data_config):
     s1 = data_config['s1']
     s2 = data_config['s2']
     s3 = data_config['s3']
-    shift = data_config['shift']
+    if multiple:
+        shift = shift_forward
+    else:
+        shift = data_config['shift']
     i1_val_size = data_config['i1_val_size']
     c1_train_period = s1
     c1_val_period = s2
@@ -43,7 +47,9 @@ def run_experiments(ihme_config, data_config):
 
     # Check data if tracker data is used
     loader = Covid19IndiaLoader()
-    dataframes = loader.get_covid19india_api_data()
+    dataframes = None
+    if not disable_tracker:
+        dataframes = loader.get_covid19india_api_data()
 
     # Print data summary
     data = get_data(dataframes, state, district, disable_tracker=disable_tracker)
@@ -84,8 +90,23 @@ def run_experiments(ihme_config, data_config):
                                                                               disable_tracker, actual_start_date,
                                                                               period, s1, i1_val_size, i1_test_size)
 
+    # IHME uncertainty
+    draws = ihme_synthetic_data['draws']
+    average_uncertainty_s2 = dict()
+    for compartment in which_compartments:
+        draws_compartment = draws[compartment]['draws']
+        draws_compartment_s2 = draws_compartment[:, s1:s1 + s2]
+        average_uncertainty_s2[compartment] = np.mean(draws_compartment_s2[1] - draws_compartment_s2[0])
+    uncertainty = pd.DataFrame.from_dict(average_uncertainty_s2, orient='index', columns=['average s2 uncertainty'])
+    ihme_synthetic_data['df_loss'] = pd.concat([ihme_synthetic_data['df_loss'], uncertainty], axis=1)
+
+    # Get SEIR input dataframes
+    input_df = get_regional_data(dataframes, state, district, (not disable_tracker), None, None, granular_data=False,
+                                 smooth_jump=smooth_jump, smoothing_length=33, smoothing_method='weighted', t_recov=14,
+                                 return_extra=False, which_compartments=which_compartments)
+
     # Generate synthetic data using SEIR model
-    seir_synthetic_data = seir_data_generator(dataframes, district, state, disable_tracker, smooth_jump,
+    seir_synthetic_data = seir_data_generator(input_df, district, state, disable_tracker,
                                               c1_train_period, c1_val_period, c1_dataset_length)
 
     original_data = deepcopy(ihme_synthetic_data['df_district_nora'])
@@ -105,11 +126,6 @@ def run_experiments(ihme_config, data_config):
             use_actual=exp_config[exp]['use_actual'], use_synthetic=exp_config[exp]['use_synthetic'],
             start_date=dataset_start_date, allowance=allowance, s1=s1, s2=s2, s3=s3
         )
-
-    # Get SEIR input dataframes
-    input_df = get_regional_data(dataframes, state, district, (not disable_tracker), None, None, granular_data=False,
-                                 smooth_jump=smooth_jump, smoothing_length=33, smoothing_method='weighted', t_recov=14,
-                                 return_extra=False)
 
     # Insert custom data into SEIR input dataframes
     input_dfs = dict()
@@ -134,10 +150,21 @@ def run_experiments(ihme_config, data_config):
                          dataset_prop, series_properties)
 
 
+def run_experiments_over_time(ihme_config, data_config, num, shift):
+    if num == 1:
+        run_experiments(ihme_config, data_config, False, 0)
+    else:
+        for i in range(num):
+            print("Run no. ", i+1)
+            run_experiments(ihme_config, data_config, True, shift*i)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--ihme_config", help="ihme config file name", required=True)
     parser.add_argument("-d", "--data_config", help="data config file name", required=True)
+    parser.add_argument("-n", "--num", help="number of times experiments are run", required=False, default=1)
+    parser.add_argument("-s", "--shift", help="number of days to shift forward", required=False, default=5)
     args = parser.parse_args()
 
-    run_experiments(args.ihme_config, args.data_config)
+    run_experiments_over_time(args.ihme_config, args.data_config, int(args.num), int(args.shift))
