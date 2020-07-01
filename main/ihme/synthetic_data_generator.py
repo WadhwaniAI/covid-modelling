@@ -1,5 +1,6 @@
 import os
 import json
+import pickle
 import pandas as pd
 
 from copy import deepcopy
@@ -15,6 +16,7 @@ from models.seir.seir_testing import SEIR_Testing
 
 from viz.forecast import plot_forecast_agnostic
 from viz.fit import plot_fit
+from viz.synthetic_data import plot_fit_uncertainty
 
 
 def ihme_data_generator(district, config_path, output_folder,
@@ -49,18 +51,21 @@ def ihme_data_generator(district, config_path, output_folder,
     plot_forecast_agnostic(ihme_df_true, makesum.reset_index(), model_name='IHME',
                            dist=district, state=state, filename=os.path.join(output_folder, 'ihme-i1-forecast.png'))
 
+    for plot_col in Columns.which_compartments():
+        plot_fit_uncertainty(makesum.reset_index(), ihme_df_train, ihme_df_val, ihme_df_train_nora, ihme_df_val_nora,
+                             train_size, test_size, state, district, draws=ihme_res['draws'],
+                             which_compartments=[plot_col.name],
+                             description='Train and test',
+                             savepath=os.path.join(output_folder, f'ihme_{plot_col.name}.png'))
+
     return ihme_res, config, model_params
 
 
-def seir_data_generator(dataframes, district, state, disable_tracker, smooth_jump,
+def seir_data_generator(input_df, district, state, disable_tracker,
                         train_period, val_period, dataset_length):
     model = SEIR_Testing
     data_from_tracker = (not disable_tracker)
     which_compartments = ['hospitalised', 'total_infected', 'deceased', 'recovered']
-    smooth_jump = smooth_jump
-    input_df = get_regional_data(dataframes, state, district, (not disable_tracker), None, None, granular_data=False,
-                                 smooth_jump=smooth_jump, smoothing_length=33, smoothing_method='weighted', t_recov=14,
-                                 return_extra=False)
 
     df_district, df_raw = input_df
     df_district = df_district.head(dataset_length)
@@ -110,7 +115,7 @@ def log_experiment_local(output_folder, ihme_config, ihme_model_params, ihme_syn
     c1 = seir_synthetic_data['m1']['df_loss'].T[which_compartments]
     c1.to_csv(output_folder + "seir_loss.csv")
 
-    seir_synthetic_data['m1']['ax'].figure.savefig(output_folder + 'seir_c1.png')
+    seir_synthetic_data['m1']['ax'].savefig(output_folder + 'seir_c1.png')
 
     i1 = ihme_synthetic_data['df_loss'].T[which_compartments]
     i1.to_csv(output_folder + "ihme_loss.csv")
@@ -120,7 +125,7 @@ def log_experiment_local(output_folder, ihme_config, ihme_model_params, ihme_syn
         loss_df = predictions_dicts[i]['m1']['df_loss'].T[which_compartments]
         loss_df['exp'] = i+1
         loss_dfs.append(loss_df)
-        predictions_dicts[i]['m1']['ax'].figure.savefig(output_folder + 'seir_exp'+str(i+1)+'.png')
+        predictions_dicts[i]['m1']['ax'].savefig(output_folder + 'seir_exp'+str(i+1)+'.png')
 
     loss = pd.concat(loss_dfs, axis=0)
     loss.index.name = 'index'
@@ -136,3 +141,15 @@ def log_experiment_local(output_folder, ihme_config, ihme_model_params, ihme_syn
 
     with open(output_folder + 'ihme_model_params.json', 'w') as outfile:
         json.dump(repr(ihme_model_params), outfile, indent=4)
+
+    # picklefn = f'{output_folder}/i1.pkl'
+    # with open(picklefn, 'wb') as pickle_file:
+    #     pickle.dump(ihme_synthetic_data, pickle_file)
+    #
+    # picklefn = f'{output_folder}/c1.pkl'
+    # with open(picklefn, 'wb') as pickle_file:
+    #     pickle.dump(seir_synthetic_data, pickle_file)
+    #
+    # picklefn = f'{output_folder}/c2.pkl'
+    # with open(picklefn, 'wb') as pickle_file:
+    #     pickle.dump(predictions_dicts, pickle_file)
