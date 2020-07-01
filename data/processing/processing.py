@@ -58,9 +58,9 @@ def get_custom_data_from_db(state='Maharashtra', district='Pune'):
         df_result['state'] == state.lower(), df_result['district'] == district.lower())]
     df_result['date'] = pd.to_datetime(df_result['date'])
     df_result.drop(['ward_name', 'ward_no', 'mild', 'moderate',
-                    'severe', 'critical', 'partition_0'], axis=1)
-    df_result.rename({'total': 'total_infected', 'confirmed': 'total_infected', 
-                      'active_cases': 'hospitalised'}, axis='columns')
+                    'severe', 'critical', 'partition_0'], axis=1, inplace=True)
+    df_result.rename({'total': 'total_infected', 'confirmed': 'total_infected',
+                      'active': 'hospitalised'}, axis='columns', inplace=True)
     df_result = df_result.dropna(subset=['date'], how='any')
     df_result = df_result.infer_objects()
     for col in df_result.columns:
