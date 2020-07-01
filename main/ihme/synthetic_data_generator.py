@@ -10,7 +10,7 @@ from utils.util import read_config
 from utils.data import cities
 
 from main.ihme.fitting import single_cycle
-from main.seir.fitting import get_regional_data, data_setup, run_cycle
+from main.seir.fitting import data_setup, run_cycle
 
 from models.seir.seir_testing import SEIR_Testing
 
@@ -142,14 +142,14 @@ def log_experiment_local(output_folder, ihme_config, ihme_model_params, ihme_syn
     with open(output_folder + 'ihme_model_params.json', 'w') as outfile:
         json.dump(repr(ihme_model_params), outfile, indent=4)
 
-    # picklefn = f'{output_folder}/i1.pkl'
-    # with open(picklefn, 'wb') as pickle_file:
-    #     pickle.dump(ihme_synthetic_data, pickle_file)
-    #
-    # picklefn = f'{output_folder}/c1.pkl'
-    # with open(picklefn, 'wb') as pickle_file:
-    #     pickle.dump(seir_synthetic_data, pickle_file)
-    #
-    # picklefn = f'{output_folder}/c2.pkl'
-    # with open(picklefn, 'wb') as pickle_file:
-    #     pickle.dump(predictions_dicts, pickle_file)
+    picklefn = f'{output_folder}/i1.pkl'
+    with open(picklefn, 'wb') as pickle_file:
+        pickle.dump(ihme_synthetic_data, pickle_file)
+
+    picklefn = f'{output_folder}/c1.pkl'
+    with open(picklefn, 'wb') as pickle_file:
+        pickle.dump(seir_synthetic_data, pickle_file)
+
+    picklefn = f'{output_folder}/c2.pkl'
+    with open(picklefn, 'wb') as pickle_file:
+        pickle.dump(predictions_dicts, pickle_file)
