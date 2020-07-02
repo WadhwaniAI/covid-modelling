@@ -86,9 +86,10 @@ def run_experiments(ihme_config, data_config, multiple, shift_forward):
     }
 
     # Generate synthetic data using IHME model
-    ihme_synthetic_data, ihme_config, ihme_model_params = ihme_data_generator(district, ihme_config, output_folder,
-                                                                              disable_tracker, actual_start_date,
-                                                                              period, s1, i1_val_size, i1_test_size)
+    ihme_synthetic_data, ihme_config, ihme_model_params = ihme_data_generator(district, disable_tracker,
+                                                                              actual_start_date,period,
+                                                                              s1, i1_val_size, i1_test_size,
+                                                                              ihme_config, output_folder)
 
     # IHME uncertainty
     draws = ihme_synthetic_data['draws']
@@ -106,8 +107,12 @@ def run_experiments(ihme_config, data_config, multiple, shift_forward):
                                  return_extra=False, which_compartments=which_compartments)
 
     # Generate synthetic data using SEIR model
-    seir_synthetic_data = seir_data_generator(input_df, district, state, disable_tracker,
-                                              c1_train_period, c1_val_period, c1_dataset_length)
+    input_df_c1 = deepcopy(input_df)
+    df_district, df_raw = input_df_c1
+    df_district = df_district.head(c1_dataset_length)
+    input_df_c1 = (df_district, df_raw)
+    seir_synthetic_data = seir_data_generator(district, state, input_df_c1, (not disable_tracker),
+                                              c1_train_period, c1_val_period, which_compartments)
 
     original_data = deepcopy(ihme_synthetic_data['df_district_nora'])
 
@@ -137,7 +142,7 @@ def run_experiments(ihme_config, data_config, multiple, shift_forward):
     # Get SEIR predictions on custom datasets
     predictions_dicts = dict()
     for exp in range(num_exp):
-        predictions_dicts[exp] = seir_with_synthetic_data(state, district, input_dfs[exp], (not disable_tracker),
+        predictions_dicts[exp] = seir_with_synthetic_data(district, state, input_dfs[exp], (not disable_tracker),
                                                           c2_train_period, c2_val_period, which_compartments)
 
     # Plotting

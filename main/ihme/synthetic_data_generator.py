@@ -19,9 +19,9 @@ from viz.fit import plot_fit
 from viz.synthetic_data import plot_fit_uncertainty
 
 
-def ihme_data_generator(district, config_path, output_folder,
-                        disable_tracker, actual_start_date, period,
-                        train_size, val_size, test_size):
+def ihme_data_generator(district, disable_tracker, actual_start_date, period,
+                        train_size, val_size, test_size,
+                        config_path, output_folder):
     district, state, area_names = cities[district.lower()]
     config, model_params = read_config(config_path)
 
@@ -61,30 +61,8 @@ def ihme_data_generator(district, config_path, output_folder,
     return ihme_res, config, model_params
 
 
-def seir_data_generator(input_df, district, state, disable_tracker,
-                        train_period, val_period, dataset_length):
-    model = SEIR_Testing
-    data_from_tracker = (not disable_tracker)
-    which_compartments = ['hospitalised', 'total_infected', 'deceased', 'recovered']
-
-    df_district, df_raw = input_df
-    df_district = df_district.head(dataset_length)
-    predictions_dict = dict()
-    observed_dataframes = data_setup(df_district, df_raw, val_period)
-
-    predictions_dict['m1'] = run_cycle(
-        state, district, observed_dataframes,
-        model=model, variable_param_ranges=None,
-        data_from_tracker=data_from_tracker, train_period=train_period,
-        which_compartments=which_compartments, N=1e7,
-        num_evals=1500, initialisation='intermediate'
-    )
-
-    return predictions_dict
-
-
-def seir_with_synthetic_data(state, district, input_df, data_from_tracker,
-                             train_period, val_period, which_compartments):
+def _run_seir(district, state, input_df, data_from_tracker,
+              train_period, val_period, which_compartments):
     predictions_dict = dict()
     observed_dataframes = data_setup(input_df[0], input_df[1], val_period)
     predictions_dict['m1'] = run_cycle(
@@ -95,6 +73,16 @@ def seir_with_synthetic_data(state, district, input_df, data_from_tracker,
         num_evals=1500, initialisation='intermediate'
     )
     return predictions_dict
+
+
+def seir_data_generator(district, state, input_df, data_from_tracker,
+                        train_period, val_period, which_compartments):
+    return _run_seir(district, state, input_df, data_from_tracker, train_period, val_period, which_compartments)
+
+
+def seir_with_synthetic_data(district, state, input_df, data_from_tracker,
+                             train_period, val_period, which_compartments):
+    return _run_seir(district, state, input_df, data_from_tracker, train_period, val_period, which_compartments)
 
 
 def log_experiment_local(output_folder, ihme_config, ihme_model_params, ihme_synthetic_data,
