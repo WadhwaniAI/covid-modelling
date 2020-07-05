@@ -2,11 +2,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.lines import Line2D
-import seaborn as sns
 
 from datetime import timedelta
 
-from utils.enums import Columns
 from utils.enums.columns import *
 from viz.fit import axis_formatter
 
@@ -64,9 +62,9 @@ def plot_compartment_for_datasets(ax, df_true, df_prediction, df_train, district
             ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
 
-            ax.axvspan(s1_start, s2_start, alpha=0.1, color='red')
-            ax.axvspan(s2_start, s3_start, alpha=0.1, color='yellow')
-            ax.axvspan(s3_start, series_end, alpha=0.1, color='green')
+            ax.axvspan(s1_start, s2_start, alpha=0.1, color='red', label='s1')
+            ax.axvspan(s2_start, s3_start, alpha=0.1, color='yellow', label='s2')
+            ax.axvspan(s3_start, series_end, alpha=0.1, color='green', label='s3')
 
             ax.legend(loc="upper left")
             ax.tick_params(labelrotation=45)
@@ -129,8 +127,7 @@ def plot_all_experiments(df_true, predictions_dict, district,
 
             filename = output_folder + which_compartments[col].name
             fig.savefig(filename)
-
-    plt.close()
+        plt.close()
 
 
 def plot_fit_uncertainty(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, test_period,
@@ -226,3 +223,88 @@ def plot_fit_uncertainty(df_prediction, df_train, df_val, df_train_nora, df_val_
     plt.close()
 
     return fig
+
+
+def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_baseline, df_train, district,
+                                      s1_start, s2_start, s3_start, train_start, test_start,
+                                      series_end, graph_start, graph_end,
+                                      title=None, which_compartments=Columns.which_compartments()):
+    for col in Columns.which_compartments():
+        if col in which_compartments:
+            ax.plot(df_true['date'], df_true[col.name],
+                    '-o', color=col.color, label=f'{col.label} (Observed)')
+            ax.plot(df_prediction_baseline['date'], df_prediction_baseline[col.name],
+                    '-', color=col.color, label=f'{col.label} (Forecast)')
+            ax.plot(df_prediction["date"], df_prediction[col.name],
+                    '-.', color=col.color, label=f'{col.label} (Forecast with synthetic data)')
+            ax.plot(df_train["date"], df_train[col.name],
+                    'x', color=col.color, label=f'{col.label} (Train data)')
+
+            s1_start = pd.to_datetime(s1_start)
+            s2_start = pd.to_datetime(s2_start)
+            s3_start = pd.to_datetime(s3_start)
+            series_end = pd.to_datetime(series_end)
+            train_start = pd.to_datetime(train_start)
+            test_start = pd.to_datetime(test_start)
+            graph_start = pd.to_datetime(graph_start)
+            graph_end = pd.to_datetime(graph_end)
+
+            line_height = plt.ylim()[1]
+            ax.plot([train_start, train_start], [0, line_height], '--', color='black', label='Train starts')
+            ax.plot([test_start, test_start], [0, line_height], '--', color='black', label='Test starts')
+
+            ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
+            ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+
+            ax.axvspan(s1_start, s2_start, alpha=0.1, color='red', label='s1')
+            ax.axvspan(s2_start, s3_start, alpha=0.1, color='yellow', label='s2')
+            ax.axvspan(s3_start, series_end, alpha=0.1, color='green', label='s3')
+
+            ax.legend(loc="upper left")
+            ax.tick_params(labelrotation=45)
+            ax.grid()
+
+            ax.set_xlim(graph_start, graph_end)
+
+            ax.set_xlabel('Time', fontsize=10)
+            ax.set_ylabel('No of People', fontsize=10)
+
+            ax.title.set_text('Forecast - {} - {}'.format(district, title))
+
+    return ax
+
+
+def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, district,
+                          actual_start_date, allowance, s1, s2, s3, shift, train_period,
+                          output_folder, titles=None):
+
+    s1_start = actual_start_date.strftime("%m-%d-%Y")
+    s2_start = (actual_start_date + timedelta(s1)).strftime("%m-%d-%Y")
+    s3_start = (actual_start_date + timedelta(s1 + s2)).strftime("%m-%d-%Y")
+    train_start = (actual_start_date + timedelta(s1 + s2 - train_period)).strftime("%m-%d-%Y")
+    test_start = (actual_start_date + timedelta(s1 + s2)).strftime("%m-%d-%Y")
+    series_end = (actual_start_date + timedelta(s1 + s2 + s3)).strftime("%m-%d-%Y")
+    graph_start = (actual_start_date - timedelta(allowance + 1)).strftime("%m-%d-%Y")
+    graph_end = (actual_start_date + timedelta(s1 + s2 + s3 + 1)).strftime("%m-%d-%Y")
+
+    if titles is None:
+        titles = ['Using data from IHME forecast', 'Using data from SEIR forecast']
+
+    df_true = df_true.iloc[shift:, :].head(allowance + s1 + s2 + s3)
+
+    which_compartments = Columns.which_compartments()
+
+    for col in range(len(which_compartments)):
+        fig, ax = plt.subplots(2, sharex=True, sharey=True, figsize=(15, 15))
+        for row in range(len(ax)):
+            ax[row] = plot_compartment_against_baseline(ax[row], df_true, df_prediction[row+1]['m1']['df_prediction'],
+                                                        df_prediction_baseline['m1']['df_prediction'],
+                                                        df_prediction[row + 1]['m1']['df_district'],
+                                                        district, s1_start, s2_start, s3_start, train_start, test_start,
+                                                        series_end, graph_start, graph_end, title=titles[row],
+                                                        which_compartments=[which_compartments[col]])
+
+            filename = output_folder + which_compartments[col].name + '_baseline'
+            fig.savefig(filename)
+        plt.close()
