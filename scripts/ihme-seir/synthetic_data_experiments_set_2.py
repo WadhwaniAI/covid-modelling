@@ -7,6 +7,7 @@ from datetime import timedelta, datetime
 sys.path.append('../../')
 
 from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset, read_synth_data_config
+from utils.loss import Loss_Calculator
 
 from data.dataloader import Covid19IndiaLoader
 from data.processing import get_data
@@ -41,7 +42,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
     c1_val_period = s2
     c2_train_period = data_config['c2_train_period']
     c2_val_period = s3
-    c3_train_period = s1
+    c3_train_period = data_config['c3_train_period']
     c3_val_period = s2 + s3
 
     num_exp = 3
@@ -78,7 +79,9 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
         'c1_train_period': c1_train_period,
         'c1_val_period': c1_val_period,
         'c2_train_period': c2_train_period,
-        'c2_val_period': c2_val_period
+        'c2_val_period': c2_val_period,
+        'c3_train_period': c3_train_period,
+        'c3_val_period': c3_val_period
     }
 
     # Generate synthetic data using IHME model
@@ -141,7 +144,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
         predictions_dicts[exp] = seir_runner(district, state, input_dfs[exp], (not disable_tracker),
                                              c2_train_period, c2_val_period, which_compartments, num_evals=num_evals)
 
-    # Get SEIR predictions for s2+s3 when trained on s1
+    # Get baseline c3 predictions for s2+s3 when trained on s1
     df_baseline, train_baseline, test_baseline, dataset_prop_baseline = get_experiment_dataset(
         district, state, original_data, generated_data=None, use_actual=True, use_synthetic=False,
         start_date=dataset_start_date, allowance=allowance, s1=s1, s2=0, s3=s2+s3
@@ -151,18 +154,26 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
     predictions_dict_baseline = seir_runner(district, state, input_df_baseline, (not disable_tracker),
                                             c3_train_period, c3_val_period, which_compartments, num_evals=num_evals)
 
+    # Find loss on s3 for baseline c3 model
+    lc = Loss_Calculator()
+    df_c2_s3_loss = lc.create_loss_dataframe_region(train_baseline[-c3_train_period:], test_baseline[-s3:],
+                                                    predictions_dict_baseline['m1']['df_prediction'],
+                                                    c3_train_period, which_compartments=which_compartments)
+    predictions_dict_baseline['m1']['df_loss_s3'] = df_c2_s3_loss
+
     # Plotting all experiments
     plot_all_experiments(input_df[0], predictions_dicts, district, actual_start_date,
                          allowance, s1, s2, s3, shift, c2_train_period, output_folder)
 
     # Plot performance against baseline
     plot_against_baseline(input_df[0], predictions_dicts, predictions_dict_baseline, district,
-                          actual_start_date, allowance, s1, s2, s3, shift, c2_train_period, output_folder)
+                          actual_start_date, allowance, s1, s2, s3, shift, c2_train_period, c3_train_period,
+                          output_folder)
 
     # Log results
     log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
                          c1_output, df, predictions_dicts, which_compartments,
-                         dataset_prop, series_properties)
+                         dataset_prop, series_properties, baseline_predictions_dict=predictions_dict_baseline)
 
 
 def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
@@ -180,10 +191,8 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
     # Print data summary
     data = get_data(dataframes, state, district, disable_tracker=disable_tracker)
     print("Data summary:")
-    print("Start:")
-    print(data.iloc[0])
-    print("End:")
-    print(data.iloc[-1])
+    print("Start date:", data.iloc[0]['date'])
+    print("End date:", data.iloc[-1]['date'])
     print("Number of rows:", data.shape[0])
 
     if num == 1:

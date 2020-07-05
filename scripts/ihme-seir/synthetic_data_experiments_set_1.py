@@ -139,7 +139,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
         predictions_dicts[exp] = seir_runner(district, state, input_dfs[exp], (not disable_tracker),
                                              c2_train_period, c2_val_period, which_compartments, num_evals=num_evals)
 
-    # Plotting
+    # Plotting all experiments
     plot_all_experiments(input_df[0], predictions_dicts, district, actual_start_date,
                          allowance, s1, s2, s3, shift, c2_train_period, output_folder)
 
@@ -164,10 +164,8 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
     # Print data summary
     data = get_data(dataframes, state, district, disable_tracker=disable_tracker)
     print("Data summary:")
-    print("Start:")
-    print(data.iloc[0])
-    print("End:")
-    print(data.iloc[-1])
+    print("Start date:", data.iloc[0]['date'])
+    print("End date:", data.iloc[-1]['date'])
     print("Number of rows:", data.shape[0])
 
     if num == 1:
