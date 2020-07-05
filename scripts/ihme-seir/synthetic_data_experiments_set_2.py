@@ -11,7 +11,6 @@ from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_expe
 from data.dataloader import Covid19IndiaLoader
 from data.processing import get_data
 
-from main.ihme.fitting import create_output_folder
 from main.ihme.synthetic_data_generator import *
 from main.seir.fitting import get_regional_data
 
@@ -59,8 +58,10 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
     actual_start_date = dataset_start_date + timedelta(allowance)  # Excluding allowance at beginning
 
     # Create output folder
-    now = datetime.now().strftime("%Y%m%d-%H%M%S")
-    folder = f'{district}/{str(now)}'
+    now = datetime.now()
+    date_now = now.strftime("%Y%m%d")
+    time_now = now.strftime("%H%M%S")
+    folder = f'{district}/{str(date_now)}/{str(time_now)}'
     output_folder = create_output_folder(f'synth/{folder}/')
 
     # Store series properties in dict

@@ -132,3 +132,19 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
     # picklefn = f'{output_folder}/c2.pkl'
     # with open(picklefn, 'wb') as pickle_file:
     #     pickle.dump(predictions_dicts, pickle_file)
+
+
+def create_output_folder(fname):
+    """
+    creates folder in outputs/ihme/
+
+    Args:
+        fname (ste): name of folder within outputs/ihme
+
+    Returns:
+        str: output_folder path
+    """
+    output_folder = f'../../outputs/ihme-seir/{fname}'
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    return output_folder
