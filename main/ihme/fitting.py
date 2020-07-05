@@ -240,9 +240,6 @@ def run_cycle(dataframes, model_params, forecast_days=30,
     else:
         xform_trainerr, xform_testerr = None, None
 
-    # LOSS PER DATA POINT
-    # test_ape = lc._calc_ape(test_model_ycol_numpy, test_pred)
-
     # UNCERTAINTY
     draws_dict = model.calc_draws()
     for k in draws_dict.keys():
@@ -268,7 +265,6 @@ def run_cycle(dataframes, model_params, forecast_days=30,
             "val": xform_testerr,
             "train_no_xform": trainerr,
             "val_no_xform": testerr,
-            # "test_ape": test_ape
         }),
         'trials': trials_dict,
         'data_last_date': dataframes['df'][model.date].max(),
@@ -320,13 +316,18 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
             max_evals=max_evals, num_hyperopt=num_hyperopt, val_size=val_size,
             min_days=min_days, scoring=scoring, log=log, forecast_days=forecast_days,
             **config)
-        
+
         # Aggregate Results
         pred = results[col.name]['df_prediction'].set_index('date')
+        loss_functions = results[col.name]['df_loss'].index.tolist()
         if i == 0:
+            loss_index = pd.MultiIndex.from_product([compartment_names, loss_functions],
+                                                    names=['compartment', 'loss_function'])
             predictions = pd.DataFrame(index=pred.index, columns=compartment_names + list(ycols.values()), dtype=float)
-            df_loss = pd.DataFrame(index=compartment_names, columns=results[col.name]['df_loss'].columns)
-        df_loss.loc[col.name, :] = results[col.name]['df_loss'].loc['mape', :]
+            df_loss = pd.DataFrame(index=loss_index, columns=results[col.name]['df_loss'].columns)
+        for loss_function in loss_functions:
+            df_loss.loc[(col.name, loss_function), :] = results[col.name]['df_loss'].loc[loss_function, :]
+
         predictions.loc[pred.index, col.name] = xform_func(pred[ycols[col]], dtp)
         predictions.loc[pred.index, ycols[col]] = pred[ycols[col]]
 
