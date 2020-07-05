@@ -125,7 +125,7 @@ def plot_all_experiments(df_true, predictions_dict, district,
                                                     series_end, graph_start, graph_end, title=titles[row],
                                                     which_compartments=[which_compartments[col]])
 
-            filename = output_folder + which_compartments[col].name
+            filename = output_folder + 'experiments_' + which_compartments[col].name
             fig.savefig(filename)
         plt.close()
 
@@ -226,7 +226,7 @@ def plot_fit_uncertainty(df_prediction, df_train, df_val, df_train_nora, df_val_
 
 
 def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_baseline, df_train, district,
-                                      s1_start, s2_start, s3_start, train_start, test_start,
+                                      s1_start, s2_start, s3_start, train_start, test_start, baseline_train_start,
                                       series_end, graph_start, graph_end,
                                       title=None, which_compartments=Columns.which_compartments()):
     for col in Columns.which_compartments():
@@ -245,6 +245,7 @@ def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_
             s3_start = pd.to_datetime(s3_start)
             series_end = pd.to_datetime(series_end)
             train_start = pd.to_datetime(train_start)
+            baseline_train_start = pd.to_datetime(baseline_train_start)
             test_start = pd.to_datetime(test_start)
             graph_start = pd.to_datetime(graph_start)
             graph_end = pd.to_datetime(graph_end)
@@ -252,6 +253,8 @@ def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_
             line_height = plt.ylim()[1]
             ax.plot([train_start, train_start], [0, line_height], '--', color='black', label='Train starts')
             ax.plot([test_start, test_start], [0, line_height], '--', color='black', label='Test starts')
+            ax.plot([baseline_train_start, baseline_train_start], [0, line_height], '--', color='brown',
+                    label='Baseline train starts')
 
             ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
             ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
@@ -276,13 +279,14 @@ def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_
 
 
 def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, district,
-                          actual_start_date, allowance, s1, s2, s3, shift, train_period,
+                          actual_start_date, allowance, s1, s2, s3, shift, train_period, baseline_train_period,
                           output_folder, titles=None):
 
     s1_start = actual_start_date.strftime("%m-%d-%Y")
     s2_start = (actual_start_date + timedelta(s1)).strftime("%m-%d-%Y")
     s3_start = (actual_start_date + timedelta(s1 + s2)).strftime("%m-%d-%Y")
     train_start = (actual_start_date + timedelta(s1 + s2 - train_period)).strftime("%m-%d-%Y")
+    baseline_train_start = (actual_start_date + timedelta(s1 - baseline_train_period)).strftime("%m-%d-%Y")
     test_start = (actual_start_date + timedelta(s1 + s2)).strftime("%m-%d-%Y")
     series_end = (actual_start_date + timedelta(s1 + s2 + s3)).strftime("%m-%d-%Y")
     graph_start = (actual_start_date - timedelta(allowance + 1)).strftime("%m-%d-%Y")
@@ -302,9 +306,10 @@ def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, distri
                                                         df_prediction_baseline['m1']['df_prediction'],
                                                         df_prediction[row + 1]['m1']['df_district'],
                                                         district, s1_start, s2_start, s3_start, train_start, test_start,
-                                                        series_end, graph_start, graph_end, title=titles[row],
+                                                        baseline_train_start, series_end, graph_start, graph_end,
+                                                        title=titles[row],
                                                         which_compartments=[which_compartments[col]])
 
-            filename = output_folder + which_compartments[col].name + '_baseline'
+            filename = output_folder + 'baseline_' + which_compartments[col].name
             fig.savefig(filename)
         plt.close()
