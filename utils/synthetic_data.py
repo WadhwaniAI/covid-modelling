@@ -43,7 +43,8 @@ def create_custom_dataset(df_actual, df_synthetic, use_actual=True, use_syntheti
     threshold = start_date - timedelta(days=1)
 
     _, df_actual = train_test_split(df_actual, threshold)
-    _, df_synthetic = train_test_split(df_synthetic, threshold)
+    if df_synthetic is not None:
+        _, df_synthetic = train_test_split(df_synthetic, threshold)
 
     test_size = s3
     end_of_train = start_date + timedelta(allowance + s1 + s2 - 1)
@@ -52,16 +53,19 @@ def create_custom_dataset(df_actual, df_synthetic, use_actual=True, use_syntheti
     df_train, df_test = train_test_split(df_actual, end_of_train)
     if not use_synthetic:  # Use only ground truth data
         pass
-    elif not use_actual:  # Use only synthetic data
-        df_train, _ = train_test_split(df_synthetic, end_of_train)
-    elif use_actual and use_synthetic:  # s1 from ground truth and s2 from synthetic
-        end_of_actual = start_date + timedelta(s1 + allowance - 1)
-        df_train1, _ = train_test_split(df_actual, end_of_actual)
-        df_train_temp, _ = train_test_split(df_synthetic, end_of_train)
-        _, df_train2 = train_test_split(df_train_temp, end_of_actual)
-        df_train = pd.concat([df_train1, df_train2], axis=0)
     else:
-        raise Exception("Train and test sets not defined.")
+        if df_synthetic is None:
+            raise Exception("No synthetic dataset provided.")
+        elif not use_actual:  # Use only synthetic data
+            df_train, _ = train_test_split(df_synthetic, end_of_train)
+        elif use_actual and use_synthetic:  # s1 from ground truth and s2 from synthetic
+            end_of_actual = start_date + timedelta(s1 + allowance - 1)
+            df_train1, _ = train_test_split(df_actual, end_of_actual)
+            df_train_temp, _ = train_test_split(df_synthetic, end_of_train)
+            _, df_train2 = train_test_split(df_train_temp, end_of_actual)
+            df_train = pd.concat([df_train1, df_train2], axis=0)
+        else:
+            raise Exception("Train and test sets not defined.")
     df_train.reset_index(inplace=True, drop=True)
 
     # Remove data after s3
@@ -119,15 +123,15 @@ def format_custom_dataset(dataset, state=None, district=None, compartments=None)
     return dataset
 
 
-def get_experiment_dataset(original_data, generated_data, state, district, use_actual=True, use_synthetic=True,
+def get_experiment_dataset(district, state, original_data, generated_data=None, use_actual=True, use_synthetic=True,
                            start_date=None, allowance=5, s1=15, s2=15, s3=15):
     """Returns formatted custom dataset for an experiment
 
     Args:
-        original_data (pd.DataFrame): ground truth data
-        generated_data (pd.DataFrame): synthetic data
-        state (str): name of state
         district (str): name of district
+        state (str): name of state
+        original_data (pd.DataFrame): ground truth data
+        generated_data (pd.DataFrame, optional): synthetic data
         use_actual (bool, optional): whether to use ground truth data in custom dataset (default: True)
         use_synthetic (bool, optional): whether to use synthetic data in custom dataset (default: True)
         start_date (str, optional): date from which custom dataset should start including allowance (default: None)
