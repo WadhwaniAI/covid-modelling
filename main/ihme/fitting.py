@@ -20,8 +20,9 @@ from utils.enums import Columns
 from main.ihme.optimiser import Optimiser
 from utils.smooth_jump import smooth_big_jump
 
+
 def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker,
-            smooth_jump, smooth_jump_method, smooth_jump_days, start_date=None, period=0):
+                      smooth_jump, smooth_jump_method, smooth_jump_days, start_date=None, dataset_length=0):
     """
     Function to get regional data and shape it for IHME consumption
 
@@ -43,7 +44,7 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     district_timeseries_nora = get_district_timeseries_cached(
         dist, st, disable_tracker=disable_tracker)
     if smooth_jump:
-        district_timeseries = smooth_big_jump(district_timeseries_nora, smooth_jump_days, not disable_tracker, method=smooth_jump_method)
+        district_timeseries = smooth_big_jump(district_timeseries_nora, not disable_tracker, method=smooth_jump_method)
     else:
         district_timeseries = copy(district_timeseries_nora)
 
@@ -71,18 +72,16 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     else:
         start_date = pd.to_datetime(start_date, dayfirst=False)
 
-    print("Start date", start_date)
-
     threshold = start_date - timedelta(1)
 
     _, df_ = train_test_split(df, threshold)
     _, df_nora_ = train_test_split(df_nora, threshold)
 
-    if period == 0:
-        period = df.shape[0]
+    if dataset_length == 0:
+        dataset_length = df.shape[0]
 
-    df_ = df_.head(period)
-    df_nora_ = df_nora_.head(period)
+    df_ = df_.head(dataset_length)
+    df_nora_ = df_nora_.head(dataset_length)
 
     threshold = df_['date'].max() - timedelta(days=test_size)
     
@@ -101,7 +100,7 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     
 def setup(dist, st, area_names, model_params, 
         sd, smooth, test_size, disable_tracker, 
-        smooth_jump, smooth_jump_method, smooth_jump_days, start_date, period, **config):
+        smooth_jump, smooth_jump_method, smooth_jump_days, start_date, dataset_length, **config):
     """
     gets data and sets up the model_parameters to be ready for IHME consumption
 
@@ -129,7 +128,7 @@ def setup(dist, st, area_names, model_params,
         disable_tracker=disable_tracker,
         smooth_jump=smooth_jump, smooth_jump_method=smooth_jump_method, 
         smooth_jump_days=smooth_jump_days,
-        start_date=start_date, period=period
+        start_date=start_date, dataset_length=dataset_length
     )
         
     return dataframes, dtp, model_params
@@ -240,6 +239,10 @@ def run_cycle(dataframes, model_params, forecast_days=30,
                 xform_func(test_pred, dtp))
     else:
         xform_trainerr, xform_testerr = None, None
+
+    # LOSS PER DATA POINT
+    # test_ape = lc._calc_ape(test_model_ycol_numpy, test_pred)
+
     # UNCERTAINTY
     draws_dict = model.calc_draws()
     for k in draws_dict.keys():
@@ -265,6 +268,7 @@ def run_cycle(dataframes, model_params, forecast_days=30,
             "val": xform_testerr,
             "train_no_xform": trainerr,
             "val_no_xform": testerr,
+            # "test_ape": test_ape
         }),
         'trials': trials_dict,
         'data_last_date': dataframes['df'][model.date].max(),
