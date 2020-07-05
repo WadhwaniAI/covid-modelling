@@ -19,14 +19,14 @@ from viz.fit import plot_fit
 from viz.synthetic_data import plot_fit_uncertainty
 
 
-def ihme_data_generator(district, disable_tracker, actual_start_date, period,
-                        train_size, val_size, test_size,
+def ihme_data_generator(district, disable_tracker, actual_start_date, dataset_length,
+                        train_val_size, val_size, test_size,
                         config_path, output_folder):
-    district, state, area_names = cities[district.lower()]
+    district, state, area_names = cities[district.lower()]  # FIXME
     config, model_params = read_config(config_path)
 
     config['start_date'] = actual_start_date
-    config['period'] = period
+    config['dataset_length'] = dataset_length
     config['disable_tracker'] = disable_tracker
     config['test_size'] = test_size
     config['val_size'] = val_size
@@ -44,16 +44,16 @@ def ihme_data_generator(district, disable_tracker, actual_start_date, period,
 
     plot_fit(
         makesum.reset_index(), ihme_df_train, ihme_df_val, ihme_df_train_nora, ihme_df_val_nora,
-        train_size, state, district, which_compartments=[c.name for c in Columns.curve_fit_compartments()],
+        train_val_size, state, district, which_compartments=[c.name for c in Columns.curve_fit_compartments()],
         description='Train and test',
         savepath=os.path.join(output_folder, 'ihme-i1-fit.png'))
 
     plot_forecast_agnostic(ihme_df_true, makesum.reset_index(), model_name='IHME',
                            dist=district, state=state, filename=os.path.join(output_folder, 'ihme-i1-forecast.png'))
 
-    for plot_col in Columns.which_compartments():
+    for plot_col in Columns.curve_fit_compartments():
         plot_fit_uncertainty(makesum.reset_index(), ihme_df_train, ihme_df_val, ihme_df_train_nora, ihme_df_val_nora,
-                             train_size, test_size, state, district, draws=ihme_res['draws'],
+                             train_val_size, test_size, state, district, draws=ihme_res['draws'],
                              which_compartments=[plot_col.name],
                              description='Train and test',
                              savepath=os.path.join(output_folder, f'ihme_{plot_col.name}.png'))
@@ -61,8 +61,8 @@ def ihme_data_generator(district, disable_tracker, actual_start_date, period,
     return ihme_res, config, model_params
 
 
-def _run_seir(district, state, input_df, data_from_tracker,
-              train_period, val_period, which_compartments):
+def seir_runner(district, state, input_df, data_from_tracker,
+              train_period, val_period, which_compartments, num_evals=1500):
     predictions_dict = dict()
     observed_dataframes = data_setup(input_df[0], input_df[1], val_period)
     predictions_dict['m1'] = run_cycle(
@@ -70,23 +70,13 @@ def _run_seir(district, state, input_df, data_from_tracker,
         model=SEIR_Testing, variable_param_ranges=None,
         data_from_tracker=data_from_tracker, train_period=train_period,
         which_compartments=which_compartments, N=1e7,
-        num_evals=1500, initialisation='intermediate'
+        num_evals=num_evals, initialisation='intermediate'
     )
     return predictions_dict
 
 
-def seir_data_generator(district, state, input_df, data_from_tracker,
-                        train_period, val_period, which_compartments):
-    return _run_seir(district, state, input_df, data_from_tracker, train_period, val_period, which_compartments)
-
-
-def seir_with_synthetic_data(district, state, input_df, data_from_tracker,
-                             train_period, val_period, which_compartments):
-    return _run_seir(district, state, input_df, data_from_tracker, train_period, val_period, which_compartments)
-
-
-def log_experiment_local(output_folder, ihme_config, ihme_model_params, ihme_synthetic_data,
-                         seir_synthetic_data, datasets, predictions_dicts, which_compartments,
+def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
+                         c1_output, datasets, predictions_dicts, which_compartments,
                          dataset_properties, series_properties):
     params_dict = {
         'compartments_replaced': which_compartments,
@@ -100,12 +90,12 @@ def log_experiment_local(output_folder, ihme_config, ihme_model_params, ihme_syn
         filename = 'dataset_' + str(i+1) + '.csv'
         datasets[i].to_csv(output_folder+filename)
 
-    c1 = seir_synthetic_data['m1']['df_loss'].T[which_compartments]
+    c1 = c1_output['m1']['df_loss'].T[which_compartments]
     c1.to_csv(output_folder + "seir_loss.csv")
 
-    seir_synthetic_data['m1']['ax'].savefig(output_folder + 'seir_c1.png')
+    c1_output['m1']['ax'].savefig(output_folder + 'seir_c1.png')
 
-    i1 = ihme_synthetic_data['df_loss'].T[which_compartments]
+    i1 = c1_output['m1']['df_loss'].T[which_compartments]
     i1.to_csv(output_folder + "ihme_loss.csv")
 
     loss_dfs = []
@@ -123,21 +113,22 @@ def log_experiment_local(output_folder, ihme_config, ihme_model_params, ihme_syn
     with open(output_folder + 'params.json', 'w') as outfile:
         json.dump(params_dict, outfile, indent=4)
 
-    ihme_config['start_date'] = ihme_config['start_date'].strftime("%Y-%m-%d")
+    i1_config['start_date'] = i1_config['start_date'].strftime("%Y-%m-%d")
     with open(output_folder + 'ihme_config.json', 'w') as outfile:
-        json.dump(ihme_config, outfile, indent=4)
+        json.dump(i1_config, outfile, indent=4)
 
     with open(output_folder + 'ihme_model_params.json', 'w') as outfile:
-        json.dump(repr(ihme_model_params), outfile, indent=4)
+        json.dump(repr(i1_model_params), outfile, indent=4)
 
-    picklefn = f'{output_folder}/i1.pkl'
-    with open(picklefn, 'wb') as pickle_file:
-        pickle.dump(ihme_synthetic_data, pickle_file)
-
-    picklefn = f'{output_folder}/c1.pkl'
-    with open(picklefn, 'wb') as pickle_file:
-        pickle.dump(seir_synthetic_data, pickle_file)
-
-    picklefn = f'{output_folder}/c2.pkl'
-    with open(picklefn, 'wb') as pickle_file:
-        pickle.dump(predictions_dicts, pickle_file)
+    # FIX
+    # picklefn = f'{output_folder}/i1.pkl'
+    # with open(picklefn, 'wb') as pickle_file:
+    #     pickle.dump(i1_output, pickle_file)
+    #
+    # picklefn = f'{output_folder}/c1.pkl'
+    # with open(picklefn, 'wb') as pickle_file:
+    #     pickle.dump(c1_output, pickle_file)
+    #
+    # picklefn = f'{output_folder}/c2.pkl'
+    # with open(picklefn, 'wb') as pickle_file:
+    #     pickle.dump(predictions_dicts, pickle_file)
