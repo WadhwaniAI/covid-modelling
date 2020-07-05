@@ -87,9 +87,9 @@ def plot_all_experiments(df_true, predictions_dict, district,
 
     Args:
         df_true (pd.DataFrame): ground truth data
-        predictions_dict (dict): dict of dataframes returned by SEIR/IHME models
+        predictions_dict (dict): Dictionary of results dicts from SEIR c2 models
         district (str): name of district
-        actual_start_date (datetime.datetime): day from which series s1 begins
+        actual_start_date (datetime.datetime): date from which series s1 begins
         allowance (int): number of days of ground data before train split to prevent nan when rolling average is taken
         s1 (int): length of series s1
         s2 (int): length of series s2
@@ -98,8 +98,8 @@ def plot_all_experiments(df_true, predictions_dict, district,
         train_period (int): train period
         output_folder (str): output folder path
         titles (list[str], optional): titles for plots
-
     """
+
     s1_start = actual_start_date.strftime("%m-%d-%Y")
     s2_start = (actual_start_date + timedelta(s1)).strftime("%m-%d-%Y")
     s3_start = (actual_start_date + timedelta(s1 + s2)).strftime("%m-%d-%Y")
@@ -143,16 +143,19 @@ def plot_fit_uncertainty(df_prediction, df_train, df_val, df_train_nora, df_val_
         df_train_nora {pd.DataFrame} -- The train dataset (with no rolling average)
         df_val_nora {pd.DataFrame} -- The val dataset (with no rolling average)
         train_period {int} -- Length of train period
+        test_period {int} -- Length of test period
         state {str} -- Name of state
         district {str} -- Name of district
 
     Keyword Arguments:
         which_compartments {list} -- Which buckets to plot (default: {['hospitalised', 'total_infected']})
         description {str} -- Additional description for the plots (if any) (default: {''})
+        savepath {str} -- Path to save plot
 
     Returns:
         ax -- Matplotlib ax object
     """
+
     # Create plots
     if isinstance(df_val, pd.DataFrame):
         df_true_plotting_rolling = pd.concat(
@@ -229,6 +232,31 @@ def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_
                                       s1_start, s2_start, s3_start, train_start, test_start, baseline_train_start,
                                       series_end, graph_start, graph_end,
                                       title=None, which_compartments=Columns.which_compartments()):
+    """Plots ground truth data, synthetic data, predictions and baseline predictions for a compartment
+
+    Args:
+        ax (axes.Axes): axes object of plot
+        df_true (pd.DataFrame): Ground truth data
+        df_prediction (pd.DataFrame): Predictions
+        df_prediction_baseline (pd.DataFrame): Baseline predictions
+        df_train (pd.DataFrame): Training data (custom dataset)
+        district (str): name of district
+        s1_start (str): start date of series s1
+        s2_start (str): start date of series s2
+        s3_start (str): start date of series s3
+        train_start (str): start date of train split
+        test_start (str): start date of test split
+        baseline_train_start (str): start date of baseline train split
+        series_end (str): last date of series s3
+        graph_start (str): start date of graph
+        graph_end (str): end date of graph
+        title (str, optional): title for plots
+        which_compartments (list(enum), optional): list of compartments plotted
+
+    Returns:
+        axes.Axes: axes object of plot
+    """
+
     for col in Columns.which_compartments():
         if col in which_compartments:
             ax.plot(df_true['date'], df_true[col.name],
@@ -281,6 +309,25 @@ def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_
 def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, district,
                           actual_start_date, allowance, s1, s2, s3, shift, train_period, baseline_train_period,
                           output_folder, titles=None):
+    """Create plots with baseline for all buckets and all synthetic datasets
+
+    Args:
+        df_true (pd.DataFrame): ground truth data
+        df_prediction (dict): Dictionary of results dicts from SEIR c2 models
+        df_prediction_baseline (pd.DataFrame):
+        district (str): name of district
+        actual_start_date (datetime.datetime): date from which series s1 begins
+        allowance (int): number of days of ground data before train split to prevent nan when rolling average is taken
+        s1 (int): length of series s1
+        s2 (int): length of series s2
+        s3 (int): length of series s3
+        shift (int): number of days of data removed at the beginning of the dataset
+        train_period (int): train period
+        baseline_train_period (int): baseline train period
+        output_folder (str): output folder path
+        titles (list[str], optional): titles for plots
+
+    """
 
     s1_start = actual_start_date.strftime("%m-%d-%Y")
     s2_start = (actual_start_date + timedelta(s1)).strftime("%m-%d-%Y")

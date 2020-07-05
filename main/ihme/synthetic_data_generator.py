@@ -22,6 +22,23 @@ from viz.synthetic_data import plot_fit_uncertainty
 def ihme_data_generator(district, disable_tracker, actual_start_date, dataset_length,
                         train_val_size, val_size, test_size,
                         config_path, output_folder):
+    """Runs IHME model, creates plots and returns results
+
+    Args:
+        district (str): name of district
+        disable_tracker (bool): If False, data from tracker is not used
+        actual_start_date (datetime.datetime): date from which series s1 begins
+        dataset_length (int): length of dataset used
+        train_val_size (int): length of train+val split
+        val_size (int): length of val split (within train+val split)
+        test_size (int): length of test split
+        config_path (str): path to config file
+        output_folder (str): path to output folder
+
+    Returns:
+        dict, dict, dict: results, updated config, model parameters
+    """
+
     district, state, area_names = cities[district.lower()]  # FIXME
     config, model_params = read_config(config_path)
 
@@ -63,6 +80,22 @@ def ihme_data_generator(district, disable_tracker, actual_start_date, dataset_le
 
 def seir_runner(district, state, input_df, data_from_tracker,
               train_period, val_period, which_compartments, num_evals=1500):
+    """Wrapper for main.seir.fitting.run_cycle
+
+    Args:
+        district (str): name of district
+        state (str): name of state
+        input_df (tuple): dataframe of observations from districts_daily/custom file/athena DB, dataframe of raw data
+        data_from_tracker (bool): If False, data from tracker is not used
+        train_period (int): length of train period
+        val_period (int): length of val period
+        which_compartments (list(enum)): list of compartments to fit on
+        num_evals (int, optional): number of evaluations of bayesian optimsation (default: 1500)
+
+    Returns:
+        dict: results
+    """
+
     predictions_dict = dict()
     observed_dataframes = data_setup(input_df[0], input_df[1], val_period)
     predictions_dict['m1'] = run_cycle(
@@ -78,10 +111,26 @@ def seir_runner(district, state, input_df, data_from_tracker,
 def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
                          c1_output, datasets, predictions_dicts, which_compartments,
                          dataset_properties, series_properties, baseline_predictions_dict=None):
+    """Logs all results
+
+    Args:
+        output_folder (str): Output folder path
+        i1_config (dict): Config for IHME I1 model
+        i1_model_params (dict): Model parameters of IHME I1 model
+        i1_output (dict): Results dict of IHME I1 model
+        c1_output (dict): Results dict of SEIR C1 model
+        datasets (dict): Dictionary of datasets used in experiments
+        predictions_dicts (dict): Dictionary of results dicts from SEIR c2 models
+        which_compartments (list(enum), optional): list of compartments for which synthetic data is used
+        dataset_properties (dict): Properties of datasets used
+        series_properties (dict): Properties of series used in experiments
+        baseline_predictions_dict (dict, optional): Results dict of SEIR c3 baseline model
+    """
+
     params_dict = {
         'compartments_replaced': which_compartments,
         'dataset_properties': {
-            'exp' + str(i): dataset_properties[i] for i in range(len(dataset_properties))
+            'exp' + str(i+1): dataset_properties[i] for i in range(len(dataset_properties))
         },
         'series_properties': series_properties
     }
@@ -139,15 +188,15 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
 
 
 def create_output_folder(fname):
-    """
-    creates folder in outputs/ihme/
+    """Creates folder in outputs/ihme-seir/
 
     Args:
-        fname (ste): name of folder within outputs/ihme
+        fname (str): name of folder within outputs/ihme
 
     Returns:
         str: output_folder path
     """
+
     output_folder = f'../../outputs/ihme-seir/{fname}'
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)

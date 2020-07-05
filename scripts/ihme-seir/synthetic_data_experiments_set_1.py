@@ -123,8 +123,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
         df[exp], train[exp], test[exp], dataset_prop[exp] = get_experiment_dataset(
             district, state, original_data, generated_data=exp_config[exp]['generated_data'],
             use_actual=exp_config[exp]['use_actual'], use_synthetic=exp_config[exp]['use_synthetic'],
-            start_date=dataset_start_date, allowance=allowance, s1=s1, s2=s2, s3=s3
-        )
+            start_date=dataset_start_date, allowance=allowance, s1=s1, s2=s2, s3=s3)
 
     # Insert custom data into SEIR input dataframes
     input_dfs = dict()

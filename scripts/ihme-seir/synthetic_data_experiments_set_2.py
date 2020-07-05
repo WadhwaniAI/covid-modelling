@@ -128,8 +128,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
         df[exp], train[exp], test[exp], dataset_prop[exp] = get_experiment_dataset(
             district, state, original_data, generated_data=exp_config[exp]['generated_data'],
             use_actual=exp_config[exp]['use_actual'], use_synthetic=exp_config[exp]['use_synthetic'],
-            start_date=dataset_start_date, allowance=allowance, s1=s1, s2=s2, s3=s3
-        )
+            start_date=dataset_start_date, allowance=allowance, s1=s1, s2=s2, s3=s3)
 
     # Insert custom data into SEIR input dataframes
     input_dfs = dict()
@@ -147,8 +146,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
     # Get baseline c3 predictions for s2+s3 when trained on s1
     df_baseline, train_baseline, test_baseline, dataset_prop_baseline = get_experiment_dataset(
         district, state, original_data, generated_data=None, use_actual=True, use_synthetic=False,
-        start_date=dataset_start_date, allowance=allowance, s1=s1, s2=0, s3=s2+s3
-    )
+        start_date=dataset_start_date, allowance=allowance, s1=s1, s2=0, s3=s2+s3)
     input_df_baseline = insert_custom_dataset_into_dataframes(input_df, df_baseline, start_date=dataset_start_date,
                                                               compartments=which_compartments)
     predictions_dict_baseline = seir_runner(district, state, input_df_baseline, (not disable_tracker),
