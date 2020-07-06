@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+import copy
+
+from data.dataloader import AthenaLoader
 
 """
 The set of functions of processing data with more columns (Active split into multiple columns)
@@ -74,4 +77,34 @@ def get_custom_data_from_file(filename):
     return df
 
 def get_custom_data_from_db():
-    pass
+    print('fetching from athenadb...')
+    loader = AthenaLoader()
+    dataframes = loader.get_athena_dataframes()
+    df = copy.copy(dataframes['new_covid_case_summary'])
+    df.dropna(axis=0, how='any', inplace=True)
+    df.replace(',', '', regex=True, inplace=True)
+    df.loc[:, 'total':'ventilator_occupied'] = df.loc[:, 'total':'ventilator_occupied'].apply(pd.to_numeric)
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.infer_objects()
+    df = df[(df.select_dtypes(include='int64') > 0).sum(axis=1) == len(df.select_dtypes(include='int64').columns)]
+    df.reset_index(inplace=True, drop=True)
+
+    #Column renaming and pruning
+    df = df.drop([x for x in df.columns if '_capacity' in x] + ['partition_0'], axis=1)
+    df = df.rename({'total': 'total_infected', 'active': 'hospitalised',
+                    'total_occupied': 'total_beds', 'o2_occupied': 'o2_beds'}, axis='columns')
+    df.columns = [x.replace('_occupied', '') for x in df.columns]
+    # New column creation
+    df['hq'] = df['hospitalised'] - df['total_beds']
+    df['non_o2_beds'] = df['total_beds'] - (df['o2_beds']+df['icu'])
+
+    # Rearranging columns
+    col = df.pop('hq')
+    df.insert(int(np.where(df.columns == 'o2_beds')[0][0]), 'hq', col)
+
+    col = df.pop('total_beds')
+    df.insert(int(np.where(df.columns == 'o2_beds')[0][0]), 'total_beds', col)
+
+    col = df.pop('non_o2_beds')
+    df.insert(int(np.where(df.columns == 'o2_beds')[0][0]), 'non_o2_beds', col)
+    return df
