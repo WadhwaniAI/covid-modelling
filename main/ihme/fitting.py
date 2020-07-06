@@ -225,20 +225,50 @@ def run_cycle(dataframes, model_params, forecast_days=30,
     train_pred = predictions[model.ycol][:len(train)]
     train_model_ycol_numpy = train[model.ycol].to_numpy()
     trainerr = lc.evaluate(train_model_ycol_numpy, train_pred)
+    trainerr_pointwise = lc.evaluate_pointwise(train_model_ycol_numpy, train_pred)
     testerr = None
+    testerr_pointwise = None
     if len(test) != 0:
         test_pred = predictions[model.ycol][len(train):len(train) + len(test)]
         test_model_ycol_numpy = test[model.ycol].to_numpy()
         testerr = lc.evaluate(test_model_ycol_numpy, test_pred)
+        testerr_pointwise = lc.evaluate_pointwise(test_model_ycol_numpy, test_pred)
     if xform_func != None:
         xform_trainerr = lc.evaluate(xform_func(train_model_ycol_numpy, dtp),
             xform_func(train_pred, dtp))
+        xform_trainerr_pointwise = lc.evaluate_pointwise(xform_func(train_model_ycol_numpy, dtp),
+            xform_func(train_pred, dtp))
         xform_testerr = None
+        xform_testerr_pointwise = None
         if len(test) != 0:
-            xform_testerr = lc.evaluate(xform_func(test_model_ycol_numpy, dtp),
+            xform_testerr = lc.evaluate(xform_func(test_model_ycol_numpy, dtp), xform_func(test_pred, dtp))
+            xform_testerr_pointwise = lc.evaluate_pointwise(xform_func(test_model_ycol_numpy, dtp),
                 xform_func(test_pred, dtp))
     else:
         xform_trainerr, xform_testerr = None, None
+        xform_trainerr_pointwise, xform_testerr_pointwise = None, None
+
+    # CREATE POINTWISE LOSS DATAFRAME
+
+    df_trainerr_pointwise = lc.create_pointwise_loss_dataframes(train_model_ycol_numpy, train_pred)
+    df_xform_trainerr_pointwise = pd.DataFrame()
+    if xform_trainerr_pointwise is not None:
+        df_xform_trainerr_pointwise = lc.create_pointwise_loss_dataframes(
+            xform_func(train_model_ycol_numpy, dtp), xform_func(train_pred, dtp))
+    df_train_loss_pointwise = pd.concat([df_trainerr_pointwise, df_xform_trainerr_pointwise],
+        keys=['train', 'train_no_xform']).rename_axis(['split', 'loss_functions'])
+    df_train_loss_pointwise.columns = train['date'].tolist()
+
+    df_test_loss_pointwise = pd.DataFrame()
+    if len(test) != 0:
+        df_testerr_pointwise = lc.create_pointwise_loss_dataframes(test_model_ycol_numpy, test_pred)
+        df_xform_testerr_pointwise = pd.DataFrame()
+        if xform_testerr_pointwise is not None:
+            df_xform_testerr_pointwise = lc.create_pointwise_loss_dataframes(
+                xform_func(test_model_ycol_numpy, dtp), xform_func(test_pred, dtp))
+        df_test_loss_pointwise = pd.concat([df_testerr_pointwise, df_xform_testerr_pointwise],
+            keys=['val', 'val_no_xform']).rename_axis(['split', 'loss_functions'])
+        df_test_loss_pointwise.columns = test['date'].tolist()
 
     # UNCERTAINTY
     draws_dict = model.calc_draws()
@@ -261,11 +291,13 @@ def run_cycle(dataframes, model_params, forecast_days=30,
         'df_train_nora': dataframes['train_nora'],
         'df_val_nora': dataframes['test_nora'],
         'df_loss': pd.DataFrame({
-            'train': xform_trainerr,
+            "train": xform_trainerr,
             "val": xform_testerr,
             "train_no_xform": trainerr,
             "val_no_xform": testerr,
         }),
+        'df_train_loss_pointwise': df_train_loss_pointwise,
+        'df_test_loss_pointwise': df_test_loss_pointwise,
         'trials': trials_dict,
         'data_last_date': dataframes['df'][model.date].max(),
         'draws': draws,
@@ -331,6 +363,11 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
         predictions.loc[pred.index, col.name] = xform_func(pred[ycols[col]], dtp)
         predictions.loc[pred.index, ycols[col]] = pred[ycols[col]]
 
+    df_train_loss_pointwise = pd.concat([results[comp]['df_train_loss_pointwise'] for comp in compartment_names],
+        keys=compartment_names)
+    df_test_loss_pointwise = pd.concat([results[comp]['df_test_loss_pointwise'] for comp in compartment_names],
+        keys=compartment_names)
+
     predictions.reset_index(inplace=True)
     df_train = dataframes['train'][compartment_names + list(ycols.values()) + [model_params['date']]]
     df_val = dataframes['test'][compartment_names + list(ycols.values()) + [model_params['date']]]
@@ -351,6 +388,8 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
         'df_train_nora': df_train_nora,
         'df_val_nora': df_val_nora,
         'df_loss': df_loss,
+        'df_train_loss_pointwise': df_train_loss_pointwise,
+        'df_test_loss_pointwise': df_test_loss_pointwise,
         'data_last_date': df_district[model_params['date']].max(),
         'draws': {
             col.name: {
