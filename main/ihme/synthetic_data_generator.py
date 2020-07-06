@@ -144,11 +144,11 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
 
     c1_output['m1']['ax'].savefig(output_folder + 'seir_c1.png')
 
-    i1 = i1_output['m1']['df_loss'].T[which_compartments]
+    i1 = i1_output['df_loss'].T[which_compartments]
     i1.to_csv(output_folder + "ihme_i1_loss.csv")
 
-    i1_output['m1']['df_train_loss_pointwise'].to_csv(output_folder + "ihme_i1_pointwise_train_loss.csv")
-    i1_output['m1']['df_test_loss_pointwise'].to_csv(output_folder + "ihme_i1_pointwise_test_loss.csv")
+    i1_output['df_train_loss_pointwise'].to_csv(output_folder + "ihme_i1_pointwise_train_loss.csv")
+    i1_output['df_test_loss_pointwise'].to_csv(output_folder + "ihme_i1_pointwise_test_loss.csv")
 
     loss_dfs = []
     for i in predictions_dicts:
@@ -176,18 +176,22 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
     with open(output_folder + 'ihme_i1_model_params.json', 'w') as outfile:
         json.dump(repr(i1_model_params), outfile, indent=4)
 
-    # FIX
-    # picklefn = f'{output_folder}/i1.pkl'
-    # with open(picklefn, 'wb') as pickle_file:
-    #     pickle.dump(i1_output, pickle_file)
-    #
-    # picklefn = f'{output_folder}/c1.pkl'
-    # with open(picklefn, 'wb') as pickle_file:
-    #     pickle.dump(c1_output, pickle_file)
-    #
-    # picklefn = f'{output_folder}/c2.pkl'
-    # with open(picklefn, 'wb') as pickle_file:
-    #     pickle.dump(predictions_dicts, pickle_file)
+    i1_dump = deepcopy(i1_output)
+    for var in i1_dump['individual_results']:
+        individual_res = i1_dump['individual_results'][var]
+        del individual_res['optimiser']
+
+    picklefn = f'{output_folder}/i1.pkl'
+    with open(picklefn, 'wb') as pickle_file:
+        pickle.dump(i1_dump, pickle_file)
+
+    picklefn = f'{output_folder}/c1.pkl'
+    with open(picklefn, 'wb') as pickle_file:
+        pickle.dump(c1_output, pickle_file)
+
+    picklefn = f'{output_folder}/c2.pkl'
+    with open(picklefn, 'wb') as pickle_file:
+        pickle.dump(predictions_dicts, pickle_file)
 
 
 def create_output_folder(fname):
