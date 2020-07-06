@@ -61,6 +61,7 @@ class AthenaLoader(BaseLoader):
             dict -- dict where key is str and value is pd.DataFrame
             The dataframes : 
             covid_case_summary
+            new_covid_case_summary
             demographics_details
             healthcare_capacity
             testing_summary
