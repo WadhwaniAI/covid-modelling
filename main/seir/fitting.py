@@ -43,6 +43,7 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
             'T_inc': (4, 5),
             'T_inf': (3, 4),
             'T_recov_severe': (5, 60),
+            'T_fatal': (0, 10),
             'P_fatal': (0, 0.3),
             'E_hosp_ratio': (0, 2),
             'I_hosp_ratio': (0, 1)
@@ -121,8 +122,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     
 
 def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename, which_compartments,
-                      granular_data=False, smooth_jump=False, smoothing_length=28, smoothing_method='uniform', 
-                      t_recov=14, return_extra=False):
+                      granular_data=False, smooth_jump=False, t_recov=14, return_extra=False):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -153,10 +153,10 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
         if granular_data:
             df_district = smooth_big_jump_stratified(df_district)
         else:
-            df_district = smooth_big_jump(df_district, method=smoothing_method, data_from_tracker=data_from_tracker)
+            df_district = smooth_big_jump(df_district, data_from_tracker=data_from_tracker)
 
         ax = plot_smoothing(orig_df_district, df_district, state, district,
-                            which_compartments=which_compartments, description=f'Smoothing: {smoothing_method}')
+                            which_compartments=which_compartments, description=f'Smoothing')
 
     if return_extra:
         extra = {
@@ -269,7 +269,7 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, variab
                          data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
                          train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', #Misc
                          which_compartments=['hospitalised', 'total_infected'], #Compartments
-                         smooth_jump=False, smoothing_length=28, smoothing_method='uniform'): #Smoothing
+                         smooth_jump=False): #Smoothing
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -303,8 +303,7 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, variab
     df_district, df_district_raw_data, extra = get_regional_data(
         dataframes, state, district, data_from_tracker, data_format, filename, 
         which_compartments=which_compartments, granular_data=granular_data,
-        smooth_jump=smooth_jump, smoothing_method=smoothing_method, 
-        smoothing_length=smoothing_length, return_extra=True
+        smooth_jump=smooth_jump, return_extra=True
     )
     smoothed_plot = extra['ax']
     orig_df_district = extra['df_district_unsmoothed']
