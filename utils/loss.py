@@ -25,6 +25,20 @@ class Loss_Calculator():
         loss = np.mean(ape)
         return loss
 
+    def _calc_ape(self, y_pred, y_true):
+        # Allow NaNs to remain
+        ape = np.abs((y_true - y_pred + 0) / y_true) * 100
+        return ape
+
+    def _calc_error(self, y_pred, y_true):
+        return y_pred - y_true
+
+    def _calc_se(self, y_pred, y_true, log=False):
+        if log:
+            y_true = np.log(y_true)
+            y_pred = np.log(y_pred)
+        return self._calc_error(y_pred, y_true)**2
+
     def calc_loss_dict(self, df_prediction, df_true, method='rmse'):
         if method == 'rmse':
             calculate = lambda x, y : self._calc_rmse(x, y)
@@ -60,13 +74,44 @@ class Loss_Calculator():
             dict: Dict of losses
         """
         err = {}
-        err['mape'] = self._calc_mape(y_true, y_pred)
-        err['rmse'] = self._calc_rmse(y_true, y_pred)
+        err['mape'] = self._calc_mape(y_pred, y_true)
+        err['rmse'] = self._calc_rmse(y_pred, y_true)
         try:
-            err['rmsle'] = self._calc_rmse(y_true, y_pred, log=True)
+            err['rmsle'] = self._calc_rmse(y_pred, y_true, log=True)
         except:
             err['rmsle'] = None
         return err
+
+    def evaluate_pointwise(self, y_true, y_pred):
+        """Used by IHME
+
+        Args:
+            y_true ([type]): [description]
+            y_pred ([type]): [description]
+
+        Returns:
+            dict: Dict of losses
+        """
+        err = {}
+        err['ape'] = self._calc_ape(y_pred, y_true)
+        err['error'] = self._calc_error(y_pred, y_true)
+        err['se'] = self._calc_se(y_pred, y_true)
+        with np.errstate(invalid='ignore'):
+            err['sle'] = self._calc_se(y_pred, y_true, log=True)
+        return err
+
+    def create_pointwise_loss_dataframes(self, y_true, y_pred):
+        """Used by IHME
+
+        Args:
+            y_true ([type]): [description]
+            y_pred ([type]): [description]
+
+        Returns:
+            pd.DataFrame: Dataframe of losses
+        """
+        loss_dict = self.evaluate_pointwise(y_true, y_pred)
+        return pd.DataFrame.from_dict(loss_dict, orient='index').rename_axis('loss_function')
 
     def create_loss_dataframe_region(self, df_train, df_val, df_prediction, train_period, 
                        which_compartments=['hospitalised', 'total_infected']):
