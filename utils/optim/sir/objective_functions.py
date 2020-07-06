@@ -26,7 +26,7 @@ def check(start_array, duration_array, choice_array, total_resource, days):
 		return(1)
 
 def get_impact(choice):
-	return(1+1*choice)
+	return(1+2*choice)
 
 def calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params=None):
 	if(params==None):
@@ -70,15 +70,33 @@ def calculate_opt(intervention_day, intervention_duration, intervention_choice, 
 	grad1 = np.dot(time_weight, grad1)
 	return(grad1, states_int_array)
 
+def inf_auc(infection_array):
+	return(np.sum(infection_array))
+
 def calculate_opt_qald(intervention_day, intervention_duration, intervention_choice, days, params=None):
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
 	return(grad1)
 
+def inf_height(infection_array):
+	return(np.max(infection_array))
+
 def calculate_opt_height(intervention_day, intervention_duration, intervention_choice, days, params=None):
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
 	infection_array = states_int_array[1]
-	height = np.max(infection_array)
+	height = inf_height(infection_array)
 	return(height)
+
+def inf_time(infection_array):
+	auci = np.sum(infection_array)
+	running_sum = np.ones(len(infection_array))
+	time_array = np.ones(10)
+	for i in range(len(infection_array)):
+		running_sum[i] = np.sum(infection_array[:i+1])
+	for i in range(1,11):
+		time_array[i-1] = np.argmax(running_sum>=auci*0.1*i)+1
+	time = np.mean(time_array)
+	return(time)
+
 
 def calculate_opt_time(intervention_day, intervention_duration, intervention_choice, days, params=None):
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
@@ -90,30 +108,28 @@ def calculate_opt_time(intervention_day, intervention_duration, intervention_cho
 	# 	x2 = len(infection_array)-np.argmax(infection_array[::-1]>y*0.01)-1
 	# 	time = time + x1 + x2
 	# time = time/(maxy*2)
-	auci = np.sum(infection_array)
-	running_sum = np.ones(len(infection_array))
-	time_array = np.ones(10)
-	for i in range(len(infection_array)):
-		running_sum[i] = np.sum(infection_array[:i+1])
-	for i in range(1,11):
-		time_array[i-1] = np.argmax(running_sum>=auci*0.1*i)+1
-	time = np.mean(time_array)
+	time = inf_time(infection_array)
 	return(time)
+
+def inf_burden(infection_array,capacity=0.1):
+	burden = np.sum(infection_array[infection_array>=capacity])
+	return(burden)
+
 
 def calculate_opt_burden(intervention_day, intervention_duration, intervention_choice, days, capacity=np.array([0.1]), params=None):
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
 	infection_array = states_int_array[1]
 	if(len(capacity)==1):
-		burden = np.sum(infection_array[infection_array>=capacity[0]])
-	if(len(capacity)==2):
-		capacity_array = np.ones_like(infection_array)
-		capacity_array[0] = capacity[0]
-		capacity_array[-1] = capacity[-1]
-		for i in range(1,len(capacity_array)-1):
-			capacity_array[i] = capacity_array[i-1]+((capacity[1]-capacity[0])/(len(capacity_array)-1))
-		burden_array = infection_array-capacity_array
-		burden_array = np.maximum(burden_array, np.zeros_like(burden_array))
-		burden = np.sum(burden_array)
+		burden = inf_burden(infection_array,capacity[0])
+	# if(len(capacity)==2):
+	# 	capacity_array = np.ones_like(infection_array)
+	# 	capacity_array[0] = capacity[0]
+	# 	capacity_array[-1] = capacity[-1]
+	# 	for i in range(1,len(capacity_array)-1):
+	# 		capacity_array[i] = capacity_array[i-1]+((capacity[1]-capacity[0])/(len(capacity_array)-1))
+	# 	burden_array = infection_array-capacity_array
+	# 	burden_array = np.maximum(burden_array, np.zeros_like(burden_array))
+	# 	burden = np.sum(burden_array)
 	return(burden)
 
 def hp_calculate_opt_qald(variable_params, total_resource, days, params=None):
@@ -180,7 +196,7 @@ def hp_calculate_opt_burden(variable_params, total_resource, days, capacity, par
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
 	infection_array = states_int_array[1]
 	if(len(capacity)==1):
-		burden = np.sum(infection_array[infection_array>=capacity[0]])
+		burden = np.sum(infection_array[infection_array>=capacity[0]]-capacity[0])
 	if(len(capacity)==2):
 		capacity_array = np.ones_like(infection_array)
 		capacity_array[0] = capacity[0]

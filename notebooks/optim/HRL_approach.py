@@ -7,6 +7,7 @@ import itertools
 # sys.path.append('../..')
 # from models.optim.SEIR_Discrete import SEIR_Discrete
 #from models.optim.sir_discrete import SIR_Discrete
+from utils.optim.sir.objective_functions import *
 # from utils.optim.sir import objective_functions
 from sir_discrete3 import SIR_Discrete
 from seir_dis_RL import SEIR_Discrete
@@ -381,11 +382,15 @@ if __name__ == '__main__':
     
     for i in range(len(A_S)):
         I.append(A_S[i][1])
-    plt.plot(range(len(I)),I)
+    I = np.array(I)
+    burden = inf_burden(I)
+    print("Optimized Burden Value: ", burden)
+    # plt.plot(range(len(I)),I)
     I_r=[]
     for i in range(len(A_S_r)):
         I_r.append(A_S_r[i][1])
-    plt.plot(range(len(I_r)),I_r)
+    # plt.plot(range(len(I_r)),I_r)
+    
 
     print("QALY")
     print("NI_Score="+str(get_score(np.array(I_r), 0)))
