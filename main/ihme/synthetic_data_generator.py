@@ -144,8 +144,11 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
 
     c1_output['m1']['ax'].savefig(output_folder + 'seir_c1.png')
 
-    i1 = c1_output['m1']['df_loss'].T[which_compartments]
+    i1 = i1_output['m1']['df_loss'].T[which_compartments]
     i1.to_csv(output_folder + "ihme_i1_loss.csv")
+
+    i1_output['m1']['df_train_loss_pointwise'].to_csv(output_folder + "ihme_i1_pointwise_train_loss.csv")
+    i1_output['m1']['df_test_loss_pointwise'].to_csv(output_folder + "ihme_i1_pointwise_test_loss.csv")
 
     loss_dfs = []
     for i in predictions_dicts:

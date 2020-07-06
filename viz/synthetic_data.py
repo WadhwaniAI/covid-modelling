@@ -314,7 +314,7 @@ def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, distri
     Args:
         df_true (pd.DataFrame): ground truth data
         df_prediction (dict): Dictionary of results dicts from SEIR c2 models
-        df_prediction_baseline (pd.DataFrame):
+        df_prediction_baseline (dict): Results dict from SEIR baseline model
         district (str): name of district
         actual_start_date (datetime.datetime): date from which series s1 begins
         allowance (int): number of days of ground data before train split to prevent nan when rolling average is taken
