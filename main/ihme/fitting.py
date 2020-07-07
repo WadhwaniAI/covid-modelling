@@ -22,7 +22,8 @@ from utils.smooth_jump import smooth_big_jump
 
 
 def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker,
-                      smooth_jump, smooth_jump_method, smooth_jump_days, start_date=None, dataset_length=0):
+                      smooth_jump, smooth_jump_method, smooth_jump_days, start_date=None, dataset_length=0,
+                      continuous_ra=True):
     """
     Function to get regional data and shape it for IHME consumption
 
@@ -37,6 +38,9 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
         smooth_jump (boolean): whether to smooth_big_jump
         smooth_jump_method ([type]): passed to smooth_big_jump
         smooth_jump_days ([type]): passed to smooth_big_jump
+        start_date ():
+        dataset_length ():
+        continuous_ra ():
 
     Returns:
         dict: contains smoothed and unsmoothed dataframes: train, test, df
@@ -58,6 +62,7 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     if smooth_window > 0:
         for col in col_names:
             df[col] = rollingavg(df[col], smooth_window)
+    offset = smooth_window//2
     
     startday = df['date'][df['deceased_rate'].gt(1e-15).idxmax()]
     
@@ -87,6 +92,8 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     
     train, test = train_test_split(df_, threshold)
     train_nora, test_nora = train_test_split(df_nora_, threshold)
+    if not continuous_ra:
+        train = pd.concat([train.iloc[:-2, :], train_nora.iloc[-2:, :]])
 
     dataframes = {
         'train': train,
@@ -98,9 +105,9 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     }
     return dataframes, dtp
     
-def setup(dist, st, area_names, model_params, 
-        sd, smooth, test_size, disable_tracker, 
-        smooth_jump, smooth_jump_method, smooth_jump_days, start_date, dataset_length, **config):
+def setup(dist, st, area_names, model_params,
+          sd, smooth, test_size, disable_tracker,
+          smooth_jump, smooth_jump_method, smooth_jump_days, start_date, dataset_length, continuous_ra, **config):
     """
     gets data and sets up the model_parameters to be ready for IHME consumption
 
@@ -116,6 +123,9 @@ def setup(dist, st, area_names, model_params,
         smooth_jump (boolean): whether to smooth_big_jump
         smooth_jump_method ([type]): passed to smooth_big_jump
         smooth_jump_days ([type]): passed to smooth_big_jump
+        start_date ():
+        dataset_length ():
+        continuous_ra ():
 
     Returns:
         tuple: dataframes dict, district_total_population, and model_params (modified)
@@ -128,7 +138,8 @@ def setup(dist, st, area_names, model_params,
         disable_tracker=disable_tracker,
         smooth_jump=smooth_jump, smooth_jump_method=smooth_jump_method, 
         smooth_jump_days=smooth_jump_days,
-        start_date=start_date, dataset_length=dataset_length
+        start_date=start_date, dataset_length=dataset_length,
+        continuous_ra=continuous_ra
     )
         
     return dataframes, dtp, model_params
@@ -225,14 +236,11 @@ def run_cycle(dataframes, model_params, forecast_days=30,
     train_pred = predictions[model.ycol][:len(train)]
     train_model_ycol_numpy = train[model.ycol].to_numpy()
     trainerr = lc.evaluate(train_model_ycol_numpy, train_pred)
-    trainerr_pointwise = lc.evaluate_pointwise(train_model_ycol_numpy, train_pred)
     testerr = None
-    testerr_pointwise = None
     if len(test) != 0:
         test_pred = predictions[model.ycol][len(train):len(train) + len(test)]
         test_model_ycol_numpy = test[model.ycol].to_numpy()
         testerr = lc.evaluate(test_model_ycol_numpy, test_pred)
-        testerr_pointwise = lc.evaluate_pointwise(test_model_ycol_numpy, test_pred)
     if xform_func != None:
         xform_trainerr = lc.evaluate(xform_func(train_model_ycol_numpy, dtp),
             xform_func(train_pred, dtp))

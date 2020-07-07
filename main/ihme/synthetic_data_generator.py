@@ -97,7 +97,7 @@ def seir_runner(district, state, input_df, data_from_tracker,
     """
 
     predictions_dict = dict()
-    observed_dataframes = data_setup(input_df[0], input_df[1], val_period)
+    observed_dataframes = data_setup(input_df[0], input_df[1], val_period, continuous_ra=False)
     predictions_dict['m1'] = run_cycle(
         state, district, observed_dataframes,
         model=SEIR_Testing, variable_param_ranges=None,
