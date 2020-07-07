@@ -65,7 +65,8 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
 
     return variable_param_ranges
    
-def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5):
+def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5,
+                    continuous_ra=True):
     """Creates train val split on dataframe
 
     # TODO : Add support for creating train val test split
@@ -78,6 +79,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
         val_rollingmean {bool} -- If true, apply rolling mean on val (default: {False})
         val_size {int} -- Size of val set (default: {5})
         rolling_window {int} -- Size of rolling window. The rolling window is centered (default: {5})
+        continuous_ra {bool} -- If true, end values of train use actuals from val set for rolling mean
 
     Returns:
         pd.DataFrame, pd.DataFrame, pd.DataFrame -- train dataset, val dataset, concatenation of rolling average dfs
@@ -104,7 +106,12 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
                 [df_true_fitting, df_district.iloc[-(val_size+offset_window):, :]], ignore_index=True)
             return df_train, None
         else:
-            df_train = df_true_fitting.iloc[:-(val_size-offset_window), :]
+            if continuous_ra:
+                df_train = df_true_fitting.iloc[:-(val_size-offset_window), :]
+            else:
+                df_train = pd.concat(
+                    [df_true_fitting.iloc[:-val_size, :], df_district.iloc[-(val_size+offset_window):-val_size, :]],
+                    ignore_index=True)
     else:
         if val_size == 0:
             return df_district, None
@@ -117,6 +124,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     else:
         df_val = df_district.iloc[-val_size:, :]
     df_val.reset_index(inplace=True, drop=True)
+
     return df_train, df_val
     
 
@@ -166,7 +174,7 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
         return df_district, df_district_raw_data, extra 
     return df_district, df_district_raw_data 
 
-def data_setup(df_district, df_district_raw_data, val_period):
+def data_setup(df_district, df_district_raw_data, val_period, continuous_ra=True):
     """Helper function for single_fitting_cycle which sets up the data including doing the train val split
 
     Arguments:
@@ -179,7 +187,7 @@ def data_setup(df_district, df_district_raw_data, val_period):
     """
     # Get train val split
     df_train, df_val = train_val_split(
-        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
+        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period, continuous_ra=continuous_ra)
     df_train_nora, df_val_nora = train_val_split(
         df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
 
@@ -269,7 +277,7 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, variab
                          data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
                          train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', #Misc
                          which_compartments=['hospitalised', 'total_infected'], #Compartments
-                         smooth_jump=False, smoothing_length=28, smoothing_method='uniform'): #Smoothing
+                         smooth_jump=False, smoothing_length=28, smoothing_method='uniform', continuous_ra=True): #Smoothing
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -310,7 +318,7 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, variab
     orig_df_district = extra['df_district_unsmoothed']
 
     # Process the data to get rolling averages and other stuff
-    observed_dataframes = data_setup(df_district, df_district_raw_data, val_period)
+    observed_dataframes = data_setup(df_district, df_district_raw_data, val_period, continuous_ra=continuous_ra)
 
     print('train\n', observed_dataframes['df_train'].tail())
     print('val\n', observed_dataframes['df_val'])
