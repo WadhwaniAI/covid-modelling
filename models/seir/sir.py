@@ -12,8 +12,7 @@ class SIR:
     @abstractmethod
     def __init__(self, STATES, R_STATES, p_params, t_params, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None,
                  T_inf=2.9, T_inc=5.2, N=7e6, lockdown_day=10, lockdown_removal_day=75,
-                 starting_date='2020-03-09', initialisation='intermediate', observed_values=None,
-                 I_hosp_ratio=0.5, ** kwargs):
+                 starting_date='2020-03-09', initialisation='intermediate', observed_values=None, ** kwargs):
         """
         This class implements SIR
         The model further implements
@@ -51,8 +50,6 @@ class SIR:
             # Number of days from the starting_date, after which lockdown is removed
             'N': N,
 
-            # Initialisation Params
-            'I_hosp_ratio': I_hosp_ratio  # Ratio for Infected to hospitalised for initialisation
         }
 
         for key in params:
@@ -81,7 +78,7 @@ class SIR:
 
             state_init_values['R'] = observed_values['recovered']
             state_init_values['D'] = observed_values['deceased']
-            state_init_values['I'] = self.I_hosp_ratio * observed_values['hospitalised']
+            state_init_values['I'] = observed_values['hospitalised']
 
             nonSsum = sum(state_init_values.values())
             state_init_values['S'] = (self.N - nonSsum)
@@ -124,6 +121,3 @@ class SIR:
         df_prediction = df_prediction[['date'] + columns]
         return df_prediction
 
-# dydt[0] = - (I * S) / self.T_trans  # S
-# dydt[1] = (I * S) / self.T_trans - (I / self.T_inf)  # I
-# dydt[2] = I / self.T_inf  # R
