@@ -91,8 +91,8 @@ def seir_runner(district, state, input_df, data_from_tracker,
         train_period (int): length of train period
         val_period (int): length of val period
         which_compartments (list(enum)): list of compartments to fit on
-        model ():
-        variable_param_ranges():
+        model (object, optional): model class to be used (default: SEIR_Testing)
+        variable_param_ranges(dict, optional): search space (default: None)
         num_evals (int, optional): number of evaluations of bayesian optimisation (default: 1500)
 
     Returns:
@@ -113,7 +113,7 @@ def seir_runner(district, state, input_df, data_from_tracker,
 
 def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
                          c1_output, datasets, predictions_dicts, which_compartments,
-                         dataset_properties, series_properties, baseline_predictions_dict=None):
+                         dataset_properties, series_properties, baseline_predictions_dict=None, name_prefix=""):
     """Logs all results
 
     Args:
@@ -128,6 +128,7 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
         dataset_properties (dict): Properties of datasets used
         series_properties (dict): Properties of series used in experiments
         baseline_predictions_dict (dict, optional): Results dict of SEIR c3 baseline model
+        name_prefix (str): prefix for filename
     """
 
     params_dict = {
@@ -143,9 +144,9 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
         datasets[i].to_csv(output_folder+filename)
 
     c1 = c1_output['m1']['df_loss'].T[which_compartments]
-    c1.to_csv(output_folder + "seir_c1_loss.csv")
+    c1.to_csv(output_folder + name_prefix + "_c1_loss.csv")
 
-    c1_output['m1']['ax'].savefig(output_folder + 'seir_c1.png')
+    c1_output['m1']['ax'].savefig(output_folder + name_prefix + '_c1.png')
 
     i1 = i1_output['df_loss'].T[which_compartments]
     i1.to_csv(output_folder + "ihme_i1_loss.csv")
@@ -158,23 +159,24 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
         loss_df = predictions_dicts[i]['m1']['df_loss'].T[which_compartments]
         loss_df['exp'] = i+1
         loss_dfs.append(loss_df)
-        predictions_dicts[i]['m1']['ax'].savefig(output_folder + 'seir_c2_experiment_'+str(i+1)+'.png')
+        predictions_dicts[i]['m1']['ax'].savefig(output_folder + name_prefix + '_c2_experiment_'+str(i+1)+'.png')
 
     loss = pd.concat(loss_dfs, axis=0)
     loss.index.name = 'index'
     loss.sort_values(by='index', inplace=True)
-    loss.to_csv(output_folder + "/experiments_loss.csv")
+    loss.to_csv(output_folder + name_prefix + "_experiments_loss.csv")
 
     if baseline_predictions_dict is not None:
         baseline_loss = baseline_predictions_dict['m1']['df_loss_s3'].T[which_compartments]
-        baseline_loss.to_csv(output_folder + "baseline_loss.csv")
+        baseline_loss.to_csv(output_folder + name_prefix + "_baseline_loss.csv")
 
-    with open(output_folder + 'experiments_params.json', 'w') as outfile:
+    with open(output_folder + name_prefix + '_experiments_params.json', 'w') as outfile:
         json.dump(params_dict, outfile, indent=4)
 
-    i1_config['start_date'] = i1_config['start_date'].strftime("%Y-%m-%d")
+    i1_config_dump = deepcopy(i1_config)
+    i1_config_dump['start_date'] = i1_config_dump['start_date'].strftime("%Y-%m-%d")
     with open(output_folder + 'ihme_i1_config.json', 'w') as outfile:
-        json.dump(i1_config, outfile, indent=4)
+        json.dump(i1_config_dump, outfile, indent=4)
 
     with open(output_folder + 'ihme_i1_model_params.json', 'w') as outfile:
         json.dump(repr(i1_model_params), outfile, indent=4)
@@ -188,13 +190,17 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
     with open(picklefn, 'wb') as pickle_file:
         pickle.dump(i1_dump, pickle_file)
 
-    picklefn = f'{output_folder}/c1.pkl'
+    picklefn = f'{output_folder}/{name_prefix}_c1.pkl'
     with open(picklefn, 'wb') as pickle_file:
         pickle.dump(c1_output, pickle_file)
 
-    picklefn = f'{output_folder}/c2.pkl'
+    picklefn = f'{output_folder}/{name_prefix}_c2.pkl'
     with open(picklefn, 'wb') as pickle_file:
         pickle.dump(predictions_dicts, pickle_file)
+
+    picklefn = f'{output_folder}/{name_prefix}_c3.pkl'
+    with open(picklefn, 'wb') as pickle_file:
+        pickle.dump(baseline_predictions_dict, pickle_file)
 
 
 def create_output_folder(fname):
@@ -213,14 +219,17 @@ def create_output_folder(fname):
     return output_folder
 
 
-def get_variable_param_ranges(model):
-    if model == SEIR_Testing:
+def get_variable_param_ranges_dict(model):
+    if model is SEIR_Testing:
+        print("Getting search space for:", model)
         return None
-    elif model == SIRD:
+    elif model is SIRD:
+        print("Getting search space for:", model)
         return {
-            'lockdown_R0': (1, 1.5),
-            'T_inc': (4, 8),
-            'T_inf': (4, 7),
-            'T_fatal': (1, 70),
-            'I_hosp_ratio': (0, 1)
+            'lockdown_R0': (1, 6),
+            'T_inc': (4, 16),
+            'T_inf': (10, 60),
+            'T_fatal': (260, 300)
         }
+    else:
+        raise Exception("This model class is not supported")
