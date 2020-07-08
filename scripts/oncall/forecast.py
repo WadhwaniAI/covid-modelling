@@ -24,27 +24,33 @@ parser.add_argument("-date", "--date", help="date YYYY-MM-DD to sort trials by f
 args = parser.parse_args()   
 config, model_params = read_config(args.config)
 
+# Load pickle file
 with open(f'../../reports/{args.folder}/predictions_dict.pkl', 'rb') as pkl:
     region_dict = pickle.load(pkl)
 forecast_dict = {}
 df_reported = region_dict['m2']['df_district_unsmoothed']
 date_of_interest = config['date_of_interest']
 
+# Calculate beta and ptiles indices
 uncertainty = MCUncertainty(region_dict, date_of_interest)
 deciles_idx = uncertainty.get_ptiles_idx()
 forecast_dict['beta'] = uncertainty.beta
+
+# Save the deciles indices and beta as params of uncertainty calculation
 with open(f'../../reports/{args.folder}/deciles_idx.json', 'w+') as params_json:
     deciles_idx['beta'] = forecast_dict['beta']
     json.dump(deciles_idx, params_json, indent=4)
     del deciles_idx['beta']
 
-# forecast deciles to csv
+# Create forecasts for each decile
+# Save forecasts as csv, and params of each as a separate csv
 deciles_forecast = uncertainty.get_forecasts()
 forecast_dict['decile_params'] = {key: val['params'] for key, val in deciles_forecast.items()}
 df_output = create_decile_csv(deciles_forecast, df_reported, region_dict['dist'], 'district', icu_fraction=0.02)
 df_output.to_csv(f'../../reports/{args.folder}/deciles.csv')
 pd.DataFrame(forecast_dict['decile_params']).to_csv(f'../../reports/{args.folder}/deciles-params.csv')
 
+# Create plot a particular compartment and date of interest for all deciles
 idxs = list(deciles_idx.values())
 predictions = region_dict['m2']['predictions']
 params = region_dict['m2']['params']
