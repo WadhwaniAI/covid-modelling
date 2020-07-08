@@ -11,7 +11,7 @@ from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_expe
 from data.dataloader import Covid19IndiaLoader
 from data.processing import get_data
 
-from main.ihme.synthetic_data_generator import *
+from main.ihme_seir.synthetic_data_generator import *
 from main.seir.fitting import get_regional_data
 
 from viz.synthetic_data import plot_all_experiments

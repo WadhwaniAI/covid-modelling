@@ -198,16 +198,16 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
 
 
 def create_output_folder(fname):
-    """Creates folder in outputs/ihme-seir/
+    """Creates folder in outputs/ihme_seir/
 
     Args:
-        fname (str): name of folder within outputs/ihme
+        fname (str): name of folder within outputs/ihme_seir/
 
     Returns:
         str: output_folder path
     """
 
-    output_folder = f'../../outputs/ihme-seir/{fname}'
+    output_folder = f'../../outputs/ihme_seir/{fname}'
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     return output_folder

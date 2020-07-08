@@ -16,7 +16,7 @@ from data.processing import get_data
 
 from models.seir import SEIR_Testing
 
-from main.ihme.synthetic_data_generator import ihme_data_generator, seir_runner, log_experiment_local, \
+from main.ihme_seir.synthetic_data_generator import ihme_data_generator, seir_runner, log_experiment_local, \
     create_output_folder, get_variable_param_ranges
 from main.seir.fitting import get_regional_data
 
