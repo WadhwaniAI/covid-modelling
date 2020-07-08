@@ -5,3 +5,4 @@ from models.seir.seir_movement_testing import SEIR_Movement_Testing
 from models.seir.seirhd_severity import SEIRHD_Severity
 from models.seir.seirhd_facility import SEIRHD_Facility
 from models.seir.seirhd_bed import SEIRHD_Bed
+from models.seir.sird import SIRD
