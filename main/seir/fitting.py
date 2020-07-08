@@ -39,11 +39,11 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
     """
     if variable_param_ranges == None:
         variable_param_ranges = {
-            'lockdown_R0': (1, 1.5),
+            'lockdown_R0': (1, 1.2),
             'T_inc': (4, 5),
             'T_inf': (3, 4),
             'T_recov_severe': (5, 60),
-            'T_fatal': (0, 10),
+            'T_recov_fatal': (0, 40),
             'P_fatal': (0, 0.3),
             'E_hosp_ratio': (0, 2),
             'I_hosp_ratio': (0, 1)
@@ -234,10 +234,11 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     if variable_param_ranges == None:
         variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
 
+    loss_indices = [-train_period, None]
     # Perform Bayesian Optimisation
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
-                                              num_evals=num_evals, loss_indices=[-train_period, None], method='mape',
+                                              num_evals=num_evals, loss_indices=loss_indices, method='mape',
                                               total_days=total_days, which_compartments=which_compartments)
     print('best parameters\n', best_params)
 
