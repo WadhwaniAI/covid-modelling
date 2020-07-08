@@ -135,9 +135,9 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
                                  smooth_jump=smooth_jump, smoothing_length=33, smoothing_method='weighted', t_recov=14,
                                  return_extra=False, which_compartments=which_compartments)
 
-    models = [SIRD]  # [SEIR_Testing, SIRD]
-    name_prefixes = ['sird']  # ['seirt', 'sird']
-    names = ["SIRD"]  # ["SEIR Testing", "SIRD"]
+    models = [SEIR_Testing, SIRD]
+    name_prefixes = ['seirt', 'sird']
+    names = ["SEIR Testing", "SIRD"]
 
     for i, model in enumerate(models):
         variable_param_ranges = get_variable_param_ranges_dict(model)
@@ -246,7 +246,10 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
     print("Number of rows:", data.shape[0])
 
     if num == 1:
+        start_time = time.time()
         run_experiments(ihme_config_path, data_config_path, dataframes, data, multiple=False, shift_forward=0)
+        runtime = time.time() - start_time
+        print("Run time: ", runtime)
     else:
         for i in range(num):
             start_time = time.time()
