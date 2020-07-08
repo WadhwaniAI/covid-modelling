@@ -42,18 +42,38 @@ def plot_sensitivity(predictions_dict, which_fit='m1', var_name=None, param_rang
                                                    method='mape', loss_indices=loss_indices, 
                                                    which_compartments=which_compartments,
                                                    total_days=total_days, debug=False)
-    best_params = params_dict[np.argmin(loss_array)]
-    if isinstance(df_val, pd.DataFrame) and len(df_val) > 0:
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'], 
-                                        model=model)
-    else:
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'],
-                                        model=model)
 
-    fig, ax = plt.subplots(figsize=(12, 12))
-    plt.plot([x[list(x.keys())[0]] for x in params_dict], loss_array)
-    plt.ylabel('Loss Value (MAPE)')
-    plt.xlabel('{}'.format(var_name))
-    plt.title('MAPE for {} compartment vs {} '.format(comp_name, var_name))
-    plt.grid()
-    return fig, zip(params_dict, loss_array)
+    return params_dict, loss_array
+
+def sensitivity_all_comps(predictions_dict, which_fit='m1'):
+    var_tuples = [
+        ('lockdown_R0', np.linspace(1, 1.5, 101), 'total_infected', None),
+        ('I_hosp_ratio', np.linspace(0, 1, 201), 'total_infected', None),
+        ('E_hosp_ratio', np.linspace(0, 2, 201), 'total_infected', None),
+        ('P_fatal', np.linspace(0, 1, 201), 'deceased', 'total_infected'),
+        ('T_recov_severe', np.linspace(1, 100, 101), 'recovered', 'total_infected'),
+        ('T_recov_fatal', np.linspace(1, 100, 101), 'deceased', 'total_infected')
+    ]
+
+    best_params = copy.copy(predictions_dict[which_fit]['best_params'])
+
+    fig, axs = plt.subplots(figsize=(18, 12), nrows=3, ncols=2)
+    fig.suptitle('Sensitivity of variables with respect to corresponding compartments')
+    fig.tight_layout(pad=5.0)
+    for i, ax in enumerate(axs.flat):
+        var_name, param_range, comp_name, aux_comp = var_tuples[i]
+        params_dict, loss_array = plot_sensitivity(predictions_dict, which_fit, var_name=var_name,
+                                                   param_range=param_range, comp_name=comp_name, aux_comp=aux_comp)
+        ax.plot([x[list(x.keys())[0]] for x in params_dict], loss_array)
+        ax.set_ylabel('Loss Value (MAPE)')
+        ax.set_xlabel('{}'.format(var_name))
+        ax.set_title('MAPE for {} vs {} '.format(comp_name, var_name))
+        ax.grid()
+        best_params[var_name] = params_dict[np.argmin(loss_array)][var_name]
+
+    optimiser = predictions_dict[which_fit]['optimiser']
+    df_prediction = optimiser.solve(best_params, predictions_dict[which_fit]['default_params'], 
+                                    predictions_dict[which_fit]['df_train'], 
+                                    end_date=predictions_dict[which_fit]['df_val'].iloc[-1, :]['date'], 
+                                    model=predictions_dict[which_fit]['run_params']['model_class'])
+    return fig, best_params, df_prediction
