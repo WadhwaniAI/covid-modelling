@@ -1,3 +1,17 @@
+"""
+Script to run IHME-SEIR synthetic data experiments
+Data generators:
+    IHME I1 model (1)
+    Compartmental C1 model
+        SEIR Testing model (2)
+Forecasting models:
+    C2 model:
+        SEIR Testing model:
+            Using ground truth data (3)
+            Using synthetic data from I1 (4)
+            Using synthetic data from C1 (5)
+"""
+
 import argparse
 import sys
 import numpy as np

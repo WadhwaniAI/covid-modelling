@@ -1,3 +1,20 @@
+"""
+Script to run IHME-SEIR synthetic data experiments
+Data generators:
+    IHME I1 model (1)
+    Compartmental C1 model
+        SEIR Testing model (2)
+Forecasting models:
+    C2 model:
+        SEIR Testing model:
+            Using ground truth data (3)
+            Using synthetic data from I1 (4)
+            Using synthetic data from C1 (5)
+Baseline models:
+    C3 model: Using ground truth from s1 only
+        SEIR Testing model (6)
+"""
+
 import argparse
 import sys
 import numpy as np
@@ -17,8 +34,8 @@ from data.processing import get_data
 from models.seir import SEIR_Testing
 
 from main.ihme_seir.synthetic_data_generator import ihme_data_generator, seir_runner, log_experiment_local, \
-    create_output_folder, get_variable_param_ranges
-from main.seir.fitting import get_regional_data
+    create_output_folder, get_variable_param_ranges_dict
+from main.seir.fitting import get_regional_data, get_variable_param_ranges
 
 from viz.synthetic_data import plot_all_experiments, plot_against_baseline
 
@@ -53,7 +70,8 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
     num_exp = 3
     num_evals = 1500
     model = SEIR_Testing
-    variable_param_ranges = get_variable_param_ranges(model)
+    variable_param_ranges = get_variable_param_ranges_dict(model)
+    variable_param_ranges = get_variable_param_ranges(variable_param_ranges)
 
     i1_dataset_length = i1_train_val_size + i1_test_size
     c1_dataset_length = shift + allowance + c1_train_period + c1_val_period
@@ -118,7 +136,9 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
     df_district = df_district.head(c1_dataset_length)
     input_df_c1 = (df_district, df_raw)
     c1_output = seir_runner(district, state, input_df_c1, (not disable_tracker),
-                            c1_train_period, c1_val_period, which_compartments, num_evals=num_evals)
+                            c1_train_period, c1_val_period, which_compartments,
+                            model=model, variable_param_ranges=variable_param_ranges,
+                            num_evals=num_evals)
 
     original_data = deepcopy(i1_output['df_district_nora'])
 
