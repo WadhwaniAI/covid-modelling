@@ -1,7 +1,9 @@
 import argparse
 import sys
 import numpy as np
+import pandas as pd
 
+from copy import deepcopy
 from datetime import timedelta, datetime
 
 sys.path.append('../../')
@@ -12,7 +14,10 @@ from utils.loss import Loss_Calculator
 from data.dataloader import Covid19IndiaLoader
 from data.processing import get_data
 
-from main.ihme.synthetic_data_generator import *
+from models.seir import SEIR_Testing
+
+from main.ihme.synthetic_data_generator import ihme_data_generator, seir_runner, log_experiment_local, \
+    create_output_folder, get_variable_param_ranges
 from main.seir.fitting import get_regional_data
 
 from viz.synthetic_data import plot_all_experiments, plot_against_baseline
@@ -47,6 +52,8 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
 
     num_exp = 3
     num_evals = 1500
+    model = SEIR_Testing
+    variable_param_ranges = get_variable_param_ranges(model)
 
     i1_dataset_length = i1_train_val_size + i1_test_size
     c1_dataset_length = shift + allowance + c1_train_period + c1_val_period
@@ -141,7 +148,9 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
     predictions_dicts = dict()
     for exp in range(num_exp):
         predictions_dicts[exp] = seir_runner(district, state, input_dfs[exp], (not disable_tracker),
-                                             c2_train_period, c2_val_period, which_compartments, num_evals=num_evals)
+                                             c2_train_period, c2_val_period, which_compartments,
+                                             model=model, variable_param_ranges=variable_param_ranges,
+                                             num_evals=num_evals)
 
     # Get baseline c3 predictions for s2+s3 when trained on s1
     df_baseline, train_baseline, test_baseline, dataset_prop_baseline = get_experiment_dataset(
@@ -150,7 +159,9 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
     input_df_baseline = insert_custom_dataset_into_dataframes(input_df, df_baseline, start_date=dataset_start_date,
                                                               compartments=which_compartments)
     predictions_dict_baseline = seir_runner(district, state, input_df_baseline, (not disable_tracker),
-                                            c3_train_period, c3_val_period, which_compartments, num_evals=num_evals)
+                                            c3_train_period, c3_val_period, which_compartments,
+                                            model=model, variable_param_ranges=variable_param_ranges,
+                                            num_evals=num_evals)
 
     # Find loss on s3 for baseline c3 model
     lc = Loss_Calculator()

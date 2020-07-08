@@ -12,7 +12,7 @@ from utils.data import cities
 from main.ihme.fitting import single_cycle
 from main.seir.fitting import data_setup, run_cycle
 
-from models.seir.seir_testing import SEIR_Testing
+from models.seir import SEIR_Testing, SIRD
 
 from viz.forecast import plot_forecast_agnostic
 from viz.fit import plot_fit
@@ -79,7 +79,8 @@ def ihme_data_generator(district, disable_tracker, actual_start_date, dataset_le
 
 
 def seir_runner(district, state, input_df, data_from_tracker,
-              train_period, val_period, which_compartments, num_evals=1500):
+                train_period, val_period, which_compartments,
+                model=SEIR_Testing,  variable_param_ranges=None, num_evals=1500):
     """Wrapper for main.seir.fitting.run_cycle
 
     Args:
@@ -90,7 +91,9 @@ def seir_runner(district, state, input_df, data_from_tracker,
         train_period (int): length of train period
         val_period (int): length of val period
         which_compartments (list(enum)): list of compartments to fit on
-        num_evals (int, optional): number of evaluations of bayesian optimsation (default: 1500)
+        model ():
+        variable_param_ranges():
+        num_evals (int, optional): number of evaluations of bayesian optimisation (default: 1500)
 
     Returns:
         dict: results
@@ -100,7 +103,7 @@ def seir_runner(district, state, input_df, data_from_tracker,
     observed_dataframes = data_setup(input_df[0], input_df[1], val_period, continuous_ra=False)
     predictions_dict['m1'] = run_cycle(
         state, district, observed_dataframes,
-        model=SEIR_Testing, variable_param_ranges=None,
+        model=model, variable_param_ranges=variable_param_ranges,
         data_from_tracker=data_from_tracker, train_period=train_period,
         which_compartments=which_compartments, N=1e7,
         num_evals=num_evals, initialisation='intermediate'
@@ -208,3 +211,16 @@ def create_output_folder(fname):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     return output_folder
+
+
+def get_variable_param_ranges(model):
+    if model == SEIR_Testing:
+        return None
+    elif model == SIRD:
+        return {
+            'lockdown_R0': (1, 1.5),
+            'T_inc': (4, 8),
+            'T_inf': (4, 7),
+            'T_fatal': (1, 70),
+            'I_hosp_ratio': (0, 1)
+        }
