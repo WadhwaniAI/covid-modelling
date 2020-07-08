@@ -27,7 +27,7 @@ def plot_sensitivity(predictions_dict, which_fit='m1', var_name=None, param_rang
         which_compartments = [comp_name]
     else:
         which_compartments = [comp_name, aux_comp]
-
+    which_compartments = ['recovered', 'deceased', 'hospitalised', 'total_infected']
     try:
         for key in variable_param_ranges.keys():
             del default_params[key]
