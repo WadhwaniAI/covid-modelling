@@ -43,7 +43,7 @@ def plot_compartment_for_datasets(ax, df_true, df_prediction, df_train, district
             ax.plot(df_train['date'], df_train[col.name],
                     'x', color=col.color, label=f'{col.label} (Train data)')
             ax.plot(df_prediction["date"], df_prediction[col.name],
-                    '-', color=col.color, label=f'{col.label} (Forecast)')
+                    '-.', color=col.color, label=f'{col.label} (Forecast)')
 
             s1_start = pd.to_datetime(s1_start)
             s2_start = pd.to_datetime(s2_start)
@@ -82,7 +82,7 @@ def plot_compartment_for_datasets(ax, df_true, df_prediction, df_train, district
 
 def plot_all_experiments(df_true, predictions_dict, district,
                          actual_start_date, allowance, s1, s2, s3, shift, train_period,
-                         output_folder, titles=None):
+                         output_folder, name_prefix="", titles=None):
     """Create plots for all buckets and all datasets
 
     Args:
@@ -97,6 +97,7 @@ def plot_all_experiments(df_true, predictions_dict, district,
         shift (int): number of days of data removed at the beginning of the dataset
         train_period (int): train period
         output_folder (str): output folder path
+        name_prefix (str): prefix for filename
         titles (list[str], optional): titles for plots
     """
 
@@ -125,7 +126,7 @@ def plot_all_experiments(df_true, predictions_dict, district,
                                                     series_end, graph_start, graph_end, title=titles[row],
                                                     which_compartments=[which_compartments[col]])
 
-            filename = output_folder + 'experiments_' + which_compartments[col].name
+            filename = output_folder + name_prefix + '_experiments_' + which_compartments[col].name
             fig.savefig(filename)
         plt.close()
 
@@ -308,7 +309,7 @@ def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_
 
 def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, district,
                           actual_start_date, allowance, s1, s2, s3, shift, train_period, baseline_train_period,
-                          output_folder, titles=None):
+                          output_folder, name_prefix="", titles=None):
     """Create plots with baseline for all buckets and all synthetic datasets
 
     Args:
@@ -325,6 +326,7 @@ def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, distri
         train_period (int): train period
         baseline_train_period (int): baseline train period
         output_folder (str): output folder path
+        name_prefix (str): prefix for filename
         titles (list[str], optional): titles for plots
 
     """
@@ -357,6 +359,6 @@ def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, distri
                                                         title=titles[row],
                                                         which_compartments=[which_compartments[col]])
 
-            filename = output_folder + 'baseline_' + which_compartments[col].name
+            filename = output_folder + name_prefix + '_baseline_' + which_compartments[col].name
             fig.savefig(filename)
         plt.close()
