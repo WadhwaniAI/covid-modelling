@@ -62,12 +62,12 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
 
     for compartment in compartments['base']:
         if compartment.name in which_compartments:
-            ax.plot(df_true[compartments[0].name], df_true[compartment.name],
+            ax.plot(df_true[compartments['date'][0].name], df_true[compartment.name],
                     '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-            sns.lineplot(x=compartments[0].name, y=compartment.name, data=df_prediction,
+            sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction,
                         ls='-', color=compartment.color, label='{} (M2 Forecast)'.format(compartment.label))
             if both_forecasts:
-                sns.lineplot(x=compartments[0].name, y=compartment.name, data=df_prediction_m1,
+                sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction_m1,
                             color=compartment.color, label='{} (M1 Forecast)'.format(compartment.label))
                 ax.lines[-1].set_linestyle("--")
     
