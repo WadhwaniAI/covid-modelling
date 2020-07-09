@@ -1,7 +1,5 @@
 base:
   smooth_jump: TRUE
-  smooth_method: weighted
-  smooth_ndays: 33
   ktrials: 10
 run:
   forecast_days: 37
