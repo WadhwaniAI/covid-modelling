@@ -103,11 +103,6 @@ def smooth_big_jump(df_district, data_from_tracker=False):
         df_district = smooth_big_jump_helper(
             df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
 
-        d1 = '2020-06-24'
-        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-06-15', '%Y-%m-%d')).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
-
         # d1 = '2020-06-27'
         # length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-06-15', '%Y-%m-%d')).days
         # df_district = smooth_big_jump_helper(
@@ -126,23 +121,50 @@ def smooth_big_jump(df_district, data_from_tracker=False):
 
     else:
         d1 = '2020-05-28'
+        length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
         df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=33, method=method)
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
         
         d1 = '2020-06-14'
-        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
+        length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
         df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method)
-
-        d1 = '2020-06-15'
-        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'hospitalised', 'recovered', d1, smoothing_length=length, method=method)
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
 
         d1 = '2020-06-15'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
         df_district = smooth_big_jump_helper(
-            df_district, 'deceased', 'total_infected', d1, smoothing_length=length, method=method, aux_var_add=True)
+            df_district, 'hospitalised', 'recovered', d1, smoothing_length=length, method='weighted-mag')
+
+        d1 = '2020-06-23'
+        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
+        df_district = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+
+        d1 = '2020-06-24'
+        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
+        df_district = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+
+        d1 = '2020-06-26'
+        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
+        df_district = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+
+        d1 = '2020-07-01'
+        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
+        df_district = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+
+        d1 = '2020-07-04'
+        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
+        df_district = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+
+        d1 = '2020-06-15'
+        length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
+        df_district = smooth_big_jump_helper(
+            df_district, 'deceased', 'total_infected', d1, smoothing_length=length, method='weighted-mag', 
+            aux_var_add=True)
     
     # assert((df_district['total_infected'] == df_district['recovered'] \
     #     + df_district['deceased'] + df_district['hospitalised']).all())
