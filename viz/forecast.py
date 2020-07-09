@@ -27,8 +27,7 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
     return df_prediction
 
 def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, log_scale=False, filename=None,
-                  which_compartments=['hospitalised',
-                                      'total_infected', 'deceased', 'recovered'],
+                  which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'],
                   fileformat='eps', error_bars=False, days=30):
     """Function for plotting forecasts
 
@@ -61,7 +60,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
 
     fig, ax = plt.subplots(figsize=(12, 12))
 
-    for compartment in compartments:
+    for compartment in compartments['base']:
         if compartment.name in which_compartments:
             ax.plot(df_true[compartments[0].name], df_true[compartment.name],
                     '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
