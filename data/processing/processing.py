@@ -53,16 +53,15 @@ def get_custom_data_from_db(state='Maharashtra', district='Pune'):
     print('fetching from athenadb...')
     loader = AthenaLoader()
     dataframes = loader.get_athena_dataframes()
-    df_result = copy.copy(dataframes['covid_case_summary'])
+    df_result = copy.copy(dataframes['new_covid_case_summary'])
+    df_result['state'] = 'maharashtra'
     df_result = df_result[np.logical_and(
         df_result['state'] == state.lower(), df_result['district'] == district.lower())]
+    df_result = df_result.loc[:, :'deceased']
+    df_result.dropna(axis=0, how='any', inplace=True)
     df_result['date'] = pd.to_datetime(df_result['date'])
-    df_result.drop(['ward_name', 'ward_no', 'mild', 'moderate',
-                    'severe', 'critical', 'partition_0'], axis=1)
-    df_result.rename({'total': 'total_infected', 'confirmed': 'total_infected', 
-                      'active_cases': 'hospitalised'}, axis='columns')
-    df_result = df_result.dropna(subset=['date'], how='any')
-    df_result = df_result.infer_objects()
+    df_result.reset_index(inplace=True, drop=True)
+    df_result = df_result.rename({'total': 'total_infected', 'active': 'hospitalised'}, axis='columns')
     for col in df_result.columns:
         if col in ['hospitalised', 'total_infected', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
