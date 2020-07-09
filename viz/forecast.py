@@ -85,7 +85,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
     if filename != None:
         plt.savefig(filename, format=fileformat)
 
-    return ax
+    return fig
 
 def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False, filename=None,
          model_name='M2', which_compartments=Columns.which_compartments()):
@@ -111,7 +111,7 @@ def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False,
     if filename != None:
         plt.savefig(filename)
 
-    return ax
+    return fig
 
 def plot_trials(predictions_dict, train_fit='m2', k=10,
         predictions=None, losses=None, params=None, vline=None,
@@ -160,7 +160,7 @@ def plot_trials(predictions_dict, train_fit='m2', k=10,
         plt.legend()
         plt.title('Forecast - ({} {})'.format(predictions_dict['state'], predictions_dict['dist']), fontsize=16)
         plt.grid()
-        plots[compartment] = ax
+        plots[compartment] = fig
     return plots
 
 def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, multipliers):
