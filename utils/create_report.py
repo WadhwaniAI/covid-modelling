@@ -34,6 +34,14 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
             'm1': m1_dict['run_params'],
             'm2': m2_dict['run_params']
         }
+        try:
+            del run_params['m1']['model_class']
+        except:
+            pass
+        try:
+            del run_params['m2']['model_class']
+        except:
+            pass
         json.dump(run_params, dump, indent=4)
 
     m1_dict['all_trials'].to_csv(os.path.join(ROOT_DIR, 'm1-trials.csv'))
@@ -61,7 +69,7 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
         mdFile.new_header(level=1, title=f'SMOOTHING')
         plot_filename = '{}-{}-smoothed-{}.png'.format(state.lower(), dist.lower(), fitting_date)
         plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-        m1_dict['smoothing_plot'].figure.savefig(plot_filepath)
+        m1_dict['smoothing_plot'].savefig(plot_filepath)
         mdFile.new_line(mdFile.new_inline_image(text='M1 Fit Curve', path=plot_filepath))
         mdFile.new_paragraph("")
 
@@ -74,7 +82,7 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
 
     plot_filename = '{}-{}-m1-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-    m1_dict['ax'].figure.savefig(plot_filepath)
+    m1_dict['ax'].savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='M1 Fit Curve', path=plot_filepath))
     mdFile.new_paragraph("")
 
@@ -87,7 +95,7 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
 
     plot_filename = '{}-{}-m2-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-    m2_dict['ax'].figure.savefig(plot_filepath)
+    m2_dict['ax'].savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='M2 Fit Curve', path=plot_filepath))
     mdFile.new_paragraph("")
 
