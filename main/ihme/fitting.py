@@ -44,7 +44,8 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
 
     Returns:
         dict: contains smoothed and unsmoothed dataframes: train, test, df
-    """    
+    """
+
     district_timeseries_nora = get_district_timeseries_cached(
         dist, st, disable_tracker=disable_tracker)
     if smooth_jump:
@@ -258,10 +259,10 @@ def run_cycle(dataframes, model_params, forecast_days=30,
 
     # CREATE POINTWISE LOSS DATAFRAME
 
-    df_trainerr_pointwise = lc.create_pointwise_loss_dataframes(train_model_ycol_numpy, train_pred)
+    df_trainerr_pointwise = lc.create_pointwise_loss_dataframe(train_model_ycol_numpy, train_pred)
     df_xform_trainerr_pointwise = pd.DataFrame()
     if xform_trainerr_pointwise is not None:
-        df_xform_trainerr_pointwise = lc.create_pointwise_loss_dataframes(
+        df_xform_trainerr_pointwise = lc.create_pointwise_loss_dataframe(
             xform_func(train_model_ycol_numpy, dtp), xform_func(train_pred, dtp))
     df_train_loss_pointwise = pd.concat([df_trainerr_pointwise, df_xform_trainerr_pointwise],
         keys=['train', 'train_no_xform']).rename_axis(['split', 'loss_functions'])
@@ -269,14 +270,24 @@ def run_cycle(dataframes, model_params, forecast_days=30,
 
     df_test_loss_pointwise = pd.DataFrame()
     if len(test) != 0:
-        df_testerr_pointwise = lc.create_pointwise_loss_dataframes(test_model_ycol_numpy, test_pred)
+        df_testerr_pointwise = lc.create_pointwise_loss_dataframe(test_model_ycol_numpy, test_pred)
         df_xform_testerr_pointwise = pd.DataFrame()
         if xform_testerr_pointwise is not None:
-            df_xform_testerr_pointwise = lc.create_pointwise_loss_dataframes(
+            df_xform_testerr_pointwise = lc.create_pointwise_loss_dataframe(
                 xform_func(test_model_ycol_numpy, dtp), xform_func(test_pred, dtp))
         df_test_loss_pointwise = pd.concat([df_testerr_pointwise, df_xform_testerr_pointwise],
             keys=['val', 'val_no_xform']).rename_axis(['split', 'loss_functions'])
         df_test_loss_pointwise.columns = test['date'].tolist()
+
+    loss_dict = {
+        "train": xform_trainerr,
+        "val": xform_testerr,
+        "train_no_xform": trainerr,
+        "val_no_xform": testerr
+    }
+
+    df_loss = pd.DataFrame.from_dict(loss_dict, orient='index').stack()
+    df_loss.name = 'loss'
 
     # UNCERTAINTY
     draws_dict = model.calc_draws()
@@ -298,12 +309,7 @@ def run_cycle(dataframes, model_params, forecast_days=30,
         'df_district_nora': dataframes['df_nora'],
         'df_train_nora': dataframes['train_nora'],
         'df_val_nora': dataframes['test_nora'],
-        'df_loss': pd.DataFrame({
-            "train": xform_trainerr,
-            "val": xform_testerr,
-            "train_no_xform": trainerr,
-            "val_no_xform": testerr,
-        }),
+        'df_loss': df_loss,
         'df_train_loss_pointwise': df_train_loss_pointwise,
         'df_test_loss_pointwise': df_test_loss_pointwise,
         'trials': trials_dict,
@@ -348,6 +354,7 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
     compartment_names = [col.name for col in which_compartments]
     results = {}
     ycols = {col: '{log}{colname}_rate'.format(log='log_' if log else '', colname=col.name) for col in which_compartments}
+    loss_dict = dict()
     for i, col in enumerate(which_compartments):
         col_params = copy(model_params)
         col_params['ycol'] = ycols[col]
@@ -359,22 +366,19 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
 
         # Aggregate Results
         pred = results[col.name]['df_prediction'].set_index('date')
-        loss_functions = results[col.name]['df_loss'].index.tolist()
+        loss_dict[col.name] = results[col.name]['df_loss']
         if i == 0:
-            loss_index = pd.MultiIndex.from_product([compartment_names, loss_functions],
-                                                    names=['compartment', 'loss_function'])
             predictions = pd.DataFrame(index=pred.index, columns=compartment_names + list(ycols.values()), dtype=float)
-            df_loss = pd.DataFrame(index=loss_index, columns=results[col.name]['df_loss'].columns)
-        for loss_function in loss_functions:
-            df_loss.loc[(col.name, loss_function), :] = results[col.name]['df_loss'].loc[loss_function, :]
 
         predictions.loc[pred.index, col.name] = xform_func(pred[ycols[col]], dtp)
         predictions.loc[pred.index, ycols[col]] = pred[ycols[col]]
 
+    df_loss = pd.concat(loss_dict.values(), axis=0, keys=compartment_names, names=['compartment', 'split', 'loss_function'])
+    df_loss.name = 'loss'
     df_train_loss_pointwise = pd.concat([results[comp]['df_train_loss_pointwise'] for comp in compartment_names],
-        keys=compartment_names)
+        keys=compartment_names, names=['compartment', 'split', 'loss_function'])
     df_test_loss_pointwise = pd.concat([results[comp]['df_test_loss_pointwise'] for comp in compartment_names],
-        keys=compartment_names)
+        keys=compartment_names, names=['compartment', 'split', 'loss_function'])
 
     predictions.reset_index(inplace=True)
     df_train = dataframes['train'][compartment_names + list(ycols.values()) + [model_params['date']]]
