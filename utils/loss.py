@@ -100,7 +100,7 @@ class Loss_Calculator():
             err['sle'] = self._calc_se(y_pred, y_true, log=True)
         return err
 
-    def create_pointwise_loss_dataframes(self, y_true, y_pred):
+    def create_pointwise_loss_dataframe(self, y_true, y_pred):
         """Used by IHME
 
         Args:
@@ -111,7 +111,40 @@ class Loss_Calculator():
             pd.DataFrame: Dataframe of losses
         """
         loss_dict = self.evaluate_pointwise(y_true, y_pred)
-        return pd.DataFrame.from_dict(loss_dict, orient='index').rename_axis('loss_function')
+        return pd.DataFrame.from_dict(loss_dict, orient='index')
+
+    def create_pointwise_loss_dataframe_region(self, df_train, df_val, df_prediction, train_period,
+                                               which_compartments=['hospitalised', 'total_infected']):
+        df_temp = df_prediction.loc[df_prediction['date'].isin(
+            df_train['date']), ['date'] + which_compartments]
+        df_temp.reset_index(inplace=True, drop=True)
+        df_train = df_train.loc[df_train['date'].isin(df_temp['date']), :]
+        df_train.reset_index(inplace=True, drop=True)
+        loss_df_dict = {}
+        for compartment in which_compartments:
+            df = self.create_pointwise_loss_dataframe(df_train[compartment], df_temp[compartment])
+            df.columns = df_train['date'].tolist()
+            loss_df_dict[compartment] = df
+        df_train_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
+                                            names=['compartment', 'loss_function'])
+        df_train_loss_pointwise.name = 'loss'
+
+        df_val_loss_pointwise = None
+        if isinstance(df_val, pd.DataFrame):
+            df_temp = df_prediction.loc[df_prediction['date'].isin(
+                df_val['date']), ['date']+which_compartments]
+            df_temp.reset_index(inplace=True, drop=True)
+            df_val.reset_index(inplace=True, drop=True)
+            loss_df_dict = {}
+            for compartment in which_compartments:
+                df = self.create_pointwise_loss_dataframe(df_val[compartment], df_temp[compartment])
+                df.columns = df_val['date'].tolist()
+                loss_df_dict[compartment] = df
+            df_val_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
+                                              names=['compartment', 'loss_function'])
+            df_val_loss_pointwise.name = 'loss'
+
+        return df_train_loss_pointwise, df_val_loss_pointwise
 
     def create_loss_dataframe_region(self, df_train, df_val, df_prediction, train_period, 
                        which_compartments=['hospitalised', 'total_infected']):
