@@ -26,6 +26,7 @@ import sys
 import numpy as np
 import pandas as pd
 import time
+import pickle
 
 from copy import deepcopy
 from datetime import timedelta, datetime
@@ -47,7 +48,7 @@ from main.seir.fitting import get_regional_data, get_variable_param_ranges
 from viz.synthetic_data import plot_all_experiments, plot_against_baseline
 
 
-def run_experiments(ihme_config_path, data_config_path, dataframes, data, multiple=False, shift_forward=0):
+def run_experiments(ihme_config_path, data_config_path, dataframes, data, root_folder, multiple=False, shift_forward=0):
     data_config = read_synth_data_config(data_config_path)  # TODO: Create experiment config
 
     # Unpack parameters from config and set local parameters
@@ -88,11 +89,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
     actual_start_date = dataset_start_date + timedelta(allowance)  # Excluding allowance at beginning
 
     # Create output folder
-    now = datetime.now()
-    date_now = now.strftime("%Y%m%d")
-    time_now = now.strftime("%H%M%S")
-    folder = f'{district}/{str(date_now)}/{str(time_now)}'
-    output_folder = create_output_folder(f'synth/{folder}/')
+    output_folder = create_output_folder(f'synth/{root_folder}/')
 
     # Store series properties in dict
     series_properties = {
@@ -128,7 +125,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
         draws_compartment_s2 = draws_compartment[:, s1:s1 + s2]
         average_uncertainty_s2[compartment] = np.mean(draws_compartment_s2[1] - draws_compartment_s2[0])
     uncertainty = pd.DataFrame.from_dict(average_uncertainty_s2, orient='index', columns=['average s2 uncertainty'])
-    i1_output['df_loss'] = pd.concat([i1_output['df_loss'], uncertainty], axis=1)
+    # i1_output['df_loss'] = pd.concat([i1_output['df_loss'], uncertainty], axis=1)
 
     # Get SEIR input dataframes
     input_df = get_regional_data(dataframes, state, district, (not disable_tracker), None, None, granular_data=False,
@@ -183,6 +180,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
         # Get SEIR predictions on custom datasets
         print(names[i], " C2 model")
         predictions_dicts = dict()
+        loss_dict = dict()
         for exp in range(num_exp):
             predictions_dicts[exp] = seir_runner(district, state, input_dfs[exp], (not disable_tracker),
                                                  c2_train_period, c2_val_period, which_compartments,
@@ -245,16 +243,24 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
     print("End date:", data.iloc[-1]['date'])
     print("Number of rows:", data.shape[0])
 
+    # Output folder
+    now = datetime.now()
+    date_now = now.strftime("%Y%m%d")
+    time_now = now.strftime("%H%M%S")
+    root_folder = f'{district}/{date_now}/{time_now}'
+
     if num == 1:
         start_time = time.time()
-        run_experiments(ihme_config_path, data_config_path, dataframes, data, multiple=False, shift_forward=0)
+        run_experiments(ihme_config_path, data_config_path, dataframes, data, root_folder, multiple=False,
+                        shift_forward=0,)
         runtime = time.time() - start_time
         print("Run time: ", runtime)
     else:
         for i in range(num):
             start_time = time.time()
             print("Run no. ", i+1)
-            run_experiments(ihme_config_path, data_config_path, dataframes, data, multiple=True, shift_forward=shift*i)
+            run_experiments(ihme_config_path, data_config_path, dataframes, data, f'{root_folder}/{str(i)}', multiple=True,
+                            shift_forward=shift*i)
             runtime = time.time() - start_time
             print("Run time: ", runtime)
 
