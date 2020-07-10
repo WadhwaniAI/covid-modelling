@@ -23,7 +23,8 @@ from main.seir.optimiser import Optimiser
 
 from utils.enums import Columns, SEIRParams
 
-def get_forecast(predictions_dict: dict, days: int=30, simulate_till=None, train_fit='m2', best_params=None, verbose=True, lockdown_removal_date=None):
+def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train_fit='m2', best_params=None, 
+                 verbose=True, lockdown_removal_date=None):
     """Returns the forecasts for a given set of params of a particular geographical area
 
     Arguments:
