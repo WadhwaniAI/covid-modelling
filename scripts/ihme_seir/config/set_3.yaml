@@ -12,3 +12,4 @@ base:
   i1_val_size: 3
   c2_train_period: 7
   c3_train_period: 7
+  num_evals: 1500
