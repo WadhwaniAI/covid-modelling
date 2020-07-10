@@ -147,8 +147,10 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
     c1.to_csv(output_folder + name_prefix + "_c1_loss.csv")
 
     c1_output['m1']['ax'].savefig(output_folder + name_prefix + '_c1.png')
+    c1_output['m1']['pointwise_train_loss'].to_csv(output_folder + name_prefix + "_c1_pointwise_val_loss.csv")
+    c1_output['m1']['pointwise_val_loss'].to_csv(output_folder + name_prefix + "_c1_pointwise_val_loss.csv")
 
-    i1 = i1_output['df_loss'].T[which_compartments]
+    i1 = i1_output['df_loss']
     i1.to_csv(output_folder + "ihme_i1_loss.csv")
 
     i1_output['df_train_loss_pointwise'].to_csv(output_folder + "ihme_i1_pointwise_train_loss.csv")
@@ -160,6 +162,10 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
         loss_df['exp'] = i+1
         loss_dfs.append(loss_df)
         predictions_dicts[i]['m1']['ax'].savefig(output_folder + name_prefix + '_c2_experiment_'+str(i+1)+'.png')
+        predictions_dicts[i]['m1']['pointwise_train_loss'].to_csv(
+            output_folder + name_prefix + "_c2_pointwise_train_loss_exp_"+str(i+1)+".csv")
+        predictions_dicts[i]['m1']['pointwise_val_loss'].to_csv(
+            output_folder + name_prefix + "_c2_pointwise_val_loss_exp_"+str(i+1)+".csv")
 
     loss = pd.concat(loss_dfs, axis=0)
     loss.index.name = 'index'
@@ -229,7 +235,7 @@ def get_variable_param_ranges_dict(model):
             'lockdown_R0': (1, 6),
             'T_inc': (4, 16),
             'T_inf': (10, 60),
-            'T_fatal': (260, 300)
+            'T_fatal': (200, 300)
         }
     else:
         raise Exception("This model class is not supported")
