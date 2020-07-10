@@ -260,6 +260,9 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, train_period, 
                                               which_compartments=which_compartments)
 
+    pointwise_train_loss, pointwise_val_loss = lc.create_pointwise_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, train_period,
+                                               which_compartments=which_compartments)
+
     ax = plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
                   which_compartments=which_compartments)
 
@@ -267,7 +270,8 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
     variable_param_ranges = get_variable_param_ranges(initialisation=initialisation, as_str=True)
     for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
-                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'ax', 'trials', 'data_last_date']:
+                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'pointwise_train_loss',
+                 'pointwise_val_loss', 'ax', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
 
     return results_dict
