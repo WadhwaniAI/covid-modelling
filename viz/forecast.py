@@ -8,7 +8,7 @@ from adjustText import adjust_text
 import datetime
 import copy
 
-from main.seir.forecast import get_forecast, order_trials, top_k_trials, forecast_k
+from main.seir.forecast import get_forecast, forecast_top_k_trials
 from utils.enums import Columns, SEIRParams
 from utils.enums.columns import *
 
@@ -88,7 +88,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
     return fig
 
 def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False, filename=None,
-         model_name='M2', which_compartments=Columns.which_compartments()):
+                           model_name='M2', which_compartments=Columns.which_compartments()):
     fig, ax = plt.subplots(figsize=(12, 12))
     for col in Columns.which_compartments():
         if col in which_compartments:
@@ -113,15 +113,15 @@ def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False,
 
     return fig
 
-def plot_trials(predictions_dict, train_fit='m2', k=10,
-        predictions=None, losses=None, params=None, vline=None,
-        which_compartments=[Columns.active], plot_individual_curves=True):
-    if predictions is not None:
-        top_k_losses = losses[:k]
-        top_k_params = params[:k]
-        predictions = predictions[:k]
-    else:
-        predictions, top_k_losses, top_k_params = forecast_k(predictions_dict, k=k, train_fit=train_fit)
+
+def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=None, vline=None, 
+                      which_compartments=[Columns.active], plot_individual_curves=True):
+                
+    if trials_processed is None:
+        trials_processed = forecast_top_k_trials(predictions_dict, k=k, train_fit=train_fit)
+    top_k_losses = trials_processed['losses'][:k]
+    top_k_params = trials_processed['params'][:k]
+    predictions = trials_processed['predictions'][:k]
     
     df_master = predictions[0]
     for i, df in enumerate(predictions[1:]):
@@ -168,14 +168,9 @@ def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, mult
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.plot(df_true['date'], df_true['hospitalised'],
         '-o', color='orange', label='Active Cases (Observed)')
-    # all_plots = {}
     for i, (mul, mul_dict) in enumerate(predictions_mul_dict.items()):
         df_prediction = mul_dict['df_prediction']
         true_r0 = mul_dict['params']['post_lockdown_R0']
-        # loss_value = np.around(np.sort(losses_array)[:10][i], 2)
-        
-        # df_loss = calculate_loss(df_train_nora, df_val_nora, df_predictions, train_period=7,
-        #         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
         sns.lineplot(x="date", y="hospitalised", data=df_prediction,
                     ls='-', label=f'Active Cases ({mul} - R0 {true_r0})')
         plt.text(
@@ -186,12 +181,10 @@ def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, mult
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
     plt.ylabel('No of People', fontsize=16)
-    # plt.yscale('log')
     plt.xticks(rotation=45,horizontalalignment='right')
     plt.xlabel('Time', fontsize=16)
     plt.legend()
     state, dist = region_dict['state'], region_dict['dist']
     plt.title(f'Forecast - ({state} {dist})', fontsize=16)
-        # plt.grid()
-        # all_plots[mul] = ax
-    return ax
+    plt.grid()
+    return fig
