@@ -7,7 +7,6 @@ from adjustText import adjust_text
 import datetime
 import copy
 
-from main.seir.forecast import get_forecast, order_trials, top_k_trials, forecast_k
 from utils.enums import Columns, SEIRParams
 
 def plot_ptiles(predictions_dict, ptile_pred_dict, train_fit='m2', vline=None,
