@@ -25,7 +25,7 @@ class MCUncertainty(Uncertainty):
         """
         super().__init__(region_dict)
         self.date_of_interest = datetime.datetime.strptime(date_of_interest, '%Y-%m-%d')
-        self.beta = self.find_beta(num_evals=1000)
+        self.beta = self.find_beta(num_evals=100)
         self.get_distribution()
 
     def get_distribution(self):
@@ -109,22 +109,18 @@ class MCUncertainty(Uncertainty):
         df_val = self.region_dict['m1']['df_district'].set_index('date') \
             .loc[self.region_dict['m1']['df_val']['date'],:]
         beta_loss = np.exp(-beta*losses)
-        avg_rel_err = 0
-        lc = Loss_Calculator()
 
         predictions = self.region_dict['m1']['predictions']
         allcols = ['hospitalised', 'recovered', 'deceased', 'total_infected']
-        bydate = {date: predictions[trial].set_index('date').loc[date, allcols] for date in predictions[0]['date'] for trial in range(len(predictions))}
-        beta_loss_df = pd.DataFrame(columns=allcols)
-        for col in allcols:
-            beta_loss_df.loc[:,col] = beta_loss
-
-        for date in df_val.index:
-            weighted_pred = (bydate[date]*beta_loss_df).sum() / beta_loss.sum()
-            rel_error = lc.calc_loss(weighted_pred, df_val.loc[date,allcols], method=loss_method)
-            avg_rel_err += abs(rel_error)
-        avg_rel_err /= len(df_val)
-        return avg_rel_err
+        predictions_stacked = np.array([df.loc[:, allcols].to_numpy() for df in predictions])
+        predictions_stacked_weighted_by_beta = beta_loss[:, None, None] * predictions_stacked / beta_loss.sum()
+        weighted_pred = np.sum(predictions_stacked_weighted_by_beta, axis=0)
+        weighted_pred_df = pd.DataFrame(data=weighted_pred, columns=allcols)
+        weighted_pred_df['date'] = predictions[0]['date']
+        weighted_pred_df.set_index('date', inplace=True)
+        weighted_pred_df = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
+        lc = Loss_Calculator()
+        return lc.calc_loss(weighted_pred_df, df_val, method=loss_method)
 
     def find_beta(self, num_evals=1000):
         """

@@ -8,7 +8,26 @@ from collections import defaultdict
 
 from data.dataloader import Covid19IndiaLoader, RootnetLoader, AthenaLoader
 
-def get_data(dataframes=None, state=None, district=None, use_dataframe='districts_daily', disable_tracker=False,
+
+def get_dataframes_cached():
+    picklefn = "../../cache/dataframes_ts_{today}.pkl".format(
+        today=datetime.datetime.today().strftime("%d%m%Y"))
+    try:
+        print(picklefn)
+        with open(picklefn, 'rb') as pickle_file:
+            dataframes = pickle.load(pickle_file)
+    except:
+        print("pulling from source")
+        loader = Covid19IndiaLoader()
+        dataframes = loader.get_covid19india_api_data()
+        if not os.path.exists('../../cache/'):
+            os.mkdir('../../cache/')
+        with open(picklefn, 'wb+') as pickle_file:
+            pickle.dump(dataframes, pickle_file)
+    return dataframes
+
+
+def get_data(state=None, district=None, use_dataframe='districts_daily', disable_tracker=False,
              filename=None, data_format='new'):
     """Handshake between data module and training module. Returns a dataframe of cases for a particular district/state
        from multiple sources
@@ -44,7 +63,7 @@ def get_data(dataframes=None, state=None, district=None, use_dataframe='district
         else:
             df_result = get_custom_data_from_db(state, district)
     elif district != None:
-        df_result = get_district_time_series(dataframes, state=state, district=district, use_dataframe=use_dataframe)
+        df_result = get_district_time_series(state=state, district=district, use_dataframe=use_dataframe)
     else:
         df_result = get_state_time_series(state=state)
     return df_result
@@ -53,16 +72,15 @@ def get_custom_data_from_db(state='Maharashtra', district='Pune'):
     print('fetching from athenadb...')
     loader = AthenaLoader()
     dataframes = loader.get_athena_dataframes()
-    df_result = copy.copy(dataframes['covid_case_summary'])
+    df_result = copy.copy(dataframes['new_covid_case_summary'])
+    df_result['state'] = 'maharashtra'
     df_result = df_result[np.logical_and(
         df_result['state'] == state.lower(), df_result['district'] == district.lower())]
+    df_result = df_result.loc[:, :'deceased']
+    df_result.dropna(axis=0, how='any', inplace=True)
     df_result['date'] = pd.to_datetime(df_result['date'])
-    df_result.drop(['ward_name', 'ward_no', 'mild', 'moderate',
-                    'severe', 'critical', 'partition_0'], axis=1, inplace=True)
-    df_result.rename({'total': 'total_infected', 'confirmed': 'total_infected',
-                      'active': 'hospitalised'}, axis='columns', inplace=True)
-    df_result = df_result.dropna(subset=['date'], how='any')
-    df_result = df_result.infer_objects()
+    df_result.reset_index(inplace=True, drop=True)
+    df_result = df_result.rename({'total': 'total_infected', 'active': 'hospitalised'}, axis='columns')
     for col in df_result.columns:
         if col in ['hospitalised', 'total_infected', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
@@ -104,10 +122,8 @@ def get_state_time_series(state='Delhi'):
     df_state.reset_index(inplace=True, drop=True)
     return df_state
 
-def get_district_time_series(dataframes=None, state='Karnataka', district='Bengaluru', use_dataframe='raw_data'):
-    if dataframes == None:
-        loader = Covid19IndiaLoader()
-        dataframes = loader.get_covid19india_api_data()
+def get_district_time_series(state='Karnataka', district='Bengaluru', use_dataframe='raw_data'):
+    dataframes = get_dataframes_cached()
     
     if use_dataframe == 'districts_daily':
         df_districts = copy.copy(dataframes['df_districts'])
@@ -194,22 +210,6 @@ def get_district_time_series(dataframes=None, state='Karnataka', district='Benga
         out['state'] = state
         out.index.name = 'date'
         return out.reset_index()
-
-def get_dataframes_cached():
-    picklefn = "../../cache/dataframes_ts_{today}.pkl".format(today=datetime.datetime.today().strftime("%d%m%Y"))
-    try:
-        print(picklefn)
-        with open(picklefn, 'rb') as pickle_file:
-            dataframes = pickle.load(pickle_file)
-    except:
-        print("pulling from source")
-        loader = Covid19IndiaLoader()
-        dataframes = loader.get_covid19india_api_data()
-        if not os.path.exists('../../cache/'):
-            os.mkdir('../../cache/')
-        with open(picklefn, 'wb+') as pickle_file:
-            pickle.dump(dataframes, pickle_file)
-    return dataframes
 
 def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
     picklefn = "../../cache/{district}_ts_{src}_{today}.pkl".format(

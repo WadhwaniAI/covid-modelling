@@ -13,7 +13,7 @@ from utils.ode import ODE_Solver
 class SEIRHD_Bed(SEIR):
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
                  P_nonoxy=0.4, P_oxy=0.2, P_icu=0.02, P_vent=0.02, P_fatal=0.02, 
-                 T_recov_hq=14, T_recov_nonoxy=14, T_recov_oxy=14, T_recov_icu=14, T_recov_vent=14, T_recov_fatal=14,
+                 T_recov_hq=14, T_recov_non_o2_beds=14, T_recov_o2_beds=14, T_recov_icu=14, T_recov_ventilator=14, T_recov_fatal=14,
                  N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 
                  initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
         
@@ -63,10 +63,10 @@ class SEIRHD_Bed(SEIR):
 
         Clinical time parameters - 
         T_recov_hq: Time it takes for an individual with a hq infection to recover (float)
-        T_recov_nonoxy: Time it takes for an individual with a nonoxy infection to recover (float)
-        T_recov_oxy: Time it takes for an individual with a oxy infection to recover (float)
+        T_recov_non_o2_beds: Time it takes for an individual with a nonoxy infection to recover (float)
+        T_recov_o2_beds: Time it takes for an individual with a oxy infection to recover (float)
         T_recov_icu: Time it takes for an individual with a icu infection to recover (float)
-        T_recov_vent: Time it takes for an individual with a vent infection to recover (float)
+        T_recov_ventilator: Time it takes for an individual with a vent infection to recover (float)
         T_recov_fatal: Time it takes for an individual with a fatal infection to die (float)
 
         Lockdown parameters - 
@@ -151,13 +151,13 @@ class SEIRHD_Bed(SEIR):
         dydt[1] = I * S / (self.T_trans) - (E/ self.T_inc)  # E
         dydt[2] = E / self.T_inc - I / self.T_inf  # I
         dydt[3] = (1/self.T_inf)*(self.P_hq*I) - R_hq/self.T_recov_hq # R_hq
-        dydt[4] = (1/self.T_inf)*(self.P_nonoxy*I) - R_nonoxy/self.T_recov_nonoxy #R_nonoxy
-        dydt[5] = (1/self.T_inf)*(self.P_oxy*I) - R_oxy/self.T_recov_oxy #R_oxy
+        dydt[4] = (1/self.T_inf)*(self.P_nonoxy*I) - R_nonoxy/self.T_recov_non_o2_beds #R_nonoxy
+        dydt[5] = (1/self.T_inf)*(self.P_oxy*I) - R_oxy/self.T_recov_o2_beds #R_oxy
         dydt[6] = (1/self.T_inf)*(self.P_icu*I) - R_icu/self.T_recov_icu # R_icu
-        dydt[7] = (1/self.T_inf)*(self.P_vent*I) - R_vent/self.T_recov_vent #R_vent
+        dydt[7] = (1/self.T_inf)*(self.P_vent*I) - R_vent/self.T_recov_ventilator #R_vent
         dydt[8] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_recov_fatal # R_fatal
-        dydt[9] = R_hq/self.T_recov_hq + R_nonoxy/self.T_recov_nonoxy + \
-            R_oxy/self.T_recov_oxy + R_icu/self.T_recov_icu + R_vent/self.T_recov_vent  # C
+        dydt[9] = R_hq/self.T_recov_hq + R_nonoxy/self.T_recov_non_o2_beds + \
+            R_oxy/self.T_recov_o2_beds + R_icu/self.T_recov_icu + R_vent/self.T_recov_ventilator  # C
         dydt[10] = R_fatal/self.T_recov_fatal # D
 
         return dydt

@@ -93,16 +93,14 @@ class Covid19IndiaLoader(BaseLoader):
             [df_raw_data_1, df_raw_data_2, df_raw_data_3, df_raw_data_4, df_raw_data_5], ignore_index=True)
 
         # Parse deaths_recoveries.json file
-        data = requests.get(
-            'https://api.covid19india.org/deaths_recoveries.json').json()
+        data = requests.get('https://api.covid19india.org/deaths_recoveries.json').json()
         df_raw_data_2 = pd.DataFrame.from_dict(data['deaths_recoveries'])
         dataframes['df_deaths_recoveries'] = df_raw_data_2
 
-        data = requests.get(
-            'https://api.covid19india.org/districts_daily.json').json()
+        data = requests.get('https://api.covid19india.org/districts_daily.json').json()
 
-        df_districts = pd.DataFrame(columns=[
-                                    'notes', 'active', 'confirmed', 'deceased', 'recovered', 'date', 'state', 'district'])
+        df_districts = pd.DataFrame(columns=['notes', 'active', 'confirmed', 'deceased', 
+                                             'recovered', 'date', 'state', 'district'])
         for state in data['districtsDaily'].keys():
             for dist in data['districtsDaily'][state].keys():
                 df = pd.DataFrame.from_dict(data['districtsDaily'][state][dist])
@@ -121,6 +119,11 @@ class Covid19IndiaLoader(BaseLoader):
         df_districts[numeric_cols] = df_districts[numeric_cols].apply(
             pd.to_numeric)
         dataframes['df_districts'] = df_districts
+
+        
+        data = requests.get('https://api.covid19india.org/state_test_data.json').json()
+
+
 
         # Parse travel_history.json file
         # Create dataframe for travel history

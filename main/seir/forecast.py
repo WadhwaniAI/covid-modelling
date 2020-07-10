@@ -23,7 +23,8 @@ from main.seir.optimiser import Optimiser
 
 from utils.enums import Columns, SEIRParams
 
-def get_forecast(predictions_dict: dict, days: int=30, simulate_till=None, train_fit='m2', best_params=None, verbose=True, lockdown_removal_date=None):
+def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train_fit='m2', best_params=None, 
+                 verbose=True, lockdown_removal_date=None):
     """Returns the forecasts for a given set of params of a particular geographical area
 
     Arguments:
@@ -227,7 +228,15 @@ def write_csv(df_final: pd.DataFrame, filename:str=None):
         filename = '../../output-{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     df_final.to_csv(filename, index=False)
 
-def order_trials(m_dict: dict):
+def _order_trials_by_loss(m_dict: dict):
+    """Orders a set of trials by their corresponding loss value
+
+    Args:
+        m_dict (dict): predictions_dict for a particular train_fit
+
+    Returns:
+        array, array: Array of params and loss values resp
+    """
     params_array = []
     for trial in m_dict['trials']:
         params_dict = copy.copy(trial['misc']['vals'])
@@ -242,29 +251,84 @@ def order_trials(m_dict: dict):
     params_array = params_array[least_losses_indices]
     return params_array, losses_array
 
-def top_k_trials(m_dict: dict, k=10):
-    params_array, losses_array = order_trials(m_dict)
-    return losses_array[:k], params_array[:k]
+def _get_top_k_trials(m_dict: dict, k=10):
+    """Returns Top k trials ordered by loss
 
-def forecast_k(predictions_dict: dict, k=10, train_fit='m2', forecast_days=37):
-    top_k_losses, top_k_params = top_k_trials(predictions_dict[train_fit], k=k)
+    Args:
+        m_dict (dict): predictions_dict for a particular train_fit
+        k (int, optional): Number of trials. Defaults to 10.
+
+    Returns:
+        array, array: array of params and losses resp (of len k each)
+    """
+    params_array, losses_array = _order_trials_by_loss(m_dict)
+    return params_array[:k], losses_array[:k]
+
+def forecast_top_k_trials(predictions_dict: dict, k=10, train_fit='m2', forecast_days=37):
+    """Creates forecasts for the top k Bayesian Opt trials (ordered by loss) for a specified number of days
+
+    Args:
+        predictions_dict (dict): The dict of predictions for a particular region
+        k (int, optional): The number of trials to forecast for. Defaults to 10.
+        train_fit (str, optional): Which train fit (m1 or m2). Defaults to 'm2'.
+        forecast_days (int, optional): Number of days to forecast for. Defaults to 37.
+
+    Returns:
+        array, array, array: array of predictions, losses, and parameters resp
+    """
+    top_k_params, top_k_losses = _get_top_k_trials(predictions_dict[train_fit], k=k)
     predictions = []
-    dots = ['.']
-    simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + datetime.timedelta(days=forecast_days)
+    simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + \
+        datetime.timedelta(days=forecast_days)
     print("getting forecasts ..")
     for i, params_dict in tqdm(enumerate(top_k_params)):
         predictions.append(get_forecast(
             predictions_dict, best_params=params_dict, train_fit=train_fit, simulate_till=simulate_till, verbose=False))
     return predictions, top_k_losses, top_k_params
 
-def get_all_trials(predictions_dict, train_fit='m2', forecast_days=37):
-    predictions, losses, params = forecast_k(
+def forecast_all_trials(predictions_dict, train_fit='m2', forecast_days=37):
+    """Forecasts all trials in a particular train_fit, in predictions dict
+
+    Args:
+        predictions_dict (dict): The dict of predictions for a particular region
+        train_fit (str, optional): Which train fit (m1 or m2). Defaults to 'm2'.
+        forecast_days (int, optional): How many days to forecast for. Defaults to 37.
+
+    Returns:
+        [type]: [description]
+    """
+    predictions, losses, params = forecast_top_k_trials(
         predictions_dict, 
         k=len(predictions_dict[train_fit]['trials']), 
         train_fit=train_fit,
         forecast_days=forecast_days
     )
-    return predictions, losses, params
+    return_dict = {
+        'predictions': predictions, 
+        'losses': losses, 
+        'params': params
+    }
+    return return_dict
+
+def trials_to_df(trials_processed, column=Columns.active):
+    predictions = trials_processed['predictions']
+    params = trials_processed['params']
+    losses = trials_processed['losses']
+    
+    cols = ['loss', 'compartment']
+    for key in params[0].keys():
+        cols.append(key)
+    trials = pd.DataFrame(columns=cols)
+    for i in range(len(params)):
+        to_add = copy.copy(params[i])
+        to_add['loss'] = losses[i]
+        to_add['compartment'] = column.name
+        trials = trials.append(to_add, ignore_index=True)
+    pred = pd.DataFrame(columns=predictions[0]['date'])
+    for i in range(len(params)):
+        pred = pred.append(predictions[i].set_index('date').loc[:, [column.name]].transpose(), ignore_index=True)
+    return pd.concat([trials, pred], axis=1)
+
 
 def set_r0_multiplier(params_dict, mul):
     """[summary]
