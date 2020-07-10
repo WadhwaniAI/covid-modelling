@@ -20,7 +20,6 @@ from main.seir.forecast import save_r0_mul, predict_r0_multipliers
 parser = argparse.ArgumentParser()
 t = time.time()
 parser.add_argument("-f", "--folder", help="folder name", required=True, type=str)
-parser.add_argument("-date", "--date", help="date YYYY-MM-DD to sort trials by for cdf", required=True, type=str)
 args = parser.parse_args()   
 config, model_params = read_config(args.config)
 
