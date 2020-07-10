@@ -4,6 +4,7 @@ import pypandoc
 from mdutils.mdutils import MdUtils
 from mdutils import Html
 from pprint import pformat
+import pandas as pd
 import pickle
 import json
 
@@ -122,8 +123,8 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
     
     mdFile.new_header(level=2, title="Top 10 Trials")
     header = f'| Loss | Params |\n|:-:|-|\n'
-    for i, params_dict in enumerate(m2_dict['params'][:10]):
-        tbl = f'| {m2_dict["losses"][:10][i]} |'
+    for i, params_dict in enumerate(m2_dict['trials_processed']['params'][:10]):
+        tbl = f'| {m2_dict["trials_processed"]["losses"][:10][i]} |'
         if i == 0:
             tbl = header + tbl
         for l in pformat(params_dict).split('\n'):
@@ -136,14 +137,14 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
     mdFile.new_header(level=2, title="Min/Max Loss and Params in Top 10")
     tbl = f'| Param | Min/Max |\n|:-:|-|\n'
     tbl += f'| Loss |'
-    vals = [loss for loss in m2_dict['losses'][:10]]
+    vals = [loss for loss in m2_dict['trials_processed']['losses'][:10]]
     minval, maxval = min(vals), max(vals)
     tbl += f'`min: {minval}` <br> '
     tbl += f'`max: {maxval}` <br> '
     tbl += '|\n'
-    for i, key in enumerate(m2_dict['params'][0]):
+    for i, key in enumerate(m2_dict['trials_processed']['params'][0]):
         tbl += f'| {key} |'
-        vals = [params[key] for params in m2_dict['params'][:10]]
+        vals = [params[key] for params in m2_dict['trials_processed']['params'][:10]]
         minval, maxval = min(vals), max(vals)
         tbl += f'`min: {minval}` <br> '
         tbl += f'`max: {maxval}` <br> '
@@ -166,7 +167,7 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
         mdFile.new_header(level=2, title="What-Ifs")
         plot_filename = 'what-ifs/what-ifs.png'
         plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-        forecast_dict['what-ifs-plot'].figure.savefig(plot_filepath)
+        forecast_dict['what-ifs-plot'].savefig(plot_filepath)
         mdFile.new_line(mdFile.new_inline_image(text='what-if scenarios', path=plot_filepath))
         mdFile.new_paragraph("")
         
@@ -177,24 +178,4 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
     mdFile.create_md_file()
 
     pypandoc.convert_file("{}.md".format(filename), 'docx', outputfile="{}.docx".format(filename))
-    # pypandoc.convert_file("{}.md".format(filename), 'tex', format='md', outputfile="{}.pdf".format(filename))
     # TODO: pdf conversion has some issues with order of images, low priority
-
-import pandas as pd
-import copy
-from utils.enums import Columns
-
-def trials_to_df(predictions, losses, params, column=Columns.active):
-    cols = ['loss', 'compartment']
-    for key in params[0].keys():
-        cols.append(key)
-    trials = pd.DataFrame(columns=cols)
-    for i in range(len(params)):
-        to_add = copy.copy(params[i])
-        to_add['loss'] = losses[i]
-        to_add['compartment'] = column.name
-        trials = trials.append(to_add, ignore_index=True)
-    pred = pd.DataFrame(columns=predictions[0]['date'])
-    for i in range(len(params)):
-        pred = pred.append(predictions[i].set_index('date').loc[:, [column.name]].transpose(), ignore_index=True)
-    return pd.concat([trials, pred], axis=1)
