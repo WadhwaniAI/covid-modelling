@@ -13,6 +13,7 @@ jaipur = 'Jaipur', 'Rajasthan', ['District - Jaipur (12)']
 pune = 'Pune', 'Maharashtra', ['District - Pune (25)']
 delhi = 'Delhi', 'Delhi', ['State - NCT OF DELHI (07)']
 bengaluru = 'Bengaluru', 'Karnataka', ['District - Bangalore (18)', 'District - Bangalore Rural (29)']
+bengaluru_urban = 'Bengaluru Urban', 'Karnataka', ['District - Bangalore (18)']
 
 cities = {
     'mumbai': mumbai,
@@ -21,6 +22,7 @@ cities = {
     'pune': pune,
     'delhi': delhi,
     'bengaluru': bengaluru,
+    'bengaluru urban': bengaluru_urban
 }
 
 def get_daily_vals(df, col):
@@ -31,7 +33,7 @@ def get_rates(district_timeseries, state, area_names):
     district_total_pop = get_district_population(state, area_names)
     for col in Columns.which_compartments():
         data[f'{col.name}_rate'] = data[col.name]/district_total_pop
-        data[f'log_{col.name}_rate'] = data[f'{col.name}_rate'].apply(np.log)
+        data[f'log_{col.name}_rate'] = data[f'{col.name}_rate'].apply(lambda x: np.log(x))
     data.loc[:,'group'] = len(data) * [ 1.0 ]
     data.loc[:,'covs'] = len(data) * [ 1.0 ]
     data = data.reset_index()
