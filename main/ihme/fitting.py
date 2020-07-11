@@ -342,9 +342,9 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
     ycols = {col: '{log}{colname}_rate'.format(log='log_' if log else '', colname=col.name) for col in which_compartments}
     loss_dict = dict()
     for i, col in enumerate(which_compartments):
-        if col.name == 'hospitalised':
-            pass
         col_params = copy(model_params)
+        if config.get("active_log_derf", False) and col.name == 'hospitalised':
+            col_params['func'] = functions.log_derf
         col_params['ycol'] = ycols[col]
         results[col.name] = run_cycle(
             dataframes, col_params, dtp=dtp, xform_func=xform_func, 
