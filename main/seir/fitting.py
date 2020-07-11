@@ -39,7 +39,7 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
     """
     if variable_param_ranges == None:
         variable_param_ranges = {
-            'lockdown_R0': (1, 1.15),
+            'lockdown_R0': (1, 1.2),
             'T_inc': (4, 5),
             'T_inf': (3, 4),
             'T_recov_severe': (5, 60),
@@ -145,23 +145,28 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
             df_district = get_data(state=state, district=district, disable_tracker=True, filename=filename, 
                                 data_format=data_format)
     
-    ax = None
+    smoothing_plot = None
     orig_df_district = copy.copy(df_district)
 
     if smooth_jump:
         if granular_data:
             df_district = smooth_big_jump_stratified(df_district)
         else:
-            df_district = smooth_big_jump(df_district, data_from_tracker=data_from_tracker)
+            df_district, description = smooth_big_jump(df_district, data_from_tracker=data_from_tracker)
 
-        ax = plot_smoothing(orig_df_district, df_district, state, district,
-                            which_compartments=which_compartments, description=f'Smoothing')
+        smoothing_plot = plot_smoothing(orig_df_district, df_district, state, district,
+                                        which_compartments=which_compartments, description=f'Smoothing')
+    
+    df_district['daily_cases'] = df_district['total_infected'].diff()
+    df_district.dropna(axis=0, how='any', inplace=True)
 
     if return_extra:
         extra = {
-            'plot_fit': ax,
+            'smoothing_description': description,
+            'smoothing_plot': smoothing_plot,
             'df_district_unsmoothed': orig_df_district
         }
+        print(extra['smoothing_description'])
         return df_district, extra 
     return df_district 
 
@@ -254,10 +259,12 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, train_period, 
                                               which_compartments=which_compartments)
 
-    ax = plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
-                  which_compartments=which_compartments)
+    fit_plot = plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
+                        which_compartments=which_compartments)
 
     results_dict = {}
+    results_dict['plots'] = {}
+    results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
     variable_param_ranges = get_variable_param_ranges(initialisation=initialisation, as_str=True)
     for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
@@ -307,7 +314,7 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
         which_compartments=which_compartments, granular_data=granular_data,
         smooth_jump=smooth_jump, return_extra=True
     )
-    smoothed_plot = extra['plot_fit']
+    smoothing_plot = extra['smoothing_plot']
     orig_df_district = extra['df_district_unsmoothed']
 
     # Process the data to get rolling averages and other stuff
@@ -324,8 +331,9 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
         num_evals=num_evals, initialisation=initialisation
     )
 
-    if smoothed_plot != None:
-        predictions_dict['smoothing_plot'] = smoothed_plot
+    if smoothing_plot != None:
+        predictions_dict['plots']['smoothing'] = smoothing_plot
+        predictions_dict['smoothing_desciption'] = extra['smoothing_description']
     predictions_dict['df_district_unsmoothed'] = orig_df_district
 
     # record parameters for reproducibility
