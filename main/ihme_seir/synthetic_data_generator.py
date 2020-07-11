@@ -245,22 +245,11 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
         print("Getting search space for:", model)
         if district == 'Pune':
             return {
-                'lockdown_R0': (1, 1.15),
-                'T_inc': (4, 5),
-                'T_inf': (3, 4),
+                'lockdown_R0': (1, 1.5),
+                'T_inc': (4, 10),
+                'T_inf': (3, 6),
                 'T_recov_severe': (5, 60),
-                'T_recov_fatal': (0, 40),
-                'P_fatal': (0, 0.3),
-                'E_hosp_ratio': (0, 2),
-                'I_hosp_ratio': (0, 1)
-            }
-        elif district == 'Bengaluru Urban':
-            return {
-                'lockdown_R0': (1, 1.15),
-                'T_inc': (4, 5),
-                'T_inf': (3, 4),
-                'T_recov_severe': (5, 60),
-                'T_recov_fatal': (0, 40),
+                'T_recov_fatal': (0, 45),
                 'P_fatal': (0, 0.3),
                 'E_hosp_ratio': (0, 2),
                 'I_hosp_ratio': (0, 1)
@@ -278,6 +267,7 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
             }
         else:
             return None
+
     elif model is SIRD:
         print("Getting search space for:", model)
         if district == 'Pune':
@@ -287,14 +277,12 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
                 'T_inf': (10, 60),
                 'T_fatal': (200, 500)
             }
-        elif district == 'Bengaluru Urban':
-            return None
         elif state == 'Delhi':
             return {
-                'lockdown_R0': (0.5, 1.5), # or 3
+                'lockdown_R0': (0.5, 2),
                 'T_inc': (4, 16),
-                'T_inf': (5, 60),
-                'T_fatal': (200, 500),
+                'T_inf': (10, 60),
+                'T_fatal': (200, 450)
             }
         else:
             return {
@@ -303,12 +291,6 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
                 'T_inf': (10, 60),
                 'T_fatal': (200, 500)
             }
-        # Bengaluru Urban
-        # return {
-        #     'lockdown_R0': (1, 6),
-        #     'T_inc': (4, 16),
-        #     'T_inf': (10, 60),
-        #     'T_fatal': (200, 300)
-        # }
+
     else:
         raise Exception("This model class is not supported")
