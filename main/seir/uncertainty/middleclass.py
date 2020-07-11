@@ -47,7 +47,7 @@ class MCUncertainty(Uncertainty):
         """    
         
         df = pd.DataFrame(columns=['loss', 'weight', 'pdf', self.date_of_interest, 'cdf'])
-        df['loss'] = self.region_dict['m2']['losses']
+        df['loss'] = self.region_dict['m2']['trials_processed']['losses']
         df['weight'] = np.exp(-self.beta*df['loss'])
         df['pdf'] = df['weight'] / df['weight'].sum()
         df[self.date_of_interest] = self.region_dict['m2']['all_trials'].loc[:, self.date_of_interest]
@@ -78,8 +78,8 @@ class MCUncertainty(Uncertainty):
         deciles_forecast = {}
         deciles_params = {}
         
-        predictions = self.region_dict['m2']['predictions']
-        params = self.region_dict['m2']['params']
+        predictions = self.region_dict['m2']['trials_processed']['predictions']
+        params = self.region_dict['m2']['trials_processed']['params']
         df_district = self.region_dict['m2']['df_district']
         df_train_nora = df_district.set_index('date').loc[self.region_dict['m2']['df_train']['date'],:].reset_index()
         
@@ -105,12 +105,12 @@ class MCUncertainty(Uncertainty):
             float: average relative error calculated over trials and a val set
         """    
         beta = hp['beta']
-        losses = self.region_dict['m1']['losses']
+        losses = self.region_dict['m1']['trials_processed']['losses']
         df_val = self.region_dict['m1']['df_district'].set_index('date') \
             .loc[self.region_dict['m1']['df_val']['date'],:]
         beta_loss = np.exp(-beta*losses)
 
-        predictions = self.region_dict['m1']['predictions']
+        predictions = self.region_dict['m1']['trials_processed']['predictions']
         allcols = ['hospitalised', 'recovered', 'deceased', 'total_infected']
         predictions_stacked = np.array([df.loc[:, allcols].to_numpy() for df in predictions])
         predictions_stacked_weighted_by_beta = beta_loss[:, None, None] * predictions_stacked / beta_loss.sum()
