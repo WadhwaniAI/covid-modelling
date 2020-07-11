@@ -1,7 +1,7 @@
 base:
   district: Pune
   state: Maharashtra
-  disable_tracker: TRUE
+  disable_tracker: FALSE
   use_synthetic: TRUE
   use_actual: TRUE
   allowance: 5
