@@ -124,7 +124,7 @@ def get_state_time_series(state='Delhi'):
 
 def get_district_time_series(state='Karnataka', district='Bengaluru', use_dataframe='raw_data'):
     dataframes = get_dataframes_cached()
-    
+
     if use_dataframe == 'districts_daily':
         df_districts = copy.copy(dataframes['df_districts'])
         df_district = df_districts[np.logical_and(df_districts['state'] == state, df_districts['district'] == district)]
@@ -229,8 +229,7 @@ def get_district_timeseries_cached(district, state, disable_tracker=False, filen
                 'North East Delhi','North West Delhi', 'South Delhi', 
                 'South West Delhi','West Delhi', 'Unknown', 'Central Delhi', 
                 'Shahdara','South East Delhi','']
-        dataframes = get_dataframes_cached()
-        district_timeseries = get_data(dataframes, state=state, 
+        district_timeseries = get_data(state=state,
             district=district, disable_tracker=disable_tracker, 
             filename=filename, data_format=data_format)
         with open(picklefn, 'wb+') as pickle_file:
