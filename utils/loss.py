@@ -122,7 +122,8 @@ class Loss_Calculator():
         df_train.reset_index(inplace=True, drop=True)
         loss_df_dict = {}
         for compartment in which_compartments:
-            df = self.create_pointwise_loss_dataframe(df_train[compartment], df_temp[compartment])
+            df = self.create_pointwise_loss_dataframe(
+                df_train[compartment].values.astype(float), df_temp[compartment].values.astype(float))
             df.columns = df_train['date'].tolist()
             loss_df_dict[compartment] = df
         df_train_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
@@ -137,7 +138,8 @@ class Loss_Calculator():
             df_val.reset_index(inplace=True, drop=True)
             loss_df_dict = {}
             for compartment in which_compartments:
-                df = self.create_pointwise_loss_dataframe(df_val[compartment], df_temp[compartment])
+                df = self.create_pointwise_loss_dataframe(
+                    df_val[compartment].values.astype(float), df_temp[compartment].values.astype(float))
                 df.columns = df_val['date'].tolist()
                 loss_df_dict[compartment] = df
             df_val_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
