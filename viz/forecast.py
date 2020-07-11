@@ -58,17 +58,21 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     legend_title_dict['best'] = 'Best M2'
     legend_title_dict['mean'] = 'Mean'
 
-    df_prediction_1 = predictions_dict['m2']['forecasts'][fits_to_plot[0]]
-    if len(fits_to_plot) > 1:
-        df_prediction_2 = predictions_dict['m2']['forecasts'][fits_to_plot[1]]
+    linestyles_arr = ['-', '--', '-.', ':', '-x']
+
+    if len(fits_to_plot) > 5:
+        raise ValueError('Cannot plot more than 5 forecasts together')
+
+    predictions = []
+    for i, forecast in enumerate(fits_to_plot):
+        predictions.append(predictions_dict['m2']['forecasts'][fits_to_plot[i]])
+    
     df_true = predictions_dict['m1']['df_district']
 
     if error_bars:
-        df_prediction_1 = preprocess_for_error_plot(df_prediction_1, predictions_dict['m1']['df_loss'],
-                                                  which_compartments)
-        if len(fits_to_plot) > 1:
-            df_prediction_2 = preprocess_for_error_plot(df_prediction_2, predictions_dict['m1']['df_loss'],
-                                                         which_compartments)
+        for i, df_prediction in enumerate(predictions):
+            predictions[i] = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'],
+                                                       which_compartments)
 
     fig, ax = plt.subplots(figsize=(12, 12))
 
@@ -76,14 +80,11 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         if compartment.name in which_compartments:
             ax.plot(df_true[compartments['date'][0].name], df_true[compartment.name],
                     '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-            sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction_1,
-                         ls='-', color=compartment.color, 
-                         label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[0]]))
-            if len(fits_to_plot) > 1:
-                sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction_2,
-                             color=compartment.color,
-                             label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[1]]))
-                ax.lines[-1].set_linestyle("--")
+            for i, df_prediction in enumerate(predictions):
+                sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction,
+                             ls='-', color=compartment.color, 
+                             label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[i]]))
+                ax.lines[-1].set_linestyle(linestyles_arr[i])
     
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
@@ -128,7 +129,7 @@ def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False,
     return fig
 
 
-def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=None, vline=None, log_scale=True,
+def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=None, vline=None, log_scale=False,
                       which_compartments=[Columns.active], plot_individual_curves=True):
                 
     if trials_processed is None:
