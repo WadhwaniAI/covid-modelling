@@ -159,7 +159,7 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
 
     if return_extra:
         extra = {
-            'ax': ax,
+            'plot_fit': ax,
             'df_district_unsmoothed': orig_df_district
         }
         return df_district, extra 
@@ -261,7 +261,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
     variable_param_ranges = get_variable_param_ranges(initialisation=initialisation, as_str=True)
     for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
-                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'ax', 'trials', 'data_last_date']:
+                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'plot_fit', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
 
     return results_dict
@@ -307,7 +307,7 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
         which_compartments=which_compartments, granular_data=granular_data,
         smooth_jump=smooth_jump, return_extra=True
     )
-    smoothed_plot = extra['ax']
+    smoothed_plot = extra['plot_fit']
     orig_df_district = extra['df_district_unsmoothed']
 
     # Process the data to get rolling averages and other stuff
