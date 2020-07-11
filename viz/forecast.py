@@ -26,10 +26,11 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
     df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
     return df_prediction
 
-def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, log_scale=False, filename=None,
+
+def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], log_scale=False, filename=None,
                   which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'],
                   fileformat='eps', error_bars=False, days=30):
-    """Function for plotting forecasts
+    """Function for plotting forecasts (both best fit and uncertainty deciles)
 
     Arguments:
         predictions_dict {dict} -- Dict of predictions for a particular district 
@@ -37,6 +38,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
 
     Keyword Argument
         which_compartments {list} -- Which compartments to plot (default: {['hospitalised', 'total_infected', 'deceased', 'recovered']})
+        df_prediction {pd.DataFrame} -- DataFrame of predictions (default: {None})
         both_forecasts {bool} -- If true, plot both forecasts (default: {False})
         log_scale {bool} -- If true, y is in log scale (default: {False})
         filename {str} -- If given, the plot is saved here (default: {None})
@@ -46,16 +48,26 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
     Returns:
         ax -- Matplotlib ax figure
     """
-    df_prediction = get_forecast(predictions_dict, days=days)
-    if both_forecasts:
-        df_prediction_m1 = get_forecast(predictions_dict, train_fit='m1', days=days)
+
+
+    legend_title_dict = {}
+    deciles = np.sort(np.concatenate(( np.arange(10, 100, 10), np.array([2.5, 5, 95, 97.5] ))))
+    for key in deciles:
+        legend_title_dict[key] = '{}th Decile'.format(int(key))
+
+    legend_title_dict['best'] = 'Best M2'
+    legend_title_dict['mean'] = 'Mean'
+
+    df_prediction_1 = predictions_dict['m2']['forecasts'][fits_to_plot[0]]
+    if len(fits_to_plot) > 1:
+        df_prediction_2 = predictions_dict['m2']['forecasts'][fits_to_plot[1]]
     df_true = predictions_dict['m1']['df_district']
 
     if error_bars:
-        df_prediction = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'],
+        df_prediction_1 = preprocess_for_error_plot(df_prediction_1, predictions_dict['m1']['df_loss'],
                                                   which_compartments)
-        if both_forecasts:
-            df_prediction_m1 = preprocess_for_error_plot(df_prediction_m1, predictions_dict['m1']['df_loss'],
+        if len(fits_to_plot) > 1:
+            df_prediction_2 = preprocess_for_error_plot(df_prediction_2, predictions_dict['m1']['df_loss'],
                                                          which_compartments)
 
     fig, ax = plt.subplots(figsize=(12, 12))
@@ -64,11 +76,13 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
         if compartment.name in which_compartments:
             ax.plot(df_true[compartments['date'][0].name], df_true[compartment.name],
                     '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-            sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction,
-                        ls='-', color=compartment.color, label='{} (M2 Forecast)'.format(compartment.label))
-            if both_forecasts:
-                sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction_m1,
-                            color=compartment.color, label='{} (M1 Forecast)'.format(compartment.label))
+            sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction_1,
+                         ls='-', color=compartment.color, 
+                         label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[0]]))
+            if len(fits_to_plot) > 1:
+                sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction_2,
+                             color=compartment.color,
+                             label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[1]]))
                 ax.lines[-1].set_linestyle("--")
     
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
@@ -114,7 +128,7 @@ def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False,
     return fig
 
 
-def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=None, vline=None, 
+def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=None, vline=None, log_scale=True,
                       which_compartments=[Columns.active], plot_individual_curves=True):
                 
     if trials_processed is None:
@@ -154,7 +168,8 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=N
         ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
         plt.ylabel('No of People', fontsize=16)
-        plt.yscale('log')
+        if log_scale:
+            plt.yscale('log')
         plt.xlabel('Time', fontsize=16)
         plt.xticks(rotation=45, horizontalalignment='right')
         plt.legend()
