@@ -86,6 +86,8 @@ class MCUncertainty(Uncertainty):
         for key in ptile_dict.keys():
             deciles_forecast[key] = {}
             df_predictions = predictions[ptile_dict[key]]
+            df_predictions['daily_cases'] = df_predictions['total_infected'].diff()
+            df_predictions.dropna(axis=0, how='any', inplace=True)
             deciles_params[key] = params[ptile_dict[key]]
             deciles_forecast[key]['df_prediction'] = df_predictions
             deciles_forecast[key]['params'] =  params[ptile_dict[key]]
