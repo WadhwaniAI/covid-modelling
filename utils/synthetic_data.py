@@ -173,7 +173,7 @@ def insert_custom_dataset_into_dataframes(dataframes, dataset, start_date=None, 
     else:
         col_names = compartments
 
-    df_district, df_raw = dataframes
+    df_district = dataframes
 
     # Set start date of dataset (including allowance for rolling average)
     if start_date is None:
@@ -185,7 +185,6 @@ def insert_custom_dataset_into_dataframes(dataframes, dataset, start_date=None, 
     threshold = start_date - timedelta(days=1)
 
     _, df_district = train_test_split(df_district, threshold)
-    _, df_raw = train_test_split(df_raw, threshold)
 
     # Replace compartment columns in df_district with synthetic data and clip to have as many rows as the custom dataset
     num_rows = dataset.shape[0]
@@ -193,7 +192,7 @@ def insert_custom_dataset_into_dataframes(dataframes, dataset, start_date=None, 
     for col in col_names:
         df_district[col] = dataset[col].values
 
-    return df_district, df_raw
+    return df_district
 
 
 def read_synth_data_config(path):
