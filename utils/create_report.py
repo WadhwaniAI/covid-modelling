@@ -83,7 +83,7 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
 
     plot_filename = '{}-{}-m1-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-    m1_dict['ax'].savefig(plot_filepath)
+    m1_dict['plot_fit'].savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='M1 Fit Curve', path=plot_filepath))
     mdFile.new_paragraph("")
 
@@ -96,7 +96,7 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
 
     plot_filename = '{}-{}-m2-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-    m2_dict['ax'].savefig(plot_filepath)
+    m2_dict['plot_fit'].savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='M2 Fit Curve', path=plot_filepath))
     mdFile.new_paragraph("")
 
@@ -105,19 +105,20 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
     mdFile.new_header(level=1, title=f'FORECAST USING M2 FIT WITH ERROR EVALUATED ON VAL SET OF M1 FIT')
     plot_filename = '{}-{}-forecast-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-    m2_dict['forecast'].savefig(plot_filepath)
+    m2_dict['plots']['forecast_best'].savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2', path=plot_filepath))
     mdFile.new_paragraph("")
 
     mdFile.new_header(level=1, title=f'FORECASTS ON TOTAL INFECTIONS BASED ON TOP k PARAMETER SETS FOR M2 FIT')
     plot_filename = '{}-{}-confirmed-forecast-topk-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-    m2_dict['forecast_confirmed_topk'].savefig(plot_filepath)
+    m2_dict['plots']['forecast_confirmed_topk'].savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2 of top k', path=plot_filepath))
+
     mdFile.new_header(level=1, title=f'FORECASTS ON ACTIVE CASES BASED ON TOP k PARAMETER SETS FOR M2 FIT')
     plot_filename = '{}-{}-active-forecast-topk-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-    m2_dict['forecast_active_topk'].savefig(plot_filepath)
+    m2_dict['plots']['forecast_active_topk'].savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast using M2 of top k', path=plot_filepath))
     mdFile.new_paragraph("")
     
