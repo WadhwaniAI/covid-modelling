@@ -8,7 +8,7 @@ from data.processing import processing
 
 
 def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=None, smoothing_length=None, 
-                           method='uniform', t_recov=14, aux_var_add=False):
+                           method='uniform', t_recov=14, description="", aux_var_add=False):
     """Helper function for performing smoothing of big jumps
 
     Args:
@@ -29,15 +29,19 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
     """
     df_district['date'] = pd.to_datetime(df_district['date'])
     df_district = df_district.set_index('date')
+    d1 = datetime.strptime(d1, '%Y-%m-%d')
     if d2 == None:
-        d2 = datetime.strptime(d1, '%Y-%m-%d') + timedelta(days=1)
+        d2 = d1 + timedelta(days=1)
     big_jump = df_district.loc[d2, smoothing_var] - df_district.loc[d1, smoothing_var]
     aux_var_weight = (int(aux_var_add) - 0.5)*2
 
     print(big_jump)
+    description += (f'Smoothing {big_jump} {smoothing_var} between {d1.strftime("%Y-%m-%d")} and ' +
+                    f'{(d1 - timedelta(days=smoothing_length)).strftime("%Y-%m-%d")} ({smoothing_length}) days ' +
+                    f'in a {method} manner\n')
     if method == 'uniform':
         for i, day_number in enumerate(range(smoothing_length-2, -1, -1)):
-            date = datetime.strptime(d1, '%Y-%m-%d') - timedelta(days=day_number)
+            date = d1 - timedelta(days=day_number)
             offset = np.random.binomial(1, (big_jump%smoothing_length)/smoothing_length)
             df_district.loc[date, smoothing_var] += ((i+1)*big_jump)//smoothing_length + offset
             df_district.loc[date, auxillary_var] -= aux_var_weight*(((i+1)*big_jump)//smoothing_length + offset)
@@ -54,16 +58,16 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
 
         valid_idx = newcases.first_valid_index()
         if smoothing_length != None:
-            window_start = datetime.strptime(d1, '%Y-%m-%d') - timedelta(days=smoothing_length - 1)
+            window_start = d1 - timedelta(days=smoothing_length - 1)
         else:
-            window_start = datetime.strptime(d1, '%Y-%m-%d') - timedelta(days=365)
+            window_start = d1 - timedelta(days=365)
         newcases = newcases.loc[max(valid_idx, window_start):d1]
         truncated = df_district.loc[max(valid_idx, window_start):d1, :]
         smoothing_length = len(truncated)
         print(f'smoothing length truncated to {smoothing_length}')
         invpercent = newcases.sum()/newcases
         for day_number in range(smoothing_length-1, -1, -1):
-            date = datetime.strptime(d1, '%Y-%m-%d') - timedelta(days=day_number)
+            date = d1 - timedelta(days=day_number)
             offset = np.random.binomial(1, (big_jump%invpercent.loc[date])/invpercent.loc[date])
             truncated.loc[date:, smoothing_var] += (big_jump // invpercent.loc[date]) + offset
             truncated.loc[date:, auxillary_var] += aux_var_weight*((big_jump // invpercent.loc[date]) + offset)
@@ -73,7 +77,7 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
     else:
         raise Exception("unknown smoothing method provided")
     
-    return df_district.reset_index()
+    return df_district.reset_index(), description
 
 
 def smooth_big_jump(df_district, data_from_tracker=False):
@@ -103,11 +107,6 @@ def smooth_big_jump(df_district, data_from_tracker=False):
         df_district = smooth_big_jump_helper(
             df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
 
-        # d1 = '2020-06-27'
-        # length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-06-15', '%Y-%m-%d')).days
-        # df_district = smooth_big_jump_helper(
-        #     df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
-
         d1 = '2020-07-01'
         length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-29', '%Y-%m-%d')).days
         df_district = smooth_big_jump_helper(
@@ -120,58 +119,57 @@ def smooth_big_jump(df_district, data_from_tracker=False):
             aux_var_add=True)
 
     else:
+        description = ""
+        method = 'weighted-mag'
+
         d1 = '2020-05-28'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
         
         d1 = '2020-06-14'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
 
         d1 = '2020-06-15'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'hospitalised', 'recovered', d1, smoothing_length=length, method='weighted-mag')
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
 
         d1 = '2020-06-23'
-        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-06-15', '%Y-%m-%d')).days
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
 
         d1 = '2020-06-24'
-        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
-
-        d1 = '2020-06-26'
-        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-06-15', '%Y-%m-%d')).days
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
 
         d1 = '2020-07-01'
         length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
-
-        d1 = '2020-07-04'
-        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
 
         d1 = '2020-06-15'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'deceased', 'total_infected', d1, smoothing_length=length, method='weighted-mag', 
-            aux_var_add=True)
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'deceased', 'total_infected', d1, smoothing_length=length, method=method, 
+            description=description, aux_var_add=True)
     
     # assert((df_district['total_infected'] == df_district['recovered'] \
     #     + df_district['deceased'] + df_district['hospitalised']).all())
     print((df_district['total_infected'] == df_district['recovered'] \
         + df_district['deceased'] + df_district['hospitalised']))
 
-    return df_district
+    return df_district, description
 
 
 def smooth_big_jump_stratified(df_strat):
