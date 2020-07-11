@@ -184,7 +184,7 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
     if baseline_predictions_dict is not None:
         baseline_loss = baseline_predictions_dict['m1']['df_loss_s3'].T[which_compartments]
         baseline_loss.to_csv(output_folder + name_prefix + "_baseline_loss.csv")
-        with open(f'{name_prefix}_c3_best_params.json', 'w') as outfile:
+        with open(f'{output_folder}{name_prefix}_c3_best_params.json', 'w') as outfile:
             json.dump(baseline_predictions_dict['m1']['best_params'], outfile, indent=4)
         baseline_predictions_dict['m1']['pointwise_train_loss'].to_csv(
             output_folder + name_prefix + "_c3_pointwise_train_loss.csv")
