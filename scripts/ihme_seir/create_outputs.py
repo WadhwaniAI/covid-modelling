@@ -146,6 +146,34 @@ def all_plots(root_folder, region, num, shift, start_date):
     plt.savefig(f'{output_path}/ihme_i1_seirt_c1_sird_c1.png')
     plt.close()
 
+    # PLOT: IHME I1, SEIHRD C1 AND SIRD C1 (pointwise)
+    print("IHME I1, SEIR_Testing C1 and SIRD C1 pointwise val losses on s2")
+    i1_pointwise_loss_dict = get_ihme_loss_dict(path, 'ihme_i1_pointwise_test_loss.csv', num)
+    seirt_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c1_pointwise_val_loss.csv', num)
+    sird_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'sird_c1_pointwise_val_loss.csv', num)
+    model_type = ['IHME', 'SEIR_Testing', 'SIRD']
+    for i, compartment in enumerate(compartments):
+        fig, ax = plt.subplots(3, 1, figsize=(20, 15))
+        fig.suptitle(f'{region} - {compartment} - pointwise test APE on s2')
+        losses = dict()
+        losses[0] = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'val', 'ape')
+        losses[1] = get_seir_pointwise_loss(seirt_c1_pointwise_loss_dict, compartment, 'ape')
+        losses[2] = get_seir_pointwise_loss(sird_c1_pointwise_loss_dict, compartment, 'ape')
+        for k in range(3):
+            ax[k].title.set_text(model_type[k])
+            for j, l in enumerate(losses[k]):
+                ax[k].plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
+                        label=f'Test ape for {l.index[0]} to {l.index[-1]}')
+            ax[k].set_xlabel('Date', fontsize=10)
+            ax[k].set_ylabel('APE', fontsize=10)
+            ax[k].tick_params(labelrotation=45)
+            ax[k].grid()
+        plt.legend()
+        fig.tight_layout()
+        fig.subplots_adjust(top=0.94)
+        plt.savefig(f'{output_path}/ihme_i1_seirt_c1_sird_c1_pointwise_{compartment}.png')
+        plt.close()
+
     # PLOT: SEIHRD C1 AND SIRD C1 (val - s3)
     print("SEIR_Testing C1 and SIRD C1 val losses on s3")
     seirt_c3_loss = get_seir_loss_dict(path, 'seirt_baseline_loss.csv', num)
