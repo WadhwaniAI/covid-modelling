@@ -26,7 +26,6 @@ import sys
 import numpy as np
 import pandas as pd
 import time
-import pickle
 
 from copy import deepcopy
 from datetime import timedelta, datetime
@@ -37,7 +36,7 @@ from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_expe
 from utils.loss import Loss_Calculator
 
 from data.dataloader import Covid19IndiaLoader
-from data.processing import get_data
+from data.processing import get_data, get_district_timeseries_cached
 
 from models.seir import SEIR_Testing, SIRD
 
@@ -48,7 +47,7 @@ from main.seir.fitting import get_regional_data, get_variable_param_ranges
 from viz.synthetic_data import plot_all_experiments, plot_against_baseline
 
 
-def run_experiments(ihme_config_path, data_config_path, dataframes, data, root_folder, multiple=False, shift_forward=0):
+def run_experiments(ihme_config_path, data_config_path, data, root_folder, multiple=False, shift_forward=0):
     data_config = read_synth_data_config(data_config_path)  # TODO: Create experiment config
 
     # Unpack parameters from config and set local parameters
@@ -112,7 +111,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, root_f
 
     # Generate synthetic data using IHME model
     print("IHME I1 model")
-    i1_output, i1_config, i1_model_params = ihme_data_generator(district, disable_tracker,
+    i1_output, i1_config, i1_model_params = ihme_data_generator(district, state, disable_tracker,
                                                                 actual_start_date, i1_dataset_length,
                                                                 i1_train_val_size, i1_val_size, i1_test_size,
                                                                 ihme_config_path, output_folder)
@@ -127,9 +126,12 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, root_f
     uncertainty = pd.DataFrame.from_dict(average_uncertainty_s2, orient='index', columns=['average s2 uncertainty'])
     # i1_output['df_loss'] = pd.concat([i1_output['df_loss'], uncertainty], axis=1)
 
+    if district == 'Delhi':
+        district = None
+
     # Get SEIR input dataframes
-    input_df = get_regional_data(dataframes, state, district, (not disable_tracker), None, None, granular_data=False,
-                                 smooth_jump=smooth_jump, smoothing_length=33, smoothing_method='weighted', t_recov=14,
+    input_df = get_regional_data(state, district, (not disable_tracker), None, None, granular_data=False,
+                                 smooth_jump=smooth_jump, t_recov=14,
                                  return_extra=False, which_compartments=which_compartments)
 
     models = [SEIR_Testing, SIRD]
@@ -137,15 +139,13 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, root_f
     names = ["SEIR Testing", "SIRD"]
 
     for i, model in enumerate(models):
-        variable_param_ranges = get_variable_param_ranges_dict(model)
+        variable_param_ranges = get_variable_param_ranges_dict(model, district, state)
         variable_param_ranges = get_variable_param_ranges(variable_param_ranges)
         name_prefix = name_prefixes[i]
 
         # Generate synthetic data using SEIR model
         input_df_c1 = deepcopy(input_df)
-        df_district, df_raw = input_df_c1
-        df_district = df_district.head(c1_dataset_length)
-        input_df_c1 = (df_district, df_raw)
+        input_df_c1 = input_df_c1.head(c1_dataset_length)
 
         print(names[i], " C1 model")
         c1_output = seir_runner(district, state, input_df_c1, (not disable_tracker),
@@ -208,11 +208,11 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, root_f
 
         print("Creating plots...")
         # Plotting all experiments
-        plot_all_experiments(input_df[0], predictions_dicts, district, actual_start_date,
+        plot_all_experiments(input_df, predictions_dicts, district, actual_start_date,
                              allowance, s1, s2, s3, shift, c2_train_period, output_folder, name_prefix=name_prefix)
 
         # Plot performance against baseline
-        plot_against_baseline(input_df[0], predictions_dicts, predictions_dict_baseline, district,
+        plot_against_baseline(input_df, predictions_dicts, predictions_dict_baseline, district,
                               actual_start_date, allowance, s1, s2, s3, shift, c2_train_period, c3_train_period,
                               output_folder, name_prefix=name_prefix)
 
@@ -230,19 +230,13 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
     state = data_config['state']
     disable_tracker = data_config['disable_tracker']
 
-    # Check data if tracker data is used
-    loader = Covid19IndiaLoader()
-    dataframes = None
-    if not disable_tracker:
-        dataframes = loader.get_covid19india_api_data()
-
     # Print data summary
-    data = get_data(dataframes, state, district, disable_tracker=disable_tracker)
+    if state == 'Delhi':
+        data = get_data(state=state, district=None, disable_tracker=disable_tracker)
+    else:
+        data = get_data(state=state, district=district, disable_tracker=disable_tracker)
     print("Data summary:")
-    print("Start date:", data.iloc[0]['date'])
-    print("End date:", data.iloc[-1]['date'])
-    print("Number of rows:", data.shape[0])
-
+    print(data)
     # Output folder
     now = datetime.now()
     date_now = now.strftime("%Y%m%d")
@@ -251,7 +245,7 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
 
     if num == 1:
         start_time = time.time()
-        run_experiments(ihme_config_path, data_config_path, dataframes, data, root_folder, multiple=False,
+        run_experiments(ihme_config_path, data_config_path, data, root_folder, multiple=False,
                         shift_forward=0,)
         runtime = time.time() - start_time
         print("Run time: ", runtime)
@@ -259,7 +253,7 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
         for i in range(num):
             start_time = time.time()
             print("Run no. ", i+1)
-            run_experiments(ihme_config_path, data_config_path, dataframes, data, f'{root_folder}/{str(i)}', multiple=True,
+            run_experiments(ihme_config_path, data_config_path, data, f'{root_folder}/{str(i)}', multiple=True,
                             shift_forward=shift*i)
             runtime = time.time() - start_time
             print("Run time: ", runtime)

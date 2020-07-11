@@ -94,7 +94,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
     }
 
     # Generate synthetic data using IHME model
-    i1_output, i1_config, i1_model_params = ihme_data_generator(district, disable_tracker,
+    i1_output, i1_config, i1_model_params = ihme_data_generator(district, state, disable_tracker,
                                                                 actual_start_date, i1_dataset_length,
                                                                 i1_train_val_size, i1_val_size, i1_test_size,
                                                                 ihme_config_path, output_folder)
@@ -110,8 +110,8 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
     i1_output['df_loss'] = pd.concat([i1_output['df_loss'], uncertainty], axis=1)
 
     # Get SEIR input dataframes
-    input_df = get_regional_data(dataframes, state, district, (not disable_tracker), None, None, granular_data=False,
-                                 smooth_jump=smooth_jump, smoothing_length=33, smoothing_method='weighted', t_recov=14,
+    input_df = get_regional_data(state, district, (not disable_tracker), None, None, granular_data=False,
+                                 smooth_jump=smooth_jump, t_recov=14,
                                  return_extra=False, which_compartments=which_compartments)
 
     # Generate synthetic data using SEIR model
@@ -175,7 +175,7 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
         dataframes = loader.get_covid19india_api_data()
 
     # Print data summary
-    data = get_data(dataframes, state, district, disable_tracker=disable_tracker)
+    data = get_data(state, district, disable_tracker=disable_tracker)
     print("Data summary:")
     print("Start date:", data.iloc[0]['date'])
     print("End date:", data.iloc[-1]['date'])
