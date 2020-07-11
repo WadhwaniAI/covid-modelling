@@ -10,7 +10,7 @@ from curvefit.core import functions
 
 sys.path.append('../..')
 from utils.data import get_rates
-from data.processing import get_district_timeseries_cached
+from data.processing import get_district_timeseries_cached, get_data
 from utils.util import train_test_split, rollingavg
 
 from models.ihme.model import IHME
@@ -21,9 +21,8 @@ from main.ihme.optimiser import Optimiser
 from utils.smooth_jump import smooth_big_jump
 
 
-def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker,
-                      smooth_jump, smooth_jump_method, smooth_jump_days, start_date=None, dataset_length=0,
-                      continuous_ra=True):
+def get_regional_data(dist, st, area_names, test_size, smooth_window, disable_tracker, smooth_jump, start_date=None,
+                      dataset_length=0, continuous_ra=True):
     """
     Function to get regional data and shape it for IHME consumption
 
@@ -31,13 +30,10 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
         dist ([type]): district
         st ([type]): state
         area_names ([type]): census area_names for the district
-        ycol ([type]): name of ycol
         test_size ([type]): size of test set
         smooth_window ([type]): apply rollingavg smoothing
         disable_tracker ([type]): disable covid19api, use athena instead
         smooth_jump (boolean): whether to smooth_big_jump
-        smooth_jump_method ([type]): passed to smooth_big_jump
-        smooth_jump_days ([type]): passed to smooth_big_jump
         start_date ():
         dataset_length ():
         continuous_ra ():
@@ -45,11 +41,13 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     Returns:
         dict: contains smoothed and unsmoothed dataframes: train, test, df
     """
-
-    district_timeseries_nora = get_district_timeseries_cached(
-        dist, st, disable_tracker=disable_tracker)
+    if dist == 'Delhi':
+        district_timeseries_nora = get_data(state=st, district=None, disable_tracker=False)
+    else:
+        district_timeseries_nora = get_district_timeseries_cached(
+            dist, st, disable_tracker=disable_tracker)
     if smooth_jump:
-        district_timeseries = smooth_big_jump(district_timeseries_nora, not disable_tracker, method=smooth_jump_method)
+        district_timeseries = smooth_big_jump(district_timeseries_nora, not disable_tracker)
     else:
         district_timeseries = copy(district_timeseries_nora)
 
@@ -63,10 +61,7 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     if smooth_window > 0:
         for col in col_names:
             df[col] = rollingavg(df[col], smooth_window)
-    offset = smooth_window//2
-    
-    startday = df['date'][df['deceased_rate'].gt(1e-15).idxmax()]
-    
+
     df = df.loc[df['deceased_rate'].gt(1e-15).idxmax():, :].reset_index()
     df_nora = df_nora.loc[df_nora['deceased_rate'].gt(1e-15).idxmax():,:].reset_index()
 
@@ -106,9 +101,8 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     }
     return dataframes, dtp
     
-def setup(dist, st, area_names, model_params,
-          sd, smooth, test_size, disable_tracker,
-          smooth_jump, smooth_jump_method, smooth_jump_days, start_date, dataset_length, continuous_ra, **config):
+def setup(dist, st, area_names, model_params, sd, smooth, test_size, disable_tracker, smooth_jump, start_date,
+          dataset_length, continuous_ra, **config):
     """
     gets data and sets up the model_parameters to be ready for IHME consumption
 
@@ -122,8 +116,6 @@ def setup(dist, st, area_names, model_params,
         test_size (int): size of test set
         disable_tracker (boolean): disable covid19api, use athena instead
         smooth_jump (boolean): whether to smooth_big_jump
-        smooth_jump_method ([type]): passed to smooth_big_jump
-        smooth_jump_days ([type]): passed to smooth_big_jump
         start_date ():
         dataset_length ():
         continuous_ra ():
@@ -133,15 +125,9 @@ def setup(dist, st, area_names, model_params,
     """    
     model_params['func'] = getattr(functions, model_params['func'])
     model_params['covs'] = ['covs', 'sd', 'covs'] if sd else ['covs', 'covs', 'covs']
-    dataframes, dtp = get_regional_data(
-        dist, st, area_names, ycol=model_params['ycol'], 
-        smooth_window=smooth, test_size=test_size,
-        disable_tracker=disable_tracker,
-        smooth_jump=smooth_jump, smooth_jump_method=smooth_jump_method, 
-        smooth_jump_days=smooth_jump_days,
-        start_date=start_date, dataset_length=dataset_length,
-        continuous_ra=continuous_ra
-    )
+    dataframes, dtp = get_regional_data(dist, st, area_names, test_size=test_size, smooth_window=smooth,
+                                        disable_tracker=disable_tracker, smooth_jump=smooth_jump, start_date=start_date,
+                                        dataset_length=dataset_length, continuous_ra=continuous_ra)
         
     return dataframes, dtp, model_params
 
@@ -242,7 +228,7 @@ def run_cycle(dataframes, model_params, forecast_days=30,
         test_pred = predictions[model.ycol][len(train):len(train) + len(test)]
         test_model_ycol_numpy = test[model.ycol].to_numpy()
         testerr = lc.evaluate(test_model_ycol_numpy, test_pred)
-    if xform_func != None:
+    if xform_func is not None:
         xform_trainerr = lc.evaluate(xform_func(train_model_ycol_numpy, dtp),
             xform_func(train_pred, dtp))
         xform_trainerr_pointwise = lc.evaluate_pointwise(xform_func(train_model_ycol_numpy, dtp),
@@ -356,6 +342,8 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
     ycols = {col: '{log}{colname}_rate'.format(log='log_' if log else '', colname=col.name) for col in which_compartments}
     loss_dict = dict()
     for i, col in enumerate(which_compartments):
+        if col.name == 'hospitalised':
+            pass
         col_params = copy(model_params)
         col_params['ycol'] = ycols[col]
         results[col.name] = run_cycle(
