@@ -19,7 +19,7 @@ from viz.fit import plot_fit
 from viz.synthetic_data import plot_fit_uncertainty
 
 
-def ihme_data_generator(district, disable_tracker, actual_start_date, dataset_length,
+def ihme_data_generator(district, state, disable_tracker, actual_start_date, dataset_length,
                         train_val_size, val_size, test_size,
                         config_path, output_folder):
     """Runs IHME model, creates plots and returns results
@@ -39,6 +39,8 @@ def ihme_data_generator(district, disable_tracker, actual_start_date, dataset_le
         dict, dict, dict: results, updated config, model parameters
     """
 
+    if district is None:
+        district = state
     district, state, area_names = cities[district.lower()]  # FIXME
     config, model_params = read_config(config_path)
 
@@ -100,7 +102,7 @@ def seir_runner(district, state, input_df, data_from_tracker,
     """
 
     predictions_dict = dict()
-    observed_dataframes = data_setup(input_df[0], input_df[1], val_period, continuous_ra=False)
+    observed_dataframes = data_setup(input_df, val_period, continuous_ra=False)
     predictions_dict['m1'] = run_cycle(
         state, district, observed_dataframes,
         model=model, variable_param_ranges=variable_param_ranges,
@@ -147,8 +149,13 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
     c1.to_csv(output_folder + name_prefix + "_c1_loss.csv")
 
     c1_output['m1']['ax'].savefig(output_folder + name_prefix + '_c1.png')
-    c1_output['m1']['pointwise_train_loss'].to_csv(output_folder + name_prefix + "_c1_pointwise_val_loss.csv")
+    c1_output['m1']['pointwise_train_loss'].to_csv(output_folder + name_prefix + "_c1_pointwise_train_loss.csv")
     c1_output['m1']['pointwise_val_loss'].to_csv(output_folder + name_prefix + "_c1_pointwise_val_loss.csv")
+
+    with open(f'{output_folder}{name_prefix}_c1_best_params.json', 'w') as outfile:
+        json.dump(c1_output['m1']['best_params'], outfile, indent=4)
+    with open(f'{output_folder}{name_prefix}_variable_param_ranges.json', 'w') as outfile:
+        json.dump(c1_output['m1']['variable_param_ranges'], outfile, indent=4)
 
     i1 = i1_output['df_loss']
     i1.to_csv(output_folder + "ihme_i1_loss.csv")
@@ -166,6 +173,8 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
             output_folder + name_prefix + "_c2_pointwise_train_loss_exp_"+str(i+1)+".csv")
         predictions_dicts[i]['m1']['pointwise_val_loss'].to_csv(
             output_folder + name_prefix + "_c2_pointwise_val_loss_exp_"+str(i+1)+".csv")
+        with open(f'{output_folder}{name_prefix}_c2_best_params_exp_{str(i+1)}.json', 'w') as outfile:
+            json.dump(predictions_dicts[i]['m1']['best_params'], outfile, indent=4)
 
     loss = pd.concat(loss_dfs, axis=0)
     loss.index.name = 'index'
@@ -175,6 +184,12 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
     if baseline_predictions_dict is not None:
         baseline_loss = baseline_predictions_dict['m1']['df_loss_s3'].T[which_compartments]
         baseline_loss.to_csv(output_folder + name_prefix + "_baseline_loss.csv")
+        with open(f'{name_prefix}_c3_best_params.json', 'w') as outfile:
+            json.dump(baseline_predictions_dict['m1']['best_params'], outfile, indent=4)
+        baseline_predictions_dict['m1']['pointwise_train_loss'].to_csv(
+            output_folder + name_prefix + "_c3_pointwise_train_loss.csv")
+        baseline_predictions_dict['m1']['pointwise_val_loss'].to_csv(
+            output_folder + name_prefix + "_c3_pointwise_val_loss.csv")
 
     with open(output_folder + name_prefix + '_experiments_params.json', 'w') as outfile:
         json.dump(params_dict, outfile, indent=4)
@@ -225,17 +240,75 @@ def create_output_folder(fname):
     return output_folder
 
 
-def get_variable_param_ranges_dict(model):
+def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
     if model is SEIR_Testing:
         print("Getting search space for:", model)
-        return None
+        if district == 'Pune':
+            return {
+                'lockdown_R0': (1, 1.15),
+                'T_inc': (4, 5),
+                'T_inf': (3, 4),
+                'T_recov_severe': (5, 60),
+                'T_recov_fatal': (0, 40),
+                'P_fatal': (0, 0.3),
+                'E_hosp_ratio': (0, 2),
+                'I_hosp_ratio': (0, 1)
+            }
+        elif district == 'Bengaluru Urban':
+            return {
+                'lockdown_R0': (1, 1.15),
+                'T_inc': (4, 5),
+                'T_inf': (3, 4),
+                'T_recov_severe': (5, 60),
+                'T_recov_fatal': (0, 40),
+                'P_fatal': (0, 0.3),
+                'E_hosp_ratio': (0, 2),
+                'I_hosp_ratio': (0, 1)
+            }
+        elif state == 'Delhi':
+            return {
+                'lockdown_R0': (1, 1.15),
+                'T_inc': (4, 6),
+                'T_inf': (3, 6),
+                'T_recov_severe': (5, 60),
+                'T_recov_fatal': (0, 60),
+                'P_fatal': (0, 0.3),
+                'E_hosp_ratio': (0, 2),
+                'I_hosp_ratio': (0, 1)
+            }
+        else:
+            return None
     elif model is SIRD:
         print("Getting search space for:", model)
-        return {
-            'lockdown_R0': (1, 6),
-            'T_inc': (4, 16),
-            'T_inf': (10, 60),
-            'T_fatal': (200, 300)
-        }
+        if district == 'Pune':
+            return {
+                'lockdown_R0': (1, 6),
+                'T_inc': (4, 16),
+                'T_inf': (10, 60),
+                'T_fatal': (200, 500)
+            }
+        elif district == 'Bengaluru Urban':
+            return None
+        elif state == 'Delhi':
+            return {
+                'lockdown_R0': (0.5, 1.5), # or 3
+                'T_inc': (4, 16),
+                'T_inf': (5, 60),
+                'T_fatal': (200, 500),
+            }
+        else:
+            return {
+                'lockdown_R0': (1, 6),
+                'T_inc': (4, 16),
+                'T_inf': (10, 60),
+                'T_fatal': (200, 500)
+            }
+        # Bengaluru Urban
+        # return {
+        #     'lockdown_R0': (1, 6),
+        #     'T_inc': (4, 16),
+        #     'T_inf': (10, 60),
+        #     'T_fatal': (200, 300)
+        # }
     else:
         raise Exception("This model class is not supported")
