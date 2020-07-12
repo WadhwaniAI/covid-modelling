@@ -39,7 +39,7 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
     """
     if variable_param_ranges == None:
         variable_param_ranges = {
-            'lockdown_R0': (1, 1.2),
+            'lockdown_R0': (1, 1.15),
             'T_inc': (4, 5),
             'T_inf': (3, 4),
             'T_recov_severe': (5, 60),
@@ -333,7 +333,7 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
 
     if smoothing_plot != None:
         predictions_dict['plots']['smoothing'] = smoothing_plot
-        predictions_dict['smoothing_desciption'] = extra['smoothing_description']
+        predictions_dict['smoothing_description'] = extra['smoothing_description']
     predictions_dict['df_district_unsmoothed'] = orig_df_district
 
     # record parameters for reproducibility
