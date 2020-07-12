@@ -5,9 +5,10 @@ import copy
 from data.processing.processing import get_custom_data_from_db
 
 
-def scale_up_acc_to_testing(predictions_dict, testing_scaling_factor=1.5, time_window_to_scale=14):
+def scale_up_acc_to_testing(predictions_dict, scenario_on_which_df='best', testing_scaling_factor=1.5, 
+                            time_window_to_scale=14):
     
-    df_true = copy.copy(predictions_dict['m2']['df_forecast'])
+    df_true = copy.copy(predictions_dict['m2']['forecasts'][scenario_on_which_df])
     df_true['daily_cases'] = df_true['total_infected'].diff()
     df_true.dropna(axis=0, how='any', inplace=True)
 
