@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.colors
 import matplotlib.pyplot as plt
 import json
+import ast
 
 sys.path.append('../../')
 
@@ -49,10 +50,37 @@ def get_seir_pointwise_loss_dict(path, file, num):
     return loss_dict
 
 
-def get_best_params(path, file, num):
+def get_best_params(path, file, num, dates, var_param_ranges_file=None):
+    param_ranges_df = pd.DataFrame
+    if var_param_ranges_file is not None:
+        with open(f'{path}/0/{var_param_ranges_file}', 'r') as infile:
+            var_param_ranges_dict = json.load(infile)
+            var_param_ranges_dict = ast.literal_eval(var_param_ranges_dict)
+        param_ranges_df = pd.DataFrame.from_dict(var_param_ranges_dict, orient="columns")
+        param_ranges_df.index = ["lower bound", "upper bound"]
+        param_ranges_df.insert(0, column="Training start date", value=None)
     param_dict = dict()
     for i in range(num):
-        pass
+        with open(f'{path}/{str(i)}/{file}', 'r') as infile:
+            param_dict[i] = json.load(infile)
+    params_df = pd.DataFrame.from_dict(param_dict, orient="index")
+    params_df.insert(0, column='Training start date', value=dates)
+    params_df = pd.concat([param_ranges_df, params_df], axis=0)
+    return params_df
+
+
+def save_best_params_df(path, output_folder, num, dates):
+    files = [f'{name_prefix}_c1_best_params.json' for name_prefix in ['seirt', 'sird']]
+    ranges_files = [f'{name_prefix}_variable_param_ranges.json' for name_prefix in ['seirt', 'sird']]
+    for name_prefix in ['seirt', 'sird']:
+        for exp in [1, 2, 3]:
+            files.append(f'{name_prefix}_c2_best_params_exp_{str(exp)}.json')
+            ranges_files.append(f'{name_prefix}_variable_param_ranges.json')
+    params_df_dict = dict()
+    for i in range(len(files)):
+        params_df_dict[files[i]] = get_best_params(path, files[i], num, dates, var_param_ranges_file=ranges_files[i])
+    params_df = pd.concat(params_df_dict.values(), keys=params_df_dict.keys(), axis=0)
+    params_df.to_csv(f'{output_folder}/params.csv')
 
 
 def get_ihme_loss(loss_dict, compartment, split, loss_fn):
@@ -97,9 +125,10 @@ def all_plots(root_folder, region, num, shift, start_date):
 
     start_date = pd.to_datetime(start_date, dayfirst=False)
     dates = pd.date_range(start=start_date, periods=num, freq=f'{shift}D').tolist()
-
     dates = [date.strftime("%m-%d-%Y") for date in dates]
-    start_date = start_date.strftime("%m-%d-%Y")
+
+    # Save model params
+    save_best_params_df(path, output_path, num, dates)
 
     # PLOT: IHME I1 plot (train and val)
     print("IHME I1 plot of train and val MAPE on s1 and s2 respectively")
@@ -153,7 +182,7 @@ def all_plots(root_folder, region, num, shift, start_date):
     sird_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'sird_c1_pointwise_val_loss.csv', num)
     model_type = ['IHME', 'SEIR_Testing', 'SIRD']
     for i, compartment in enumerate(compartments):
-        fig, ax = plt.subplots(3, 1, figsize=(20, 15))
+        fig, ax = plt.subplots(3, 1, sharex=True, sharey=True, figsize=(20, 15))
         fig.suptitle(f'{region} - {compartment} - pointwise test APE on s2')
         losses = dict()
         losses[0] = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'val', 'ape')
@@ -217,6 +246,31 @@ def all_plots(root_folder, region, num, shift, start_date):
     fig.tight_layout()
     fig.subplots_adjust(top=0.94)
     plt.savefig(f'{output_path}/seirt_experiments.png')
+    plt.close()
+
+    # PLOT: Synthetic data experiments with SEIR_Testing
+    print("SEIR_Testing C2 on s3")
+    seirt_c2_loss = get_seir_loss_dict(path, 'seirt_experiments_loss.csv', num)
+    fig, ax = plt.subplots(4, 1, sharex=True, figsize=(15, 10))
+    fig.suptitle(f'{region}: MAPE on s3 using synthetic data')
+    for i, compartment in enumerate(compartments):
+        colors = ['green', 'red', 'blue']
+        for j in range(3):
+            seirt_exp_losses = get_seir_loss_exp(seirt_c2_loss, compartment, 'val', j + 1)
+            ax[i].plot(dates, seirt_exp_losses, 'o-', label=f'SEIRT test MAPE on s3 {titles[j]}',
+                                   color=colors[j])
+        seirt_baseline_losses = get_seir_loss(seirt_c3_loss, compartment, 'val')
+        ax[i].plot(dates, seirt_baseline_losses, 'o-', label='SEIRT baseline test MAPE on s3',
+                               color='black')
+        ax[i].title.set_text(compartment)
+        ax[i].set_xlabel(f'Training start date', fontsize=10)
+        ax[i].set_ylabel('MAPE', fontsize=10)
+        ax[i].grid()
+        ax[i].tick_params(labelrotation=45)
+    plt.legend()
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.94)
+    plt.savefig(f'{output_path}/seirt_experiments_v2.png')
     plt.close()
 
     # PLOT: Synthetic data experiments with SIRD

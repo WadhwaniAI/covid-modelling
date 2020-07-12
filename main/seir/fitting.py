@@ -271,7 +271,8 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
 
     results_dict = {}
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
-    variable_param_ranges = get_variable_param_ranges(initialisation=initialisation, as_str=True)
+    variable_param_ranges = get_variable_param_ranges(variable_param_ranges=variable_param_ranges,
+                                                      initialisation=initialisation, as_str=True)
     for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
                  'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'pointwise_train_loss',
                  'pointwise_val_loss', 'ax', 'trials', 'data_last_date']:
