@@ -58,6 +58,11 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     legend_title_dict['best'] = 'Best M2'
     legend_title_dict['mean'] = 'Mean'
 
+    legend_title_dict['testing_12'] = 'Testing Becomes 1.2x'
+    legend_title_dict['testing_15'] = 'Testing Becomes 1.5x'
+    legend_title_dict['testing_18'] = 'Testing Becomes 1.8x'
+    legend_title_dict['testing_20'] = 'Testing Becomes 2.0x'
+
     linestyles_arr = ['-', '--', '-.', ':', '-x']
 
     if len(fits_to_plot) > 5:
