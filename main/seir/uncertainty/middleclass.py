@@ -26,6 +26,7 @@ class MCUncertainty(Uncertainty):
         super().__init__(region_dict)
         self.date_of_interest = datetime.datetime.strptime(date_of_interest, '%Y-%m-%d')
         self.beta = self.find_beta(num_evals=100)
+        self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
         self.get_distribution()
 
     def get_distribution(self):
@@ -76,7 +77,6 @@ class MCUncertainty(Uncertainty):
             ptile_dict = self.get_ptiles_idx(percentiles=percentiles)
         
         deciles_forecast = {}
-        deciles_params = {}
         
         predictions = self.region_dict['m2']['trials_processed']['predictions']
         params = self.region_dict['m2']['trials_processed']['params']
@@ -88,7 +88,6 @@ class MCUncertainty(Uncertainty):
             df_predictions = predictions[ptile_dict[key]]
             df_predictions['daily_cases'] = df_predictions['total_infected'].diff()
             df_predictions.dropna(axis=0, how='any', inplace=True)
-            deciles_params[key] = params[ptile_dict[key]]
             deciles_forecast[key]['df_prediction'] = df_predictions
             deciles_forecast[key]['params'] =  params[ptile_dict[key]]
             deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
@@ -96,7 +95,7 @@ class MCUncertainty(Uncertainty):
                 which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
         return deciles_forecast
 
-    def avg_weighted_error(self, hp, loss_method='mape'):
+    def avg_weighted_error(self, hp, loss_method='mape', return_dict=False):
         """
         Loss function to optimize beta
 
@@ -122,6 +121,8 @@ class MCUncertainty(Uncertainty):
         weighted_pred_df.set_index('date', inplace=True)
         weighted_pred_df = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
         lc = Loss_Calculator()
+        if return_dict:
+            return lc.calc_loss_dict(weighted_pred_df, df_val, method=loss_method)
         return lc.calc_loss(weighted_pred_df, df_val, method=loss_method)
 
     def find_beta(self, num_evals=1000):
