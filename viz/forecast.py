@@ -8,7 +8,7 @@ from adjustText import adjust_text
 import datetime
 import copy
 
-from main.seir.forecast import get_forecast, order_trials, top_k_trials, forecast_k
+from main.seir.forecast import get_forecast, forecast_top_k_trials
 from utils.enums import Columns, SEIRParams
 from utils.enums.columns import *
 
@@ -26,11 +26,11 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
     df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
     return df_prediction
 
-def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, log_scale=False, filename=None,
-                  which_compartments=['hospitalised',
-                                      'total_infected', 'deceased', 'recovered'],
+
+def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], log_scale=False, filename=None,
+                  which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'],
                   fileformat='eps', error_bars=False, days=30):
-    """Function for plotting forecasts
+    """Function for plotting forecasts (both best fit and uncertainty deciles)
 
     Arguments:
         predictions_dict {dict} -- Dict of predictions for a particular district 
@@ -38,6 +38,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
 
     Keyword Argument
         which_compartments {list} -- Which compartments to plot (default: {['hospitalised', 'total_infected', 'deceased', 'recovered']})
+        df_prediction {pd.DataFrame} -- DataFrame of predictions (default: {None})
         both_forecasts {bool} -- If true, plot both forecasts (default: {False})
         log_scale {bool} -- If true, y is in log scale (default: {False})
         filename {str} -- If given, the plot is saved here (default: {None})
@@ -47,30 +48,48 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
     Returns:
         ax -- Matplotlib ax figure
     """
-    df_prediction = get_forecast(predictions_dict, days=days)
-    if both_forecasts:
-        df_prediction_m1 = get_forecast(predictions_dict, train_fit='m1', days=days)
+
+
+    legend_title_dict = {}
+    deciles = np.sort(np.concatenate(( np.arange(10, 100, 10), np.array([2.5, 5, 95, 97.5] ))))
+    for key in deciles:
+        legend_title_dict[key] = '{}th Decile'.format(int(key))
+
+    legend_title_dict['best'] = 'Best M2'
+    legend_title_dict['mean'] = 'Mean'
+
+    legend_title_dict['testing_12'] = 'Testing Becomes 1.2x'
+    legend_title_dict['testing_15'] = 'Testing Becomes 1.5x'
+    legend_title_dict['testing_18'] = 'Testing Becomes 1.8x'
+    legend_title_dict['testing_20'] = 'Testing Becomes 2.0x'
+
+    linestyles_arr = ['-', '--', '-.', ':', '-x']
+
+    if len(fits_to_plot) > 5:
+        raise ValueError('Cannot plot more than 5 forecasts together')
+
+    predictions = []
+    for i, forecast in enumerate(fits_to_plot):
+        predictions.append(predictions_dict['m2']['forecasts'][fits_to_plot[i]])
+    
     df_true = predictions_dict['m1']['df_district']
 
     if error_bars:
-        df_prediction = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'],
-                                                  which_compartments)
-        if both_forecasts:
-            df_prediction_m1 = preprocess_for_error_plot(df_prediction_m1, predictions_dict['m1']['df_loss'],
-                                                         which_compartments)
+        for i, df_prediction in enumerate(predictions):
+            predictions[i] = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'],
+                                                       which_compartments)
 
     fig, ax = plt.subplots(figsize=(12, 12))
 
-    for compartment in compartments:
+    for compartment in compartments['base']:
         if compartment.name in which_compartments:
-            ax.plot(df_true[compartments[0].name], df_true[compartment.name],
+            ax.plot(df_true[compartments['date'][0].name], df_true[compartment.name],
                     '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-            sns.lineplot(x=compartments[0].name, y=compartment.name, data=df_prediction,
-                        ls='-', color=compartment.color, label='{} (M2 Forecast)'.format(compartment.label))
-            if both_forecasts:
-                sns.lineplot(x=compartments[0].name, y=compartment.name, data=df_prediction_m1,
-                            color=compartment.color, label='{} (M1 Forecast)'.format(compartment.label))
-                ax.lines[-1].set_linestyle("--")
+            for i, df_prediction in enumerate(predictions):
+                sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction,
+                             ls='-', color=compartment.color, 
+                             label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[i]]))
+                ax.lines[-1].set_linestyle(linestyles_arr[i])
     
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
@@ -86,10 +105,10 @@ def plot_forecast(predictions_dict: dict, region: tuple, both_forecasts=False, l
     if filename != None:
         plt.savefig(filename, format=fileformat)
 
-    return ax
+    return fig
 
 def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False, filename=None,
-         model_name='M2', which_compartments=Columns.which_compartments()):
+                           model_name='M2', which_compartments=Columns.which_compartments()):
     fig, ax = plt.subplots(figsize=(12, 12))
     for col in Columns.which_compartments():
         if col in which_compartments:
@@ -112,17 +131,17 @@ def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False,
     if filename != None:
         plt.savefig(filename)
 
-    return ax
+    return fig
 
-def plot_trials(predictions_dict, train_fit='m2', k=10,
-        predictions=None, losses=None, params=None, vline=None,
-        which_compartments=[Columns.active], plot_individual_curves=True):
-    if predictions is not None:
-        top_k_losses = losses[:k]
-        top_k_params = params[:k]
-        predictions = predictions[:k]
-    else:
-        predictions, top_k_losses, top_k_params = forecast_k(predictions_dict, k=k, train_fit=train_fit)
+
+def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=None, vline=None, log_scale=False,
+                      which_compartments=[Columns.active], plot_individual_curves=True):
+                
+    if trials_processed is None:
+        trials_processed = forecast_top_k_trials(predictions_dict, k=k, train_fit=train_fit)
+    top_k_losses = trials_processed['losses'][:k]
+    top_k_params = trials_processed['params'][:k]
+    predictions = trials_processed['predictions'][:k]
     
     df_master = predictions[0]
     for i, df in enumerate(predictions[1:]):
@@ -155,13 +174,14 @@ def plot_trials(predictions_dict, train_fit='m2', k=10,
         ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
         plt.ylabel('No of People', fontsize=16)
-        plt.yscale('log')
+        if log_scale:
+            plt.yscale('log')
         plt.xlabel('Time', fontsize=16)
         plt.xticks(rotation=45, horizontalalignment='right')
         plt.legend()
         plt.title('Forecast - ({} {})'.format(predictions_dict['state'], predictions_dict['dist']), fontsize=16)
         plt.grid()
-        plots[compartment] = ax
+        plots[compartment] = fig
     return plots
 
 def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, multipliers):
@@ -169,14 +189,9 @@ def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, mult
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.plot(df_true['date'], df_true['hospitalised'],
         '-o', color='orange', label='Active Cases (Observed)')
-    # all_plots = {}
     for i, (mul, mul_dict) in enumerate(predictions_mul_dict.items()):
         df_prediction = mul_dict['df_prediction']
         true_r0 = mul_dict['params']['post_lockdown_R0']
-        # loss_value = np.around(np.sort(losses_array)[:10][i], 2)
-        
-        # df_loss = calculate_loss(df_train_nora, df_val_nora, df_predictions, train_period=7,
-        #         which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
         sns.lineplot(x="date", y="hospitalised", data=df_prediction,
                     ls='-', label=f'Active Cases ({mul} - R0 {true_r0})')
         plt.text(
@@ -187,12 +202,10 @@ def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, mult
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
     plt.ylabel('No of People', fontsize=16)
-    # plt.yscale('log')
     plt.xticks(rotation=45,horizontalalignment='right')
     plt.xlabel('Time', fontsize=16)
     plt.legend()
     state, dist = region_dict['state'], region_dict['dist']
     plt.title(f'Forecast - ({state} {dist})', fontsize=16)
-        # plt.grid()
-        # all_plots[mul] = ax
-    return ax
+    plt.grid()
+    return fig

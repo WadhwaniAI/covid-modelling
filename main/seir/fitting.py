@@ -39,10 +39,11 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
     """
     if variable_param_ranges == None:
         variable_param_ranges = {
-            'lockdown_R0': (1, 1.5),
+            'lockdown_R0': (1, 1.15),
             'T_inc': (4, 5),
             'T_inf': (3, 4),
             'T_recov_severe': (5, 60),
+            'T_recov_fatal': (0, 40),
             'P_fatal': (0, 0.3),
             'E_hosp_ratio': (0, 2),
             'I_hosp_ratio': (0, 1)
@@ -120,9 +121,8 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     return df_train, df_val
     
 
-def get_regional_data(dataframes, state, district, data_from_tracker, data_format, filename, which_compartments,
-                      granular_data=False, smooth_jump=False, smoothing_length=28, smoothing_method='uniform', 
-                      t_recov=14, return_extra=False):
+def get_regional_data(state, district, data_from_tracker, data_format, filename, which_compartments,
+                      granular_data=False, smooth_jump=False, t_recov=14, return_extra=False):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -140,38 +140,41 @@ def get_regional_data(dataframes, state, district, data_from_tracker, data_forma
         df_district = granular.get_data(filename=filename)
     else:
         if data_from_tracker:
-            df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
+            df_district = get_data(state=state, district=district, use_dataframe='districts_daily')
         else:
             df_district = get_data(state=state, district=district, disable_tracker=True, filename=filename, 
                                 data_format=data_format)
     
-    df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
-    ax = None
+    smoothing_plot = None
     orig_df_district = copy.copy(df_district)
 
     if smooth_jump:
         if granular_data:
             df_district = smooth_big_jump_stratified(df_district)
         else:
-            df_district = smooth_big_jump(df_district, method=smoothing_method, data_from_tracker=data_from_tracker)
+            df_district, description = smooth_big_jump(df_district, data_from_tracker=data_from_tracker)
 
-        ax = plot_smoothing(orig_df_district, df_district, state, district,
-                            which_compartments=which_compartments, description=f'Smoothing: {smoothing_method}')
+        smoothing_plot = plot_smoothing(orig_df_district, df_district, state, district,
+                                        which_compartments=which_compartments, description=f'Smoothing')
+    
+    df_district['daily_cases'] = df_district['total_infected'].diff()
+    df_district.dropna(axis=0, how='any', inplace=True)
 
     if return_extra:
         extra = {
-            'ax': ax,
+            'smoothing_description': description,
+            'smoothing_plot': smoothing_plot,
             'df_district_unsmoothed': orig_df_district
         }
-        return df_district, df_district_raw_data, extra 
-    return df_district, df_district_raw_data 
+        print(extra['smoothing_description'])
+        return df_district, extra 
+    return df_district 
 
-def data_setup(df_district, df_district_raw_data, val_period):
+def data_setup(df_district, val_period):
     """Helper function for single_fitting_cycle which sets up the data including doing the train val split
 
     Arguments:
         df_district {pd.DataFrame} -- True observations from districts_daily/custom file/athena DB
-        df_district_raw_data {pd.DataFrame} -- True observations from raw_data
         val_period {int} -- Length of val period
 
     Returns:
@@ -184,14 +187,14 @@ def data_setup(df_district, df_district_raw_data, val_period):
         df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
 
     observed_dataframes = {}
-    for name in ['df_district', 'df_district_raw_data', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
+    for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
         observed_dataframes[name] = eval(name)
     return observed_dataframes
 
 
 def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, train_period=7,
               data_from_tracker=True, which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], 
-              num_evals=1500, N=1e7, initialisation='starting'):
+              num_evals=1500, N=1e7, initialisation='starting', back_offset=0):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -215,15 +218,15 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     if district is None:
         district = ''
 
-    df_district, df_district_raw_data, df_train, df_val, df_train_nora, df_val_nora = [
+    df_district, df_train, df_val, df_train_nora, df_val_nora = [
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
 
     # Initialise Optimiser
     optimiser = Optimiser()
     # Get the fixed params
     if initialisation == 'starting':
-        observed_values = df_district_raw_data.iloc[0, :]
-        start_date = df_district_raw_data.iloc[0, :]['date']
+        observed_values = df_district.iloc[0, :]
+        start_date = df_district.iloc[0, :]['date']
         default_params = optimiser.init_default_params(df_train, N=N, observed_values=observed_values,
                                                        start_date=start_date, initialisation=initialisation)
     elif initialisation == 'intermediate':
@@ -234,10 +237,14 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     if variable_param_ranges == None:
         variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
 
+    if back_offset == 0:
+        loss_indices = [-train_period, None]
+    else:
+        loss_indices = [-(train_period+back_offset), -back_offset]
     # Perform Bayesian Optimisation
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
-                                              num_evals=num_evals, loss_indices=[-train_period, None], method='mape',
+                                              num_evals=num_evals, loss_indices=loss_indices, method='mape',
                                               total_days=total_days, which_compartments=which_compartments)
     print('best parameters\n', best_params)
 
@@ -252,24 +259,26 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, train_period, 
                                               which_compartments=which_compartments)
 
-    ax = plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
-                  which_compartments=which_compartments)
+    fit_plot = plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
+                        which_compartments=which_compartments)
 
     results_dict = {}
+    results_dict['plots'] = {}
+    results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
     variable_param_ranges = get_variable_param_ranges(initialisation=initialisation, as_str=True)
     for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
-                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'ax', 'trials', 'data_last_date']:
+                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'plot_fit', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
 
     return results_dict
 
 
-def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, variable_param_ranges=None, #Main 
+def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ranges=None, #Main 
                          data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
-                         train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', #Misc
+                         train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', back_offset=0,  #Misc
                          which_compartments=['hospitalised', 'total_infected'], #Compartments
-                         smooth_jump=False, smoothing_length=28, smoothing_method='uniform'): #Smoothing
+                         smooth_jump=False): #Smoothing
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -294,23 +303,22 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, variab
     """
     # record parameters for reproducability
     run_params = locals()
-    del run_params['dataframes']
     run_params['model'] = model.__name__
+    run_params['model_class'] = model
     
     print('Performing {} fit ..'.format('m2' if val_period == 0 else 'm1'))
 
     # Get data
-    df_district, df_district_raw_data, extra = get_regional_data(
-        dataframes, state, district, data_from_tracker, data_format, filename, 
+    df_district, extra = get_regional_data(
+        state, district, data_from_tracker, data_format, filename, 
         which_compartments=which_compartments, granular_data=granular_data,
-        smooth_jump=smooth_jump, smoothing_method=smoothing_method, 
-        smoothing_length=smoothing_length, return_extra=True
+        smooth_jump=smooth_jump, return_extra=True
     )
-    smoothed_plot = extra['ax']
+    smoothing_plot = extra['smoothing_plot']
     orig_df_district = extra['df_district_unsmoothed']
 
     # Process the data to get rolling averages and other stuff
-    observed_dataframes = data_setup(df_district, df_district_raw_data, val_period)
+    observed_dataframes = data_setup(df_district, val_period)
 
     print('train\n', observed_dataframes['df_train'].tail())
     print('val\n', observed_dataframes['df_val'])
@@ -319,12 +327,13 @@ def single_fitting_cycle(dataframes, state, district, model=SEIR_Testing, variab
         state, district, observed_dataframes, 
         model=model, variable_param_ranges=variable_param_ranges,
         data_from_tracker=data_from_tracker, train_period=train_period, 
-        which_compartments=which_compartments, N=N,
+        which_compartments=which_compartments, N=N, back_offset=back_offset,
         num_evals=num_evals, initialisation=initialisation
     )
 
-    if smoothed_plot != None:
-        predictions_dict['smoothing_plot'] = smoothed_plot
+    if smoothing_plot != None:
+        predictions_dict['plots']['smoothing'] = smoothing_plot
+        predictions_dict['smoothing_description'] = extra['smoothing_description']
     predictions_dict['df_district_unsmoothed'] = orig_df_district
 
     # record parameters for reproducibility

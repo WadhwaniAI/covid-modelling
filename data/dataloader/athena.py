@@ -61,6 +61,7 @@ class AthenaLoader(BaseLoader):
             dict -- dict where key is str and value is pd.DataFrame
             The dataframes : 
             covid_case_summary
+            new_covid_case_summary
             demographics_details
             healthcare_capacity
             testing_summary
@@ -74,6 +75,7 @@ class AthenaLoader(BaseLoader):
         # Run SQL SELECT queries to get all the tables in the database as pandas dataframes
         dataframes = {}
         tables_list = cursor.execute('Show tables').as_pandas().to_numpy().reshape(-1, )
+        tables_list = ['covid_case_summary', 'new_covid_case_summary', 'testing_summary']
         for table in tables_list:
             dataframes[table] = cursor.execute(
                 'SELECT * FROM {}'.format(table)).as_pandas()

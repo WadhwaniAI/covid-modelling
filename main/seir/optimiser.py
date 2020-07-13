@@ -55,14 +55,13 @@ class Optimiser():
         solver = model(**params_dict)
         total_days = (end_date - params_dict['starting_date']).days
         df_prediction = solver.predict(total_days=total_days)
-        # df_prediction = solver.predict()
         return df_prediction
 
 
     # TODO add cross validation support
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIR_Testing,
                                which_compartments=['hospitalised', 'recovered', 'total_infected', 'deceased'], 
-                               loss_indices=[-20, -10], loss_method='rmse', return_dict=False):
+                               loss_indices=[-20, -10], loss_method='rmse', return_dict=False, debug=False):
         """The function that computes solves the ODE for a given set of input params and computes loss on train set
 
         Arguments:
@@ -103,6 +102,8 @@ class Optimiser():
             df_prediction_slice = df_prediction.iloc[loss_indices[0]:loss_indices[1], :]
             df_true_slice = df_true.iloc[loss_indices[0]:loss_indices[1], :]
 
+        if debug:
+            import pdb; pdb.set_trace()
         df_prediction_slice.reset_index(inplace=True, drop=True)
         df_true_slice.reset_index(inplace=True, drop=True)
         if return_dict:
@@ -167,7 +168,7 @@ class Optimiser():
         return default_params
 
     def gridsearch(self, df_true, default_params, variable_param_ranges, model=SEIR_Testing, method='rmse',
-                   loss_indices=[-20, -10], which_compartments=['total_infected'], debug=False):
+                   loss_indices=[-20, -10], which_compartments=['total_infected'], total_days=None, debug=False):
         """Implements gridsearch based optimisation
 
         Arguments:
@@ -195,23 +196,24 @@ class Optimiser():
         Returns:
             arr, list(dict) -- Array of loss values, and a list of parameter dicts
         """
-        total_days = len(df_true['date'])
+        if total_days == None:
+            total_days = len(df_true['date'])
 
         rangelists = list(variable_param_ranges.values())
         cartesian_product_tuples = itertools.product(*rangelists)
         list_of_param_dicts = [self._create_dict(list(
             variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
 
-        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model, 
-                                                 default_params=default_params, total_days=total_days, 
-                                                 loss_method=method, loss_indices=loss_indices, df_true=df_true,
-                                                 which_compartments=which_compartments)
+        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
+                                                 df_true=df_true, total_days=total_days, model=model,
+                                                 loss_method=method, loss_indices=loss_indices, 
+                                                 which_compartments=which_compartments, debug=debug)
         
         # If debugging is enabled the gridsearch is not parallelised
         if debug:
             loss_array = []
             for params_dict in tqdm(list_of_param_dicts):
-                loss_array.append(partial_solve_and_compute_loss(params_dict))
+                loss_array.append(partial_solve_and_compute_loss(variable_params=params_dict))
         else:
             loss_array = Parallel(n_jobs=40)(delayed(partial_solve_and_compute_loss)(params_dict) for params_dict in tqdm(list_of_param_dicts))
                     
