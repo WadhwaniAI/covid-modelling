@@ -123,6 +123,8 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
 
     mdFile.new_header(level=2, title=f'Uncertainty')
     mdFile.new_paragraph(f"beta - {m2_dict['beta']}")
+    mdFile.new_paragraph(f"beta loss")
+    mdFile.insert_code(pformat(m2_dict['beta_loss']))
 
 
     mdFile.new_header(level=1, title=f'FORECASTS')
@@ -148,14 +150,14 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
     mdFile.new_paragraph("")
 
     mdFile.new_header(level=2, title=f'BEST M2 FIT vs 50th DECILE FORECAST')
-    plot_filename = '{}-{}-best-50-forecast{}.png'.format(state.lower(), dist.lower(), fitting_date)
+    plot_filename = '{}-{}-best-50-forecast-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
     m2_dict['plots']['forecast_best_50'].savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast using best fit, 50th decile params', path=plot_filepath))
     mdFile.new_paragraph("")
 
     mdFile.new_header(level=2, title=f'BEST M2 FIT vs 80th DECILE FORECAST')
-    plot_filename = '{}-{}-best-80-forecast{}.png'.format(state.lower(), dist.lower(), fitting_date)
+    plot_filename = '{}-{}-best-80-forecast-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
     m2_dict['plots']['forecast_best_80'].savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast using best fit, 80th decile params', path=plot_filepath))
@@ -171,19 +173,26 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
     mdFile.new_header(level=2, title=f'FORECASTS ON ACTIVE CASES OF ALL DECILES')
     plot_filename = '{}-{}-active-ptiles-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-    m2_dict['plots']['forecast_confirmed_ptiles'].savefig(plot_filepath)
+    m2_dict['plots']['forecast_active_ptiles'].savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast on active of all deciles', path=plot_filepath))
     mdFile.new_paragraph("")
 
     mdFile.new_header(level=2, title=f'FORECASTS ON DAILY CASES OF ALL DECILES')
     plot_filename = '{}-{}-daily-ptiles-{}.png'.format(state.lower(), dist.lower(), fitting_date)
     plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
-    m2_dict['plots']['forecast_confirmed_ptiles'].savefig(plot_filepath)
+    m2_dict['plots']['forecast_new_cases_ptiles'].savefig(plot_filepath)
     mdFile.new_line(mdFile.new_inline_image(text='Forecast on daily of all deciles', path=plot_filepath))
     mdFile.new_paragraph("")
 
+    mdFile.new_header(level=1, title="What if Scenarios")
+    mdFile.new_header(level=2, title="Linear scale up of testing assuming fixed TPR")
+    plot_filename = '{}-{}-whatifs-testing-{}.png'.format(state.lower(), dist.lower(), fitting_date)
+    plot_filepath = os.path.join(os.path.abspath(ROOT_DIR), plot_filename)
+    m2_dict['plots']['whatifs_testing'].savefig(plot_filepath)
+    mdFile.new_line(mdFile.new_inline_image(text='Linear scale up of testing assuming fixed TPR', path=plot_filepath))
+    mdFile.new_paragraph("")
     mdFile.new_paragraph("---")
-
+    
     mdFile.new_header(level=1, title="Param Values")
     
     mdFile.new_header(level=2, title="Top 10 Trials")
@@ -277,4 +286,5 @@ def create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/
     mdFile.create_md_file()
 
     pypandoc.convert_file("{}.md".format(filename), 'docx', outputfile="{}.docx".format(filename))
+    pypandoc.convert_file("{}.docx".format(filename), 'pdf', outputfile="{}.pdf".format(filename))
     # TODO: pdf conversion has some issues with order of images, low priority
