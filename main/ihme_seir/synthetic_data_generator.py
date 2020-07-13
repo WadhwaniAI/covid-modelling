@@ -115,7 +115,8 @@ def seir_runner(district, state, input_df, data_from_tracker,
 
 def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
                          c1_output, datasets, predictions_dicts, which_compartments,
-                         dataset_properties, series_properties, baseline_predictions_dict=None, name_prefix=""):
+                         dataset_properties, series_properties, baseline_predictions_dict=None, name_prefix="",
+                         variable_param_ranges=None):
     """Logs all results
 
     Args:
@@ -154,8 +155,9 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
 
     with open(f'{output_folder}{name_prefix}_c1_best_params.json', 'w') as outfile:
         json.dump(c1_output['m1']['best_params'], outfile, indent=4)
-    with open(f'{output_folder}{name_prefix}_variable_param_ranges.json', 'w') as outfile:
-        json.dump(c1_output['m1']['variable_param_ranges'], outfile, indent=4)
+    if variable_param_ranges is not None:
+        with open(f'{output_folder}{name_prefix}_variable_param_ranges.json', 'w') as outfile:
+            json.dump(variable_param_ranges, outfile, indent=4)
 
     i1 = i1_output['df_loss']
     i1.to_csv(output_folder + "ihme_i1_loss.csv")
@@ -246,7 +248,7 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
         if district == 'Pune':
             return {
                 'lockdown_R0': (1, 1.5),
-                'T_inc': (4, 10),
+                'T_inc': (4, 15),
                 'T_inf': (3, 6),
                 'T_recov_severe': (5, 60),
                 'T_recov_fatal': (0, 45),
@@ -256,11 +258,11 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
             }
         elif state == 'Delhi':
             return {
-                'lockdown_R0': (1, 1.15),
-                'T_inc': (4, 6),
+                'lockdown_R0': (1, 2),
+                'T_inc': (4, 15),
                 'T_inf': (3, 6),
                 'T_recov_severe': (5, 60),
-                'T_recov_fatal': (0, 60),
+                'T_recov_fatal': (0, 80),
                 'P_fatal': (0, 0.3),
                 'E_hosp_ratio': (0, 2),
                 'I_hosp_ratio': (0, 1)
@@ -272,17 +274,17 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
         print("Getting search space for:", model)
         if district == 'Pune':
             return {
-                'lockdown_R0': (1, 6),
+                'lockdown_R0': (1, 3),
                 'T_inc': (4, 16),
                 'T_inf': (10, 60),
-                'T_fatal': (200, 500)
+                'T_fatal': (100, 500)
             }
         elif state == 'Delhi':
             return {
-                'lockdown_R0': (1, 6),
-                'T_inc': (4, 16),
+                'lockdown_R0': (1, 4),
+                'T_inc': (4, 20),
                 'T_inf': (10, 60),
-                'T_fatal': (200, 500)
+                'T_fatal': (200, 800)
             }
         else:
             return {

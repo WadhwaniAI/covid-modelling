@@ -140,6 +140,7 @@ def run_experiments(ihme_config_path, data_config_path, data, root_folder, multi
 
     for i, model in enumerate(models):
         variable_param_ranges = get_variable_param_ranges_dict(model, district, state)
+        variable_param_ranges_copy = deepcopy(variable_param_ranges)
         variable_param_ranges = get_variable_param_ranges(variable_param_ranges)
         name_prefix = name_prefixes[i]
 
@@ -221,7 +222,7 @@ def run_experiments(ihme_config_path, data_config_path, data, root_folder, multi
         log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
                              c1_output, df, predictions_dicts, which_compartments,
                              dataset_prop, series_properties, baseline_predictions_dict=predictions_dict_baseline,
-                             name_prefix=name_prefix)
+                             name_prefix=name_prefix, variable_param_ranges=variable_param_ranges_copy)
 
 
 def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
