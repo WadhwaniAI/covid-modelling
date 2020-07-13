@@ -13,6 +13,7 @@ sys.path.append('../..')
 from models.optim.actor_critic_env import CustomSIREnv
 from utils.optim.sir.objective_functions import *
 from copy import deepcopy
+import wandb
 
 # Cart Pole
 
@@ -25,12 +26,24 @@ parser.add_argument('--render', action='store_true',
 					help='render the environment')
 parser.add_argument('--log-interval', type=int, default=1, metavar='N',
 					help='interval between training status logs (default: 10)')
+parser.add_argument('--wandb', action='store_true', help="Use Wandb")
+parser.add_argument('--run', type=str, help='Wandb experiment name')
+# parser.add_argument('--resume', type=int, help='Resume experiment')
+# parser.add_argument('--id', type=str, help='Wandb experiment ID to resume experiment')
 args = parser.parse_args()
 
 
 env = CustomSIREnv()
 env.seed(args.seed)
+np.random.seed(args.seed)
 torch.manual_seed(args.seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
+if not args.run:
+	wandb_run = 'policygrad_16_burden'
+else:
+	wandb_run = args.run
 
 
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
@@ -42,13 +55,13 @@ class Policy(nn.Module):
 	"""
 	def __init__(self):
 		super(Policy, self).__init__()
-		self.affine1 = nn.Linear(9, 128)
+		self.affine1 = nn.Linear(9, 16)
 
 		# actor's layer
-		self.action_head = nn.Linear(128, 4)
+		self.action_head = nn.Linear(16, 4)
 
 		# critic's layer
-		self.value_head = nn.Linear(128, 1)
+		self.value_head = nn.Linear(16, 1)
 
 		# action & reward buffer
 		self.saved_actions = []
@@ -74,7 +87,7 @@ class Policy(nn.Module):
 
 
 model = Policy()
-optimizer = optim.Adam(model.parameters(), lr=3e-2)
+optimizer = optim.Adam(model.parameters(), lr=3e-4)
 eps = np.finfo(np.float32).eps.item()
 
 
@@ -100,7 +113,7 @@ def select_action(state):
 	return action.item()
 
 
-def finish_episode():
+def finish_episode(epi):
 	"""
 	Training code. Calculates actor and critic loss and performs backprop.
 	"""
@@ -133,8 +146,18 @@ def finish_episode():
 	optimizer.zero_grad()
 
 	# sum up all the values of policy_losses and value_losses
-	loss = torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
-	print(loss)
+	loss_policy = torch.stack(policy_losses).sum()
+	loss_value = torch.stack(value_losses).sum()
+	loss = loss_policy + loss_value
+	if args.wandb:
+		wandb.log({
+			'Policy Loss': loss_policy,
+			'Value Loss': loss_value,
+			'Loss' : loss,
+			}, step=epi)
+	# print(loss_policy, loss_value)
+
+	# print(loss)
 
 	# perform backprop
 	loss.backward()
@@ -153,6 +176,10 @@ def cost(array):
 
 
 def main():
+
+	if args.wandb:
+		wandb.init(name=wandb_run, project='Covid_Opt')
+		# wandb.watch(model)
 
 	# run inifinitely many episodes
 	for i_episode in count(1):
@@ -188,19 +215,32 @@ def main():
 
 
 		# perform backprop
-		finish_episode()
+		finish_episode(epi=i_episode)
 
 		# log results
 		if i_episode % args.log_interval == 0:
-			print('Episode {}\tLast reward: {:.2f}'.format(
-				  i_episode, ep_reward))
-			print('AUC-I: {}'.format(inf_auc(infection_array)))
-			print('Height: {}'.format(inf_height(infection_array)))
-			print('Time: {}'.format(inf_time(infection_array)))
-			print('Burden: {}'.format(inf_burden(infection_array)))
+			# print('Episode {}\tLast reward: {:.2f}'.format(
+			# 	  i_episode, ep_reward))
+			# print('AUC-I: {}'.format(inf_auc(infection_array)))
+			# print('Height: {}'.format(inf_height(infection_array)))
+			# print('Time: {}'.format(inf_time(infection_array)))
+			# print('Burden: {}'.format(inf_burden(infection_array)))
 			# print(infection_array)
-			print(action_array)
-			print('Budget Remaining: {}'.format(state[3]))
+			# print(action_array)
+			# print('Budget Remaining: {}'.format(state[3]))
+
+
+			if args.wandb:
+				wandb.log({
+					'Burden': inf_burden(infection_array),
+					'Time': inf_time(infection_array),
+					'Height' : inf_height(infection_array),
+					'Episode Reward' : ep_reward,
+					'AUCI' : inf_auc(infection_array),
+					}, step=i_episode)
+
+
+
 		if(inf_auc(infection_array)<=24):
 			break
 

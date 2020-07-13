@@ -95,11 +95,16 @@ class SEIR_Testing():
             # Transmission parameters
             'T_inc': T_inc,  # The incubation time of the infection
             'T_inf': T_inf,  # The duration for which an individual is infectious
+            'T_inf_D': T_inf,
+            'T_inc_D': T_inc,
 
             # Probability of contracting different types of infections
             'P_mild': P_mild,  # Probability of contracting a mild infection
             'P_severe': P_severe,  # Probability of contracting a severe infection
             'P_fatal': P_fatal,  # Probability of contracting a fatal infection
+            'P_mild_D': P_mild,
+            'P_severe_D': P_severe,
+            'P_fatal_D': P_fatal,
 
             # Clinical time parameters
             'T_recov_mild': T_recov_mild, # Time it takes for an individual with a mild infection to recover
@@ -151,9 +156,9 @@ class SEIR_Testing():
         
         if initialisation == 'starting':
             # init_infected = max(observed_values['init_infected'], 1)
-            init_infected = 0.001 * self.N
-            state_init_values['S'] = (self.N - init_infected)/self.N
-            state_init_values['I'] = init_infected/self.N
+            # init_infected = 0.001 * self.N
+            state_init_values['S'] = 0.999#(self.N - init_infected)/self.N
+            state_init_values['I'] = 0.001#init_infected/self.N
 
         if initialisation == 'intermediate':
             state_init_values['R_severe_hosp'] = self.P_severe / (self.P_severe + self.P_fatal) * observed_values['hospitalised']

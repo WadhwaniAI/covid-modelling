@@ -73,7 +73,7 @@ class CustomSIREnv(gym.Env):
 		dydt[3] = -self.get_action_cost(ACTION)
 		dydt[4] = 1
 		dydt[5] = self.I+dydt[1]
-		dydt[6] = -int(self.p_action == ACTION)
+		dydt[6] = -int(self.p_action != ACTION)
 		dydt[7] = ACTION-self.p_action
 		dydt[8] = int(self.t+dydt[4]>=self.T)
 
@@ -110,7 +110,7 @@ class CustomSIREnv(gym.Env):
 	def calc_burden_reward(self):
 		reward=0
 		if self.I>0.1:
-			reward=-100*(max(self.I-0.1,0))
+			reward=-max(self.I-0.1,0)
 		return reward
 	
 	def calc_delay_reward(self):

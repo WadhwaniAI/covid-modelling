@@ -13,17 +13,20 @@ from functools import partial
 from hyperopt import hp, tpe, fmin, Trials
 from models.optim.seir_testing_dis import SEIR_Testing
 
-def check(start_array, duration_array, choice_array, total_resource, days):
+def check(start_array, duration_array, choice_array, total_resource, days, less=False):
 	for i in range(1,len(start_array)):
-		if(start_array[i] <= start_array[i-1] + duration_array[i-1]):
+		if(start_array[i] < start_array[i-1] + duration_array[i-1]):
 			return(0)
-	if(start_array[-1]+duration_array[-1]>=days):
+	if(start_array[-1]+duration_array[-1]>days):
 		return(0)
 	resource_spent = np.dot(duration_array, choice_array)
-	if(resource_spent != total_resource):
-		return(0)
+	if(not less):
+		if(resource_spent != total_resource):
+			return(0)
 	else:
-		return(1)
+		if(resource_spent > total_resource):
+			return(0)
+	return(1)
 
 # def get_impact(choice, factor=None):
 # 	if(factor==None):
@@ -48,15 +51,15 @@ def calculate_opt(intervention_day, intervention_duration, intervention_choice, 
 	
 	S_coeficeint=0
 	E_coeficeint=0
-	I_coeficeint=0.7
+	I_coeficeint=1
 	D_E_coeficeint=0
-	D_I_coeficeint=0.7
-	R_mild_coeficeint=0.7
-	R_severe_home_coeficeint=0.9
-	R_severe_hosp_coeficeint=0.9
-	R_fatal_coeficeint=0.9
+	D_I_coeficeint=0
+	R_mild_coeficeint=0
+	R_severe_home_coeficeint=0
+	R_severe_hosp_coeficeint=0
+	R_fatal_coeficeint=0
 	C_coeficeint=0
-	D_coeficeint=1
+	D_coeficeint=0
 #   When we have joint optimization of time and qald
 #     time_weight = 0.5 + (np.arange(days)/(2*days))
 #     time_weight = time_weight[::-1]
@@ -97,13 +100,14 @@ def calculate_opt_time(intervention_day, intervention_duration, intervention_cho
 	for i in range(1,11):
 		time_array[i-1] = np.argmax(running_sum>=auci*0.1*i)+1
 	time = np.mean(time_array)
+	# print(time_array)
 	return(time)
 
 def calculate_opt_burden(intervention_day, intervention_duration, intervention_choice, days, capacity=np.array([0.05]), params=None):
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
 	infection_array = states_int_array[2]
 	if(len(capacity)==1):
-		burden = np.sum(infection_array[infection_array>=capacity[0]])
+		burden = np.sum(infection_array[infection_array>=capacity[0]]-capacity[0])
 	if(len(capacity)==2):
 		capacity_array = np.ones_like(infection_array)
 		capacity_array[0] = capacity[0]
@@ -120,7 +124,7 @@ def hp_calculate_opt_qald(variable_params, total_resource, days, params=None):
 	intervention_duration = np.array(variable_params['intervention_duration'])
 	intervention_choice = np.array(variable_params['intervention_choice'])
 	
-	if(not check(intervention_day, intervention_duration, intervention_choice, total_resource, days)):
+	if(not check(intervention_day, intervention_duration, intervention_choice, total_resource, days, less=True)):
 		return(100)
 	
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
@@ -132,7 +136,7 @@ def hp_calculate_opt_height(variable_params, total_resource, days, params=None):
 	intervention_duration = np.array(variable_params['intervention_duration'])
 	intervention_choice = np.array(variable_params['intervention_choice'])
 	
-	if(not check(intervention_day, intervention_duration, intervention_choice, total_resource, days)):
+	if(not check(intervention_day, intervention_duration, intervention_choice, total_resource, days, less=True)):
 		return(100)
 	
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
@@ -145,7 +149,7 @@ def hp_calculate_opt_time(variable_params, total_resource, days, params=None):
 	intervention_duration = np.array(variable_params['intervention_duration'])
 	intervention_choice = np.array(variable_params['intervention_choice'])
 	
-	if(not check(intervention_day, intervention_duration, intervention_choice, total_resource, days)):
+	if(not check(intervention_day, intervention_duration, intervention_choice, total_resource, days, less=True)):
 		return(100)
 	
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
@@ -173,7 +177,7 @@ def hp_calculate_opt_burden(variable_params, total_resource, days, capacity=np.a
 	intervention_duration = np.array(variable_params['intervention_duration'])
 	intervention_choice = np.array(variable_params['intervention_choice'])
 	
-	if(not check(intervention_day, intervention_duration, intervention_choice, total_resource, days)):
+	if(not check(intervention_day, intervention_duration, intervention_choice, total_resource, days, less=True)):
 		return(100)
 
 	grad1, states_int_array = calculate_opt(intervention_day, intervention_duration, intervention_choice, days, params)
