@@ -279,10 +279,10 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
             }
         elif state == 'Delhi':
             return {
-                'lockdown_R0': (0.5, 2),
+                'lockdown_R0': (1, 6),
                 'T_inc': (4, 16),
                 'T_inf': (10, 60),
-                'T_fatal': (200, 450)
+                'T_fatal': (200, 500)
             }
         else:
             return {

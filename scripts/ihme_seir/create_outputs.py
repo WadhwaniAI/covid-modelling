@@ -169,7 +169,7 @@ def all_plots(root_folder, region, num, shift, start_date):
         ax[i].set_ylabel('MAPE', fontsize=10)
         ax[i].grid()
         ax[i].tick_params(labelrotation=45)
-    plt.legend()
+        ax[i].legend()
     fig.tight_layout()
     fig.subplots_adjust(top=0.94)
     plt.savefig(f'{output_path}/ihme_i1_seirt_c1_sird_c1.png')
@@ -185,14 +185,15 @@ def all_plots(root_folder, region, num, shift, start_date):
         fig, ax = plt.subplots(3, 1, sharex=True, sharey=True, figsize=(20, 15))
         fig.suptitle(f'{region} - {compartment} - pointwise test APE on s2')
         losses = dict()
-        losses[0] = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'val', 'ape')
+        # Change this from 'val_no_xform' to 'val' if correction is made in main.ihme.fitting
+        losses[0] = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'val_no_xform', 'ape')
         losses[1] = get_seir_pointwise_loss(seirt_c1_pointwise_loss_dict, compartment, 'ape')
         losses[2] = get_seir_pointwise_loss(sird_c1_pointwise_loss_dict, compartment, 'ape')
         for k in range(3):
             ax[k].title.set_text(model_type[k])
             for j, l in enumerate(losses[k]):
                 ax[k].plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
-                        label=f'Test ape for {l.index[0]} to {l.index[-1]}')
+                        label=f'Test APE for {l.index[0]} to {l.index[-1]}')
             ax[k].set_xlabel('Date', fontsize=10)
             ax[k].set_ylabel('APE', fontsize=10)
             ax[k].tick_params(labelrotation=45)
@@ -248,7 +249,7 @@ def all_plots(root_folder, region, num, shift, start_date):
     plt.savefig(f'{output_path}/seirt_experiments.png')
     plt.close()
 
-    # PLOT: Synthetic data experiments with SEIR_Testing
+    # PLOT: Synthetic data experiments with SEIR_Testing (4X1)
     print("SEIR_Testing C2 on s3")
     seirt_c2_loss = get_seir_loss_dict(path, 'seirt_experiments_loss.csv', num)
     fig, ax = plt.subplots(4, 1, sharex=True, figsize=(15, 10))
@@ -296,16 +297,41 @@ def all_plots(root_folder, region, num, shift, start_date):
     plt.savefig(f'{output_path}/sird_experiments.png')
     plt.close()
 
+    # PLOT: Synthetic data experiments with SIRD (4X1)
+    print("SIRD C2 on s3")
+    sird_c2_loss = get_seir_loss_dict(path, 'sird_experiments_loss.csv', num)
+    fig, ax = plt.subplots(4, 1, sharex=True, figsize=(15, 10))
+    fig.suptitle(f'{region}: MAPE on s3 using synthetic data')
+    for i, compartment in enumerate(compartments):
+        colors = ['green', 'red', 'blue']
+        for j in range(3):
+            sird_exp_losses = get_seir_loss_exp(sird_c2_loss, compartment, 'val', j + 1)
+            ax[i].plot(dates, sird_exp_losses, 'o-', label=f'SIRD test MAPE on s3 {titles[j]}',
+                       color=colors[j])
+        sird_baseline_losses = get_seir_loss(seirt_c3_loss, compartment, 'val')
+        ax[i].plot(dates, sird_baseline_losses, 'o-', label='SIRD baseline test MAPE on s3',
+                   color='black')
+        ax[i].title.set_text(compartment)
+        ax[i].set_xlabel(f'Training start date', fontsize=10)
+        ax[i].set_ylabel('MAPE', fontsize=10)
+        ax[i].grid()
+        ax[i].tick_params(labelrotation=45)
+    plt.legend()
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.94)
+    plt.savefig(f'{output_path}/sird_experiments_v2.png')
+    plt.close()
+
     # PLOT: IHME I1 pointwise - val
     i1_pointwise_loss_dict = get_ihme_loss_dict(path, 'ihme_i1_pointwise_test_loss.csv', num)
     print("IHME pointwise test APE on s2")
     for i, compartment in enumerate(compartments):
         fig, ax = plt.subplots(1, figsize=(20, 10))
         fig.suptitle(f'{region} - {compartment} - IHME pointwise test APE on s2')
-        val_losses = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'val', 'ape')
+        val_losses = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'val_no_xform', 'ape')  # Check
         for j, l in enumerate(val_losses):
             ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j/num),
-                    label=f'Test ape for {l.index[0]} to {l.index[-1]}')
+                    label=f'Test APE for {l.index[0]} to {l.index[-1]}')
             ax.set_xlabel('Date', fontsize=10)
             ax.set_ylabel('APE', fontsize=10)
             ax.tick_params(labelrotation=45)
@@ -322,10 +348,10 @@ def all_plots(root_folder, region, num, shift, start_date):
     for i, compartment in enumerate(compartments):
         fig, ax = plt.subplots(1, figsize=(20, 10))
         fig.suptitle(f'{region} - {compartment} - IHME pointwise train APE on s1')
-        train_losses = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'train', 'ape')
+        train_losses = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'train_no_xform', 'ape')  # Check
         for j, l in enumerate(train_losses):
             ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j/num),
-                    label=f'Train ape for {l.index[0]} to {l.index[-1]}')
+                    label=f'Train APE for {l.index[0]} to {l.index[-1]}')
             ax.set_xlabel('Date', fontsize=10)
             ax.set_ylabel('APE', fontsize=10)
             ax.tick_params(labelrotation=45)
@@ -345,7 +371,7 @@ def all_plots(root_folder, region, num, shift, start_date):
         val_losses = get_seir_pointwise_loss(seirt_c1_pointwise_loss_dict, compartment, 'ape')
         for j, l in enumerate(val_losses):
             ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
-                    label=f'Test ape for {l.index[0]} to {l.index[-1]}')
+                    label=f'Test APE for {l.index[0]} to {l.index[-1]}')
             ax.set_xlabel('Date', fontsize=10)
             ax.set_ylabel('APE', fontsize=10)
             ax.tick_params(labelrotation=45)
@@ -365,7 +391,7 @@ def all_plots(root_folder, region, num, shift, start_date):
         train_losses = get_seir_pointwise_loss(seirt_c1_pointwise_loss_dict, compartment, 'ape')
         for j, l in enumerate(train_losses):
             ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
-                    label=f'Train ape for {l.index[0]} to {l.index[-1]}')
+                    label=f'Train APE for {l.index[0]} to {l.index[-1]}')
             ax.set_xlabel('Date', fontsize=10)
             ax.set_ylabel('APE', fontsize=10)
             ax.grid()
@@ -385,7 +411,7 @@ def all_plots(root_folder, region, num, shift, start_date):
         val_losses = get_seir_pointwise_loss(sird_c1_pointwise_loss_dict, compartment, 'ape')
         for j, l in enumerate(val_losses):
             ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
-                    label=f'Test ape for {l.index[0]} to {l.index[-1]}')
+                    label=f'Test APE for {l.index[0]} to {l.index[-1]}')
             ax.set_xlabel('Date', fontsize=10)
             ax.set_ylabel('APE', fontsize=10)
             ax.tick_params(labelrotation=45)
@@ -405,7 +431,7 @@ def all_plots(root_folder, region, num, shift, start_date):
         train_losses = get_seir_pointwise_loss(sird_c1_pointwise_loss_dict, compartment, 'ape')
         for j, l in enumerate(train_losses):
             ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
-                    label=f'Train ape for {l.index[0]} to {l.index[-1]}')
+                    label=f'Train APE for {l.index[0]} to {l.index[-1]}')
             ax.set_xlabel('Date', fontsize=10)
             ax.set_ylabel('APE', fontsize=10)
             ax.grid()
@@ -434,7 +460,7 @@ def all_plots(root_folder, region, num, shift, start_date):
                     losses = get_seir_pointwise_loss(c2_pointwise_loss_dict, compartment, 'ape')
                     for j, l in enumerate(losses):
                         ax[exp].plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
-                                     label=f'{split} ape for {l.index[0]} to {l.index[-1]}')
+                                     label=f'{split} APE for {l.index[0]} to {l.index[-1]}')
                     ax[exp].title.set_text(f'{compartment}: {titles[exp]}')
                     ax[exp].set_xlabel('Date', fontsize=10)
                     ax[exp].set_ylabel('APE', fontsize=10)
@@ -448,7 +474,7 @@ def all_plots(root_folder, region, num, shift, start_date):
                     baseline_losses = [loss.iloc[-len(losses[0]):] for loss in baseline_losses]
                     for j, l in enumerate(baseline_losses):
                         ax[3].plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
-                                   label=f'{split} ape for {l.index[0]} to {l.index[-1]}')
+                                   label=f'{split} APE for {l.index[0]} to {l.index[-1]}')
                     ax[3].title.set_text(f'{compartment}: {titles[3]}')
                     ax[3].set_xlabel('Date', fontsize=10)
                     ax[3].set_ylabel('APE', fontsize=10)
