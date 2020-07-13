@@ -61,7 +61,9 @@ def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train
 
     return df_prediction
 
-def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_fraction=0.02, best_params=None, days=30):
+
+def create_region_csv(predictions_dict: dict, region: str, regionType: str, df_prediction=None, 
+                      icu_fraction=0.02, best_params=None, days=30):
     """Created the CSV file for one particular geographical area in the format Keshav consumes
 
     Arguments:
@@ -78,13 +80,17 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_
         pd.DataFrame -- The output CSV file in the format Keshav consumes
     """
     print("compiling csv data ..")
-    columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value', 'current_total', 'current_active', 'current_recovered',
-               'current_deceased', 'current_hospitalized', 'current_icu', 'current_ventilator', 'predictionDate', 'active_mean', 'active_min',
-               'active_max', 'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 'icu_max', 'deceased_mean',
-               'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 'recovered_max', 'total_mean', 'total_min', 'total_max']
+    columns = ['forecastRunDate', 'predictionDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value',
+                'current_total', 'current_active', 'current_recovered', 'current_deceased', 'current_hospitalized', 
+                'current_icu', 'current_ventilator', 'active_mean', 'active_min',
+                'active_max', 'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 
+                'icu_max', 'deceased_mean', 'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 
+                'recovered_max', 'total_mean', 'total_min', 'total_max']
     df_output = pd.DataFrame(columns=columns)
 
-    df_prediction = get_forecast(predictions_dict, best_params=best_params, days=days)
+    if df_prediction is None:
+        df_prediction = get_forecast(predictions_dict, best_params=best_params, days=days)
+
     df_true = predictions_dict['m1']['df_district']
     prediction_daterange = np.union1d(df_true['date'], df_prediction['date'])
     no_of_data_points = len(prediction_daterange)
@@ -191,7 +197,7 @@ def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, reg
     # df_output = df_output[columns]
     return df_output
 
-def create_all_csvs(predictions_dict: dict, days=30, icu_fraction=0.02):
+def create_all_csvs(predictions_dict: dict, district:str='Mumbai', days=30, icu_fraction=0.02):
     """Creates the output for all geographical regions (not just one)
 
     Arguments:
@@ -203,18 +209,17 @@ def create_all_csvs(predictions_dict: dict, days=30, icu_fraction=0.02):
     Returns:
         pd.DataFrame -- output for all geographical regions
     """
-    columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value', 'current_total', 'current_active', 'current_recovered',
-               'current_deceased', 'current_hospitalized', 'current_icu', 'current_ventilator', 'predictionDate', 'active_mean', 'active_min',
-               'active_max', 'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 'icu_max', 'deceased_mean',
-               'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 'recovered_max', 'total_mean', 'total_min', 'total_max']
+    columns = ['forecastRunDate', 'predictionDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value', 'which_forecast',
+                'current_total', 'current_active', 'current_recovered', 'current_deceased', 'current_hospitalized', 
+                'current_icu', 'current_ventilator', 'active_mean', 'active_min', 'active_max', 
+                'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 'icu_max', 
+                'deceased_mean', 'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 'recovered_max', 
+                'total_mean', 'total_min', 'total_max']
     df_final = pd.DataFrame(columns=columns)
-    for region in predictions_dict.keys():
-        if region[1] == None:
-            df_output = create_region_csv(predictions_dict[region], region=region[0], regionType='state', 
-                                          icu_fraction=icu_fraction, days=days)
-        else:
-            df_output = create_region_csv(predictions_dict[region], region=region[1], regionType='district',
-                                        icu_fraction=icu_fraction, days=days)
+    for forecast, df_prediction in predictions_dict['m2']['forecasts'].items():
+        df_output = create_region_csv(predictions_dict, region=district, regionType='district',
+                                      df_prediction=df_prediction, icu_fraction=icu_fraction, days=days)
+        df_output['which_forecast'] = forecast
         df_final = pd.concat([df_final, df_output], ignore_index=True)
     
     return df_final
