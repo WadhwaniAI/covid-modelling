@@ -260,15 +260,24 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
             return {
                 'lockdown_R0': (1, 2.5),
                 'T_inc': (4, 15),
-                'T_inf': (2, 7),
+                'T_inf': (2, 10),
                 'T_recov_severe': (5, 60),
-                'T_recov_fatal': (0, 100),
+                'T_recov_fatal': (0, 150),
                 'P_fatal': (0, 0.3),
                 'E_hosp_ratio': (0, 2),
                 'I_hosp_ratio': (0, 1)
             }
         else:
-            return None
+            return {
+                'lockdown_R0': (1, 2.5),
+                'T_inc': (4, 15),
+                'T_inf': (2, 10),
+                'T_recov_severe': (5, 60),
+                'T_recov_fatal': (0, 150),
+                'P_fatal': (0, 0.3),
+                'E_hosp_ratio': (0, 2),
+                'I_hosp_ratio': (0, 1)
+            }
 
     elif model is SIRD:
         print("Getting search space for:", model)
@@ -282,17 +291,16 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
         elif state == 'Delhi':
             return {
                 'lockdown_R0': (1, 4),
-                'T_inc': (4, 20),
-                'T_inf': (10, 60),
-                'T_fatal': (100, 900)
+                'T_inc': (4, 30),
+                'T_inf': (5, 60),
+                'T_fatal': (100, 1100)
             }
         else:
             return {
                 'lockdown_R0': (1, 6),
-                'T_inc': (4, 16),
-                'T_inf': (10, 60),
-                'T_fatal': (200, 500)
+                'T_inc': (4, 30),
+                'T_inf': (5, 60),
+                'T_fatal': (100, 1100)
             }
-
     else:
         raise Exception("This model class is not supported")
