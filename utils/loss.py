@@ -123,7 +123,7 @@ class Loss_Calculator():
         loss_df_dict = {}
         for compartment in which_compartments:
             df = self.create_pointwise_loss_dataframe(
-                df_train[compartment].values.astype(float), df_temp[compartment].values.astype(float))
+                np.array(df_train[compartment]), np.array(df_temp[compartment]))
             df.columns = df_train['date'].tolist()
             loss_df_dict[compartment] = df
         df_train_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
@@ -139,7 +139,7 @@ class Loss_Calculator():
             loss_df_dict = {}
             for compartment in which_compartments:
                 df = self.create_pointwise_loss_dataframe(
-                    df_val[compartment].values.astype(float), df_temp[compartment].values.astype(float))
+                    np.array(df_val[compartment]), np.array(df_temp[compartment]))
                 df.columns = df_val['date'].tolist()
                 loss_df_dict[compartment] = df
             df_val_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
@@ -173,7 +173,7 @@ class Loss_Calculator():
         df_train.reset_index(inplace=True, drop=True)
         for compartment in df_loss.index:
             df_loss.loc[compartment, 'train'] = self._calc_mape(
-                np.array(df_train[compartment]), np.array(df_temp[compartment]))
+                np.array(df_temp[compartment]), np.array(df_train[compartment]))
 
         if isinstance(df_val, pd.DataFrame):
             df_temp = df_prediction.loc[df_prediction['date'].isin(
@@ -182,7 +182,7 @@ class Loss_Calculator():
             df_val.reset_index(inplace=True, drop=True)
             for compartment in df_loss.index:
                 df_loss.loc[compartment, 'val'] = self._calc_mape(
-                    np.array(df_val[compartment]), np.array(df_temp[compartment]))
+                    np.array(df_temp[compartment]), np.array(df_val[compartment]))
         else:
             del df_loss['val']
         return df_loss
