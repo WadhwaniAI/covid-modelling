@@ -195,7 +195,7 @@ def insert_custom_dataset_into_dataframes(dataframes, dataset, start_date=None, 
     return df_district
 
 
-def read_synth_data_config(path):
+def read_region_config(path):
     """Reads config file for synthetic data generation experiments
 
     Args:
