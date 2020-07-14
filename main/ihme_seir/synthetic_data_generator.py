@@ -258,11 +258,11 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
             }
         elif state == 'Delhi':
             return {
-                'lockdown_R0': (1, 2),
+                'lockdown_R0': (1, 2.5),
                 'T_inc': (4, 15),
-                'T_inf': (3, 6),
+                'T_inf': (2, 7),
                 'T_recov_severe': (5, 60),
-                'T_recov_fatal': (0, 80),
+                'T_recov_fatal': (0, 100),
                 'P_fatal': (0, 0.3),
                 'E_hosp_ratio': (0, 2),
                 'I_hosp_ratio': (0, 1)
@@ -274,7 +274,7 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
         print("Getting search space for:", model)
         if district == 'Pune':
             return {
-                'lockdown_R0': (1, 3),
+                'lockdown_R0': (1, 4),
                 'T_inc': (4, 16),
                 'T_inf': (10, 60),
                 'T_fatal': (100, 500)
@@ -284,7 +284,7 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
                 'lockdown_R0': (1, 4),
                 'T_inc': (4, 20),
                 'T_inf': (10, 60),
-                'T_fatal': (200, 800)
+                'T_fatal': (100, 900)
             }
         else:
             return {
