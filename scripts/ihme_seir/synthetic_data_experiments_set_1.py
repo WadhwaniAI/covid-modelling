@@ -20,7 +20,7 @@ from datetime import timedelta, datetime
 
 sys.path.append('../../')
 
-from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset, read_synth_data_config
+from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset, read_region_config
 
 from data.dataloader import Covid19IndiaLoader
 from data.processing import get_data
@@ -32,7 +32,7 @@ from viz.synthetic_data import plot_all_experiments
 
 
 def run_experiments(ihme_config_path, data_config_path, dataframes, data, multiple=False, shift_forward=0):
-    data_config = read_synth_data_config(data_config_path)
+    data_config = read_region_config(data_config_path)
 
     # Unpack parameters from config and set local parameters
     district = data_config['district']
@@ -163,7 +163,7 @@ def run_experiments(ihme_config_path, data_config_path, dataframes, data, multip
 
 
 def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
-    data_config = read_synth_data_config(data_config_path)
+    data_config = read_region_config(data_config_path)
     district = data_config['district']
     state = data_config['state']
     disable_tracker = data_config['disable_tracker']

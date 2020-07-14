@@ -32,7 +32,7 @@ from datetime import timedelta, datetime
 
 sys.path.append('../../')
 
-from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset, read_synth_data_config
+from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset, read_region_config
 from utils.loss import Loss_Calculator
 
 from data.dataloader import Covid19IndiaLoader
@@ -48,7 +48,7 @@ from viz.synthetic_data import plot_all_experiments, plot_against_baseline
 
 
 def run_experiments(ihme_config_path, data_config_path, data, root_folder, multiple=False, shift_forward=0):
-    data_config = read_synth_data_config(data_config_path)  # TODO: Create experiment config
+    data_config = read_region_config(data_config_path)  # TODO: Create experiment config
 
     # Unpack parameters from config and set local parameters
     district = data_config['district']
@@ -202,10 +202,10 @@ def run_experiments(ihme_config_path, data_config_path, data, root_folder, multi
 
         # Find loss on s3 for baseline c3 model
         lc = Loss_Calculator()
-        df_c2_s3_loss = lc.create_loss_dataframe_region(train_baseline[-c3_train_period:], test_baseline[-s3:],
+        df_c3_s3_loss = lc.create_loss_dataframe_region(train_baseline[-c3_train_period:], test_baseline[-s3:],
                                                         predictions_dict_baseline['m1']['df_prediction'],
                                                         c3_train_period, which_compartments=which_compartments)
-        predictions_dict_baseline['m1']['df_loss_s3'] = df_c2_s3_loss
+        predictions_dict_baseline['m1']['df_loss_s3'] = df_c3_s3_loss
 
         print("Creating plots...")
         # Plotting all experiments
@@ -226,7 +226,7 @@ def run_experiments(ihme_config_path, data_config_path, data, root_folder, multi
 
 
 def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
-    data_config = read_synth_data_config(data_config_path)
+    data_config = read_region_config(data_config_path)
     district = data_config['district']
     state = data_config['state']
     disable_tracker = data_config['disable_tracker']
@@ -247,7 +247,7 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
     if num == 1:
         start_time = time.time()
         run_experiments(ihme_config_path, data_config_path, data, root_folder, multiple=False,
-                        shift_forward=0,)
+                        shift_forward=0)
         runtime = time.time() - start_time
         print("Run time: ", runtime)
     else:
