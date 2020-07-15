@@ -146,12 +146,12 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, df_p
     df_output = df_output[columns]
     return df_output
 
-def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, regionType: str, icu_fraction=0.02):
+def create_decile_csv(predictions_dict: dict, region: str, regionType: str, icu_fraction=0.02):
     print("compiling csv data ..")
     columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'current_total', 'current_active', 'current_recovered',
                'current_deceased', 'current_hospitalised', 'current_icu', 'current_ventilator', 'predictionDate']
     
-    for decile in decile_dict.keys():
+    for decile in predictions_dict['m2']['forecasts'].keys():
         columns += [f'active_{decile}',
             f'hospitalised_{decile}',
             f'icu_{decile}',
@@ -163,7 +163,10 @@ def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, reg
 
     df_output = pd.DataFrame(columns=columns)
 
-    dateseries = decile_dict[list(decile_dict.keys())[0]]['df_prediction']['date']
+    df_true = predictions_dict['m2']['df_district']
+
+    dateseries = predictions_dict['m2']['forecasts'][list(
+        predictions_dict['m2']['forecasts'].keys())[0]]['date']
     prediction_daterange = np.union1d(df_true['date'], dateseries)
     no_of_data_points = len(prediction_daterange)
     df_output['predictionDate'] = prediction_daterange
@@ -175,17 +178,17 @@ def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, reg
     df_output['error_function'] = ['MAPE']*no_of_data_points
     df_output.set_index('predictionDate', inplace=True)
 
-    for decile in decile_dict.keys():
-        df_prediction = decile_dict[decile]['df_prediction']
+    for decile in predictions_dict['m2']['forecasts'].keys():
+        df_prediction = predictions_dict['m2']['forecasts'][decile]
         df_prediction = df_prediction.set_index('date')
-        df_loss = decile_dict[decile]['df_loss']
+        # df_loss = predictions_dict[decile]['df_loss']
         df_output.loc[df_prediction.index, f'active_{decile}'] = df_prediction['hospitalised']
         df_output.loc[df_prediction.index, f'hospitalised_{decile}'] = df_prediction['hospitalised']
-        df_output.loc[df_prediction.index, f'icu_{decile}'] = icu_fraction*df_prediction['hospitalised']
+        # df_output.loc[df_prediction.index, f'icu_{decile}'] = icu_fraction*df_prediction['hospitalised']
         df_output.loc[df_prediction.index, f'recovered_{decile}'] = df_prediction['recovered']
         df_output.loc[df_prediction.index, f'deceased_{decile}'] = df_prediction['deceased']
         df_output.loc[df_prediction.index, f'total_{decile}'] = df_prediction['total_infected']
-        df_output.loc[df_prediction.index, f'error_{decile}'] = df_loss.loc[:, 'train'].sum()
+        # df_output.loc[df_prediction.index, f'error_{decile}'] = df_loss.loc[:, 'train'].sum()
 
     df_true = df_true.set_index('date')
     df_output.loc[df_true.index, 'current_total'] = df_true['total_infected'].to_numpy()
