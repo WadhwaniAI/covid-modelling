@@ -1,5 +1,4 @@
 import pandas as pd
-import yaml
 
 from datetime import timedelta
 
@@ -193,19 +192,3 @@ def insert_custom_dataset_into_dataframes(dataframes, dataset, start_date=None, 
         df_district[col] = dataset[col].values
 
     return df_district
-
-
-def read_region_config(path):
-    """Reads config file for synthetic data generation experiments
-
-    Args:
-        path (str): path to config file
-
-    Returns:
-        dict: config for synthetic data generation experiments
-    """
-
-    with open(path) as configfile:
-        config = yaml.load(configfile, Loader=yaml.SafeLoader)
-    config = config['base']
-    return config

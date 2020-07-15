@@ -28,7 +28,7 @@ model_params:
   func: log_erf
   priors: # for when log is TRUE
     fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
+    fe_bounds: [[-7.0, -0.5], [12,45], [-25, -5]]
   pipeline_args:
     n_draws: 20
     cv_threshold: 1.e-2

@@ -4,6 +4,7 @@ DATACFG=config
 IHMECFG=../ihme/config
 
 cities=(
+    pune
     delhi
     bengaluru_urban
 )

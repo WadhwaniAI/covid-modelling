@@ -23,14 +23,13 @@ Baseline models:
 
 import argparse
 import sys
-import time
 
 from copy import deepcopy
 from datetime import timedelta
 
 sys.path.append('../../')
 
-from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset, read_region_config
+from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset
 from utils.loss import Loss_Calculator
 
 from data.processing import get_data
@@ -38,7 +37,7 @@ from data.processing import get_data
 from models.seir import SEIR_Testing, SIRD
 
 from main.ihme_seir.synthetic_data_generator import ihme_data_generator, seir_runner, log_experiment_local, \
-    create_output_folder, get_variable_param_ranges_dict
+    create_output_folder, get_variable_param_ranges_dict, read_region_config
 from main.seir.fitting import get_regional_data, get_variable_param_ranges
 
 from viz.synthetic_data import plot_all_experiments, plot_against_baseline
@@ -126,7 +125,9 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
     names = ["SEIR Testing", "SIRD"]
 
     for i, model in enumerate(models):
-        variable_param_ranges = get_variable_param_ranges_dict(model, district, state)
+        variable_param_ranges = get_variable_param_ranges_dict(model, district, state,
+                                                               model_type=name_prefixes[i],
+                                                               train_period=c2_train_period)
         variable_param_ranges_copy = deepcopy(variable_param_ranges)
         variable_param_ranges = get_variable_param_ranges(variable_param_ranges)
         name_prefix = name_prefixes[i]
@@ -223,17 +224,12 @@ def runner(ihme_config_path, region_config_path, output_folder, num):
         data = get_data(state=state, district=None, disable_tracker=disable_tracker)
     else:
         data = get_data(state=state, district=district, disable_tracker=disable_tracker)
-    print("Data summary:")
-    print(data)
 
     # Output folder
     root_folder = f'{district}/{output_folder}'
-
-    start_time = time.time()
-    run_experiments(ihme_config_path, region_config_path, data, f'{root_folder}/{str(num)}', multiple=False,
+    print("Run no. ", num+1, " with shift of ", shift_period * num)
+    run_experiments(ihme_config_path, region_config_path, data, f'{root_folder}/{str(num)}', multiple=True,
                     shift_forward=shift_period * num)
-    runtime = time.time() - start_time
-    print("Run time: ", runtime)
 
 
 if __name__ == "__main__":

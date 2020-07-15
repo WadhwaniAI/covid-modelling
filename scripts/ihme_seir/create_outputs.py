@@ -58,7 +58,7 @@ def get_best_params(path, file, num, dates, var_param_ranges_file=None):
             if isinstance(var_param_ranges_dict, str):
                 var_param_ranges_dict = ast.literal_eval(var_param_ranges_dict)
         param_ranges_df = pd.DataFrame.from_dict(var_param_ranges_dict, orient="columns")
-        param_ranges_df.index = ["lower bound", "upper bound"]
+        param_ranges_df.index = ["lower", "upper"]
         param_ranges_df.insert(0, column="Training start date", value=None)
     param_dict = dict()
     for i in range(num):
@@ -82,6 +82,32 @@ def save_best_params_df(path, output_folder, num, dates):
         params_df_dict[files[i]] = get_best_params(path, files[i], num, dates, var_param_ranges_file=ranges_files[i])
     params_df = pd.concat(params_df_dict.values(), keys=params_df_dict.keys(), axis=0)
     params_df.to_csv(f'{output_folder}/params.csv')
+
+
+def save_ihme_model_params(path, output_folder, num, dates):
+    file = 'ihme_i1_model_params.json'
+    param_dict = dict()
+    param_ranges = None
+    for i in range(num):
+        with open(f'{path}/{str(i)}/{file}', 'r') as infile:
+            param_dict[i] = json.load(infile)
+            if isinstance(param_dict[i], str):
+                params_str = param_dict[i][param_dict[i].find("'priors'"):]
+                params_str = "".join(['{', params_str[:params_str.find('}')+1], '}'])
+                param_dict[i] = ast.literal_eval(params_str)['priors']
+                if i == 0:
+                    param_ranges = param_dict[i]['fe_bounds']
+                param_dict[i] = param_dict[i]['fe_init']
+    params_df = pd.DataFrame.from_dict(param_dict, orient="index")
+    params_df.columns = ['alpha', 'beta', 'p']
+    params_df.insert(0, column='Training start date', value=dates)
+
+    param_ranges_df = pd.DataFrame(param_ranges).T
+    param_ranges_df.columns = ['alpha', 'beta', 'p']
+    param_ranges_df.index = ['lower', 'upper']
+    param_ranges_df.insert(0, column="Training start date", value=None)
+    params_df = pd.concat([param_ranges_df, params_df], axis=0)
+    params_df.to_csv(f'{output_folder}/ihme_params.csv')
 
 
 def get_ihme_loss(loss_dict, compartment, split, loss_fn):
@@ -127,6 +153,8 @@ def all_plots(root_folder, region, num, shift, start_date):
     start_date = pd.to_datetime(start_date, dayfirst=False)
     dates = pd.date_range(start=start_date, periods=num, freq=f'{shift}D').tolist()
     dates = [date.strftime("%m-%d-%Y") for date in dates]
+
+    save_ihme_model_params(path, output_path, num, dates)
 
     # Save model params
     save_best_params_df(path, output_path, num, dates)

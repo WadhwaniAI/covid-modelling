@@ -20,7 +20,7 @@ from datetime import timedelta, datetime
 
 sys.path.append('../../')
 
-from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset, read_region_config
+from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset
 
 from data.dataloader import Covid19IndiaLoader
 from data.processing import get_data

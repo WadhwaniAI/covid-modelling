@@ -5,6 +5,8 @@ import pandas as pd
 
 from copy import deepcopy
 
+import yaml
+
 from utils.enums import Columns
 from utils.util import read_config
 from utils.data import cities
@@ -242,21 +244,13 @@ def create_output_folder(fname):
     return output_folder
 
 
-def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
-    if model is SEIR_Testing:
-        print("Getting search space for:", model)
-        if district == 'Pune':
-            return {
-                'lockdown_R0': (1, 1.5),
-                'T_inc': (4, 15),
-                'T_inf': (3, 6),
-                'T_recov_severe': (5, 60),
-                'T_recov_fatal': (0, 45),
-                'P_fatal': (0, 0.3),
-                'E_hosp_ratio': (0, 2),
-                'I_hosp_ratio': (0, 1)
-            }
-        elif state == 'Delhi':
+def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra', model_type='seirt', train_period=7):
+    if district in ['Pune', 'Bengaluru Urban']:
+        region = district.lower().replace(" ", "_")
+    elif state == 'Delhi':
+        region = state.lower()
+    else:
+        if model is SEIR_Testing:
             return {
                 'lockdown_R0': (1, 2.5),
                 'T_inc': (4, 15),
@@ -267,40 +261,38 @@ def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra'):
                 'E_hosp_ratio': (0, 2),
                 'I_hosp_ratio': (0, 1)
             }
-        else:
-            return {
-                'lockdown_R0': (1, 2.5),
-                'T_inc': (4, 15),
-                'T_inf': (2, 10),
-                'T_recov_severe': (5, 60),
-                'T_recov_fatal': (0, 150),
-                'P_fatal': (0, 0.3),
-                'E_hosp_ratio': (0, 2),
-                'I_hosp_ratio': (0, 1)
-            }
-
-    elif model is SIRD:
-        print("Getting search space for:", model)
-        if district == 'Pune':
-            return {
-                'lockdown_R0': (1, 4),
-                'T_inc': (4, 16),
-                'T_inf': (10, 60),
-                'T_fatal': (100, 500)
-            }
-        elif state == 'Delhi':
-            return {
-                'lockdown_R0': (1, 4),
-                'T_inc': (4, 30),
-                'T_inf': (5, 60),
-                'T_fatal': (100, 1100)
-            }
-        else:
+        elif model is SIRD:
             return {
                 'lockdown_R0': (1, 6),
                 'T_inc': (4, 30),
                 'T_inf': (5, 60),
-                'T_fatal': (100, 1100)
+                'T_fatal': (100, 1500)
             }
-    else:
-        raise Exception("This model class is not supported")
+        else:
+            raise Exception("This model class is not supported")
+
+    return read_region_params_config(f'../../scripts/ihme_seir/config/{region}.yaml', model_type, train_period)
+
+
+def read_region_config(path):
+    """Reads config file for synthetic data generation experiments
+
+    Args:
+        path (str): path to config file
+
+    Returns:
+        dict: config for synthetic data generation experiments
+    """
+
+    with open(path) as configfile:
+        config = yaml.load(configfile, Loader=yaml.SafeLoader)
+    config = config['base']
+    return config
+
+
+def read_region_params_config(path, model_type, train_period):
+
+    with open(path) as configfile:
+        config = yaml.load(configfile, Loader=yaml.SafeLoader)
+    config = config[f'params_{model_type}_tp_{train_period}']
+    return config
