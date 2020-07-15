@@ -245,28 +245,28 @@ def create_output_folder(fname):
 
 
 def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra', model_type='seirt', train_period=7):
-    if district in ['Pune', 'Bengaluru Urban']:
+    if district == 'Pune' or district == 'Bengaluru Urban':
         region = district.lower().replace(" ", "_")
     elif state == 'Delhi':
         region = state.lower()
     else:
         if model is SEIR_Testing:
             return {
-                'lockdown_R0': (1, 2.5),
-                'T_inc': (4, 15),
-                'T_inf': (2, 10),
-                'T_recov_severe': (5, 60),
-                'T_recov_fatal': (0, 150),
-                'P_fatal': (0, 0.3),
-                'E_hosp_ratio': (0, 2),
-                'I_hosp_ratio': (0, 1)
+                'lockdown_R0': [1, 2.5],
+                'T_inc': [4, 15],
+                'T_inf': [2, 10],
+                'T_recov_severe': [5, 60],
+                'T_recov_fatal': [0, 150],
+                'P_fatal': [0, 0.3],
+                'E_hosp_ratio': [0, 2],
+                'I_hosp_ratio': [0, 1]
             }
         elif model is SIRD:
             return {
-                'lockdown_R0': (1, 6),
-                'T_inc': (4, 30),
-                'T_inf': (5, 60),
-                'T_fatal': (100, 1500)
+                'lockdown_R0': [1, 6],
+                'T_inc': [4, 30],
+                'T_inf': [5, 60],
+                'T_fatal': [100, 1500]
             }
         else:
             raise Exception("This model class is not supported")
