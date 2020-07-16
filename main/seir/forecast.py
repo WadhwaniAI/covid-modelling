@@ -19,7 +19,7 @@ from joblib import Parallel, delayed
 import copy
 
 from data.processing.whatifs import scale_up_acc_to_testing
-from main.seir.fitting import get_variable_param_ranges
+from main.seir.fitting import *
 from models.seir import SEIRHD, SEIR_Movement, SEIR_Movement_Testing, SEIR_Testing
 from main.seir.optimiser import Optimiser
 
