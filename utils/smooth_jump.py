@@ -80,48 +80,52 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
     return df_district.reset_index(), description
 
 
-def smooth_big_jump(df_district, data_from_tracker=False):
+def smooth_big_jump(df_district, data_from_tracker=False, method='weighted-mag', description=""):
     if data_from_tracker:
         d1 = '2020-05-29'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
 
         d1 = '2020-06-15'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
 
         d1 = '2020-06-16'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
 
         d1 = '2020-06-23'
         length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-06-15', '%Y-%m-%d')).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
 
         d1 = '2020-06-24'
         length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-06-15', '%Y-%m-%d')).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
 
         d1 = '2020-07-01'
         length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-29', '%Y-%m-%d')).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method='weighted-mag')
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+            description=description)
 
         d1 = '2020-06-16'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-        df_district = smooth_big_jump_helper(
-            df_district, 'deceased', 'total_infected', d1, smoothing_length=length, method='weighted-mag', 
+        df_district, description = smooth_big_jump_helper(
+            df_district, 'deceased', 'total_infected', d1, smoothing_length=length, method=method, 
+            description=description, 
             aux_var_add=True)
 
     else:
-        description = ""
-        method = 'weighted-mag'
-
         d1 = '2020-05-28'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
         df_district, description = smooth_big_jump_helper(
@@ -172,116 +176,142 @@ def smooth_big_jump(df_district, data_from_tracker=False):
     return df_district, description
 
 
-def smooth_big_jump_stratified(df_strat):
-    filename = '../../data/data/mumbai/case_summary_2006.csv'
-    df = processing.get_data(filename=filename, disable_tracker=True)
-    df_smoothed = smooth_big_jump(df)
-
+def smooth_big_jump_stratified(df_strat, df_not_strat, method='weighted-mag', smooth_stratified_additionally=True):
+    # Smooth unstratified array
+    df_smoothed, description = smooth_big_jump(df_not_strat)
     df_strat_smoothed = copy.copy(df_strat)
     diff_array = df_smoothed.loc[df_smoothed['date'].isin(
         df_strat['date']), 'hospitalised'].reset_index(drop=True) - df_strat['hospitalised']
 
+    # Account for the smoothing in active in the stratified compartments in the ratio of their values
     for column in df_strat_smoothed.loc[:, 'stable_asymptomatic':].columns:
         df_strat_smoothed[column] += diff_array * \
             (df_strat_smoothed[column]/df_strat_smoothed['hospitalised'])
 
+    # Copy the unstratified array smoothed columns to the smoothed stratified dataframe
     base_columns = ['total_infected', 'hospitalised', 'recovered', 'deceased']
     df_strat_smoothed.loc[:, base_columns] = df_smoothed.loc[df_smoothed['date'].isin(
         df_strat['date']), base_columns].reset_index(drop=True)
 
-    d1 = '2020-06-10'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'stable_symptomatic', 'stable_asymptomatic', d1, smoothing_length=length, method='weighted')
+    if smooth_stratified_additionally:
+        d1 = '2020-06-10'
+        length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        df_strat_smoothed, description = smooth_big_jump_helper(
+            df_strat_smoothed, 'stable_symptomatic', 'stable_asymptomatic', d1, smoothing_length=length, 
+            method=method, description=description)
 
-    d1 = '2020-06-15'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'stable_asymptomatic', 'stable_symptomatic', d1, smoothing_length=length, method='weighted')
+        d1 = '2020-06-15'
+        length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        df_strat_smoothed, description = smooth_big_jump_helper(
+            df_strat_smoothed, 'stable_asymptomatic', 'stable_symptomatic', d1, smoothing_length=length, 
+            method=method, description=description)
 
-    d1 = '2020-06-15'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'ventilator', 'icu', d1, smoothing_length=length, method='weighted-mag')
+        d1 = '2020-07-01'
+        length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        df_strat_smoothed, description = smooth_big_jump_helper(
+            df_strat_smoothed, 'stable_asymptomatic', 'stable_symptomatic', d1, smoothing_length=length, 
+            method=method, description=description)
 
-    d1 = '2020-06-15'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'icu', 'o2_beds', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-15'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'ventilator', 'icu', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-05-31'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'icu', 'o2_beds', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-15'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'icu', 'o2_beds', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-08'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'o2_beds', 'non_o2_beds', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-05-31'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'icu', 'o2_beds', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-14'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'o2_beds', 'non_o2_beds', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-08'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'o2_beds', 'non_o2_beds', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-15'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'o2_beds', 'non_o2_beds', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-14'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'o2_beds', 'non_o2_beds', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-05-28'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-15'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'o2_beds', 'non_o2_beds', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-05-31'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-05-28'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-14'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'non_o2_beds', 'o2_beds', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-05-31'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-19'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'non_o2_beds', 'o2_beds', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-14'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'non_o2_beds', 'o2_beds', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-09'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'hq', 'non_o2_beds', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-19'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'non_o2_beds', 'o2_beds', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-17'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'hq', 'non_o2_beds', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-09'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'hq', 'non_o2_beds', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-17'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-17'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'hq', 'non_o2_beds', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-14'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'o2_beds', 'non_o2_beds', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-17'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-14'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-14'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'o2_beds', 'non_o2_beds', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-15'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-14'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    d1 = '2020-06-09'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
-    df_strat_smoothed = smooth_big_jump_helper(
-        df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method='weighted-mag')
+        # d1 = '2020-06-15'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method=method, 
+        #     description=description)
 
-    return df_strat_smoothed
+        # d1 = '2020-06-09'
+        # length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
+        # df_strat_smoothed, description = smooth_big_jump_helper(
+        #     df_strat_smoothed, 'non_o2_beds', 'hq', d1, smoothing_length=length, method=method, 
+        #     description=description)
+
+    return df_strat_smoothed, description
