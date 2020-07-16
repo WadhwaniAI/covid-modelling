@@ -3,6 +3,7 @@ import matplotlib.dates as mdates
 from matplotlib.lines import Line2D
 import pandas as pd
 import numpy as np
+import copy
 
 from functools import reduce
 
@@ -36,8 +37,8 @@ def axis_formatter(ax, legend_elements, custom_legend=False):
     ax.grid()
 
 
-def plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
-                 which_compartments=['hospitalised', 'total_infected'], description='', savepath=None):
+def plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, district,
+             which_compartments=['hospitalised', 'total_infected'], description='', savepath=None):
     """Helper function for creating plots for the training pipeline
 
     Arguments:
@@ -61,11 +62,9 @@ def plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_
     if isinstance(df_val, pd.DataFrame):
         df_true_plotting_rolling = pd.concat(
             [df_train, df_val], ignore_index=True)
-        df_true_plotting = pd.concat(
-            [df_train_nora, df_val_nora], ignore_index=True)
     else:
         df_true_plotting_rolling = df_train
-        df_true_plotting = df_train_nora
+    df_true_plotting = copy.copy(df_district)
     df_predicted_plotting = df_prediction.loc[df_prediction['date'].isin(
         df_true_plotting['date']), ['date']+which_compartments]
 
@@ -95,11 +94,14 @@ def plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_
         legend_elements = []
         for compartment in compartments[key]:
             if compartment.name in comp_subset:
-                ax.plot(df_true_plotting[compartments['date'][0].name], df_true_plotting[compartment.name],
+                ax.plot(df_true_plotting[compartments['date'][0].name].to_numpy(), 
+                        df_true_plotting[compartment.name].to_numpy(),
                         '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-                ax.plot(df_true_plotting_rolling[compartments['date'][0].name], df_true_plotting_rolling[compartment.name],
+                ax.plot(df_true_plotting_rolling[compartments['date'][0].name].to_numpy(), 
+                        df_true_plotting_rolling[compartment.name].to_numpy(),
                         '-', color=compartment.color, label='{} (Obs RA)'.format(compartment.label))
-                ax.plot(df_predicted_plotting[compartments['date'][0].name], df_predicted_plotting[compartment.name],
+                ax.plot(df_predicted_plotting[compartments['date'][0].name].to_numpy(), 
+                        df_predicted_plotting[compartment.name].to_numpy(),
                         '-.', color=compartment.color, label='{} (Predicted)'.format(compartment.label))
 
                 legend_elements.append(
