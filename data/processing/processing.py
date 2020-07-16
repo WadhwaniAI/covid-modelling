@@ -9,17 +9,21 @@ from collections import defaultdict
 from data.dataloader import Covid19IndiaLoader, RootnetLoader, AthenaLoader
 
 
-def get_dataframes_cached():
-    picklefn = "../../cache/dataframes_ts_{today}.pkl".format(
-        today=datetime.datetime.today().strftime("%d%m%Y"))
+def get_dataframes_cached(loader_class=Covid19IndiaLoader):
+    if loader_class == Covid19IndiaLoader:
+        loader_key = 'tracker'
+    if loader_class == AthenaLoader:
+        loader_key = 'athena'
+    picklefn = "../../cache/dataframes_ts_{today}_{loader_key}.pkl".format(
+        today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
     try:
         print(picklefn)
         with open(picklefn, 'rb') as pickle_file:
             dataframes = pickle.load(pickle_file)
     except:
         print("pulling from source")
-        loader = Covid19IndiaLoader()
-        dataframes = loader.get_covid19india_api_data()
+        loader = loader_class()
+        dataframes = loader.load_data()
         if not os.path.exists('../../cache/'):
             os.mkdir('../../cache/')
         with open(picklefn, 'wb+') as pickle_file:
@@ -68,10 +72,9 @@ def get_data(state=None, district=None, use_dataframe='districts_daily', disable
         df_result = get_state_time_series(state=state)
     return df_result
 
-def get_custom_data_from_db(state='Maharashtra', district='Pune'):
+def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
     print('fetching from athenadb...')
-    loader = AthenaLoader()
-    dataframes = loader.get_athena_dataframes()
+    dataframes = get_dataframes_cached(loader_class=AthenaLoader)
     df_result = copy.copy(dataframes['new_covid_case_summary'])
     df_result['state'] = 'maharashtra'
     df_result = df_result[np.logical_and(
