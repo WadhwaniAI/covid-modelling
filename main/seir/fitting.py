@@ -137,20 +137,23 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
         pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
     """
     if granular_data:
+        df_not_strat = get_data(
+            state=state, district=district, filename=filename, disable_tracker=True)
         df_district = granular.get_data(filename=filename)
     else:
         if data_from_tracker:
             df_district = get_data(state=state, district=district, use_dataframe='districts_daily')
         else:
             df_district = get_data(state=state, district=district, disable_tracker=True, filename=filename, 
-                                data_format=data_format)
+                                   data_format=data_format)
     
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
 
     if smooth_jump:
         if granular_data:
-            df_district = smooth_big_jump_stratified(df_district)
+            df_district, description = smooth_big_jump_stratified(
+                df_district, df_not_strat, smooth_stratified_additionally=False)
         else:
             df_district, description = smooth_big_jump(df_district, data_from_tracker=data_from_tracker)
 
