@@ -153,7 +153,7 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
     if smooth_jump:
         if granular_data:
             df_district, description = smooth_big_jump_stratified(
-                df_district, df_not_strat, smooth_stratified_additionally=False)
+                df_district, df_not_strat, smooth_stratified_additionally=True)
         else:
             df_district, description = smooth_big_jump(df_district, data_from_tracker=data_from_tracker)
 
@@ -262,7 +262,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, train_period, 
                                               which_compartments=which_compartments)
 
-    fit_plot = plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
+    fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, district,
                         which_compartments=which_compartments)
 
     results_dict = {}
