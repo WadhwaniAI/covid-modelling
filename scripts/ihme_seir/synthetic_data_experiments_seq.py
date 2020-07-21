@@ -1,5 +1,5 @@
 """
-Script to run IHME-SEIR synthetic data experiments
+Script to run IHME-SEIR synthetic data experiments. Experiments are run sequentially.
 Data generators:
     IHME I1 model (1)
     Compartmental C1 model
@@ -35,8 +35,7 @@ sys.path.append('../../')
 from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset
 from utils.loss import Loss_Calculator
 
-from data.dataloader import Covid19IndiaLoader
-from data.processing import get_data, get_district_timeseries_cached
+from data.processing import get_data
 
 from models.seir import SEIR_Testing, SIRD
 
@@ -238,6 +237,7 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
         data = get_data(state=state, district=district, disable_tracker=disable_tracker)
     print("Data summary:")
     print(data)
+
     # Output folder
     now = datetime.now()
     date_now = now.strftime("%Y%m%d")
