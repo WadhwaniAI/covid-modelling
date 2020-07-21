@@ -18,7 +18,9 @@ import datetime
 from joblib import Parallel, delayed
 import copy
 
-from models.seir.seir_testing import SEIR_Testing
+from data.processing.whatifs import scale_up_acc_to_testing
+from main.seir.fitting import get_variable_param_ranges
+from models.seir import SEIRHD, SEIR_Movement, SEIR_Movement_Testing, SEIR_Testing
 from main.seir.optimiser import Optimiser
 
 from utils.enums import Columns, SEIRParams
@@ -59,7 +61,9 @@ def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train
 
     return df_prediction
 
-def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_fraction=0.02, best_params=None, days=30):
+
+def create_region_csv(predictions_dict: dict, region: str, regionType: str, df_prediction=None, 
+                      icu_fraction=0.02, best_params=None, days=30):
     """Created the CSV file for one particular geographical area in the format Keshav consumes
 
     Arguments:
@@ -76,13 +80,17 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_
         pd.DataFrame -- The output CSV file in the format Keshav consumes
     """
     print("compiling csv data ..")
-    columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value', 'current_total', 'current_active', 'current_recovered',
-               'current_deceased', 'current_hospitalized', 'current_icu', 'current_ventilator', 'predictionDate', 'active_mean', 'active_min',
-               'active_max', 'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 'icu_max', 'deceased_mean',
-               'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 'recovered_max', 'total_mean', 'total_min', 'total_max']
+    columns = ['forecastRunDate', 'predictionDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value',
+                'current_total', 'current_active', 'current_recovered', 'current_deceased', 'current_hospitalized', 
+                'current_icu', 'current_ventilator', 'active_mean', 'active_min',
+                'active_max', 'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 
+                'icu_max', 'deceased_mean', 'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 
+                'recovered_max', 'total_mean', 'total_min', 'total_max']
     df_output = pd.DataFrame(columns=columns)
 
-    df_prediction = get_forecast(predictions_dict, best_params=best_params, days=days)
+    if df_prediction is None:
+        df_prediction = get_forecast(predictions_dict, best_params=best_params, days=days)
+
     df_true = predictions_dict['m1']['df_district']
     prediction_daterange = np.union1d(df_true['date'], df_prediction['date'])
     no_of_data_points = len(prediction_daterange)
@@ -138,12 +146,12 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, icu_
     df_output = df_output[columns]
     return df_output
 
-def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, regionType: str, icu_fraction=0.02):
+def create_decile_csv(predictions_dict: dict, region: str, regionType: str, icu_fraction=0.02):
     print("compiling csv data ..")
     columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'current_total', 'current_active', 'current_recovered',
                'current_deceased', 'current_hospitalised', 'current_icu', 'current_ventilator', 'predictionDate']
     
-    for decile in decile_dict.keys():
+    for decile in predictions_dict['m2']['forecasts'].keys():
         columns += [f'active_{decile}',
             f'hospitalised_{decile}',
             f'icu_{decile}',
@@ -155,7 +163,10 @@ def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, reg
 
     df_output = pd.DataFrame(columns=columns)
 
-    dateseries = decile_dict[list(decile_dict.keys())[0]]['df_prediction']['date']
+    df_true = predictions_dict['m2']['df_district']
+
+    dateseries = predictions_dict['m2']['forecasts'][list(
+        predictions_dict['m2']['forecasts'].keys())[0]]['date']
     prediction_daterange = np.union1d(df_true['date'], dateseries)
     no_of_data_points = len(prediction_daterange)
     df_output['predictionDate'] = prediction_daterange
@@ -167,17 +178,17 @@ def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, reg
     df_output['error_function'] = ['MAPE']*no_of_data_points
     df_output.set_index('predictionDate', inplace=True)
 
-    for decile in decile_dict.keys():
-        df_prediction = decile_dict[decile]['df_prediction']
+    for decile in predictions_dict['m2']['forecasts'].keys():
+        df_prediction = predictions_dict['m2']['forecasts'][decile]
         df_prediction = df_prediction.set_index('date')
-        df_loss = decile_dict[decile]['df_loss']
+        # df_loss = predictions_dict[decile]['df_loss']
         df_output.loc[df_prediction.index, f'active_{decile}'] = df_prediction['hospitalised']
         df_output.loc[df_prediction.index, f'hospitalised_{decile}'] = df_prediction['hospitalised']
-        df_output.loc[df_prediction.index, f'icu_{decile}'] = icu_fraction*df_prediction['hospitalised']
+        # df_output.loc[df_prediction.index, f'icu_{decile}'] = icu_fraction*df_prediction['hospitalised']
         df_output.loc[df_prediction.index, f'recovered_{decile}'] = df_prediction['recovered']
         df_output.loc[df_prediction.index, f'deceased_{decile}'] = df_prediction['deceased']
         df_output.loc[df_prediction.index, f'total_{decile}'] = df_prediction['total_infected']
-        df_output.loc[df_prediction.index, f'error_{decile}'] = df_loss.loc[:, 'train'].sum()
+        # df_output.loc[df_prediction.index, f'error_{decile}'] = df_loss.loc[:, 'train'].sum()
 
     df_true = df_true.set_index('date')
     df_output.loc[df_true.index, 'current_total'] = df_true['total_infected'].to_numpy()
@@ -189,7 +200,7 @@ def create_decile_csv(decile_dict: dict, df_true: pd.DataFrame, region: str, reg
     # df_output = df_output[columns]
     return df_output
 
-def create_all_csvs(predictions_dict: dict, days=30, icu_fraction=0.02):
+def create_all_csvs(predictions_dict: dict, district:str='Mumbai', days=30, icu_fraction=0.02):
     """Creates the output for all geographical regions (not just one)
 
     Arguments:
@@ -201,18 +212,17 @@ def create_all_csvs(predictions_dict: dict, days=30, icu_fraction=0.02):
     Returns:
         pd.DataFrame -- output for all geographical regions
     """
-    columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value', 'current_total', 'current_active', 'current_recovered',
-               'current_deceased', 'current_hospitalized', 'current_icu', 'current_ventilator', 'predictionDate', 'active_mean', 'active_min',
-               'active_max', 'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 'icu_max', 'deceased_mean',
-               'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 'recovered_max', 'total_mean', 'total_min', 'total_max']
+    columns = ['forecastRunDate', 'predictionDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value', 'which_forecast',
+                'current_total', 'current_active', 'current_recovered', 'current_deceased', 'current_hospitalized', 
+                'current_icu', 'current_ventilator', 'active_mean', 'active_min', 'active_max', 
+                'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 'icu_max', 
+                'deceased_mean', 'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 'recovered_max', 
+                'total_mean', 'total_min', 'total_max']
     df_final = pd.DataFrame(columns=columns)
-    for region in predictions_dict.keys():
-        if region[1] == None:
-            df_output = create_region_csv(predictions_dict[region], region=region[0], regionType='state', 
-                                          icu_fraction=icu_fraction, days=days)
-        else:
-            df_output = create_region_csv(predictions_dict[region], region=region[1], regionType='district',
-                                        icu_fraction=icu_fraction, days=days)
+    for forecast, df_prediction in predictions_dict['m2']['forecasts'].items():
+        df_output = create_region_csv(predictions_dict, region=district, regionType='district',
+                                      df_prediction=df_prediction, icu_fraction=icu_fraction, days=days)
+        df_output['which_forecast'] = forecast
         df_final = pd.concat([df_final, df_output], ignore_index=True)
     
     return df_final
@@ -328,6 +338,43 @@ def trials_to_df(trials_processed, column=Columns.active):
     for i in range(len(params)):
         pred = pred.append(predictions[i].set_index('date').loc[:, [column.name]].transpose(), ignore_index=True)
     return pd.concat([trials, pred], axis=1)
+
+
+def scale_up_testing_and_forecast(predictions_dict, which_fit='m2', model=SEIRHD, scenario_on_which_df='best', 
+                                  testing_scaling_factor=1.5, time_window_to_scale=14):
+    
+    df_whatif = scale_up_acc_to_testing(predictions_dict, scenario_on_which_df=scenario_on_which_df, 
+                                        testing_scaling_factor=testing_scaling_factor,
+                                        time_window_to_scale=time_window_to_scale)
+
+    optimiser = Optimiser()
+    extra_params = optimiser.init_default_params(df_whatif, N=1e7, initialisation='intermediate', 
+                                                 train_period=time_window_to_scale)
+    best_params = copy.copy(predictions_dict[which_fit]['best_params'])
+    del best_params['T_inf']
+    del best_params['E_hosp_ratio']
+    del best_params['I_hosp_ratio']
+    default_params = {**extra_params, **best_params}
+
+    total_days = (df_whatif.iloc[-1, :]['date'] - default_params['starting_date']).days
+    variable_param_ranges = {
+        'T_inf': (0.01, 10),
+        'E_hosp_ratio': (0, 2),
+        'I_hosp_ratio': (0, 1)
+    }
+    variable_param_ranges = get_variable_param_ranges(variable_param_ranges=variable_param_ranges)
+    best, trials = optimiser.bayes_opt(df_whatif, default_params, variable_param_ranges, model=model,
+                                       total_days=total_days, method='mape', num_evals=500, 
+                                       loss_indices=[-time_window_to_scale, None], 
+                                       which_compartments=['total_infected'])
+
+    df_unscaled_forecast = predictions_dict[which_fit]['forecasts'][scenario_on_which_df]
+
+    df_prediction = optimiser.solve(best, default_params, 
+                                    predictions_dict[which_fit]['df_train'], 
+                                    end_date=df_unscaled_forecast.iloc[-1, :]['date'], 
+                                    model=model)
+    return df_prediction
 
 
 def set_r0_multiplier(params_dict, mul):

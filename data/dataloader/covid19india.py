@@ -97,6 +97,12 @@ class Covid19IndiaLoader(BaseLoader):
         df_raw_data_2 = pd.DataFrame.from_dict(data['deaths_recoveries'])
         dataframes['df_deaths_recoveries'] = df_raw_data_2
 
+        data = requests.get('https://api.covid19india.org/state_district_wise.json').json()
+        df_statecode = pd.DataFrame.from_dict(data)
+        df_statecode = df_statecode.drop(['districtData']).T
+        state_to_statecode_dict = dict(zip(df_statecode.index, df_statecode['statecode']))
+        statecode_to_state_dict = dict(zip(df_statecode['statecode'], df_statecode.index))
+
         data = requests.get('https://api.covid19india.org/districts_daily.json').json()
 
         df_districts = pd.DataFrame(columns=['notes', 'active', 'confirmed', 'deceased', 

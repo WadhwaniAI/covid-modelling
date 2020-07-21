@@ -78,7 +78,7 @@ def calculate_sensitivity_and_plot(predictions_dict, which_fit='m1'):
     optimiser = predictions_dict[which_fit]['optimiser']
     df_prediction = optimiser.solve(best_params, predictions_dict[which_fit]['default_params'], 
                                     predictions_dict[which_fit]['df_train'], 
-                                    end_date=predictions_dict[which_fit]['df_val'].iloc[-1, :]['date'], 
+                                    end_date=predictions_dict[which_fit]['df_district'].iloc[-1, :]['date'],
                                     model=predictions_dict[which_fit]['run_params']['model_class'])
     return fig, best_params, df_prediction
 
