@@ -146,7 +146,20 @@ def get_seir_loss_exp(loss_dict, compartment, split, exp):
     return losses
 
 
-def all_plots(root_folder, region, num, shift, start_date):
+def get_error_diff(pointwise_loss_dict1, pointwise_loss_dict2, compartment, loss_fn, shift):
+    total_diff = np.zeros(shift)
+    total = np.array([len(pointwise_loss_dict1)]*shift)
+    for i in range(len(pointwise_loss_dict1)):
+        exp_losses = pointwise_loss_dict1[i].loc[(compartment, loss_fn)].values
+        baseline_losses = pointwise_loss_dict2[i].loc[(compartment, loss_fn)]
+        baseline_losses = baseline_losses.iloc[-len(exp_losses):].values
+        diff = np.subtract(baseline_losses[:shift], exp_losses[:shift])
+        diff = np.where(diff >= 0, 1, 0)  # if diff >= 0, baseline loss is higher and we add 1 for the experiment
+        total_diff += diff
+    return total_diff/total
+
+
+def all_outputs(root_folder, region, num, shift, start_date):
     path = f'../../outputs/ihme_seir/synth/{root_folder}'
     output_path = create_output_folder(f'../../outputs/consolidated/{root_folder}')
 
@@ -154,6 +167,20 @@ def all_plots(root_folder, region, num, shift, start_date):
     dates = pd.date_range(start=start_date, periods=num, freq=f'{shift}D').tolist()
     dates = [date.strftime("%m-%d-%Y") for date in dates]
 
+    # Day by day comparison of whether experiments does better than the baseline
+    c3_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c3_pointwise_val_loss.csv', num)
+    shift_range = [f'day_{i}' for i in range(1, shift+1)]
+    col_index = pd.MultiIndex.from_product([compartments, shift_range])
+    comparison_df = pd.DataFrame(columns=col_index, index=[1, 2, 3])
+    for exp in range(3):
+        c2_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, f'seirt_c2_pointwise_val_loss_exp_{exp+1}.csv', num)
+        for compartment in compartments:
+            comparison_df.loc[exp+1, :][compartment] = \
+                get_error_diff(c2_pointwise_loss_dict, c3_pointwise_loss_dict, compartment, 'ape', shift)
+
+    comparison_df.to_csv(f'{output_path}/seirt_c2_experiment_baseline_comparison.csv')
+
+    # Save IHME model params
     save_ihme_model_params(path, output_path, num, dates)
 
     # Save model params
@@ -423,8 +450,8 @@ def all_plots(root_folder, region, num, shift, start_date):
                     label=f'Train APE for {l.index[0]} to {l.index[-1]}')
             ax.set_xlabel('Date', fontsize=12)
             ax.set_ylabel('APE', fontsize=12)
-            ax.grid()
             ax.tick_params(labelrotation=45)
+        plt.grid()
         plt.legend()
         fig.tight_layout()
         fig.subplots_adjust(top=0.94)
@@ -497,9 +524,9 @@ def all_plots(root_folder, region, num, shift, start_date):
                     ax[exp].grid()
 
                 if split == 'val':
-                    c2_pointwise_loss_dict = get_seir_pointwise_loss_dict(
+                    c3_pointwise_loss_dict = get_seir_pointwise_loss_dict(
                         path, f'{name_prefix}_c3_pointwise_{split}_loss.csv', num)
-                    baseline_losses = get_seir_pointwise_loss(c2_pointwise_loss_dict, compartment, 'ape')
+                    baseline_losses = get_seir_pointwise_loss(c3_pointwise_loss_dict, compartment, 'ape')
                     baseline_losses = [loss.iloc[-len(losses[0]):] for loss in baseline_losses]
                     for j, l in enumerate(baseline_losses):
                         ax[3].plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
@@ -524,4 +551,4 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--shift", help="number of days to shift forward", required=True)
     parser.add_argument("-d", "--start_date", help="first date used", required=True)
     args = parser.parse_args()
-    all_plots(args.folder, args.region, int(args.num), int(args.shift), args.start_date)
+    all_outputs(args.folder, args.region, int(args.num), int(args.shift), args.start_date)
