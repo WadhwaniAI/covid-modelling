@@ -137,20 +137,23 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
         pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
     """
     if granular_data:
+        df_not_strat = get_data(
+            state=state, district=district, filename=filename, disable_tracker=True)
         df_district = granular.get_data(filename=filename)
     else:
         if data_from_tracker:
             df_district = get_data(state=state, district=district, use_dataframe='data_all')
         else:
             df_district = get_data(state=state, district=district, disable_tracker=True, filename=filename, 
-                                data_format=data_format)
+                                   data_format=data_format)
     
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
 
     if smooth_jump:
         if granular_data:
-            df_district = smooth_big_jump_stratified(df_district)
+            df_district, description = smooth_big_jump_stratified(
+                df_district, df_not_strat, smooth_stratified_additionally=True)
         else:
             df_district, description = smooth_big_jump(df_district, data_from_tracker=data_from_tracker)
 
@@ -182,7 +185,7 @@ def data_setup(df_district, val_period):
     """
     # Get train val split
     df_train, df_val = train_val_split(
-        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
+        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period, rolling_window=7)
     df_train_nora, df_val_nora = train_val_split(
         df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
 
@@ -192,8 +195,9 @@ def data_setup(df_district, val_period):
     return observed_dataframes
 
 
-def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, train_period=7,
-              data_from_tracker=True, which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], 
+def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, 
+              default_params=None, train_period=7, data_from_tracker=True,
+              which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], 
               num_evals=1500, N=1e7, initialisation='starting', back_offset=0):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
@@ -227,12 +231,15 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     if initialisation == 'starting':
         observed_values = df_district.iloc[0, :]
         start_date = df_district.iloc[0, :]['date']
-        default_params = optimiser.init_default_params(df_train, N=N, observed_values=observed_values,
-                                                       start_date=start_date, initialisation=initialisation)
+        std_default_params = optimiser.init_default_params(df_train, N=N, observed_values=observed_values,
+                                                           start_date=start_date, initialisation=initialisation)
     elif initialisation == 'intermediate':
-        default_params = optimiser.init_default_params(df_train, N=N, initialisation=initialisation, 
-                                                       train_period=train_period)
-
+        std_default_params = optimiser.init_default_params(df_train, N=N, initialisation=initialisation,
+                                                           train_period=train_period)
+    if default_params is not None:
+        default_params = {**std_default_params, **default_params}
+    else:
+        default_params = std_default_params
     # Get/create searchspace of variable params
     if variable_param_ranges == None:
         variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
@@ -259,7 +266,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, train_period, 
                                               which_compartments=which_compartments)
 
-    fit_plot = plot_fit(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
+    fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, district,
                         which_compartments=which_compartments)
 
     results_dict = {}
@@ -274,7 +281,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     return results_dict
 
 
-def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ranges=None, #Main 
+def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ranges=None, default_params=None, #Main 
                          data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
                          train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', back_offset=0,  #Misc
                          which_compartments=['hospitalised', 'total_infected'], #Compartments
@@ -325,7 +332,7 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
     
     predictions_dict = run_cycle(
         state, district, observed_dataframes, 
-        model=model, variable_param_ranges=variable_param_ranges,
+        model=model, variable_param_ranges=variable_param_ranges, default_params=default_params,
         data_from_tracker=data_from_tracker, train_period=train_period, 
         which_compartments=which_compartments, N=N, back_offset=back_offset,
         num_evals=num_evals, initialisation=initialisation

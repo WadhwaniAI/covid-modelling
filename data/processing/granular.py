@@ -3,13 +3,14 @@ import numpy as np
 import copy
 
 from data.dataloader import AthenaLoader
+from data.processing.processing import get_dataframes_cached
 
 """
 The set of functions of processing data with more columns (Active split into multiple columns)
 """
 
 
-def get_data(filename=None):
+def get_data(filename=None, state='Maharashtra', district='Mumbai'):
     """Handshake between data module and training module. 
         Returns a dataframe of cases from either a filename of AthenaDB
 
@@ -24,13 +25,14 @@ def get_data(filename=None):
        
     """
     if filename != None:
-        df_result = get_custom_data_from_file(filename)
+        df_result = get_custom_data_from_file(filename, state=state, district=district)
     else:
-        df_result = get_custom_data_from_db()
+        df_result = get_custom_data_from_db(state=state, district=district)
     
     return df_result
 
-def get_custom_data_from_file(filename):
+
+def get_custom_data_from_file(filename, state='Maharashtra', district='Mumbai'):
     df = pd.read_csv(filename)
     # Make the first row the column
     df.columns = df.loc[0].apply(lambda x: x.lower().strip().replace(' ', '_'))
@@ -76,13 +78,14 @@ def get_custom_data_from_file(filename):
                                     'critical']].sum(axis=1) == df['hospitalised'])
     return df
 
-def get_custom_data_from_db():
+def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
     print('fetching from athenadb...')
-    loader = AthenaLoader()
-    dataframes = loader.get_athena_dataframes()
+    dataframes = get_dataframes_cached(loader_class=AthenaLoader)
     df = copy.copy(dataframes['new_covid_case_summary'])
+    df['state'] = 'maharashtra'
     df.dropna(axis=0, how='any', inplace=True)
     df.replace(',', '', regex=True, inplace=True)
+    df = df[np.logical_and(df['state'] == state.lower(), df['district'] == district.lower())]
     df.loc[:, 'total':'ventilator_occupied'] = df.loc[:, 'total':'ventilator_occupied'].apply(pd.to_numeric)
     df['date'] = pd.to_datetime(df['date'])
     df = df.infer_objects()
