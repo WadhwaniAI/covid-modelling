@@ -124,6 +124,15 @@ def get_state_time_series(state='Delhi'):
 
 def get_district_time_series(state='Karnataka', district='Bengaluru', use_dataframe='raw_data'):
     dataframes = get_dataframes_cached()
+
+    if use_dataframe == 'data_all':
+        df_districts = copy.copy(dataframes['df_districts_all'])
+        df_district = df_districts.loc[(df_districts['state'] == state) & (df_districts['district'] == district)]
+        df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
+        df_district = df_district.rename(
+            {'active': 'hospitalised', 'confirmed': 'total_infected'}, axis='columns')
+        df_district.reset_index(inplace=True, drop=True)
+        return df_district
     
     if use_dataframe == 'districts_daily':
         df_districts = copy.copy(dataframes['df_districts'])
