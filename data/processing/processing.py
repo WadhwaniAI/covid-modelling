@@ -136,13 +136,12 @@ def get_district_time_series(state='Karnataka', district='Bengaluru', use_datafr
     
     if use_dataframe == 'districts_daily':
         df_districts = copy.copy(dataframes['df_districts'])
-        df_district = df_districts[np.logical_and(df_districts['state'] == state, df_districts['district'] == district)]
+        df_district = df_districts.loc[(df_districts['state'] == state) & (df_districts['district'] == district)]
         del df_district['notes']
         df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
         df_district = df_district.loc[df_district['date'] >= '2020-04-24', :]
-        df_district = df_district.loc[df_district['date'] < datetime.date.today().strftime("%Y-%m-%d"), :]
-        df_district.columns = [x if x != 'active' else 'hospitalised' for x in df_district.columns]
-        df_district.columns = [x if x != 'confirmed' else 'total_infected' for x in df_district.columns]
+        df_district = df_district.rename(
+            {'active': 'hospitalised', 'confirmed': 'total_infected'}, axis='columns')
         df_district.reset_index(inplace=True, drop=True)
         return df_district
 
