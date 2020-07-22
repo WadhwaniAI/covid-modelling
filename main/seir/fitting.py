@@ -140,7 +140,7 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
         df_district = granular.get_data(filename=filename)
     else:
         if data_from_tracker:
-            df_district = get_data(state=state, district=district, use_dataframe='districts_daily')
+            df_district = get_data(state=state, district=district, use_dataframe='data_all')
         else:
             df_district = get_data(state=state, district=district, disable_tracker=True, filename=filename, 
                                 data_format=data_format)
