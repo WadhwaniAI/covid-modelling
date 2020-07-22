@@ -69,33 +69,15 @@ class Covid19IndiaLoader(BaseLoader):
         dataframes['df_districtwise'] = df_districtwise
 
         # Parse raw_data.json file
-        # Create dataframe for raw history
-        data = requests.get('https://api.covid19india.org/raw_data.json').json()
-        df_raw_data_old = pd.DataFrame.from_dict(data['raw_data'])
-        dataframes['df_raw_data_old'] = df_raw_data_old
+        raw_data_dataframes = []
+        for i in range(1, 21):
+            try:
+                data = requests.get(f'https://api.covid19india.org/raw_data{i}.json').json()
+                raw_data_dataframes.append(pd.DataFrame.from_dict(data['raw_data']))
+            except Exception as e:
+                break
 
-        data = requests.get('https://api.covid19india.org/raw_data1.json').json()
-        df_raw_data_1 = pd.DataFrame.from_dict(data['raw_data'])
-
-        data = requests.get('https://api.covid19india.org/raw_data2.json').json()
-        df_raw_data_2 = pd.DataFrame.from_dict(data['raw_data'])
-
-        data = requests.get('https://api.covid19india.org/raw_data3.json').json()
-        df_raw_data_3 = pd.DataFrame.from_dict(data['raw_data'])
-
-        data = requests.get('https://api.covid19india.org/raw_data4.json').json()
-        df_raw_data_4 = pd.DataFrame.from_dict(data['raw_data'])
-
-        data = requests.get('https://api.covid19india.org/raw_data5.json').json()
-        df_raw_data_5 = pd.DataFrame.from_dict(data['raw_data'])
-
-        dataframes['df_raw_data'] = pd.concat(
-            [df_raw_data_1, df_raw_data_2, df_raw_data_3, df_raw_data_4, df_raw_data_5], ignore_index=True)
-
-        # Parse deaths_recoveries.json file
-        data = requests.get('https://api.covid19india.org/deaths_recoveries.json').json()
-        df_raw_data_2 = pd.DataFrame.from_dict(data['deaths_recoveries'])
-        dataframes['df_deaths_recoveries'] = df_raw_data_2
+        dataframes['df_raw_data'] = pd.concat(raw_data_dataframes, ignore_index=True)
 
         data = requests.get('https://api.covid19india.org/state_district_wise.json').json()
         df_statecode = pd.DataFrame.from_dict(data)
