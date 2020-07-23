@@ -9,7 +9,6 @@ from joblib import delayed, Parallel
 from collections import defaultdict, OrderedDict
 
 from data.processing import get_district_time_series
-from data.dataloader import get_covid19india_api_data
 from mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, avg_sum_multiple_chains, get_state
 
 
@@ -25,8 +24,7 @@ class MCMC(object):
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
 
     def _fetch_data(self):
-        dataframes = get_covid19india_api_data()
-        self.df_district = get_district_time_series(dataframes, state=self.state, district=self.district, use_dataframe = 'districts_daily')
+        self.df_district = get_district_time_series(state=self.state, district=self.district, use_dataframe = 'raw_data')
 
     def _split_data(self):
         N = len(self.df_district)
