@@ -66,7 +66,8 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
 
     return variable_param_ranges
    
-def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5):
+def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5,
+                    which_columns=['total_infected', 'hospitalised', 'recovered', 'deceased']):
     """Creates train val split on dataframe
 
     # TODO : Add support for creating train val test split
@@ -87,7 +88,8 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     df_true_fitting = copy.copy(df_district)
     # Perform rolling average on all columns with numeric datatype
     df_true_fitting = df_true_fitting.infer_objects()
-    which_columns = df_true_fitting.select_dtypes(include='number').columns
+    if which_columns == None:
+        which_columns = df_true_fitting.select_dtypes(include='number').columns
     for column in which_columns:
         df_true_fitting[column] = df_true_fitting[column].rolling(
             rolling_window, center=True).mean()
@@ -96,7 +98,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     # use the true observations instead (as rolling averages for those offset days don't exist)
     offset_window = rolling_window // 2
 
-    df_true_fitting.dropna(axis=0, how='any', inplace=True)
+    df_true_fitting.dropna(axis=0, how='any', subset=which_columns, inplace=True)
     df_true_fitting.reset_index(inplace=True, drop=True)
 
     if train_rollingmean:
@@ -161,7 +163,6 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
                                         which_compartments=which_compartments, description=f'Smoothing')
     
     df_district['daily_cases'] = df_district['total_infected'].diff()
-    df_district.dropna(axis=0, how='any', inplace=True)
 
     if return_extra:
         extra = {
@@ -183,7 +184,7 @@ def data_setup(df_district, val_period):
     Returns:
         dict(pd.DataFrame) -- Dict of pd.DataFrame objects
     """
-    # Get train val split
+    # Get train val split 
     df_train, df_val = train_val_split(
         df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period, rolling_window=7)
     df_train_nora, df_val_nora = train_val_split(
