@@ -1,3 +1,4 @@
+# Fileformats
 *.csv
 *.pdf
 *.png
@@ -7,21 +8,40 @@
 *mcmc/
 *v*.json
 *params/
+*.pickle
+*.txt
+*.json
+
+# Junk / Hidden Files
 **.ipynb_checkpoints/
 *.ipynb_checkpoints/
+*.vscode/
+sftp-config.json
+*__pycache__
+*.DS_Store
+
+# Folders (on Home dir and otherwise)
 *plots/
 **plots/
 *outputs/
 **outputs/
-*.vscode/
-misc/
-reports/
+*reports/
+**reports/
+*reports/
+**reports/
+*misc/
+**misc/
+*params/
+**params/
+*mcmc/
+**mcmc/
+*temp/
+**temp/
+cache/
 
-sftp-config.json
-*__pycache__
-*.DS_Store
+# Exceptions
 !data/data/*.csv
-.vscode/
-notebooks/opt/Result_refits=10_episodes=15_episode_length=100.pickle
-*.pickle
+!data/data/mumbai/*.csv
+*output/
+**output/
 **/output

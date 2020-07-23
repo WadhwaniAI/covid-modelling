@@ -14,41 +14,35 @@ import datetime
 from joblib import Parallel, delayed
 
 from models.seir.seir_testing import SEIR_Testing
-from main.seir.losses import Loss_Calculator
+from utils.loss import Loss_Calculator
 
 class Optimiser():
+    """Class which implements all optimisation related activites (training, evaluation, etc)
+    """
 
     def __init__(self, use_mcmc = False):
         self.loss_calculator = Loss_Calculator()
         self.use_mcmc = use_mcmc
 
-    def solve(self, variable_params, default_params, df_true, start_date=None, end_date=None, 
-              state_init_values=None, initialisation='starting', loss_indices=[-20, -10]):
+    def solve(self, variable_params : dict, default_params :dict, df_true : pd.DataFrame, model=SEIR_Testing, 
+              start_date=None, end_date=None):
+        """This function solves the ODE for an input of params (but does not compute loss)
+
+        Arguments:
+            variable_params {dict} -- The values for the params that are variable across the searchspace
+            default_params {dict} -- The values for the params that are fixed across the searchspace
+            df_true {pd.DataFrame} -- The training dataset
+
+        Keyword Arguments:
+            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
+            start_date {str} -- The start date (usually not specifed, inferred from the params_dict) (default: {None})
+            end_date {str} -- Last date of projection (default: {None})
+
+        Returns:
+            pd.DataFrame -- DataFrame of predictions
+        """
+
         params_dict = {**variable_params, **default_params}
-        if initialisation == 'intermediate':
-            row = df_true.iloc[loss_indices[0], :]
-            
-            state_init_values = OrderedDict()
-            key_order = ['S', 'E', 'I', 'D_E', 'D_I', 
-                'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
-            for key in key_order:
-                state_init_values[key] = 0
-
-            state_init_values['R_severe_hosp'] = params_dict['P_severe'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
-            state_init_values['R_fatal'] = params_dict['P_fatal'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
-            state_init_values['C'] = row['recovered']
-            state_init_values['D'] = row['deceased']
-
-            state_init_values['E'] = params_dict['E_hosp_ratio'] * row['hospitalised']
-            state_init_values['I'] = params_dict['I_hosp_ratio'] * row['hospitalised']
-            
-            nonSsum = sum(state_init_values.values())
-            state_init_values['S'] = (params_dict['N'] - nonSsum)
-            for key in state_init_values.keys():
-                state_init_values[key] = state_init_values[key]/params_dict['N']
-
-            params_dict['state_init_values'] = state_init_values
-        
         if end_date == None:
             end_date = df_true.iloc[-1, :]['date']
         else:
@@ -59,56 +53,46 @@ class Optimiser():
             if type(start_date) is str:
                 start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
             params_dict['starting_date'] = start_date
-
-
-        if (self.use_mcmc):
-            solver = SEIR_Testing_pymc3(**params_dict)
-            total_days = (end_date - params_dict['starting_date']).days
-        else:
-            solver = SEIR_Testing(**params_dict)
-            total_days = (end_date - params_dict['starting_date']).days
-            sol = solver.solve_ode(total_no_of_days=total_days, time_step=1, method='Radau')
-            df_prediction = solver.return_predictions(sol)
+        solver = model(**params_dict)
+        total_days = (end_date - params_dict['starting_date']).days
+        df_prediction = solver.predict(total_days=total_days)
         return df_prediction
 
 
     # TODO add cross validation support
-    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, 
+    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIR_Testing,
                                which_compartments=['hospitalised', 'recovered', 'total_infected', 'deceased'], 
-                               loss_indices=[-20, -10], loss_method='rmse', return_dict=False, 
-                               initialisation='starting'):
+                               loss_indices=[-20, -10], loss_method='rmse', return_dict=False, debug=False):
+        """The function that computes solves the ODE for a given set of input params and computes loss on train set
+
+        Arguments:
+            variable_params {dict} -- The values for the params that are variable across the searchspace
+            default_params {dict} -- The values of the params that are fixed across the searchspace
+            df_true {pd.DataFrame} -- The train set
+            total_days {int} -- Total number of days into the future for which we want to simulate
+
+        Keyword Arguments:
+            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
+            which_compartments {list} -- Which compartments to apply loss on 
+            (default: {['hospitalised', 'recovered', 'total_infected', 'deceased']})
+            loss_indices {list} -- Which indices of the train set to apply loss on (default: {[-20, -10]})
+            loss_method {str} -- Loss Method (default: {'rmse'})
+            return_dict {bool} -- If True, instead of returning single loss value, will return loss value 
+            for every compartment (default: {False})
+
+        Returns:
+            float -- The loss value
+        """
         params_dict = {**variable_params, **default_params}
         
-        # Returning a very high loss value for the cases where the sampled values of P_severe and P_fatal are > 1
-        if params_dict['P_severe'] + params_dict['P_fatal'] > 1:
+        # Returning a very high loss value for the cases where the sampled values of probabilities are > 1
+        P_keys = [k for k in params_dict.keys() if k[:2] == 'P_']
+        P_values = [params_dict[k] for k in params_dict.keys() if k[:2] == 'P_']
+        if sum(P_values) > 1:
             return 1e10
 
-        if initialisation == 'intermediate':
-            row = df_true.iloc[loss_indices[0], :]
-            
-            state_init_values = OrderedDict()
-            key_order = ['S', 'E', 'I', 'D_E', 'D_I', 'R_mild', 'R_severe_home', 'R_severe_hosp', 'R_fatal', 'C', 'D']
-            for key in key_order:
-                state_init_values[key] = 0
-
-            state_init_values['R_severe_hosp'] = params_dict['P_severe'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
-            state_init_values['R_fatal'] = params_dict['P_fatal'] / (params_dict['P_severe'] + params_dict['P_fatal']) * row['hospitalised']
-            state_init_values['C'] = row['recovered']
-            state_init_values['D'] = row['deceased']
-
-            state_init_values['E'] = params_dict['E_hosp_ratio'] * row['hospitalised']
-            state_init_values['I'] = params_dict['I_hosp_ratio'] * row['hospitalised']
-            
-            nonSsum = sum(state_init_values.values())
-            state_init_values['S'] = (params_dict['N'] - nonSsum)
-            for key in state_init_values.keys():
-                state_init_values[key] = state_init_values[key]/params_dict['N']
-
-            params_dict['state_init_values'] = state_init_values
-
-        solver = SEIR_Testing(**params_dict)
-        sol = solver.solve_ode(total_no_of_days=total_days - 1, time_step=1, method='Radau')
-        df_prediction = solver.return_predictions(sol)
+        solver = model(**params_dict)
+        df_prediction = solver.predict(total_days=total_days)
 
         # Choose which indices to calculate loss on
         # TODO Add slicing capabilities on the basis of date
@@ -119,6 +103,8 @@ class Optimiser():
             df_prediction_slice = df_prediction.iloc[loss_indices[0]:loss_indices[1], :]
             df_true_slice = df_true.iloc[loss_indices[0]:loss_indices[1], :]
 
+        if debug:
+            import pdb; pdb.set_trace()
         df_prediction_slice.reset_index(inplace=True, drop=True)
         df_true_slice.reset_index(inplace=True, drop=True)
         if return_dict:
@@ -129,32 +115,69 @@ class Optimiser():
         return loss
 
     def _create_dict(self, param_names, values):
+        """Helper function for creating dict of all parameters
+
+        Arguments:
+            param_names {arr} -- Names of the parameters
+            values {arr} -- Their corresponding values
+
+        Returns:
+            dict -- Dict of all parameters
+        """
         params_dict = {param_names[i]: values[i] for i in range(len(values))}
         return params_dict
 
-    def init_default_params(self, df_true, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-05-18', 
-                            T_hosp=0.001, init_infected=None, start_date=None):
-        if (init_infected == None) and (start_date == None):
-            init_infected = max(df_true.iloc[0, :]['total_infected'], 1)
-            start_date = df_true.iloc[0, :]['date']
+    def init_default_params(self, df_train, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-06-30', 
+                            initialisation='intermediate', train_period=7, start_date=None,
+                            observed_values=None):
+        """Function for creating all default params for the optimisation (hyperopt/gridsearch)
+
+        Arguments:
+            df_train {pd.DataFramw} -- The train dataset
+
+        Keyword Arguments:
+            N {float} -- Population of region (default: {1e7})
+            lockdown_date {str} -- The date on which lockdown is implemented (default: {'2020-03-25'})
+            lockdown_removal_date {str} -- The date on which lockdown is removed (default: {'2020-05-31'})
+            initialisation {str} -- The method of initialisation (default: {'intermediate'})
+            train_period {int} -- The number of days for which the model is trained (default: {7})
+            start_date {str} -- If initialisation=='starting', start_date must be provided (default: {None})
+            observed_values {pd.Series} -- This is a row of a pandas dataframe that corresponds to the observed values 
+            on the initialisation date (to initialise the latent params) (default: {None})
+
+        Returns:
+            dict -- Dict of default params
+        """
 
         intervention_date = datetime.datetime.strptime(lockdown_date, '%Y-%m-%d')
         lockdown_removal_date = datetime.datetime.strptime(lockdown_removal_date, '%Y-%m-%d')
 
+        if initialisation == 'intermediate':
+            observed_values = df_train.iloc[-train_period, :]
+            start_date = observed_values['date']
+        if initialisation == 'starting':
+            assert start_date != None
+
         default_params = {
             'N' : N,
-            'init_infected' : init_infected,
-            'intervention_day' : (intervention_date - start_date).days,
-            'intervention_removal_day': (lockdown_removal_date - start_date).days,
-            'T_hosp' : T_hosp,
-            'starting_date' : start_date
+            'lockdown_day' : (intervention_date - start_date).days,
+            'lockdown_removal_day': (lockdown_removal_date - start_date).days,
+            'starting_date' : start_date,
+            'observed_values': observed_values
         }
+
         return default_params
 
-    def gridsearch(self, df_true, default_params, variable_param_ranges, method='rmse', loss_indices=[-20, -10], 
-                   which_compartments=['total_infected'], debug=False):
-        """
-        What variable_param_ranges is supposed to look like
+    def gridsearch(self, df_true, default_params, variable_param_ranges, model=SEIR_Testing, method='rmse',
+                   loss_indices=[-20, -10], which_compartments=['total_infected'], total_days=None, debug=False):
+        """Implements gridsearch based optimisation
+
+        Arguments:
+            df_true {pd.DataFrame} -- The train set
+            default_params {dict} -- Dict of default (fixed) params
+            variable_param_ranges {dict} -- The range of variable params (the searchspace)
+
+        An example of variable_param_ranges :
         variable_param_ranges = {
             'R0' : np.linspace(1.8, 3, 13),
             'T_inc' : np.linspace(3, 5, 5),
@@ -163,46 +186,76 @@ class Optimiser():
             'P_severe' : np.linspace(0.3, 0.9, 25),
             'intervention_amount' : np.linspace(0.4, 1, 31)
         }
+
+        Keyword Arguments:
+            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
+            method {str} -- The loss method (default: {'rmse'})
+            loss_indices {list} -- The indices on the train set to apply the loss on (default: {[-20, -10]})
+            which_compartments {list} -- Which compartments to apply loss on (default: {['total_infected']})
+            debug {bool} -- If debug is true, gridsearch is not parellelised. For debugging (default: {False})
+
+        Returns:
+            arr, list(dict) -- Array of loss values, and a list of parameter dicts
         """
-        total_days = len(df_true['date'])
+        if total_days == None:
+            total_days = len(df_true['date'])
 
         rangelists = list(variable_param_ranges.values())
         cartesian_product_tuples = itertools.product(*rangelists)
-        list_of_param_dicts = [self._create_dict(list(variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
+        list_of_param_dicts = [self._create_dict(list(
+            variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
 
-        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params, df_true=df_true,
-                                                 total_days=total_days, loss_method=method, loss_indices=loss_indices, 
-                                                 which_compartments=which_compartments)
+        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
+                                                 df_true=df_true, total_days=total_days, model=model,
+                                                 loss_method=method, loss_indices=loss_indices, 
+                                                 which_compartments=which_compartments, debug=debug)
         
         # If debugging is enabled the gridsearch is not parallelised
         if debug:
             loss_array = []
             for params_dict in tqdm(list_of_param_dicts):
-                loss_array.append(partial_solve_and_compute_loss(params_dict))
+                loss_array.append(partial_solve_and_compute_loss(variable_params=params_dict))
         else:
             loss_array = Parallel(n_jobs=40)(delayed(partial_solve_and_compute_loss)(params_dict) for params_dict in tqdm(list_of_param_dicts))
                     
         return loss_array, list_of_param_dicts
 
-    def bayes_opt(self, df_true, default_params, variable_param_ranges, total_days=None, method='rmse', num_evals=3500, 
-                  loss_indices=[-20, -10], which_compartments=['total_infected'], initialisation='starting'):
-        """
-        What variable_param_ramges is supposed to look like : 
+    def bayes_opt(self, df_true, default_params, variable_param_ranges, model=SEIR_Testing, total_days=None, 
+                  method='rmse', num_evals=3500, loss_indices=[-20, -10], which_compartments=['total_infected']):
+        """Implements Bayesian Optimisation using hyperopt library
+
+        Arguments:
+            df_true {pd.DataFrame} -- The training dataset
+            default_params {str} -- Dict of default (static) params
+            variable_param_ranges {dict} -- The ranges for the variable params (the searchspace)
+
+        An example of variable_param_ranges : 
         variable_param_ranges = {
-            'R0' : hp.uniform('R0', 1.6, 3),
+            'lockdown_R0' : hp.uniform('R0', 0, 2),
             'T_inc' : hp.uniform('T_inc', 4, 5),
             'T_inf' : hp.uniform('T_inf', 3, 4),
-            'T_recov_severe' : hp.uniform('T_recov_severe', 9, 20),
-            'P_severe' : hp.uniform('P_severe', 0.3, 0.99),
-            'intervention_amount' : hp.uniform('intervention_amount', 0.3, 1)
+            'T_recov_severe' : hp.uniform('T_recov_severe', 5, 60),
+            'P_severe' : hp.uniform('P_severe', 0.3, 0.99)
         }
+
+        Keyword Arguments:
+            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
+            total_days {int} -- total days to simulate for (deprecated) (default: {None})
+            method {str} -- Loss Method (default: {'rmse'})
+            num_evals {int} -- Number of hyperopt evaluations (default: {3500})
+            loss_indices {list} -- The indices of the train set to apply the losses on (default: {[-20, -10]})
+            which_compartments {list} -- Which compartments to apply loss on (default: {['total_infected']})
+
+        Returns:
+            dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
         """
         if total_days == None:
             total_days = len(df_true['date'])
         
-        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params, df_true=df_true,
-                                                 total_days=total_days, loss_method=method, loss_indices=loss_indices, 
-                                                 which_compartments=which_compartments, initialisation=initialisation)
+        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
+                                                 default_params=default_params, total_days=total_days,
+                                                 loss_method=method, loss_indices=loss_indices, df_true=df_true,
+                                                 which_compartments=which_compartments)
         
         searchspace = variable_param_ranges
         
@@ -214,51 +267,3 @@ class Optimiser():
                     trials=trials)
         
         return best, trials
-
-    def evaluate_losses(self, best, default_params, df_train, df_val):
-        start_date = df_train.iloc[0, 0]
-        simulate_till = df_val.iloc[-1, 0]
-        total_no_of_days = (simulate_till - start_date).days + 1
-        no_of_train_days = (df_train.iloc[-1, 0] - start_date).days + 1
-        no_of_val_days = total_no_of_days - no_of_train_days
-        
-        final_params = {**best, **default_params}
-        solver = SEIR_Testing(**final_params)
-        sol = solver.solve_ode(total_no_of_days=total_no_of_days - 1, time_step=1, method='Radau')
-        states_time_matrix = (sol.y*vanilla_params['N']).astype('int')
-
-        train_output = states_time_matrix[:, :no_of_train_days]
-        val_output = states_time_matrix[:, -no_of_val_days:]
-        
-        rmse_loss = self.loss_calculator.calc_loss_dict(
-            train_output, df_train, method='rmse')
-        rmse_loss = pd.DataFrame.from_dict(rmse_loss, orient='index', columns=['rmse'])
-        
-        mape_loss = self.loss_calculator.calc_loss_dict(
-            train_output, df_train, method='mape')
-        mape_loss = pd.DataFrame.from_dict(mape_loss, orient='index', columns=['mape'])
-        
-        train_losses = pd.concat([rmse_loss, mape_loss], axis=1)
-        
-        pred_hospitalisations = val_output[6] + val_output[7] + val_output[8]
-        pred_recoveries = val_output[9]
-        pred_fatalities = val_output[10]
-        pred_infectious_unknown = val_output[2] + val_output[4]
-        pred_total_cases = pred_hospitalisations + pred_recoveries + pred_fatalities
-        print('Pred', pred_hospitalisations, pred_total_cases)
-        print('True', df_val['hospitalised'].to_numpy(), df_val['total_infected'].to_numpy())
-        
-        rmse_loss = self.loss_calculator.calc_loss_dict(
-            val_output, df_val, method='rmse')
-        rmse_loss = pd.DataFrame.from_dict(rmse_loss, orient='index', columns=['rmse'])
-        
-        mape_loss = self.loss_calculator.calc_loss_dict(
-            val_output, df_val, method='mape')
-        mape_loss = pd.DataFrame.from_dict(mape_loss, orient='index', columns=['mape'])
-        
-        val_losses = pd.concat([rmse_loss, mape_loss], axis=1)
-        
-        print(train_losses)
-        print(val_losses)
-        
-        return train_losses, val_losses
