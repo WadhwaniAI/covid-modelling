@@ -75,7 +75,7 @@ def create_custom_dataset(df_actual, df_synthetic, use_actual=True, use_syntheti
 
     df = pd.concat([df_train, df_test], axis=0)
 
-    # Create dict of dataset properties - remove?
+    # Create dict of dataset properties
     properties = {
         "allowance_before_train": allowance,
         "total_length_of_dataset": allowance + s1 + s2 + s3,
@@ -153,11 +153,11 @@ def get_experiment_dataset(district, state, original_data, generated_data=None, 
     return df, train, test, prop
 
 
-def insert_custom_dataset_into_dataframes(dataframes, dataset, start_date=None, compartments=None):
+def insert_custom_dataset_into_dataframes(df_region, dataset, start_date=None, compartments=None):
     """Replaces original df_district of SEIR input dataframe with one or more columns from custom dataset
 
     Args:
-        dataframes (tuple(pd.DataFrame, pd.DataFrame)): data from main source and data from raw_data in covid19india
+        df_region (pd.DataFrame): data from main source and data from raw_data in covid19india
         dataset (pd.Dataframe): custom dataset
         start_date (str, optional): date from which dataset should start (default: None)
         compartments (list, optional): compartments for which ground truth data is replaced by synthetic data
@@ -172,23 +172,21 @@ def insert_custom_dataset_into_dataframes(dataframes, dataset, start_date=None, 
     else:
         col_names = compartments
 
-    df_district = dataframes
-
     # Set start date of dataset (including allowance for rolling average)
     if start_date is None:
-        start_date = df_district['date'].min()
+        start_date = df_region['date'].min()
     else:
         start_date = pd.to_datetime(start_date, dayfirst=False)
 
     # Remove data before the start date
     threshold = start_date - timedelta(days=1)
 
-    _, df_district = train_test_split(df_district, threshold)
+    _, df_region = train_test_split(df_region, threshold)
 
     # Replace compartment columns in df_district with synthetic data and clip to have as many rows as the custom dataset
     num_rows = dataset.shape[0]
-    df_district = df_district.head(num_rows)
+    df_region = df_region.head(num_rows)
     for col in col_names:
-        df_district[col] = dataset[col].values
+        df_region[col] = dataset[col].values
 
-    return df_district
+    return df_region

@@ -30,7 +30,7 @@ def plot_compartment_for_datasets(ax, df_true, df_prediction, df_train, district
         graph_start (str): start date of graph
         graph_end (str): end date of graph
         title (str, optional): title for plots
-        which_compartments (list(enum), optional): list of compartments plotted
+        which_compartments (list, optional): list of compartments plotted
 
     Returns:
         axes.Axes: axes object of plot
@@ -82,7 +82,7 @@ def plot_compartment_for_datasets(ax, df_true, df_prediction, df_train, district
 
 def plot_all_experiments(df_true, predictions_dict, district,
                          actual_start_date, allowance, s1, s2, s3, shift, train_period,
-                         output_folder, name_prefix="", titles=None):
+                         output_folder, name_prefix="", which_compartments=None, titles=None):
     """Create plots for all buckets and all datasets
 
     Args:
@@ -98,6 +98,7 @@ def plot_all_experiments(df_true, predictions_dict, district,
         train_period (int): train period
         output_folder (str): output folder path
         name_prefix (str): prefix for filename
+        which_compartments (list, optional): list of compartments plotted
         titles (list[str], optional): titles for plots
     """
 
@@ -115,7 +116,8 @@ def plot_all_experiments(df_true, predictions_dict, district,
 
     df_true = df_true.iloc[shift:, :].head(allowance + s1 + s2 + s3)
 
-    which_compartments = Columns.which_compartments()
+    if which_compartments is None:
+        which_compartments = Columns.which_compartments()
 
     for col in range(len(which_compartments)):
         fig, ax = plt.subplots(3, sharex=True, sharey=True, figsize=(15, 15))
@@ -309,7 +311,7 @@ def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_
 
 def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, district,
                           actual_start_date, allowance, s1, s2, s3, shift, train_period, baseline_train_period,
-                          output_folder, name_prefix="", titles=None):
+                          output_folder, name_prefix="", which_compartments=None, titles=None):
     """Create plots with baseline for all buckets and all synthetic datasets
 
     Args:
@@ -346,7 +348,8 @@ def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, distri
 
     df_true = df_true.iloc[shift:, :].head(allowance + s1 + s2 + s3)
 
-    which_compartments = Columns.which_compartments()
+    if which_compartments is None:
+        which_compartments = Columns.which_compartments()
 
     for col in range(len(which_compartments)):
         fig, ax = plt.subplots(2, sharex=True, sharey=True, figsize=(15, 15))
