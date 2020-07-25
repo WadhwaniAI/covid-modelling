@@ -137,7 +137,8 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
         c1_output (dict): Results dict of SEIR C1 model
         datasets (dict): Dictionary of datasets used in experiments
         predictions_dicts (dict): Dictionary of results dicts from SEIR c2 models
-        which_compartments (list(enum), optional): list of compartments for which synthetic data is used
+        which_compartments (list, optional): list of compartments fitted by SEIR
+        replace_compartments (list, optional): list of compartments for which synthetic data is used
         dataset_properties (dict): Properties of datasets used
         series_properties (dict): Properties of series used in experiments
         baseline_predictions_dict (dict, optional): Results dict of SEIR c3 baseline model
@@ -252,7 +253,18 @@ def create_output_folder(fname):
     return output_folder
 
 
-def get_variable_param_ranges_dict(district='Pune', state='Maharashtra', model_type='seirt', train_period=7):
+def get_variable_param_ranges_dict(district, state, model_type='seirt', train_period=7):
+    """Gets dictionary of variable param ranges from config file
+
+    Args:
+        district (str): name of district
+        state (str): name of state
+        model_type (str, optional): type of compartmental model [seirt or sird]
+        train_period (int): length of training period
+
+    Returns:
+        dict: variable param ranges
+    """
     if district is None:
         config_name = state.lower()
     else:
@@ -284,6 +296,16 @@ def read_region_config(path):
 
 
 def read_region_params_config(path, model_type, train_period):
+    """Reads config file for variable param ranges for a region
+
+    Args:
+        path (str): path to config file
+        model_type (str, optional): type of compartmental model [seirt or sird]
+        train_period (int): length of training period
+
+    Returns:
+        dict: variable param ranges for region
+    """
     config = None
     try:
         with open(path) as configfile:

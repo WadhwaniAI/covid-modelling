@@ -159,6 +159,21 @@ def get_error_diff(pointwise_loss_dict1, pointwise_loss_dict2, compartment, loss
     return total_diff/total
 
 
+def save_error_diff(path, output_folder, num, shift):
+    c3_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c3_pointwise_val_loss.csv', num)
+    shift_range = [f'day_{i}' for i in range(1, shift + 1)]
+    col_index = pd.MultiIndex.from_product([compartments, shift_range])
+    comparison_df = pd.DataFrame(columns=col_index, index=[1, 2, 3])
+    for exp in range(3):
+        c2_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, f'seirt_c2_pointwise_val_loss_exp_{exp + 1}.csv',
+                                                              num)
+        for compartment in compartments:
+            comparison_df.loc[exp + 1, :][compartment] = \
+                get_error_diff(c2_pointwise_loss_dict, c3_pointwise_loss_dict, compartment, 'ape', shift)
+
+    comparison_df.to_csv(f'{output_folder}/seirt_c2_experiment_baseline_comparison.csv')
+
+
 def all_outputs(root_folder, region, num, shift, start_date):
     path = f'../../outputs/ihme_seir/synth/{root_folder}'
     output_path = create_output_folder(f'../../outputs/consolidated/{root_folder}')
@@ -167,18 +182,8 @@ def all_outputs(root_folder, region, num, shift, start_date):
     dates = pd.date_range(start=start_date, periods=num, freq=f'{shift}D').tolist()
     dates = [date.strftime("%m-%d-%Y") for date in dates]
 
-    # Day by day comparison of whether experiments does better than the baseline
-    c3_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c3_pointwise_val_loss.csv', num)
-    shift_range = [f'day_{i}' for i in range(1, shift+1)]
-    col_index = pd.MultiIndex.from_product([compartments, shift_range])
-    comparison_df = pd.DataFrame(columns=col_index, index=[1, 2, 3])
-    for exp in range(3):
-        c2_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, f'seirt_c2_pointwise_val_loss_exp_{exp+1}.csv', num)
-        for compartment in compartments:
-            comparison_df.loc[exp+1, :][compartment] = \
-                get_error_diff(c2_pointwise_loss_dict, c3_pointwise_loss_dict, compartment, 'ape', shift)
-
-    comparison_df.to_csv(f'{output_path}/seirt_c2_experiment_baseline_comparison.csv')
+    # Day by day comparison of whether experiments do better than the baseline
+    save_error_diff(path, output_path, num, shift)
 
     # Save IHME model params
     save_ihme_model_params(path, output_path, num, dates)
