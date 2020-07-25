@@ -1,5 +1,5 @@
 base:
-  district: Delhi
+  district: null
   state: Delhi
   disable_tracker: FALSE
   use_synthetic: TRUE

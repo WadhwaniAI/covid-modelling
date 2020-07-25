@@ -1,14 +1,14 @@
+import argparse
+import copy
+import json
 import os
 import sys
-import json
-import copy
-import argparse
 from datetime import datetime, timedelta
 
 from curvefit.core import functions
 
 sys.path.append('../..')
-from utils.data import cities
+from utils.data import regions
 from data.processing import jhu
 from utils.population import standardise_age
 
@@ -88,5 +88,5 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--max_evals", help="max evals on each hyperopt run", required=False, default=50, type=int)
     args = parser.parse_args()
     
-    find_init(args.place, cities[args.district])
+    find_init(args.place, regions[args.district])
 # -------------------

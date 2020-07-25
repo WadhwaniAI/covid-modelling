@@ -15,7 +15,7 @@ delhi = 'Delhi', 'Delhi', ['State - NCT OF DELHI (07)']
 bengaluru = 'Bengaluru', 'Karnataka', ['District - Bangalore (18)', 'District - Bangalore Rural (29)']
 bengaluru_urban = 'Bengaluru Urban', 'Karnataka', ['District - Bangalore (18)']
 
-cities = {
+regions = {
     'mumbai': mumbai,
     'ahmedabad': amd,
     'jaipur': jaipur,

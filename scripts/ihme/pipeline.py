@@ -1,21 +1,15 @@
-import os
 import json
-from copy import copy
-import argparse
-import pandas as pd
-import numpy as np
-import dill as pickle
-import time
-from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
-
-import curvefit
-
 import sys
+import time
+from copy import copy
+from datetime import datetime
+
+import dill as pickle
+import matplotlib.pyplot as plt
+import pandas as pd
+
 sys.path.append('../..')
-from models.ihme.model import IHME
-from utils.data import cities
-from utils.data import lograte_to_cumulative, rate_to_cumulative
+from utils.data import regions
 
 from viz import plot_ihme_results
 from main.ihme.fitting import create_output_folder, single_cycle
@@ -82,7 +76,7 @@ if __name__ == "__main__":
     folder = f'{args.district}/{str(now)}' if args.folder is None else args.folder
     
     config, model_params = read_config(args.config)
-    dist, st, area_names = cities[args.district]
+    dist, st, area_names = regions[args.district]
     run_pipeline(dist, st, area_names, config, model_params, folder)
 
 # -------------------

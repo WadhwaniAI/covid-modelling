@@ -9,7 +9,7 @@ import yaml
 
 from utils.enums import Columns
 from utils.util import read_config
-from utils.data import cities
+from utils.data import regions
 
 from main.ihme.fitting import single_cycle
 from main.seir.fitting import data_setup, run_cycle
@@ -41,9 +41,8 @@ def ihme_data_generator(district, state, disable_tracker, actual_start_date, dat
         dict, dict, dict: results, updated config, model parameters
     """
 
-    if district is None:
-        district = state
-    district, state, area_names = cities[district.lower()]  # FIXME
+    region = district if district is not None else state
+    district, state, area_names = regions[region.lower()]
     config, model_params = read_config(config_path)
 
     config['start_date'] = actual_start_date
@@ -103,9 +102,8 @@ def seir_runner(district, state, input_df, data_from_tracker,
         dict: results
     """
 
-    predictions_dict = dict()
     observed_dataframes = data_setup(input_df, val_period, continuous_ra=False)
-    predictions_dict['m1'] = run_cycle(
+    predictions_dict = run_cycle(
         state, district, observed_dataframes,
         model=model, variable_param_ranges=variable_param_ranges,
         data_from_tracker=data_from_tracker, train_period=train_period,
@@ -148,15 +146,15 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
         filename = 'dataset_experiment_' + str(i+1) + '.csv'
         datasets[i].to_csv(output_folder+filename)
 
-    c1 = c1_output['m1']['df_loss'].T[which_compartments]
+    c1 = c1_output['df_loss'].T[which_compartments]
     c1.to_csv(output_folder + name_prefix + "_c1_loss.csv")
 
-    c1_output['m1']['ax'].savefig(output_folder + name_prefix + '_c1.png')
-    c1_output['m1']['pointwise_train_loss'].to_csv(output_folder + name_prefix + "_c1_pointwise_train_loss.csv")
-    c1_output['m1']['pointwise_val_loss'].to_csv(output_folder + name_prefix + "_c1_pointwise_val_loss.csv")
+    c1_output['plots']['fit'].savefig(output_folder + name_prefix + '_c1.png')
+    c1_output['pointwise_train_loss'].to_csv(output_folder + name_prefix + "_c1_pointwise_train_loss.csv")
+    c1_output['pointwise_val_loss'].to_csv(output_folder + name_prefix + "_c1_pointwise_val_loss.csv")
 
     with open(f'{output_folder}{name_prefix}_c1_best_params.json', 'w') as outfile:
-        json.dump(c1_output['m1']['best_params'], outfile, indent=4)
+        json.dump(c1_output['best_params'], outfile, indent=4)
     if variable_param_ranges is not None:
         with open(f'{output_folder}{name_prefix}_variable_param_ranges.json', 'w') as outfile:
             json.dump(variable_param_ranges, outfile, indent=4)
@@ -169,16 +167,16 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
 
     loss_dfs = []
     for i in predictions_dicts:
-        loss_df = predictions_dicts[i]['m1']['df_loss'].T[which_compartments]
+        loss_df = predictions_dicts[i]['df_loss'].T[which_compartments]
         loss_df['exp'] = i+1
         loss_dfs.append(loss_df)
-        predictions_dicts[i]['m1']['ax'].savefig(output_folder + name_prefix + '_c2_experiment_'+str(i+1)+'.png')
-        predictions_dicts[i]['m1']['pointwise_train_loss'].to_csv(
+        predictions_dicts[i]['plots']['fit'].savefig(output_folder + name_prefix + '_c2_experiment_'+str(i+1)+'.png')
+        predictions_dicts[i]['pointwise_train_loss'].to_csv(
             output_folder + name_prefix + "_c2_pointwise_train_loss_exp_"+str(i+1)+".csv")
-        predictions_dicts[i]['m1']['pointwise_val_loss'].to_csv(
+        predictions_dicts[i]['pointwise_val_loss'].to_csv(
             output_folder + name_prefix + "_c2_pointwise_val_loss_exp_"+str(i+1)+".csv")
         with open(f'{output_folder}{name_prefix}_c2_best_params_exp_{str(i+1)}.json', 'w') as outfile:
-            json.dump(predictions_dicts[i]['m1']['best_params'], outfile, indent=4)
+            json.dump(predictions_dicts[i]['best_params'], outfile, indent=4)
 
     loss = pd.concat(loss_dfs, axis=0)
     loss.index.name = 'index'
@@ -186,13 +184,13 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
     loss.to_csv(output_folder + name_prefix + "_experiments_loss.csv")
 
     if baseline_predictions_dict is not None:
-        baseline_loss = baseline_predictions_dict['m1']['df_loss_s3'].T[which_compartments]
+        baseline_loss = baseline_predictions_dict['df_loss_s3'].T[which_compartments]
         baseline_loss.to_csv(output_folder + name_prefix + "_baseline_loss.csv")
         with open(f'{output_folder}{name_prefix}_c3_best_params.json', 'w') as outfile:
-            json.dump(baseline_predictions_dict['m1']['best_params'], outfile, indent=4)
-        baseline_predictions_dict['m1']['pointwise_train_loss'].to_csv(
+            json.dump(baseline_predictions_dict['best_params'], outfile, indent=4)
+        baseline_predictions_dict['pointwise_train_loss'].to_csv(
             output_folder + name_prefix + "_c3_pointwise_train_loss.csv")
-        baseline_predictions_dict['m1']['pointwise_val_loss'].to_csv(
+        baseline_predictions_dict['pointwise_val_loss'].to_csv(
             output_folder + name_prefix + "_c3_pointwise_val_loss.csv")
 
     with open(output_folder + name_prefix + '_experiments_params.json', 'w') as outfile:

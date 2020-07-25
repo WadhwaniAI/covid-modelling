@@ -1,23 +1,24 @@
+import argparse
+import json
 import os
 import sys
-import json
-from copy import copy
-import argparse
-import pandas as pd
-import dill as pickle
 import time
-from datetime import datetime, timedelta
+from copy import copy
+from datetime import datetime
+
+import dill as pickle
 import matplotlib.pyplot as plt
+import pandas as pd
 
 sys.path.append('../..')
 from models.ihme.model import IHME
 from utils.data import lograte_to_cumulative, rate_to_cumulative
 from utils.population import get_district_population
-from utils.data import cities
+from utils.data import regions
 
 from main.ihme.backtesting import IHMEBacktest
 from main.ihme.fitting import setup, create_output_folder
-from viz import plot_backtest, plot_backtest_errors, plot
+from viz import plot_backtest, plot_backtest_errors
 from utils.enums import Columns
 
 from utils.util import read_config
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--folder", help="folder name (to save in or to replot from)", required=False, default=None, type=str)
     args = parser.parse_args()
     config, model_params = read_config(args.config, backtesting=True)
-    dist, st, area_names = cities[args.district]
+    dist, st, area_names = regions[args.district]
 
     now = datetime.now().strftime("%Y%m%d-%H%M%S")
     folder = f'{args.district}/{str(now)}' if args.folder is None else args.folder

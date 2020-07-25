@@ -44,7 +44,7 @@ from viz.synthetic_data import plot_all_experiments, plot_against_baseline
 
 
 def run_experiments(ihme_config_path, region_config_path, data, root_folder, multiple=False, shift_forward=0):
-    region_config = read_region_config(region_config_path)  # TODO: Create experiment config
+    region_config = read_region_config(region_config_path)
 
     # Unpack parameters from config and set local parameters
     district = region_config['district']
@@ -112,9 +112,6 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
                                                                 i1_train_val_size, i1_val_size, i1_test_size,
                                                                 ihme_config_path, output_folder)
 
-    if district == 'Delhi':
-        district = None
-
     # Get SEIR input dataframes
     input_df = get_regional_data(state, district, (not disable_tracker), None, None, granular_data=False,
                                  smooth_jump=smooth_jump, t_recov=14,
@@ -149,7 +146,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
         exp_config[0]['use_synthetic'] = False
         exp_config[0]['generated_data'] = None
         exp_config[1]['generated_data'] = i1_output['df_final_prediction']
-        exp_config[2]['generated_data'] = c1_output['m1']['df_prediction']
+        exp_config[2]['generated_data'] = c1_output['df_prediction']
 
         # Get custom datasets for experiments
         df, train, test, dataset_prop = dict(), dict(), dict(), dict()
@@ -162,8 +159,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
         # Insert custom data into SEIR input dataframes
         input_dfs = dict()
         for exp in range(num_exp):
-            input_dfs[exp] = insert_custom_dataset_into_dataframes(input_df, df[exp],
-                                                                   start_date=dataset_start_date,
+            input_dfs[exp] = insert_custom_dataset_into_dataframes(input_df, df[exp], start_date=dataset_start_date,
                                                                    compartments=which_compartments)
 
         # Get SEIR predictions on custom datasets
@@ -190,9 +186,9 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
         # Find loss on s3 for baseline c3 model
         lc = Loss_Calculator()
         df_c3_s3_loss = lc.create_loss_dataframe_region(train_baseline[-c3_train_period:], test_baseline[-s3:],
-                                                        predictions_dict_baseline['m1']['df_prediction'],
+                                                        predictions_dict_baseline['df_prediction'],
                                                         c3_train_period, which_compartments=which_compartments)
-        predictions_dict_baseline['m1']['df_loss_s3'] = df_c3_s3_loss
+        predictions_dict_baseline['df_loss_s3'] = df_c3_s3_loss
 
         print("Creating plots...")
         # Plotting all experiments
@@ -220,13 +216,11 @@ def runner(ihme_config_path, region_config_path, output_folder, num):
     shift_period = region_config['shift_period']
 
     # Print data summary
-    if state == 'Delhi':
-        data = get_data(state=state, district=None, disable_tracker=disable_tracker)
-    else:
-        data = get_data(state=state, district=district, disable_tracker=disable_tracker)
+    data = get_data(state=state, district=district, disable_tracker=disable_tracker)
 
     # Output folder
-    root_folder = f'{district}/{output_folder}'
+    region = district if district is not None else state
+    root_folder = f'{region}/{output_folder}'
     print("Run no. ", num+1, " with shift of ", shift_period * num)
     run_experiments(ihme_config_path, region_config_path, data, f'{root_folder}/{str(num)}', multiple=True,
                     shift_forward=shift_period * num)
@@ -235,7 +229,7 @@ def runner(ihme_config_path, region_config_path, output_folder, num):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--ihme_config", help="ihme config file name", required=True)
-    parser.add_argument("-d", "--region_config", help="data config file name", required=True)
+    parser.add_argument("-r", "--region_config", help="region config file name", required=True)
     parser.add_argument("-f", "--output_folder", help="output folder name", required=True)
     parser.add_argument("-n", "--num", help="number of periods to shift forward", required=False, default=1)
     args = parser.parse_args()

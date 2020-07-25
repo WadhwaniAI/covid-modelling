@@ -1,14 +1,15 @@
-import os
-import json
-from copy import copy
-import dill as pickle
-import time
 import argparse
-from datetime import datetime, timedelta
-
+import json
+import os
 import sys
+import time
+from copy import copy
+from datetime import datetime
+
+import dill as pickle
+
 sys.path.append('../..')
-from utils.data import cities
+from utils.data import regions
 from utils.util import read_config
 
 from main.ihme.fitting import single_cycle, create_output_folder
@@ -23,7 +24,7 @@ parser.add_argument("-c", "--config", help="config file name", required=True)
 parser.add_argument("-f", "--folder", help="folder name", required=False, default=None, type=str)
 args = parser.parse_args()
 config, model_params = read_config(args.config)
-dist, st, area_names = cities[args.district]
+dist, st, area_names = regions[args.district]
 now = datetime.now().strftime("%Y%m%d-%H%M%S")
 folder = f'{args.district}/{str(now)}' if args.folder is None else args.folder
 output_folder = create_output_folder(f'forecast/{folder}')

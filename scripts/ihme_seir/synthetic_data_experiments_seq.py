@@ -46,35 +46,35 @@ from main.seir.fitting import get_regional_data, get_variable_param_ranges
 from viz.synthetic_data import plot_all_experiments, plot_against_baseline
 
 
-def run_experiments(ihme_config_path, data_config_path, data, root_folder, multiple=False, shift_forward=0):
-    data_config = read_region_config(data_config_path)  # TODO: Create experiment config
+def run_experiments(ihme_config_path, region_config_path, data, root_folder, multiple=False, shift_forward=0):
+    region_config = read_region_config(region_config_path)
 
     # Unpack parameters from config and set local parameters
-    district = data_config['district']
-    state = data_config['state']
-    disable_tracker = data_config['disable_tracker']
-    allowance = data_config['allowance']
-    s1 = data_config['s1']
-    s2 = data_config['s2']
-    s3 = data_config['s3']
+    district = region_config['district']
+    state = region_config['state']
+    disable_tracker = region_config['disable_tracker']
+    allowance = region_config['allowance']
+    s1 = region_config['s1']
+    s2 = region_config['s2']
+    s3 = region_config['s3']
     if multiple:
         shift = shift_forward
     else:
-        shift = data_config['shift']
+        shift = region_config['shift']
 
     i1_train_val_size = s1
-    i1_val_size = data_config['i1_val_size']
+    i1_val_size = region_config['i1_val_size']
     i1_test_size = s2
 
     c1_train_period = s1
     c1_val_period = s2
-    c2_train_period = data_config['c2_train_period']
+    c2_train_period = region_config['c2_train_period']
     c2_val_period = s3
-    c3_train_period = data_config['c3_train_period']
+    c3_train_period = region_config['c3_train_period']
     c3_val_period = s2 + s3
 
     num_exp = 3
-    num_evals = data_config['num_evals']
+    num_evals = region_config['num_evals']
 
     i1_dataset_length = i1_train_val_size + i1_test_size
     c1_dataset_length = shift + allowance + c1_train_period + c1_val_period
@@ -125,9 +125,6 @@ def run_experiments(ihme_config_path, data_config_path, data, root_folder, multi
     uncertainty = pd.DataFrame.from_dict(average_uncertainty_s2, orient='index', columns=['average s2 uncertainty'])
     # i1_output['df_loss'] = pd.concat([i1_output['df_loss'], uncertainty], axis=1)
 
-    if district == 'Delhi':
-        district = None
-
     # Get SEIR input dataframes
     input_df = get_regional_data(state, district, (not disable_tracker), None, None, granular_data=False,
                                  smooth_jump=smooth_jump, t_recov=14,
@@ -156,11 +153,11 @@ def run_experiments(ihme_config_path, data_config_path, data, root_folder, multi
         original_data = deepcopy(i1_output['df_district_nora'])
 
         # Set experiment data configs
-        exp_config = [deepcopy(data_config) for _ in range(3)]
+        exp_config = [deepcopy(region_config) for _ in range(3)]
         exp_config[0]['use_synthetic'] = False
         exp_config[0]['generated_data'] = None
         exp_config[1]['generated_data'] = i1_output['df_final_prediction']
-        exp_config[2]['generated_data'] = c1_output['m1']['df_prediction']
+        exp_config[2]['generated_data'] = c1_output['df_prediction']
 
         # Get custom datasets for experiments
         df, train, test, dataset_prop = dict(), dict(), dict(), dict()
@@ -173,8 +170,7 @@ def run_experiments(ihme_config_path, data_config_path, data, root_folder, multi
         # Insert custom data into SEIR input dataframes
         input_dfs = dict()
         for exp in range(num_exp):
-            input_dfs[exp] = insert_custom_dataset_into_dataframes(input_df, df[exp],
-                                                                   start_date=dataset_start_date,
+            input_dfs[exp] = insert_custom_dataset_into_dataframes(input_df, df[exp], start_date=dataset_start_date,
                                                                    compartments=which_compartments)
 
         # Get SEIR predictions on custom datasets
@@ -202,9 +198,9 @@ def run_experiments(ihme_config_path, data_config_path, data, root_folder, multi
         # Find loss on s3 for baseline c3 model
         lc = Loss_Calculator()
         df_c3_s3_loss = lc.create_loss_dataframe_region(train_baseline[-c3_train_period:], test_baseline[-s3:],
-                                                        predictions_dict_baseline['m1']['df_prediction'],
+                                                        predictions_dict_baseline['df_prediction'],
                                                         c3_train_period, which_compartments=which_compartments)
-        predictions_dict_baseline['m1']['df_loss_s3'] = df_c3_s3_loss
+        predictions_dict_baseline['df_loss_s3'] = df_c3_s3_loss
 
         print("Creating plots...")
         # Plotting all experiments
@@ -224,17 +220,14 @@ def run_experiments(ihme_config_path, data_config_path, data, root_folder, multi
                              name_prefix=name_prefix, variable_param_ranges=variable_param_ranges_copy)
 
 
-def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
-    data_config = read_region_config(data_config_path)
-    district = data_config['district']
-    state = data_config['state']
-    disable_tracker = data_config['disable_tracker']
+def run_experiments_over_time(ihme_config_path, region_config_path, num, shift):
+    region_config = read_region_config(region_config_path)
+    district = region_config['district']
+    state = region_config['state']
+    disable_tracker = region_config['disable_tracker']
 
     # Print data summary
-    if state == 'Delhi':
-        data = get_data(state=state, district=None, disable_tracker=disable_tracker)
-    else:
-        data = get_data(state=state, district=district, disable_tracker=disable_tracker)
+    data = get_data(state=state, district=district, disable_tracker=disable_tracker)
     print("Data summary:")
     print(data)
 
@@ -242,11 +235,12 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
     now = datetime.now()
     date_now = now.strftime("%Y%m%d")
     time_now = now.strftime("%H%M%S")
-    root_folder = f'{district}/{date_now}/{time_now}'
+    region = district if district is not None else state
+    root_folder = f'{region}/{date_now}/{time_now}'
 
     if num == 1:
         start_time = time.time()
-        run_experiments(ihme_config_path, data_config_path, data, root_folder, multiple=False,
+        run_experiments(ihme_config_path, region_config_path, data, root_folder, multiple=False,
                         shift_forward=0)
         runtime = time.time() - start_time
         print("Run time: ", runtime)
@@ -254,7 +248,7 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
         for i in range(num):
             start_time = time.time()
             print("Run no. ", i+1)
-            run_experiments(ihme_config_path, data_config_path, data, f'{root_folder}/{str(i)}', multiple=True,
+            run_experiments(ihme_config_path, region_config_path, data, f'{root_folder}/{str(i)}', multiple=True,
                             shift_forward=shift*i)
             runtime = time.time() - start_time
             print("Run time: ", runtime)
@@ -263,9 +257,9 @@ def run_experiments_over_time(ihme_config_path, data_config_path, num, shift):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--ihme_config", help="ihme config file name", required=True)
-    parser.add_argument("-d", "--data_config", help="data config file name", required=True)
+    parser.add_argument("-r", "--region_config", help="region config file name", required=True)
     parser.add_argument("-n", "--num", help="number of times experiments are run", required=False, default=1)
     parser.add_argument("-s", "--shift", help="number of days to shift forward", required=False, default=5)
     args = parser.parse_args()
 
-    run_experiments_over_time(args.ihme_config, args.data_config, int(args.num), int(args.shift))
+    run_experiments_over_time(args.ihme_config, args.region_config, int(args.num), int(args.shift))

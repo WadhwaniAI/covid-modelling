@@ -122,8 +122,8 @@ def plot_all_experiments(df_true, predictions_dict, district,
     for col in range(len(which_compartments)):
         fig, ax = plt.subplots(3, sharex=True, sharey=True, figsize=(15, 15))
         for row in range(len(ax)):
-            ax[row] = plot_compartment_for_datasets(ax[row], df_true, predictions_dict[row]['m1']['df_prediction'],
-                                                    predictions_dict[row]['m1']['df_district'],
+            ax[row] = plot_compartment_for_datasets(ax[row], df_true, predictions_dict[row]['df_prediction'],
+                                                    predictions_dict[row]['df_district'],
                                                     district, s1_start, s2_start, s3_start, train_start, test_start,
                                                     series_end, graph_start, graph_end, title=titles[row],
                                                     which_compartments=[which_compartments[col]])
@@ -354,9 +354,9 @@ def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, distri
     for col in range(len(which_compartments)):
         fig, ax = plt.subplots(2, sharex=True, sharey=True, figsize=(15, 15))
         for row in range(len(ax)):
-            ax[row] = plot_compartment_against_baseline(ax[row], df_true, df_prediction[row+1]['m1']['df_prediction'],
-                                                        df_prediction_baseline['m1']['df_prediction'],
-                                                        df_prediction[row + 1]['m1']['df_district'],
+            ax[row] = plot_compartment_against_baseline(ax[row], df_true, df_prediction[row+1]['df_prediction'],
+                                                        df_prediction_baseline['df_prediction'],
+                                                        df_prediction[row + 1]['df_district'],
                                                         district, s1_start, s2_start, s3_start, train_start, test_start,
                                                         baseline_train_start, series_end, graph_start, graph_end,
                                                         title=titles[row],
