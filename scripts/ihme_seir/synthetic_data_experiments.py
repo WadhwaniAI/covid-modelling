@@ -35,22 +35,22 @@ from utils.enums import Columns
 
 from data.processing import get_data
 
-from models.seir import SEIR_Testing, SIRD
-
 from main.ihme_seir.synthetic_data_generator import ihme_data_generator, seir_runner, log_experiment_local, \
-    create_output_folder, get_variable_param_ranges_dict, read_region_config
+    create_output_folder, get_variable_param_ranges_dict, read_region_config, supported_models
 from main.seir.fitting import get_regional_data, get_variable_param_ranges
 
 from viz.synthetic_data import plot_all_experiments, plot_against_baseline
 
 
 def run_experiments(ihme_config_path, region_config_path, data, root_folder, multiple=False, shift_forward=0):
+
     region_config = read_region_config(region_config_path)
 
     # Unpack parameters from config and set local parameters
     district = region_config['district']
     state = region_config['state']
     replace_compartments = region_config['replace_compartments']
+    compartmental_models = region_config['compartmental_models']
     disable_tracker = region_config['disable_tracker']
     allowance = region_config['allowance']
     s1 = region_config['s1']
@@ -126,23 +126,22 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
                                  smooth_jump=smooth_jump, t_recov=14,
                                  return_extra=False, which_compartments=which_compartments)
 
-    models = [SEIR_Testing, SIRD]
-    name_prefixes = ['seirt', 'sird']
-    names = ["SEIR Testing", "SIRD"]
-
-    for i, model in enumerate(models):
-        variable_param_ranges = get_variable_param_ranges_dict(model, district, state,
-                                                               model_type=name_prefixes[i],
-                                                               train_period=c2_train_period)
+    for i, model_dict in enumerate(supported_models):
+        name_prefix = model_dict['name_prefix']
+        if name_prefix not in compartmental_models:
+            continue
+        model = model_dict['model']
+        name = model_dict['name']
+        variable_param_ranges = get_variable_param_ranges_dict(district, state,
+                                                               model_type=name_prefix, train_period=c2_train_period)
         variable_param_ranges_copy = deepcopy(variable_param_ranges)
         variable_param_ranges = get_variable_param_ranges(variable_param_ranges)
-        name_prefix = name_prefixes[i]
 
         # Generate synthetic data using SEIR model
         input_df_c1 = deepcopy(input_df)
         input_df_c1 = input_df_c1.head(c1_dataset_length)
 
-        print(names[i], " C1 model")
+        print(name, " C1 model")
         c1_output = seir_runner(district, state, input_df_c1, (not disable_tracker),
                                 c1_train_period, c1_val_period, which_compartments,
                                 model=model, variable_param_ranges=variable_param_ranges,
@@ -173,7 +172,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
                                                                    compartments=replace_compartments_enum)
 
         # Get SEIR predictions on custom datasets
-        print(names[i], " C2 model")
+        print(name, " C2 model")
         predictions_dicts = dict()
         for exp in range(num_exp):
             predictions_dicts[exp] = seir_runner(district, state, input_dfs[exp], (not disable_tracker),
@@ -182,7 +181,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
                                                  num_evals=num_evals)
 
         # Get baseline c3 predictions for s2+s3 when trained on s1
-        print(names[i], " C3 model")
+        print(name, " C3 model")
         df_baseline, train_baseline, test_baseline, dataset_prop_baseline = get_experiment_dataset(
             district, state, original_data, generated_data=None, use_actual=True, use_synthetic=False,
             start_date=dataset_start_date, allowance=allowance, s1=s1, s2=0, s3=s2+s3,

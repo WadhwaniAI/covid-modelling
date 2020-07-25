@@ -1,6 +1,8 @@
 base:
-  district: Pune
-  state: Maharashtra
+  disable_tracker: FALSE
+  use_synthetic: TRUE
+  use_actual: TRUE
+  allowance: 5
   s1: 20
   s2: 5
   s3: 7
@@ -8,6 +10,10 @@ base:
   i1_val_size: 6
   c2_train_period: 20
   c3_train_period: 20
+  num_evals: 1
+  shift_period: 4
+  replace_compartments: [deceased]
+  compartmental_models: [seirt]
 params_seirt_tp_7:
   lockdown_R0: [1, 1.5]
   T_inc: [4, 15]

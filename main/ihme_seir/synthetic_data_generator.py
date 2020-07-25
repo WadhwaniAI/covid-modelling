@@ -21,6 +21,12 @@ from viz.fit import plot_fit
 from viz.synthetic_data import plot_fit_uncertainty
 
 
+supported_models = [
+    {'model': SEIR_Testing, 'name': 'SEIR Testing', 'name_prefix': 'seirt'},
+    {'model': SIRD, 'name': 'SIRD', 'name_prefix': 'sird'}
+]
+
+
 def ihme_data_generator(district, state, disable_tracker, actual_start_date, dataset_length,
                         train_val_size, val_size, test_size,
                         config_path, output_folder, which_compartments=Columns.curve_fit_compartments()):
@@ -246,34 +252,13 @@ def create_output_folder(fname):
     return output_folder
 
 
-def get_variable_param_ranges_dict(model, district='Pune', state='Maharashtra', model_type='seirt', train_period=7):
-    if district == 'Pune' or district == 'Bengaluru Urban':
-        region = district.lower().replace(" ", "_")
-    elif state == 'Delhi':
-        region = state.lower()
+def get_variable_param_ranges_dict(district='Pune', state='Maharashtra', model_type='seirt', train_period=7):
+    if district is None:
+        config_name = state.lower()
     else:
-        if model is SEIR_Testing:
-            return {
-                'lockdown_R0': [1, 2.5],
-                'T_inc': [4, 15],
-                'T_inf': [2, 10],
-                'T_recov_severe': [5, 60],
-                'T_recov_fatal': [0, 150],
-                'P_fatal': [0, 0.3],
-                'E_hosp_ratio': [0, 2],
-                'I_hosp_ratio': [0, 1]
-            }
-        elif model is SIRD:
-            return {
-                'lockdown_R0': [1, 6],
-                'T_inc': [4, 30],
-                'T_inf': [5, 60],
-                'T_fatal': [100, 1500]
-            }
-        else:
-            raise Exception("This model class is not supported")
+        config_name = district.lower().replace(" ", "_")
 
-    return read_region_params_config(f'../../scripts/ihme_seir/config/{region}.yaml', model_type, train_period)
+    return read_region_params_config(f'../../scripts/ihme_seir/config/{config_name}.yaml', model_type, train_period)
 
 
 def read_region_config(path):
@@ -286,15 +271,32 @@ def read_region_config(path):
         dict: config for synthetic data generation experiments
     """
 
+    default_path = os.path.join(os.path.dirname(path), 'base.yaml')
+    with open(default_path) as base:
+        config = yaml.load(base, Loader=yaml.SafeLoader)
     with open(path) as configfile:
-        config = yaml.load(configfile, Loader=yaml.SafeLoader)
+        region_config = yaml.load(configfile, Loader=yaml.SafeLoader)
+    for k in config.keys():
+        if type(config[k]) is dict and region_config.get(k) is not None:
+            config[k].update(region_config[k])
     config = config['base']
     return config
 
 
 def read_region_params_config(path, model_type, train_period):
+    config = None
+    try:
+        with open(path) as configfile:
+            config = yaml.load(configfile, Loader=yaml.SafeLoader)
+    except OSError:
+        pass
 
+    path = f'../../scripts/ihme_seir/config/base.yaml'
     with open(path) as configfile:
-        config = yaml.load(configfile, Loader=yaml.SafeLoader)
-    config = config[f'params_{model_type}_tp_{train_period}']
+        base_config = yaml.load(configfile, Loader=yaml.SafeLoader)
+
+    try:
+        config = config[f'params_{model_type}_tp_{train_period}']
+    except KeyError:
+        config = base_config[f'params_{model_type}_tp_{train_period}']
     return config
