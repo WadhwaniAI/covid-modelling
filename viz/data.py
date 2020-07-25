@@ -23,7 +23,8 @@ def axis_formatter(ax):
     ax.grid()
 
 def plot_smoothing(orig_df_district, new_df_district, state, district,
-                   which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], description='Smoothing'):
+                   which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], 
+                   description='Smoothing'):
     """Helper function for creating plots for the smoothing
 
     Arguments:
@@ -50,7 +51,6 @@ def plot_smoothing(orig_df_district, new_df_district, state, district,
         names = [x.name for x in compartments[key]]
         if np.sum(np.in1d(names, which_compartments)) == 0:
             plot_ledger[key] = False
-
     n_rows = np.sum(list(plot_ledger.values()))
     fig, axs = plt.subplots(nrows=n_rows, figsize=(12, 10*n_rows))
     fig.suptitle('{} {}, {}'.format(description, district, state))
@@ -66,9 +66,11 @@ def plot_smoothing(orig_df_district, new_df_district, state, district,
         comp_subset = np.array(which_compartments)[np.in1d(which_compartments, names)]
         for compartment in compartments[key]:
             if compartment.name in comp_subset:
-                ax.plot(orig_df_district[compartments['date'][0].name], orig_df_district[compartment.name],
+                ax.plot(orig_df_district[compartments['date'][0].name].to_numpy(), 
+                        orig_df_district[compartment.name].to_numpy(),
                         '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-                ax.plot(new_df_district[compartments['date'][0].name], new_df_district[compartment.name],
+                ax.plot(new_df_district[compartments['date'][0].name].to_numpy(), 
+                        new_df_district[compartment.name].to_numpy(),
                         '-', color=compartment.color, label='{} (Smoothed)'.format(compartment.label))
         axis_formatter(ax)
         i += 1
