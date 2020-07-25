@@ -14,6 +14,7 @@ base:
   c3_train_period: 20
   num_evals: 1500
   shift_period: 4
+  replace_compartments: [deceased]
 params_seirt_tp_7:
   lockdown_R0: [1, 1.5]
   T_inc: [4, 15]

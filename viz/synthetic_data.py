@@ -82,7 +82,7 @@ def plot_compartment_for_datasets(ax, df_true, df_prediction, df_train, district
 
 def plot_all_experiments(df_true, predictions_dict, district,
                          actual_start_date, allowance, s1, s2, s3, shift, train_period,
-                         output_folder, name_prefix="", which_compartments=None, titles=None):
+                         output_folder, name_prefix="", which_compartments=Columns.which_compartments(), titles=None):
     """Create plots for all buckets and all datasets
 
     Args:
@@ -115,9 +115,6 @@ def plot_all_experiments(df_true, predictions_dict, district,
         titles = ['Using ground truth data', 'Using data from IHME forecast', 'Using data from SEIR forecast']
 
     df_true = df_true.iloc[shift:, :].head(allowance + s1 + s2 + s3)
-
-    if which_compartments is None:
-        which_compartments = Columns.which_compartments()
 
     for col in range(len(which_compartments)):
         fig, ax = plt.subplots(3, sharex=True, sharey=True, figsize=(15, 15))
@@ -254,7 +251,7 @@ def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_
         graph_start (str): start date of graph
         graph_end (str): end date of graph
         title (str, optional): title for plots
-        which_compartments (list(enum), optional): list of compartments plotted
+        which_compartments (list, optional): list of compartments plotted
 
     Returns:
         axes.Axes: axes object of plot
@@ -265,11 +262,11 @@ def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_
             ax.plot(df_true['date'], df_true[col.name],
                     '-o', color=col.color, label=f'{col.label} (Observed)')
             ax.plot(df_prediction_baseline['date'], df_prediction_baseline[col.name],
-                    '-', color=col.color, label=f'{col.label} (Forecast)')
+                    '-', color=col.color, label=f'{col.label} (Baseline forecast)')
             ax.plot(df_prediction["date"], df_prediction[col.name],
                     '-.', color=col.color, label=f'{col.label} (Forecast with synthetic data)')
             ax.plot(df_train["date"], df_train[col.name],
-                    'x', color=col.color, label=f'{col.label} (Train data)')
+                    'x', color=col.color, label=f'{col.label} (Synthetic train data)')
 
             s1_start = pd.to_datetime(s1_start)
             s2_start = pd.to_datetime(s2_start)
@@ -311,7 +308,7 @@ def plot_compartment_against_baseline(ax, df_true, df_prediction, df_prediction_
 
 def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, district,
                           actual_start_date, allowance, s1, s2, s3, shift, train_period, baseline_train_period,
-                          output_folder, name_prefix="", which_compartments=None, titles=None):
+                          output_folder, name_prefix="", which_compartments=Columns.which_compartments(), titles=None):
     """Create plots with baseline for all buckets and all synthetic datasets
 
     Args:
@@ -329,6 +326,7 @@ def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, distri
         baseline_train_period (int): baseline train period
         output_folder (str): output folder path
         name_prefix (str): prefix for filename
+        which_compartments (list, optional): list of compartments plotted
         titles (list[str], optional): titles for plots
 
     """
@@ -347,9 +345,6 @@ def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, distri
         titles = ['Using data from IHME forecast', 'Using data from SEIR forecast']
 
     df_true = df_true.iloc[shift:, :].head(allowance + s1 + s2 + s3)
-
-    if which_compartments is None:
-        which_compartments = Columns.which_compartments()
 
     for col in range(len(which_compartments)):
         fig, ax = plt.subplots(2, sharex=True, sharey=True, figsize=(15, 15))

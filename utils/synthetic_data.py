@@ -91,7 +91,7 @@ def create_custom_dataset(df_actual, df_synthetic, use_actual=True, use_syntheti
     return df, df_train, df_test, properties
 
 
-def format_custom_dataset(dataset, state=None, district=None, compartments=None):
+def format_custom_dataset(dataset, state=None, district=None, compartments=Columns.which_compartments()):
     """Formats the custom dataset according to the format required by the SEIR model
     Inserts the required columns and removes others
 
@@ -101,17 +101,14 @@ def format_custom_dataset(dataset, state=None, district=None, compartments=None)
             (default: {None} on the assumption that the dataset already contains this column)
         district (str, optional): name of district
             (default: {None} on the assumption that the dataset already contains this column)
-        compartments (list, optional): list of compartments to include (default: None)
+        compartments (list, optional): list of compartments to include (default: Columns.which_compartments())
 
     Returns:
         pd.DataFrame: custom dataset with required columns
     """
 
     # Set the columns of compartments to be included
-    if compartments is None:
-        col_names = [col.name for col in Columns.curve_fit_compartments()]
-    else:
-        col_names = compartments
+    col_names = [col.name for col in compartments]
 
     # Include or exclude required columns
     dataset = dataset[['date']+col_names]
@@ -123,7 +120,8 @@ def format_custom_dataset(dataset, state=None, district=None, compartments=None)
 
 
 def get_experiment_dataset(district, state, original_data, generated_data=None, use_actual=True, use_synthetic=True,
-                           start_date=None, allowance=5, s1=15, s2=15, s3=15):
+                           start_date=None, allowance=5, s1=15, s2=15, s3=15,
+                           compartments=Columns.which_compartments()):
     """Returns formatted custom dataset for an experiment
 
     Args:
@@ -139,6 +137,8 @@ def get_experiment_dataset(district, state, original_data, generated_data=None, 
         s1 (int, optional): length of series 1 (default: 15)
         s2 (int, optional): length of series 2 (default: 15)
         s3 (int, optional): length of series 3 (default: 15)
+        compartments(list, optional): compartments to replace with synthetic data
+            (default: Columns.which_compartments())
 
     Returns:
         pd.DataFrame, pd.DataFrame, pd.DataFrame, dict:
@@ -147,13 +147,14 @@ def get_experiment_dataset(district, state, original_data, generated_data=None, 
     df, train, test, prop = create_custom_dataset(original_data, generated_data,
                                                   use_actual=use_actual, use_synthetic=use_synthetic,
                                                   start_date=start_date, allowance=allowance, s1=s1, s2=s2, s3=s3)
-    df = format_custom_dataset(df, state, district)
-    train = format_custom_dataset(train, state, district)
-    test = format_custom_dataset(test, state, district)
+    df = format_custom_dataset(df, state, district, compartments=compartments)
+    train = format_custom_dataset(train, state, district, compartments=compartments)
+    test = format_custom_dataset(test, state, district, compartments=compartments)
     return df, train, test, prop
 
 
-def insert_custom_dataset_into_dataframes(df_region, dataset, start_date=None, compartments=None):
+def insert_custom_dataset_into_dataframes(df_region, dataset, start_date=None,
+                                          compartments=Columns.which_compartments()):
     """Replaces original df_district of SEIR input dataframe with one or more columns from custom dataset
 
     Args:
@@ -161,16 +162,14 @@ def insert_custom_dataset_into_dataframes(df_region, dataset, start_date=None, c
         dataset (pd.Dataframe): custom dataset
         start_date (str, optional): date from which dataset should start (default: None)
         compartments (list, optional): compartments for which ground truth data is replaced by synthetic data
+            (default: Columns.which_compartments())
 
     Returns:
         pd.DataFrame, pd.DataFrame: data from main source with synthetic data added and data from covid19india raw_data
     """
 
     # Set the columns of compartments to be replaced
-    if compartments is None:
-        col_names = [col.name for col in Columns.curve_fit_compartments()]
-    else:
-        col_names = compartments
+    col_names = [col.name for col in compartments]
 
     # Set start date of dataset (including allowance for rolling average)
     if start_date is None:

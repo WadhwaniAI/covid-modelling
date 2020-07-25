@@ -23,7 +23,7 @@ from viz.synthetic_data import plot_fit_uncertainty
 
 def ihme_data_generator(district, state, disable_tracker, actual_start_date, dataset_length,
                         train_val_size, val_size, test_size,
-                        config_path, output_folder):
+                        config_path, output_folder, which_compartments=Columns.curve_fit_compartments()):
     """Runs IHME model, creates plots and returns results
 
     Args:
@@ -36,6 +36,7 @@ def ihme_data_generator(district, state, disable_tracker, actual_start_date, dat
         test_size (int): length of test split
         config_path (str): path to config file
         output_folder (str): path to output folder
+        which_compartments (list, optional): list of compartments to fit (default: Columns.curve_fit_compartments())
 
     Returns:
         dict, dict, dict: results, updated config, model parameters
@@ -51,7 +52,7 @@ def ihme_data_generator(district, state, disable_tracker, actual_start_date, dat
     config['test_size'] = test_size
     config['val_size'] = val_size
 
-    ihme_res = single_cycle(district, state, area_names, model_params, **config)
+    ihme_res = single_cycle(district, state, area_names, model_params, which_compartments=which_compartments, **config)
 
     ihme_df_train, ihme_df_val = ihme_res['df_train'], ihme_res['df_val']
     ihme_df_train_nora, ihme_df_val_nora = ihme_res['df_train_nora'], ihme_res['df_val_nora']
@@ -59,19 +60,22 @@ def ihme_data_generator(district, state, disable_tracker, actual_start_date, dat
     ihme_df_pred = ihme_res['df_prediction']
 
     makesum = deepcopy(ihme_df_pred)
-    makesum['total_infected'] = ihme_df_pred['recovered'] + ihme_df_pred['deceased'] + ihme_df_pred['hospitalised']
+    if set(which_compartments) == set(Columns.curve_fit_compartments()):
+        makesum['total_infected'] = ihme_df_pred['recovered'] + ihme_df_pred['deceased'] + ihme_df_pred['hospitalised']
+
     ihme_res['df_final_prediction'] = makesum
 
     plot_fit(
         makesum.reset_index(), ihme_df_train, ihme_df_val, ihme_df_true,
-        train_val_size, state, district, which_compartments=[c.name for c in Columns.curve_fit_compartments()],
+        train_val_size, state, district, which_compartments=[c.name for c in which_compartments],
         description='Train and test',
         savepath=os.path.join(output_folder, 'ihme_i1_fit.png'))
 
     plot_forecast_agnostic(ihme_df_true, makesum.reset_index(), model_name='IHME',
-                           dist=district, state=state, filename=os.path.join(output_folder, 'ihme_i1_forecast.png'))
+                           dist=district, state=state, which_compartments=which_compartments,
+                           filename=os.path.join(output_folder, 'ihme_i1_forecast.png'))
 
-    for plot_col in Columns.curve_fit_compartments():
+    for plot_col in which_compartments:
         plot_fit_uncertainty(makesum.reset_index(), ihme_df_train, ihme_df_val, ihme_df_train_nora, ihme_df_val_nora,
                              train_val_size, test_size, state, district, draws=ihme_res['draws'],
                              which_compartments=[plot_col.name],
@@ -114,7 +118,7 @@ def seir_runner(district, state, input_df, data_from_tracker,
 
 
 def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
-                         c1_output, datasets, predictions_dicts, which_compartments,
+                         c1_output, datasets, predictions_dicts, which_compartments, replace_compartments,
                          dataset_properties, series_properties, baseline_predictions_dict=None, name_prefix="",
                          variable_param_ranges=None):
     """Logs all results
@@ -135,7 +139,7 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
     """
 
     params_dict = {
-        'compartments_replaced': which_compartments,
+        'compartments_replaced': replace_compartments,
         'dataset_properties': {
             'exp' + str(i+1): dataset_properties[i] for i in range(len(dataset_properties))
         },
@@ -184,7 +188,7 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
     loss.to_csv(output_folder + name_prefix + "_experiments_loss.csv")
 
     if baseline_predictions_dict is not None:
-        baseline_loss = baseline_predictions_dict['df_loss_s3'].T[which_compartments]
+        baseline_loss = baseline_predictions_dict['df_loss_s3'].T[replace_compartments]
         baseline_loss.to_csv(output_folder + name_prefix + "_baseline_loss.csv")
         with open(f'{output_folder}{name_prefix}_c3_best_params.json', 'w') as outfile:
             json.dump(baseline_predictions_dict['best_params'], outfile, indent=4)
