@@ -1,6 +1,6 @@
 base:
   log: TRUE # fit on log of model_params: ycol
-  disable_tracker: TRUE # use athena instead of covid19api
+  disable_tracker: FALSE # use athena instead of covid19api
   max_evals: 100 # optimiser evals (trials)
   sd: FALSE # use social distancing covariate for beta
   smooth: 0 # window to smooth data (rolling avg) - 0 means no smoothing
@@ -11,6 +11,7 @@ base:
   smooth_jump: FALSE
   smooth_jump_method: weighted
   smooth_jump_days: 33
+  continuous_ra: FALSE
 run:
   forecast_days: 30
   num_hyperopt: 1 # number of times to run optimiser - done in parallel
