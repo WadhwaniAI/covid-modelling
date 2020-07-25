@@ -216,7 +216,7 @@ def runner(ihme_config_path, region_config_path, output_folder, num):
     shift_period = region_config['shift_period']
 
     # Print data summary
-    data = get_data(state=state, district=district, disable_tracker=disable_tracker)
+    data = get_data(state=state, district=district, disable_tracker=disable_tracker, use_dataframe='data_all')
 
     # Output folder
     region = district if district is not None else state

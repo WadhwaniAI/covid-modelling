@@ -63,7 +63,7 @@ def ihme_data_generator(district, state, disable_tracker, actual_start_date, dat
     ihme_res['df_final_prediction'] = makesum
 
     plot_fit(
-        makesum.reset_index(), ihme_df_train, ihme_df_val, ihme_df_train_nora, ihme_df_val_nora,
+        makesum.reset_index(), ihme_df_train, ihme_df_val, ihme_df_true,
         train_val_size, state, district, which_compartments=[c.name for c in Columns.curve_fit_compartments()],
         description='Train and test',
         savepath=os.path.join(output_folder, 'ihme_i1_fit.png'))

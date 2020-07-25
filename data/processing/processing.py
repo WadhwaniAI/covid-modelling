@@ -136,7 +136,7 @@ def get_district_time_series(state='Karnataka', district='Bengaluru', use_datafr
             {'active': 'hospitalised', 'confirmed': 'total_infected'}, axis='columns')
         df_district.reset_index(inplace=True, drop=True)
         return df_district
-    
+
     if use_dataframe == 'districts_daily':
         df_districts = copy.copy(dataframes['df_districts'])
         df_district = df_districts.loc[(df_districts['state'] == state) & (df_districts['district'] == district)]
@@ -242,7 +242,7 @@ def get_district_timeseries_cached(district, state, disable_tracker=False, filen
                 'Shahdara','South East Delhi','']
         district_timeseries = get_data(state=state,
             district=district, disable_tracker=disable_tracker, 
-            filename=filename, data_format=data_format)
+            filename=filename, data_format=data_format, use_dataframe='data_all')
         with open(picklefn, 'wb+') as pickle_file:
             pickle.dump(district_timeseries, pickle_file)
     return district_timeseries

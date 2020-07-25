@@ -227,7 +227,7 @@ def run_experiments_over_time(ihme_config_path, region_config_path, num, shift):
     disable_tracker = region_config['disable_tracker']
 
     # Print data summary
-    data = get_data(state=state, district=district, disable_tracker=disable_tracker)
+    data = get_data(state=state, district=district, disable_tracker=disable_tracker, use_dataframe='data_all')
     print("Data summary:")
     print(data)
 
