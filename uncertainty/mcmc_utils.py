@@ -1,7 +1,11 @@
+import sys
+from collections import defaultdict
+
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from collections import defaultdict
+
+sys.path.append('../')
 
 from main.seir.optimiser import Optimiser
 
@@ -32,14 +36,14 @@ def get_PI(pred_dfs, date, key, multiplier=1.96):
     high = mu + multiplier*sigma
     return mu, low, high
 
-def set_optimizer(data: pd.DataFrame):
+def set_optimizer(data: pd.DataFrame, train_period: int):
     optimiser = Optimiser(use_mcmc=False)
-    default_params = optimiser.init_default_params(data)
+    default_params = optimiser.init_default_params(data, initialisation='intermediate', train_period=train_period)
     return optimiser, default_params
 
-def predict(data: pd.DataFrame, mcmc_runs: list, end_date: str = None) -> pd.DataFrame:
+def predict(data: pd.DataFrame, mcmc_runs: list, predict_days: int, end_date: str = None) -> pd.DataFrame:
 
-    optimiser, default_params = set_optimizer(data)
+    optimiser, default_params = set_optimizer(data, predict_days)
     
     combined_acc = list()
     for k, run in enumerate(mcmc_runs):
@@ -51,8 +55,7 @@ def predict(data: pd.DataFrame, mcmc_runs: list, end_date: str = None) -> pd.Dat
     
     pred_dfs = list()
     for i in tqdm(sample_indices):
-        pred_dfs.append(optimiser.solve(combined_acc[int(i)], default_params, data, initialisation='intermediate', loss_indices=[0, -1], end_date=end_date))
-
+        pred_dfs.append(optimiser.solve(combined_acc[int(i)], default_params, data, end_date=end_date))
     for df in pred_dfs:
         df.set_index('date', inplace=True)
 

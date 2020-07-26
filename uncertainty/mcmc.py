@@ -1,15 +1,16 @@
 import pprint
+from collections import defaultdict, OrderedDict
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-import multiprocessing as mp
-from datetime import datetime
-from scipy.stats import poisson
 from joblib import delayed, Parallel
-from collections import defaultdict, OrderedDict
+from mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
+    avg_sum_multiple_chains, get_state
+from scipy.stats import poisson
+from tqdm import tqdm
 
 from data.processing import get_district_time_series
-from mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, avg_sum_multiple_chains, get_state
 
 
 class MCMC(object):
@@ -20,11 +21,11 @@ class MCMC(object):
 
         self._fetch_data()
         self._split_data()
-        self._optimiser, self._default_params = set_optimizer(self.df_train)
+        self._optimiser, self._default_params = set_optimizer(self.df_train, self.fit_days)
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
 
     def _fetch_data(self):
-        self.df_district = get_district_time_series(state=self.state, district=self.district, use_dataframe = 'raw_data')
+        self.df_district = get_district_time_series(state=self.state, district=self.district, use_dataframe='data_all')
 
     def _split_data(self):
         N = len(self.df_district)
@@ -73,7 +74,7 @@ class MCMC(object):
 
     def _log_likelihood(self, theta):
         ll = 0
-        df_prediction = self._optimiser.solve(theta, self._default_params, self.df_train, initialisation='intermediate', loss_indices=[0, -1])
+        df_prediction = self._optimiser.solve(theta, self._default_params, self.df_train)
         sigma = theta['sigma']
 
         for compartment in self.compartments:
@@ -148,7 +149,25 @@ class MCMC(object):
         pp.pprint(R_hat)
         self.R_hat = R_hat
 
+    def _predict(self):
+        data = pd.concat([self.df_train, self.df_val])
+
+        combined_acc = list()
+        for k, run in enumerate(self.chains):
+            burn_in = int(len(run) / 2)
+            combined_acc += run[0][burn_in:]
+
+        n_samples = 1000
+        sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
+
+        pred_dfs = list()
+        for i in tqdm(sample_indices):
+            pred_dfs.append(self._optimiser.solve(combined_acc[int(i)], self._default_params, data,
+                                                  end_date=self.end_date))
+
+        return pred_dfs
+
     def run(self):
         self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)(100*i) for i, run in enumerate(range(self.n_chains)))
         self._check_convergence()
-
+        return self._predict()
