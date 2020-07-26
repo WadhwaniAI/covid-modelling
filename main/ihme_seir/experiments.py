@@ -31,6 +31,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
     district = region_config['district']
     state = region_config['state']
     replace_compartments = region_config['replace_compartments']
+    which_compartments = region_config['which_compartments']
     compartmental_models = region_config['compartmental_models']
     disable_tracker = region_config['disable_tracker']
     allowance = region_config['allowance']
@@ -62,9 +63,6 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
     smooth_jump = True if district == "Mumbai" else False
 
     replace_compartments_enum = [Columns.from_name(comp) for comp in replace_compartments]
-    which_compartments_enum = Columns.which_compartments()
-    replace_compartments = [col.name for col in replace_compartments_enum]
-    which_compartments = [col.name for col in which_compartments_enum]
 
     # Set dates
     dataset_start_date = data['date'].min() + timedelta(shift)  # First date in dataset

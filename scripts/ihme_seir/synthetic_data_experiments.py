@@ -60,7 +60,7 @@ def runner(ihme_config_path, region_config_path, output_folder, num):
     # Output folder
     region = district if district is not None else state
     root_folder = f'{region}/{output_folder}'
-    print("Run no. ", num+1, " with shift of ", shift_period * num)
+    print(region, ": Run no. ", num+1, " with shift of ", shift_period * num)
     run_experiments(ihme_config_path, region_config_path, data, f'{root_folder}/{str(num)}', multiple=True,
                     shift_forward=shift_period * num)
 

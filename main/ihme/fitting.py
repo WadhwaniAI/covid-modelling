@@ -34,9 +34,9 @@ def get_regional_data(dist, st, area_names, test_size, smooth_window, disable_tr
         smooth_window ([type]): apply rollingavg smoothing
         disable_tracker ([type]): disable covid19api, use athena instead
         smooth_jump (boolean): whether to smooth_big_jump
-        start_date ():
-        dataset_length ():
-        continuous_ra ():
+        start_date (str, optional): start date for data
+        dataset_length (int, optional): total length of data used
+        continuous_ra (bool, optional): if True, end values of train use data from val set for rolling mean
 
     Returns:
         dict: contains smoothed and unsmoothed dataframes: train, test, df
@@ -116,9 +116,9 @@ def setup(dist, st, area_names, model_params, sd, smooth, test_size, disable_tra
         test_size (int): size of test set
         disable_tracker (boolean): disable covid19api, use athena instead
         smooth_jump (boolean): whether to smooth_big_jump
-        start_date ():
-        dataset_length ():
-        continuous_ra ():
+        start_date (str, optional): start date for data
+        dataset_length (int, optional): total length of data used
+        continuous_ra (bool, optional): if True, end values of train use data from val set for rolling mean
 
     Returns:
         tuple: dataframes dict, district_total_population, and model_params (modified)
