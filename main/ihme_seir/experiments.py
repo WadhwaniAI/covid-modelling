@@ -30,6 +30,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
     # Unpack parameters from config and set local parameters
     district = region_config['district']
     state = region_config['state']
+    experiment_name = region_config['experiment_name']
     replace_compartments = region_config['replace_compartments']
     which_compartments = region_config['which_compartments']
     compartmental_models = region_config['compartmental_models']
@@ -69,7 +70,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
     actual_start_date = dataset_start_date + timedelta(allowance)  # Excluding allowance at beginning
 
     # Create output folder
-    output_folder = create_output_folder(f'synth/{root_folder}/')
+    output_folder = create_output_folder(f'{experiment_name}/{root_folder}/')
 
     # Store series properties in dict
     series_properties = {

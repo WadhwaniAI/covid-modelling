@@ -251,7 +251,7 @@ def run_cycle(dataframes, model_params, forecast_days=30,
         df_xform_trainerr_pointwise = lc.create_pointwise_loss_dataframe(
             xform_func(train_model_ycol_numpy, dtp), xform_func(train_pred, dtp))
     df_train_loss_pointwise = pd.concat([df_trainerr_pointwise, df_xform_trainerr_pointwise],
-        keys=['train', 'train_no_xform']).rename_axis(['split', 'loss_functions'])  # Naming should be swapped
+        keys=['train_no_xform', 'train']).rename_axis(['split', 'loss_functions'])
     df_train_loss_pointwise.columns = train['date'].tolist()
 
     df_test_loss_pointwise = pd.DataFrame()
@@ -262,7 +262,7 @@ def run_cycle(dataframes, model_params, forecast_days=30,
             df_xform_testerr_pointwise = lc.create_pointwise_loss_dataframe(
                 xform_func(test_model_ycol_numpy, dtp), xform_func(test_pred, dtp))
         df_test_loss_pointwise = pd.concat([df_testerr_pointwise, df_xform_testerr_pointwise],
-            keys=['val', 'val_no_xform']).rename_axis(['split', 'loss_functions'])  # Naming should be swapped
+            keys=['val_no_xform', 'val']).rename_axis(['split', 'loss_functions'])
         df_test_loss_pointwise.columns = test['date'].tolist()
 
     loss_dict = {
