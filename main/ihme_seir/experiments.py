@@ -191,7 +191,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
 
         # Log results
         print("Saving results...")
-        log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
+        log_experiment_local(output_folder, region_config, i1_config, i1_model_params, i1_output,
                              c1_output, df, predictions_dicts, which_compartments, replace_compartments,
                              dataset_prop, series_properties, baseline_predictions_dict=predictions_dict_baseline,
                              name_prefix=name_prefix, variable_param_ranges=variable_param_ranges_copy)

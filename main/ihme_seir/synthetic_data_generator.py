@@ -123,7 +123,7 @@ def seir_runner(district, state, input_df, data_from_tracker,
     return predictions_dict
 
 
-def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
+def log_experiment_local(output_folder, region_config, i1_config, i1_model_params, i1_output,
                          c1_output, datasets, predictions_dicts, which_compartments, replace_compartments,
                          dataset_properties, series_properties, baseline_predictions_dict=None, name_prefix="",
                          variable_param_ranges=None):
@@ -131,6 +131,7 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
 
     Args:
         output_folder (str): Output folder path
+        region_config (str): Config for experiments
         i1_config (dict): Config for IHME I1 model
         i1_model_params (dict): Model parameters of IHME I1 model
         i1_output (dict): Results dict of IHME I1 model
@@ -152,6 +153,9 @@ def log_experiment_local(output_folder, i1_config, i1_model_params, i1_output,
         },
         'series_properties': series_properties
     }
+
+    with open(output_folder + 'region_config.json', 'w') as outfile:
+        json.dump(region_config, outfile, indent=4)
 
     for i in datasets:
         filename = 'dataset_experiment_' + str(i+1) + '.csv'

@@ -246,8 +246,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
         fig, ax = plt.subplots(3, 1, sharex=True, sharey=True, figsize=(20, 15))
         fig.suptitle(f'{region} - {compartment} - pointwise test APE on s2')
         losses = dict()
-        # Change this from 'val_no_xform' to 'val' if correction is made in main.ihme.fitting
-        losses[0] = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'val_no_xform', 'ape')
+        losses[0] = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'val', 'ape')
         losses[1] = get_seir_pointwise_loss(seirt_c1_pointwise_loss_dict, compartment, 'ape')
         losses[2] = get_seir_pointwise_loss(sird_c1_pointwise_loss_dict, compartment, 'ape')
         for k in range(3):
@@ -389,7 +388,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
     for i, compartment in enumerate(compartments):
         fig, ax = plt.subplots(1, figsize=(20, 10))
         fig.suptitle(f'{region} - {compartment} - IHME pointwise test APE on s2')
-        val_losses = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'val_no_xform', 'ape')  # Check
+        val_losses = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'val', 'ape')
         for j, l in enumerate(val_losses):
             ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j/num),
                     label=f'Test APE for {l.index[0]} to {l.index[-1]}')
@@ -409,7 +408,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
     for i, compartment in enumerate(compartments):
         fig, ax = plt.subplots(1, figsize=(20, 10))
         fig.suptitle(f'{region} - {compartment} - IHME pointwise train APE on s1')
-        train_losses = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'train_no_xform', 'ape')  # Check
+        train_losses = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'train', 'ape')
         for j, l in enumerate(train_losses):
             ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j/num),
                     label=f'Train APE for {l.index[0]} to {l.index[-1]}')
