@@ -5,8 +5,6 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-sys.path.append('../')
-
 from main.seir.optimiser import Optimiser
 
 
@@ -114,3 +112,14 @@ def divide_dict(d1, d2):
     for key in d1:
         accumulator[key] = d1[key]/d2[key]
     return accumulator
+
+def get_formatted_trials(params, losses):
+    trials = list()
+    for i, param_dict in enumerate(params):
+        trial = {'result': dict(), 'misc': dict()}
+        trial['result']['loss'] = losses[i]
+        trial['misc']['vals'] = {k: [v] for k, v in param_dict.items()}
+        trials.append(trial)
+    return trials
+
+

@@ -3,14 +3,13 @@ from collections import defaultdict, OrderedDict
 from datetime import datetime
 
 import numpy as np
-import pandas as pd
 from joblib import delayed, Parallel
-from mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
-    avg_sum_multiple_chains, get_state
 from scipy.stats import poisson
 from tqdm import tqdm
 
 from data.processing import get_district_time_series
+from uncertainty.mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
+    avg_sum_multiple_chains, get_state, get_formatted_trials
 
 
 class MCMC(object):
@@ -149,9 +148,7 @@ class MCMC(object):
         pp.pprint(R_hat)
         self.R_hat = R_hat
 
-    def _predict(self):
-        data = pd.concat([self.df_train, self.df_val])
-
+    def _get_trials(self):
         combined_acc = list()
         for k, run in enumerate(self.chains):
             burn_in = int(len(run) / 2)
@@ -160,14 +157,24 @@ class MCMC(object):
         n_samples = 1000
         sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
 
-        pred_dfs = list()
-        for i in tqdm(sample_indices):
-            pred_dfs.append(self._optimiser.solve(combined_acc[int(i)], self._default_params, data,
-                                                  end_date=self.end_date))
+        total_days = len(self.df_train['date'])
+        loss_indices = [-self.fit_days, None]
 
-        return pred_dfs
+        losses = list()
+        params = list()
+        for i in tqdm(sample_indices):
+            params.append(combined_acc[int(i)])
+            losses.append(self._optimiser.solve_and_compute_loss(combined_acc[int(i)], self._default_params,
+                                                                 self.df_train, total_days,
+                                                                 loss_indices=loss_indices,
+                                                                 loss_method=self.loss_method))
+
+        least_loss_index = np.argmin(losses)
+        best_params = params[int(least_loss_index)]
+        trials = get_formatted_trials(params, losses)
+        return best_params, trials
 
     def run(self):
         self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)(100*i) for i, run in enumerate(range(self.n_chains)))
         self._check_convergence()
-        return self._predict()
+        return self._get_trials()
