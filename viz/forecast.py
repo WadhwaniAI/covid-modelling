@@ -11,6 +11,7 @@ import copy
 from main.seir.forecast import get_forecast, forecast_top_k_trials
 from utils.enums import Columns, SEIRParams
 from utils.enums.columns import *
+from viz.utils import axis_formatter
 
 
 
@@ -91,17 +92,8 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
                              label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[i]]))
                 ax.lines[-1].set_linestyle(linestyles_arr[i])
     
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
-    ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.ylabel('No of People', fontsize=16)
-    if log_scale:
-        plt.yscale('log')
-    plt.xlabel('Time', fontsize=16)
-    plt.xticks(rotation=45, horizontalalignment='right')
-    plt.legend()
-    plt.title('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
-    plt.grid()
+    axis_formatter(ax, log_scale=log_scale)
+    fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
     if filename != None:
         plt.savefig(filename, format=fileformat)
 
@@ -117,17 +109,8 @@ def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False,
             sns.lineplot(x="date", y=col.name, data=df_prediction,
                      ls='-', color=col.color, label=f'{col.label} ({model_name} Forecast)')
 
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
-    ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.ylabel('No of People', fontsize=16)
-    if log_scale:
-        plt.yscale('log')
-    plt.xlabel('Time', fontsize=16)
-    plt.xticks(rotation=45, horizontalalignment='right')
-    plt.legend()
-    plt.title('Forecast - ({} {})'.format(dist, state), fontsize=16)
-    plt.grid()
+    axis_formatter(ax, log_scale=log_scale)
+    fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
     if filename != None:
         plt.savefig(filename)
 
@@ -170,17 +153,8 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=N
             plt.axvline(datetime.datetime.strptime(vline, '%Y-%m-%d'))
         ax.set_xlim(ax.get_xlim()[0], ax.get_xlim()[1] + 10)
         adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
-        ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
-        ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
-        plt.ylabel('No of People', fontsize=16)
-        if log_scale:
-            plt.yscale('log')
-        plt.xlabel('Time', fontsize=16)
-        plt.xticks(rotation=45, horizontalalignment='right')
-        plt.legend()
-        plt.title('Forecast - ({} {})'.format(predictions_dict['state'], predictions_dict['dist']), fontsize=16)
-        plt.grid()
+        axis_formatter(ax, log_scale=log_scale)
+        fig.suptitle('Forecast - ({} {})'.format(predictions_dict['state'], predictions_dict['dist']), fontsize=16)
         plots[compartment] = fig
     return plots
 
@@ -198,14 +172,7 @@ def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, mult
             x=df_prediction['date'].iloc[-1],
             y=df_prediction['hospitalised'].iloc[-1], s=true_r0
         )
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
-    ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
-    plt.ylabel('No of People', fontsize=16)
-    plt.xticks(rotation=45,horizontalalignment='right')
-    plt.xlabel('Time', fontsize=16)
-    plt.legend()
+    axis_formatter(ax, log_scale=log_scale)
     state, dist = region_dict['state'], region_dict['dist']
-    plt.title(f'Forecast - ({state} {dist})', fontsize=16)
-    plt.grid()
+    fig.suptitle(f'Forecast - ({state} {dist})', fontsize=16)
     return fig
