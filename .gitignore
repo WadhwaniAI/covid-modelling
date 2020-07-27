@@ -34,7 +34,6 @@ sftp-config.json
 *temp/
 **temp/
 cache/
-**optim/
 
 # Exceptions
 !data/data/*.csv
