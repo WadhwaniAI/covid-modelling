@@ -1,18 +1,13 @@
-
-import os
 import sys
-import json
 import datetime
 import numpy as np
 import pandas as pd
-from functools import partial
 from hyperopt import fmin, tpe, hp, Trials
 
 sys.path.append('../../../')
-from main.seir.forecast import get_forecast
 from .uncertainty_base import Uncertainty
 from utils.loss import Loss_Calculator
-from utils.enums import Columns
+
 
 class MCUncertainty(Uncertainty):
     def __init__(self, region_dict, date_of_interest):
@@ -89,7 +84,7 @@ class MCUncertainty(Uncertainty):
             df_predictions['daily_cases'] = df_predictions['total_infected'].diff()
             df_predictions.dropna(axis=0, how='any', inplace=True)
             deciles_forecast[key]['df_prediction'] = df_predictions
-            deciles_forecast[key]['params'] =  params[ptile_dict[key]]
+            deciles_forecast[key]['params'] = params[ptile_dict[key]]
             deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
                 df_train_nora, None, df_predictions, train_period=7,
                 which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
@@ -147,31 +142,3 @@ class MCUncertainty(Uncertainty):
 
         self.beta = best['beta']
         return self.beta
-
-    def get_ptiles_idx(self, percentiles=None):
-        """
-        Get the predictions at certain percentiles from a distribution of trials
-
-        Args:
-            percentiles (list, optional): percentiles at which predictions from the distribution 
-                will be returned. Defaults to all deciles 10-90, as well as 2.5/97.5 and 5/95.
-
-        Returns:
-            dict: {percentile: index} where index is the trial index (to arrays in predictions_dict)
-        """    
-        if self.distribution is None:
-            raise Exception("No distribution found. Must call get_distribution first.")
-        
-        if percentiles is None:
-            percentiles = range(10, 100, 10), np.array([2.5, 5, 95, 97.5])
-            percentiles = np.sort(np.concatenate(percentiles))
-        else:
-            np.sort(percentiles)        
-
-        ptile_dict = {}
-        for ptile in percentiles:
-            index_value = (self.distribution['cdf'] - ptile/100).apply(abs).idxmin()
-            best_idx = self.distribution.loc[index_value - 2:index_value + 2, :]['idx'].min()
-            ptile_dict[ptile] = int(best_idx)
-
-        return ptile_dict
