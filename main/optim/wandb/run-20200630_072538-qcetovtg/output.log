@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "actor-critic.py", line 253, in <module>
+    main()
+  File "actor-critic.py", line 218, in main
+    finish_episode(epi=i_episode)
+  File "actor-critic.py", line 163, in finish_episode
+    loss.backward()
+  File "/home/users/bhardwaj/env_covid/lib/python3.7/site-packages/torch/tensor.py", line 198, in backward
+    torch.autograd.backward(self, gradient, retain_graph, create_graph)
+  File "/home/users/bhardwaj/env_covid/lib/python3.7/site-packages/torch/autograd/__init__.py", line 100, in backward
+    allow_unreachable=True)  # allow_unreachable flag
+KeyboardInterrupt
