@@ -42,3 +42,6 @@ cache/
 *output/
 **output/
 **/output
+
+# Hidden Files starting with .
+.*
