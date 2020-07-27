@@ -14,18 +14,18 @@ from data.processing import get_district_time_series
 
 
 class MCMC(object):
-    def __init__(self, cfg, **ignored):
+    def __init__(self, cfg, df_district=None, **ignored):
         self.timestamp = datetime.now()
         self.state = get_state(cfg["district"])
         self.__dict__.update(cfg)
 
-        self._fetch_data()
+        self.df_district = df_district if df_district is not None else self._fetch_data()
         self._split_data()
         self._optimiser, self._default_params = set_optimizer(self.df_train, self.fit_days)
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
 
     def _fetch_data(self):
-        self.df_district = get_district_time_series(state=self.state, district=self.district, use_dataframe='data_all')
+        return get_district_time_series(state=self.state, district=self.district, use_dataframe='data_all')
 
     def _split_data(self):
         N = len(self.df_district)
