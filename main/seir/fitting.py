@@ -20,6 +20,7 @@ from data.processing import granular
 
 from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
+from uncertainty.mcmc import MCMC
 from utils.loss import Loss_Calculator
 from utils.enums import Columns
 from utils.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
@@ -119,28 +120,11 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
         df_val = df_district.iloc[-val_size:, :]
     df_val.reset_index(inplace=True, drop=True)
     return df_train, df_val
-    
-
-<<<<<<< HEAD
-def get_predictions_mcmc(params, default_params, df_train, initialisation, train_period):
-    if train_on_val:
-        df_prediction = optimiser.solve(params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'], 
-                                        initialisation=initialisation, loss_indices=[-train_period, None])
-    else:
-        df_prediction = optimiser.solve(params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'],
-                                        initialisation=initialisation, loss_indices=[-train_period, None])
-    return df_prediction
 
 
-def single_fitting_cycle(dataframes, state, district, train_period=7, val_period=7, train_on_val=False,
-                         data_from_tracker=True, filename=None, pre_lockdown=False, N=1e7, 
-                         which_compartments=['hospitalised', 'total_infected'], initialisation='starting',
-                         use_mcmc = False):
-=======
 def get_regional_data(state, district, data_from_tracker, data_format, filename, which_compartments,
                       granular_data=False, smooth_jump=False, t_recov=14, return_extra=False):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
->>>>>>> master
 
     Arguments:
         dataframes {dict(pd.Dataframe)} -- dict of dataframes from get_covid19india_api_data() 
@@ -213,9 +197,9 @@ def data_setup(df_district, val_period):
 
 
 def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, 
-              default_params=None, train_period=7, data_from_tracker=True,
+              default_params=None, use_mcmc=False, train_period=7, data_from_tracker=True,
               which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], 
-              num_evals=1500, N=1e7, initialisation='starting', back_offset=0):
+              num_evals=1500, N=1e7, initialisation='starting', back_offset=0, mcmc_config=None):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -267,9 +251,14 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
         loss_indices = [-(train_period+back_offset), -back_offset]
     # Perform Bayesian Optimisation
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
-    best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
-                                              num_evals=num_evals, loss_indices=loss_indices, method='mape',
-                                              total_days=total_days, which_compartments=which_compartments)
+
+    if use_mcmc:
+        mcmc = MCMC(mcmc_config, df_district=df_district)
+        best_params, trials = mcmc.run()
+    else:
+        best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model,
+                                                  num_evals=num_evals, loss_indices=loss_indices, method='mape',
+                                                  total_days=total_days, which_compartments=which_compartments)
     print('best parameters\n', best_params)
 
     if not isinstance(df_val, pd.DataFrame):
@@ -298,9 +287,9 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     return results_dict
 
 
-def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ranges=None, default_params=None, #Main 
+def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ranges=None, default_params=None, use_mcmc=False, #Main
                          data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
-                         train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', back_offset=0,  #Misc
+                         train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', back_offset=0, mcmc_config=None, #Misc
                          which_compartments=['hospitalised', 'total_infected'], #Compartments
                          smooth_jump=False): #Smoothing
     """Main function which user runs for running an entire fitting cycle for a particular district
@@ -349,10 +338,10 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
     
     predictions_dict = run_cycle(
         state, district, observed_dataframes, 
-        model=model, variable_param_ranges=variable_param_ranges, default_params=default_params,
+        model=model, variable_param_ranges=variable_param_ranges, default_params=default_params, use_mcmc=use_mcmc,
         data_from_tracker=data_from_tracker, train_period=train_period, 
         which_compartments=which_compartments, N=N, back_offset=back_offset,
-        num_evals=num_evals, initialisation=initialisation
+        num_evals=num_evals, initialisation=initialisation, mcmc_config=mcmc_config
     )
 
     if smoothing_plot != None:
