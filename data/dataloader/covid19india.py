@@ -9,7 +9,7 @@ class Covid19IndiaLoader(BaseLoader):
     def __init__(self):
         super().__init__()
 
-    def load_data(self):
+    def load_data(self, load_districts_daily=False):
         """
         This function parses multiple JSONs from covid19india.org
         It then converts the data into pandas dataframes
@@ -69,61 +69,97 @@ class Covid19IndiaLoader(BaseLoader):
         dataframes['df_districtwise'] = df_districtwise
 
         # Parse raw_data.json file
-        # Create dataframe for raw history
-        data = requests.get('https://api.covid19india.org/raw_data.json').json()
-        df_raw_data_old = pd.DataFrame.from_dict(data['raw_data'])
-        dataframes['df_raw_data_old'] = df_raw_data_old
+        raw_data_dataframes = []
+        for i in range(1, 21):
+            try:
+                data = requests.get(f'https://api.covid19india.org/raw_data{i}.json').json()
+                raw_data_dataframes.append(pd.DataFrame.from_dict(data['raw_data']))
+            except Exception as e:
+                break
 
-        data = requests.get('https://api.covid19india.org/raw_data1.json').json()
-        df_raw_data_1 = pd.DataFrame.from_dict(data['raw_data'])
+        dataframes['df_raw_data'] = pd.concat(raw_data_dataframes, ignore_index=True)
 
-        data = requests.get('https://api.covid19india.org/raw_data2.json').json()
-        df_raw_data_2 = pd.DataFrame.from_dict(data['raw_data'])
+        data = requests.get('https://api.covid19india.org/state_district_wise.json').json()
+        df_statecode = pd.DataFrame.from_dict(data)
+        df_statecode = df_statecode.drop(['districtData']).T
+        state_to_statecode_dict = dict(zip(df_statecode.index, df_statecode['statecode']))
+        statecode_to_state_dict = dict(zip(df_statecode['statecode'], df_statecode.index))
 
-        data = requests.get('https://api.covid19india.org/raw_data3.json').json()
-        df_raw_data_3 = pd.DataFrame.from_dict(data['raw_data'])
+        if load_districts_daily:
+            data = requests.get('https://api.covid19india.org/districts_daily.json').json()
 
-        data = requests.get('https://api.covid19india.org/raw_data4.json').json()
-        df_raw_data_4 = pd.DataFrame.from_dict(data['raw_data'])
+            df_districts = pd.DataFrame(columns=['notes', 'active', 'confirmed', 'deceased', 
+                                                'recovered', 'date', 'state', 'district'])
+            for state in data['districtsDaily'].keys():
+                for dist in data['districtsDaily'][state].keys():
+                    df = pd.DataFrame.from_dict(data['districtsDaily'][state][dist])
+                    df['state'] = state
+                    df['district'] = dist
+                    df_districts = pd.concat([df_districts, df], ignore_index=True)
 
-        data = requests.get('https://api.covid19india.org/raw_data5.json').json()
-        df_raw_data_5 = pd.DataFrame.from_dict(data['raw_data'])
+            df_districts = df_districts[['state', 'district', 'date',
+                                        'active', 'confirmed', 'deceased', 'recovered', 'notes']]
 
-        dataframes['df_raw_data'] = pd.concat(
-            [df_raw_data_1, df_raw_data_2, df_raw_data_3, df_raw_data_4, df_raw_data_5], ignore_index=True)
+            numeric_cols = ['active', 'confirmed', 'deceased', 'recovered']
+            df_districts[numeric_cols] = df_districts[numeric_cols].apply(
+                pd.to_numeric)
+            dataframes['df_districts'] = df_districts
 
-        # Parse deaths_recoveries.json file
-        data = requests.get('https://api.covid19india.org/deaths_recoveries.json').json()
-        df_raw_data_2 = pd.DataFrame.from_dict(data['deaths_recoveries'])
-        dataframes['df_deaths_recoveries'] = df_raw_data_2
+        data = requests.get('https://api.covid19india.org/v4/data-all.json').json()
 
-        data = requests.get('https://api.covid19india.org/districts_daily.json').json()
+        for date in data.keys():
+            date_dict = data[date]
+            # Remove all the states which don't have district data in them
+            date_dict = {state : state_dict for state, state_dict in date_dict.items() \
+                if 'districts' in state_dict.keys()}
+            data[date] = date_dict
+            
+        # Remove all the dates which have 0 states with district data after pruning
+        data = {date : date_dict for date, date_dict in data.items() if len(date_dict) > 0}
 
-        df_districts = pd.DataFrame(columns=['notes', 'active', 'confirmed', 'deceased', 
-                                             'recovered', 'date', 'state', 'district'])
-        for state in data['districtsDaily'].keys():
-            for dist in data['districtsDaily'][state].keys():
-                df = pd.DataFrame.from_dict(data['districtsDaily'][state][dist])
-                df['state'] = state
-                df['district'] = dist
-                df_districts = pd.concat([df_districts, df], ignore_index=True)
+        # Make the districts key data the only data available for the state key
+        for date in data.keys():
+            for state in data[date].keys():
+                # Make the districts key dict the main dict itself for a particular date, state
+                data[date][state] = data[date][state]['districts']
+                state_dict = data[date][state]
+                # Keep only those district dicts for which cumulative data (total key) is available
+                state_dict = {dist : dist_dict for dist, dist_dict in state_dict.items() \
+                    if 'total' in dist_dict.keys()}
+                data[date][state] = state_dict
 
-        df_districts = df_districts[['state', 'district', 'date',
-                                    'active', 'confirmed', 'deceased', 'recovered', 'notes']]
-        df_districts.loc[df_districts['district'] ==
-                        'Bengaluru', 'district'] = 'Bengaluru Urban'
-        df_districts.loc[df_districts['district'] ==
-                        'Ahmadabad', 'district'] = 'Ahmedabad'
+                # Make the total key dict the main dict itself for a particular date, state, dist
+                for district in data[date][state].keys():
+                        data[date][state][district] = data[date][state][district]['total']
+                
+                # For a particular date, state, dist, only keep those keys for which have confirmed, recovered, deceased are all available
+                state_dict = {dist: dist_dict for dist, dist_dict in state_dict.items() \
+                    if {'confirmed', 'recovered', 'deceased'} <= dist_dict.keys()}
+                data[date][state] = state_dict
+            
+            # Remove all the states for a particular date which don't have district that satisfied above criteria
+            date_dict = data[date]
+            date_dict = {state : state_dict for state, state_dict in date_dict.items() if len(state_dict) > 0}
+            data[date] = date_dict
+            
+        # Remove all the dates which have 0 states with district data after pruning
+        data = {date : date_dict for date, date_dict in data.items() if len(date_dict) > 0}
 
-        numeric_cols = ['active', 'confirmed', 'deceased', 'recovered']
-        df_districts[numeric_cols] = df_districts[numeric_cols].apply(
-            pd.to_numeric)
-        dataframes['df_districts'] = df_districts
+        df_districts_all = pd.DataFrame(columns=['date', 'state', 'district', 'confirmed', 'active', 
+                                                 'recovered', 'deceased', 'tested', 'migrated'])
+        for date in data.keys():
+            for state in data[date].keys():
+                df_date_state = pd.DataFrame.from_dict(data[date][state]).T.reset_index()
+                df_date_state = df_date_state.rename({'index' : 'district'}, axis='columns')
+                df_date_state['active'] = df_date_state['confirmed'] - \
+                    (df_date_state['recovered'] + df_date_state['deceased'])
+                df_date_state['state'] = statecode_to_state_dict[state]
+                df_date_state['date'] = date
+                df_districts_all = pd.concat([df_districts_all, df_date_state], ignore_index=True)
 
-        
-        data = requests.get('https://api.covid19india.org/state_test_data.json').json()
-
-
+        numeric_cols = ['confirmed', 'active', 'recovered', 'deceased', 'tested', 'migrated']
+        df_districts_all.loc[:, numeric_cols] = df_districts_all.loc[:, numeric_cols].apply(pd.to_numeric)
+        dataframes['df_districts_all'] = df_districts_all
 
         # Parse travel_history.json file
         # Create dataframe for travel history

@@ -48,19 +48,21 @@ def gridsearch_single_param(predictions_dict, which_fit='m1', var_name=None, par
 
     return params_dict, loss_array
 
-def calculate_sensitivity_and_plot(predictions_dict, which_fit='m1'):
-    var_tuples = [
-        ('lockdown_R0', np.linspace(1, 1.5, 101), 'total_infected', None),
-        ('I_hosp_ratio', np.linspace(0, 1, 201), 'total_infected', None),
-        ('E_hosp_ratio', np.linspace(0, 2, 201), 'total_infected', None),
-        ('P_fatal', np.linspace(0, 1, 201), 'deceased', 'total_infected'),
-        ('T_recov_severe', np.linspace(1, 100, 101), 'recovered', 'total_infected'),
-        ('T_recov_fatal', np.linspace(1, 100, 101), 'deceased', 'total_infected')
-    ]
+def calculate_sensitivity_and_plot(predictions_dict, which_fit='m1', var_tuples=None):
+    if var_tuples == None:
+        var_tuples = [
+            ('lockdown_R0', np.linspace(1, 1.5, 101), 'total_infected', None),
+            ('I_hosp_ratio', np.linspace(0, 1, 201), 'total_infected', None),
+            ('E_hosp_ratio', np.linspace(0, 2, 201), 'total_infected', None),
+            ('P_fatal', np.linspace(0, 1, 201), 'deceased', 'total_infected'),
+            ('T_recov_severe', np.linspace(1, 100, 101), 'recovered', 'total_infected'),
+            ('T_recov_fatal', np.linspace(1, 100, 101), 'deceased', 'total_infected')
+        ]
 
     best_params = copy.copy(predictions_dict[which_fit]['best_params'])
 
-    fig, axs = plt.subplots(figsize=(18, 12), nrows=3, ncols=2)
+    nrows = int(round(len(var_tuples)/2+0.01))
+    fig, axs = plt.subplots(figsize=(18, 4*nrows), nrows=nrows, ncols=2)
     fig.suptitle('Sensitivity of variables with respect to corresponding compartments')
     fig.tight_layout(pad=5.0)
     for i, ax in enumerate(axs.flat):

@@ -93,7 +93,7 @@ class Loss_Calculator():
         df_train.reset_index(inplace=True, drop=True)
         for compartment in df_loss.index:
             df_loss.loc[compartment, 'train'] = self._calc_mape(
-                np.array(df_train[compartment]), np.array(df_temp[compartment]))
+                np.array(df_temp[compartment]), np.array(df_train[compartment]))
 
         if isinstance(df_val, pd.DataFrame):
             df_temp = df_prediction.loc[df_prediction['date'].isin(
@@ -102,7 +102,7 @@ class Loss_Calculator():
             df_val.reset_index(inplace=True, drop=True)
             for compartment in df_loss.index:
                 df_loss.loc[compartment, 'val'] = self._calc_mape(
-                    np.array(df_val[compartment]), np.array(df_temp[compartment]))
+                    np.array(df_temp[compartment]), np.array(df_val[compartment]))
         else:
             del df_loss['val']
         return df_loss

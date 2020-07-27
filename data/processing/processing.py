@@ -9,17 +9,21 @@ from collections import defaultdict
 from data.dataloader import Covid19IndiaLoader, RootnetLoader, AthenaLoader
 
 
-def get_dataframes_cached():
-    picklefn = "../../cache/dataframes_ts_{today}.pkl".format(
-        today=datetime.datetime.today().strftime("%d%m%Y"))
+def get_dataframes_cached(loader_class=Covid19IndiaLoader):
+    if loader_class == Covid19IndiaLoader:
+        loader_key = 'tracker'
+    if loader_class == AthenaLoader:
+        loader_key = 'athena'
+    picklefn = "../../cache/dataframes_ts_{today}_{loader_key}.pkl".format(
+        today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
     try:
         print(picklefn)
         with open(picklefn, 'rb') as pickle_file:
             dataframes = pickle.load(pickle_file)
     except:
         print("pulling from source")
-        loader = Covid19IndiaLoader()
-        dataframes = loader.get_covid19india_api_data()
+        loader = loader_class()
+        dataframes = loader.load_data()
         if not os.path.exists('../../cache/'):
             os.mkdir('../../cache/')
         with open(picklefn, 'wb+') as pickle_file:
@@ -68,10 +72,9 @@ def get_data(state=None, district=None, use_dataframe='districts_daily', disable
         df_result = get_state_time_series(state=state)
     return df_result
 
-def get_custom_data_from_db(state='Maharashtra', district='Pune'):
+def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
     print('fetching from athenadb...')
-    loader = AthenaLoader()
-    dataframes = loader.get_athena_dataframes()
+    dataframes = get_dataframes_cached(loader_class=AthenaLoader)
     df_result = copy.copy(dataframes['new_covid_case_summary'])
     df_result['state'] = 'maharashtra'
     df_result = df_result[np.logical_and(
@@ -124,16 +127,24 @@ def get_state_time_series(state='Delhi'):
 
 def get_district_time_series(state='Karnataka', district='Bengaluru', use_dataframe='raw_data'):
     dataframes = get_dataframes_cached()
+
+    if use_dataframe == 'data_all':
+        df_districts = copy.copy(dataframes['df_districts_all'])
+        df_district = df_districts.loc[(df_districts['state'] == state) & (df_districts['district'] == district)]
+        df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
+        df_district = df_district.rename(
+            {'active': 'hospitalised', 'confirmed': 'total_infected'}, axis='columns')
+        df_district.reset_index(inplace=True, drop=True)
+        return df_district
     
     if use_dataframe == 'districts_daily':
         df_districts = copy.copy(dataframes['df_districts'])
-        df_district = df_districts[np.logical_and(df_districts['state'] == state, df_districts['district'] == district)]
+        df_district = df_districts.loc[(df_districts['state'] == state) & (df_districts['district'] == district)]
         del df_district['notes']
         df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
         df_district = df_district.loc[df_district['date'] >= '2020-04-24', :]
-        df_district = df_district.loc[df_district['date'] < datetime.date.today().strftime("%Y-%m-%d"), :]
-        df_district.columns = [x if x != 'active' else 'hospitalised' for x in df_district.columns]
-        df_district.columns = [x if x != 'confirmed' else 'total_infected' for x in df_district.columns]
+        df_district = df_district.rename(
+            {'active': 'hospitalised', 'confirmed': 'total_infected'}, axis='columns')
         df_district.reset_index(inplace=True, drop=True)
         return df_district
 
