@@ -72,10 +72,10 @@ severity_colors = [cmap(i) for i in np.linspace(0.4, 0.9, 3)]
 compartments = {
     'date': [Column('date', 'date', None)],
     'base': [
-        Column('recovered', 'Recovered Cases', 'green'),
-        Column('deceased', 'Deceased Cases', 'red'),
+        Column('total_infected', 'Confirmed Cases', 'C0'),
         Column('hospitalised', 'Active Cases', 'orange'),
-        Column('total_infected', 'Confirmed Cases', 'C0')
+        Column('recovered', 'Recovered Cases', 'green'),
+        Column('deceased', 'Deceased Cases', 'red')
     ],
     'severity': [
         Column('critical', 'Critical', severity_colors[0]),
