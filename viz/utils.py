@@ -17,6 +17,7 @@ def axis_formatter(ax, log_scale=False, legend_elements=None, custom_legend=Fals
     ax.set_ylabel('No of People')
     ax.set_xlabel('Time')
     ax.tick_params('x', labelrotation=45)
+    ax.grid()
     if log_scale:
         ax.set_yscale('log')
     if custom_legend:
@@ -30,7 +31,6 @@ def axis_formatter(ax, log_scale=False, legend_elements=None, custom_legend=Fals
         ax.legend(handles=legend_elements)
     else:
         ax.legend()
-    ax.grid()
 
 def setup_plt(ycol, yscale='log'):
     sns.set()
