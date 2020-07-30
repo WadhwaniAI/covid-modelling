@@ -1,15 +1,17 @@
-from copy import copy
-from models.ihme.model import IHME
-import pandas as pd
-from datetime import datetime, timedelta
+import sys
 import time
+from copy import copy
+from datetime import datetime, timedelta
 
+import pandas as pd
 from pathos.multiprocessing import ProcessingPool as Pool
 
-import sys
+from models.ihme.model import IHME
+
 sys.path.append('../..')
 from utils.enums import Columns
 from main.ihme.fitting import run_cycle_compartments
+
 
 class IHMEBacktest:
     def __init__(self, model: IHME, data: pd.DataFrame, district, state):
@@ -21,15 +23,15 @@ class IHMEBacktest:
             data (pd.DataFrame): all historical data for the location
             district (str): district name
             state (str): state name
-        """        
+        """
         self.model = model.generate()
         self.data = copy(data)
         self.district = district
         self.state = state
 
-    def test(self, increment=5, future_days=10, 
-        hyperopt_val_size=7, max_evals=100, xform_func=None,
-        dtp=None, min_days=7, scoring='mape', which_compartments=Columns.curve_fit_compartments()):
+    def test(self, increment=5, future_days=10,
+             hyperopt_val_size=7, max_evals=100, xform_func=None,
+             dtp=None, min_days=7, scoring='mape', which_compartments=Columns.curve_fit_compartments()):
         """
         Runs the backtesting at the specified increment frequency, with parellelisation
         Up to 10 threads, per run_day
@@ -47,15 +49,15 @@ class IHMEBacktest:
 
         Returns:
             [dict]: dict['results'] contains the results from each run
-        """        
+        """
         runtime_s = time.time()
         start = self.data[self.model.date].min()
-        end =  self.data[self.model.date].max()
+        end = self.data[self.model.date].max()
         n_days = (end - start).days + 1 - future_days
         results = {}
         seed = datetime.today().timestamp()
         pool = Pool(processes=10)
-        
+
         args = []
         for run_day in range(min_days + hyperopt_val_size, n_days, increment):
             kwargs = {
@@ -63,17 +65,17 @@ class IHMEBacktest:
             }
             fit_data = self.data[(self.data[self.model.date] <= start + timedelta(days=run_day))]
             val_data = self.data[(self.data[self.model.date] > start + timedelta(days=run_day)) \
-                & (self.data[self.model.date] <= start + timedelta(days=run_day+future_days))]
-            for arg in ['fit_data', 'val_data', 'run_day', 'max_evals', 'which_compartments', 
-                'hyperopt_val_size', 'min_days', 'xform_func', 'dtp', 'scoring']:
+                                 & (self.data[self.model.date] <= start + timedelta(days=run_day + future_days))]
+            for arg in ['fit_data', 'val_data', 'run_day', 'max_evals', 'which_compartments',
+                        'hyperopt_val_size', 'min_days', 'xform_func', 'dtp', 'scoring']:
                 kwargs[arg] = eval(arg)
-            
+
             args.append(kwargs)
         for run_day, result_dict in pool.map(run_model_unpack, args):
             results[run_day] = result_dict
-    
+
         runtime = time.time() - runtime_s
-        print (runtime)
+        print(runtime)
         self.results = {
             'results': results,
             'seed': seed,
@@ -95,10 +97,12 @@ def run_model_unpack(kwargs):
 
     Returns:
         dict: result_dict
-    """    
+    """
     return run_model(**kwargs)
 
-def run_model(model, run_day, fit_data, val_data, max_evals, hyperopt_val_size, min_days, xform_func, dtp, scoring, which_compartments):
+
+def run_model(model, run_day, fit_data, val_data, max_evals, hyperopt_val_size, min_days, xform_func, dtp, scoring,
+              which_compartments):
     """
     wrapper function to use in multithreading that returns run_day along with results_dict
 
@@ -117,18 +121,18 @@ def run_model(model, run_day, fit_data, val_data, max_evals, hyperopt_val_size, 
 
     Returns:
         dict: result_dict
-    """    
-    print ("\rbacktesting for", run_day, end="")
+    """
+    print("\rbacktesting for", run_day, end="")
     df = pd.concat([fit_data, val_data], axis=1)
     dataframes = {
-        'train': fit_data, 
-        'test': val_data, 
+        'train': fit_data,
+        'test': val_data,
         'df': df,
         'df_nora': pd.DataFrame(columns=df.columns, index=df.index),
         'train_nora': pd.DataFrame(columns=fit_data.columns, index=fit_data.index),
         'test_nora': pd.DataFrame(columns=val_data.columns, index=val_data.index)
     }
-    result_dict = run_cycle_compartments(dataframes, copy(model.model_parameters), 
-        dtp=dtp, max_evals=max_evals, min_days=min_days, scoring=scoring, 
-        val_size=hyperopt_val_size, xform_func=xform_func, forecast_days=0)
+    result_dict = run_cycle_compartments(dataframes, copy(model.model_parameters),
+                                         dtp=dtp, max_evals=max_evals, min_days=min_days, scoring=scoring,
+                                         val_size=hyperopt_val_size, xform_func=xform_func, forecast_days=0)
     return run_day, result_dict
