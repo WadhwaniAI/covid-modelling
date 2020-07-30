@@ -4,7 +4,7 @@ import seaborn as sns
 from pandas.plotting import register_matplotlib_converters
 
 
-def axis_formatter(ax, log_scale=False, legend_elements=None, custom_legend=False):
+def axis_formatter(ax, legend_elements=None, custom_legend=False, log_scale=False):
     """Helper function for formatting axis
 
     Arguments:
