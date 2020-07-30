@@ -91,3 +91,42 @@ def plot(x, y, title, yaxis_name=None, log=False, scatter=False, savepath=None):
     if savepath is not None:
         plt.savefig(savepath)
     return
+
+
+def plot_data(data, region, sub_region, which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'],
+              description='', savepath=None):
+    # Create plots
+    plot_ledger = {
+        'base': True,
+        'severity': True,
+        'bed': True
+    }
+    for i, key in enumerate(plot_ledger.keys()):
+        names = [x.name for x in compartments[key]]
+        if np.sum(np.in1d(names, which_compartments)) == 0:
+            plot_ledger[key] = False
+    n_rows = np.sum(list(plot_ledger.values()))
+    fig, axs = plt.subplots(nrows=n_rows, figsize=(12, 10 * n_rows))
+    fig.suptitle('{} {}, {}'.format(description, region, sub_region))
+    i = 0
+    for key in plot_ledger.keys():
+        if not plot_ledger[key]:
+            continue
+        if n_rows > 1:
+            ax = axs[i]
+        else:
+            ax = axs
+        names = [x.name for x in compartments[key]]
+        comp_subset = np.array(which_compartments)[np.in1d(which_compartments, names)]
+        for compartment in compartments[key]:
+            if compartment.name in comp_subset:
+                ax.plot(data[compartments['date'][0].name].to_numpy(),
+                        data[compartment.name].to_numpy(),
+                        '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
+        axis_formatter(ax)
+        i += 1
+    plt.tight_layout()
+    if savepath is not None:
+        plt.savefig(savepath)
+
+    return fig
