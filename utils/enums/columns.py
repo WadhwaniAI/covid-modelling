@@ -29,7 +29,7 @@ class Columns(Enum):
     deceased = Column('deceased', 'Deceased Cases', 'red')
     active = Column('hospitalised', 'Active Cases', 'orange')
     confirmed = Column('total_infected', 'Confirmed Cases', 'C0')
-    daily_cases = Column('daily_cases', 'New Cases Added', 'purple')
+    daily_cases = Column('daily_cases', 'New Cases Added', 'indigo')
 
     @classmethod
     def which_compartments(cls):
@@ -76,6 +76,9 @@ compartments = {
         Column('hospitalised', 'Active Cases', 'orange'),
         Column('recovered', 'Recovered Cases', 'green'),
         Column('deceased', 'Deceased Cases', 'red')
+    ],
+    'base_diff' : [
+        Column('daily_cases', 'New Cases Added', 'indigo')
     ],
     'severity': [
         Column('critical', 'Critical', severity_colors[0]),
