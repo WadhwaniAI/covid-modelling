@@ -1,3 +1,5 @@
+"""Summary
+"""
 import os
 import pdb
 import json
@@ -14,6 +16,14 @@ from mcmc_utils import predict, get_state
 
 
 def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, out_dir: str = ''): 
+    """Summary
+    
+    Args:
+        mcmc (MCMC): Description
+        compartments (list): Description
+        end_date (str, optional): Description
+        out_dir (str, optional): Description
+    """
     data = pd.concat([mcmc.df_train, mcmc.df_val])
     result = predict(data, mcmc.chains, data.shape[0], end_date)
 
@@ -60,6 +70,12 @@ def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, ou
     plt.savefig(join(out_dir, 'mean_fit_{}_{}.png'.format(mcmc.district, mcmc.state)))
 
 def plot_chains(mcmc: MCMC, out_dir: str):
+    """Summary
+    
+    Args:
+        mcmc (MCMC): Description
+        out_dir (str): Description
+    """
     color = plt.cm.rainbow(np.linspace(0, 1, mcmc.n_chains))
     params = [*mcmc.prior_ranges.keys()]
 
@@ -93,6 +109,11 @@ def plot_chains(mcmc: MCMC, out_dir: str):
         plt.savefig(join(out_dir, '{}_{}_{}.png'.format(param, mcmc.district, mcmc.state)))
 
 def main(config: str):
+    """Summary
+    
+    Args:
+        config (str): Description
+    """
     cfg = json.load(open(join('cfg', config)))
     exp_name = splitext(config)[0]
     mcmc = MCMC(cfg)
