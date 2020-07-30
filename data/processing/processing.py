@@ -6,7 +6,7 @@ import pickle
 import datetime
 from collections import defaultdict
 
-from data.dataloader import Covid19IndiaLoader, RootnetLoader, AthenaLoader
+from data.dataloader import Covid19IndiaLoader, RootnetLoader, AthenaLoader, JHULoader, NYTLoader
 
 
 def get_dataframes_cached(loader_class=Covid19IndiaLoader):
@@ -14,6 +14,10 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader):
         loader_key = 'tracker'
     if loader_class == AthenaLoader:
         loader_key = 'athena'
+    if loader_class == JHULoader:
+        loader_key = 'jhu'
+    if loader_class == NYTLoader:
+        loader_key = 'nyt'
     picklefn = "../../cache/dataframes_ts_{today}_{loader_key}.pkl".format(
         today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
     try:
@@ -349,3 +353,41 @@ def get_concat_data(dataframes, state, district, new_district_name=None, concat=
         else:
             from_df_districtwise = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
         return from_df_districtwise
+
+def get_jhu_data(region, sub_region=None):
+    dataframe = get_dataframes_cached(loader_class=JHULoader)
+    dataframe.rename(columns={"ConfirmedCases": "total_infected", "Deaths": "deceased",
+                              "RecoveredCases": "recovered", "ActiveCases": "hospitalised", "Date": "date"},
+                     inplace=True)
+    dataframe.drop(["Lat", "Long"], axis=1, inplace=True)
+    df = dataframe[dataframe['Country/Region'] == region]
+    if sub_region is not None:
+        df = df[df['Province/State'] == sub_region]
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+def get_ny_times_data(state, county=None):
+    dataframes = get_dataframes_cached(loader_class=NYTLoader)
+    if county is not None:
+        df = dataframes['counties']
+        df = df[np.logical_and(df['state'] == state, df['county'] == county)]
+    else:
+        df = dataframes['states']
+        df = df[df['state'] == state]
+    df['date'] = pd.to_datetime(df['date'])
+    df.rename(columns={"cases": "total_infected", "deaths": "deceased"}, inplace=True)
+    df.drop('fips', axis=1)
+    return df
+
+def get_data_from_source(region=None, sub_region=None, data_source='covid19india', use_dataframe='data_all',
+                         disable_tracker=False, filename=None, data_format='new'):
+    if data_source in ['covid19india', 'athena', 'rootnet', 'file']:
+        data = get_data(state=region, district=sub_region, disable_tracker=disable_tracker, use_dataframe=use_dataframe,
+                        filename=filename, data_format=data_format)
+    elif data_source == 'jhu':
+        data = get_jhu_data(region, sub_region=sub_region)
+    elif data_source == 'ny_times':
+        data = get_ny_times_data(region, county=sub_region)
+    else:
+        raise Exception('Invalid data source')
+    return data
