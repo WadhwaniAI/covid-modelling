@@ -1,14 +1,17 @@
-from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
-from utils.loss import Loss_Calculator
+import sys
 from copy import copy
-from models.ihme.model import IHME
-import numpy as np
-import pandas as pd
 from datetime import timedelta
 
-import sys
+import numpy as np
+import pandas as pd
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+
+from models.ihme.model import IHME
+from utils.loss import Loss_Calculator
+
 sys.path.append('../..')
 from utils.util import HidePrints, train_test_split
+
 
 class Optimiser():
     def __init__(self, model: IHME, data: pd.DataFrame, args=None):
@@ -19,10 +22,11 @@ class Optimiser():
             model (IHME): untrained model
             data (pd.DataFrame): fit + val data
             args ([type], optional): args for self.optimisestar(). Defaults to None.
-        """        
+        """
         self.model = model
         self.data = data
         self.args = args
+
     def optimisestar(self, _):
         """
         wrapper function for self.optimise
@@ -34,8 +38,9 @@ class Optimiser():
             tuple: (fe_init, n_days_train), min_loss, trials object
         """
         return self.optimise(**self.args)
-    def optimise(self, bounds: list, 
-            iterations: int, scoring='mape', val_size=7, min_days=7):
+
+    def optimise(self, bounds: list,
+                 iterations: int, scoring='mape', val_size=7, min_days=7):
         """
         optimise function to find best fe_init and n_days_train
 
@@ -51,7 +56,7 @@ class Optimiser():
 
         Returns:
             tuple: (fe_init, n_days_train), min_loss, trials object
-        """        
+        """
         if len(self.data) - val_size < min_days:
             raise Exception(f'len(data) - val_size must be >= {min_days}')
         model = self.model.generate()
@@ -68,7 +73,7 @@ class Optimiser():
             val_cut = val[:]
             train_cut.loc[:, 'day'] = (train_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
             val_cut.loc[:, 'day'] = (val_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
-            
+
             with HidePrints():
                 test_model.fit(train_cut)
                 predictions = test_model.predict(val_cut[model.date].min(), val_cut[model.date].max())
@@ -87,7 +92,7 @@ class Optimiser():
             space[model.param_names[i]] = hp.uniform(model.param_names[i], bound[0], bound[1])
         # fmin returns index for hp.choice
         # n_days_range = np.arange(min_days, 1 + len(data) - val_size, dtype=int)
-        
+
         # TODO: decide, and remove n from hyperopt search if it remains consistent
         # force only min_days for n
         n_days_range = np.arange(min_days, 1 + min_days, dtype=int)
@@ -95,18 +100,18 @@ class Optimiser():
 
         trials = Trials()
         best = fmin(objective,
-            space=space,
-            algo=tpe.suggest,
-            max_evals=iterations,
-            trials=trials)
-        
+                    space=space,
+                    algo=tpe.suggest,
+                    max_evals=iterations,
+                    trials=trials)
+
         fe_init = []
         for i, param in enumerate(model.param_names):
             fe_init.append(best[param])
-        
+
         # returns index of range provided to hp.choice for n
         best['n'] = n_days_range[best['n']]
-        
+
         min_loss = min(trials.losses())
         # print (best, min_loss)
         return (fe_init, best['n']), min_loss, trials
