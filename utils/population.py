@@ -69,7 +69,7 @@ def get_district_population(state, area_names):
 
 
 def get_population(region, sub_region=None):
-    population = pd.read_csv('../../data/data/population.csv')
+    population = pd.read_csv('../../data/data/ihme_data/population.csv')
     population = population[population['region'] == region.lower()]
     if sub_region is not None:
         population = population[population['sub_region'] == sub_region]
