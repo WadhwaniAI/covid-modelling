@@ -1,25 +1,20 @@
-import os
 import json
+import os
 import pickle
-import pandas as pd
-
 from copy import deepcopy
 
+import pandas as pd
 import yaml
-
-from utils.enums import Columns
-from utils.util import read_config
-from utils.data import regions
 
 from main.ihme.fitting import single_cycle
 from main.seir.fitting import data_setup, run_cycle
-
 from models.seir import SEIR_Testing, SIRD
-
-from viz.forecast import plot_forecast_agnostic
+from utils.data import get_supported_regions
+from utils.enums import Columns
+from utils.util import read_config
 from viz.fit import plot_fit
+from viz.forecast import plot_forecast_agnostic
 from viz.synthetic_data import plot_fit_uncertainty
-
 
 supported_models = [
     {'model': SEIR_Testing, 'name': 'SEIR Testing', 'name_prefix': 'seirt'},
@@ -27,13 +22,15 @@ supported_models = [
 ]
 
 
-def ihme_data_generator(district, state, disable_tracker, actual_start_date, dataset_length,
-                        train_val_size, val_size, test_size,
-                        config_path, output_folder, which_compartments=Columns.curve_fit_compartments()):
+def ihme_runner(sub_region, region, disable_tracker, actual_start_date, dataset_length,
+                train_val_size, val_size, test_size,
+                config_path, output_folder, variant='log_erf', data_source='india_district',
+                which_compartments=Columns.curve_fit_compartments()):
     """Runs IHME model, creates plots and returns results
 
     Args:
-        district (str): name of district
+        sub_region (str): name of sub-region (province/state/district)
+        region (str): name of region (country/state)
         disable_tracker (bool): If False, data from tracker is not used
         actual_start_date (datetime.datetime): date from which series s1 begins
         dataset_length (int): length of dataset used
@@ -42,14 +39,17 @@ def ihme_data_generator(district, state, disable_tracker, actual_start_date, dat
         test_size (int): length of test split
         config_path (str): path to config file
         output_folder (str): path to output folder
+        variant (str): curve fitting function used
+        data_source (str): type of data used
         which_compartments (list, optional): list of compartments to fit (default: Columns.curve_fit_compartments())
 
     Returns:
         dict, dict, dict: results, updated config, model parameters
     """
 
-    region = district if district is not None else state
-    district, state, area_names = regions[region.lower()]
+    region_name = sub_region if sub_region is not None else region
+    region_dict = get_supported_regions()[region_name.lower()]
+    sub_region, region, area_names = region_dict['sub_region'], region_dict['region'], region_dict['area_names']
     config, model_params = read_config(config_path)
 
     config['start_date'] = actual_start_date
@@ -57,48 +57,51 @@ def ihme_data_generator(district, state, disable_tracker, actual_start_date, dat
     config['disable_tracker'] = disable_tracker
     config['test_size'] = test_size
     config['val_size'] = val_size
+    config['data_source'] = data_source
+    model_params['func'] = variant
+    if variant == 'log_expit':  # Predictive validity only supported by Gaussian family of functions
+        model_params['pipeline_args']['n_draws'] = 0
 
-    ihme_res = single_cycle(district, state, area_names, model_params, which_compartments=which_compartments, **config)
+    ihme_res = single_cycle(sub_region, region, area_names, model_params, which_compartments=which_compartments,
+                            **config)
 
-    ihme_df_train, ihme_df_val = ihme_res['df_train'], ihme_res['df_val']
-    ihme_df_train_nora, ihme_df_val_nora = ihme_res['df_train_nora'], ihme_res['df_val_nora']
-    ihme_df_true = ihme_res['df_district']
-    ihme_df_pred = ihme_res['df_prediction']
-
-    makesum = deepcopy(ihme_df_pred)
+    predictions = deepcopy(ihme_res['df_prediction'])
+    # If fitting to all compartments, constrain total_infected as sum of other compartments
     if set(which_compartments) == set(Columns.curve_fit_compartments()):
-        makesum['total_infected'] = ihme_df_pred['recovered'] + ihme_df_pred['deceased'] + ihme_df_pred['hospitalised']
+        predictions['total_infected'] = ihme_res['df_prediction']['recovered'] + ihme_res['df_prediction']['deceased'] \
+                                    + ihme_res['df_prediction']['hospitalised']
 
-    ihme_res['df_final_prediction'] = makesum
+    ihme_res['df_final_prediction'] = predictions
 
     plot_fit(
-        makesum.reset_index(), ihme_df_train, ihme_df_val, ihme_df_true,
-        train_val_size, state, district, which_compartments=[c.name for c in which_compartments],
+        predictions.reset_index(), ihme_res['df_train'], ihme_res['df_val'], ihme_res['df_district'],
+        train_val_size, region, sub_region, which_compartments=[c.name for c in which_compartments],
         description='Train and test',
-        savepath=os.path.join(output_folder, 'ihme_i1_fit.png'))
+        savepath=os.path.join(output_folder, f'ihme_i1_fit_{variant}.png'))
 
-    plot_forecast_agnostic(ihme_df_true, makesum.reset_index(), model_name='IHME',
-                           dist=district, state=state, which_compartments=which_compartments,
-                           filename=os.path.join(output_folder, 'ihme_i1_forecast.png'))
+    plot_forecast_agnostic(ihme_res['df_district'], predictions.reset_index(), model_name='IHME',
+                           dist=sub_region, state=region, which_compartments=which_compartments,
+                           filename=os.path.join(output_folder, f'ihme_i1_forecast__{variant}.png'))
 
     for plot_col in which_compartments:
-        plot_fit_uncertainty(makesum.reset_index(), ihme_df_train, ihme_df_val, ihme_df_train_nora, ihme_df_val_nora,
-                             train_val_size, test_size, state, district, draws=ihme_res['draws'],
-                             which_compartments=[plot_col.name],
-                             description='Train and test',
-                             savepath=os.path.join(output_folder, f'ihme_i1_{plot_col.name}.png'))
+        plot_fit_uncertainty(predictions.reset_index(), ihme_res['df_train'], ihme_res['df_val'], ihme_res['df_train_nora'],
+                             ihme_res['df_val_nora'], train_val_size, test_size, region, sub_region,
+                             draws=ihme_res['draws'], which_compartments=[plot_col.name], description='Train and test',
+                             savepath=os.path.join(output_folder, f'ihme_i1_{plot_col.name}_{variant}.png'))
+
+    model_params['func'] = variant
 
     return ihme_res, config, model_params
 
 
-def seir_runner(district, state, input_df, data_from_tracker,
+def seir_runner(sub_region, region, input_df, data_from_tracker,
                 train_period, val_period, which_compartments,
-                model=SEIR_Testing,  variable_param_ranges=None, num_evals=1500):
+                model=SEIR_Testing, variable_param_ranges=None, num_evals=1500):
     """Wrapper for main.seir.fitting.run_cycle
 
     Args:
-        district (str): name of district
-        state (str): name of state
+        sub_region (str): name of district
+        region (str): name of state
         input_df (tuple): dataframe of observations from districts_daily/custom file/athena DB, dataframe of raw data
         data_from_tracker (bool): If False, data from tracker is not used
         train_period (int): length of train period
@@ -114,7 +117,7 @@ def seir_runner(district, state, input_df, data_from_tracker,
 
     observed_dataframes = data_setup(input_df, val_period, continuous_ra=False)
     predictions_dict = run_cycle(
-        state, district, observed_dataframes,
+        region, sub_region, observed_dataframes,
         model=model, variable_param_ranges=variable_param_ranges,
         data_from_tracker=data_from_tracker, train_period=train_period,
         which_compartments=which_compartments, N=1e7,
@@ -131,7 +134,7 @@ def log_experiment_local(output_folder, region_config, i1_config, i1_model_param
 
     Args:
         output_folder (str): Output folder path
-        region_config (str): Config for experiments
+        region_config (dict): Config for experiments
         i1_config (dict): Config for IHME I1 model
         i1_model_params (dict): Model parameters of IHME I1 model
         i1_output (dict): Results dict of IHME I1 model
@@ -217,7 +220,7 @@ def log_experiment_local(output_folder, region_config, i1_config, i1_model_param
         json.dump(i1_config_dump, outfile, indent=4)
 
     with open(output_folder + 'ihme_i1_model_params.json', 'w') as outfile:
-        json.dump(repr(i1_model_params), outfile, indent=4)
+        json.dump(i1_model_params, outfile, indent=4)
 
     i1_dump = deepcopy(i1_output)
     for var in i1_dump['individual_results']:
