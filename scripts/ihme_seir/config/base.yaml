@@ -16,6 +16,7 @@ base:
   which_compartments: [total_infected] # compartments to fit to
   replace_compartments: [total_infected] # compartments to use synthetic data for
   compartmental_models: [sird] # compartmental models used in experiments
+  ihme_variants: [log_erf, log_expit]
 params_seirt_tp_7:
   lockdown_R0: [1, 1.5]
   T_inc: [4, 15]

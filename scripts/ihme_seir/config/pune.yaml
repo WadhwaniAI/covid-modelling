@@ -1,6 +1,6 @@
 base:
-  district: Pune
-  state: Maharashtra
+  sub_region: Pune
+  region: Maharashtra
   s1: 20
   s2: 5
   s3: 7
@@ -8,6 +8,7 @@ base:
   i1_val_size: 6
   c2_train_period: 20
   c3_train_period: 20
+  data_source: covid19india
 params_seirt_tp_7:
   lockdown_R0: [1, 1.5]
   T_inc: [4, 15]
