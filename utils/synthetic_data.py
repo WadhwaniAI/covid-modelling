@@ -65,7 +65,8 @@ def create_custom_dataset(df_actual, df_synthetic, use_actual=True, use_syntheti
             df_train = pd.concat([df_train1, df_train2], axis=0)
         else:
             raise Exception("Train and test sets not defined.")
-    df_train.reset_index(inplace=True, drop=True)
+    df_train.reset_index(drop=True, inplace=True)
+    df_test.reset_index(drop=True, inplace=True)
 
     # Remove data after s3
     if len(df_test) > test_size:
@@ -74,6 +75,7 @@ def create_custom_dataset(df_actual, df_synthetic, use_actual=True, use_syntheti
         raise Exception("Test set size {} greater than size available {}.".format(test_size, len(df_test)))
 
     df = pd.concat([df_train, df_test], axis=0)
+    df.reset_index(drop=True, inplace=True)
 
     # Create dict of dataset properties
     properties = {
