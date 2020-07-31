@@ -5,7 +5,7 @@ from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_expe
 from utils.loss import Loss_Calculator
 from utils.enums import Columns
 
-from main.ihme_seir.synthetic_data_generator import ihme_data_generator, seir_runner, log_experiment_local, \
+from main.ihme_seir.synthetic_data_generator import ihme_runner, seir_runner, log_experiment_local, \
     create_output_folder, get_variable_param_ranges_dict, read_region_config, supported_models
 from main.seir.fitting import get_regional_data, get_variable_param_ranges
 
@@ -28,8 +28,9 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
     region_config = read_region_config(region_config_path)
 
     # Unpack parameters from config and set local parameters
-    district = region_config['district']
-    state = region_config['state']
+    sub_region = region_config['sub_region']
+    region = region_config['region']
+    data_source = region_config['data_source']
     experiment_name = region_config['experiment_name']
     replace_compartments = region_config['replace_compartments']
     which_compartments = region_config['which_compartments']
@@ -61,7 +62,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
     i1_dataset_length = i1_train_val_size + i1_test_size
     c1_dataset_length = shift + allowance + c1_train_period + c1_val_period
 
-    smooth_jump = True if district == "Mumbai" else False
+    smooth_jump = True if sub_region == "Mumbai" else False
 
     replace_compartments_enum = [Columns.from_name(comp) for comp in replace_compartments]
 
@@ -80,7 +81,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
         's3': s3,
         'dataset_start_date': dataset_start_date.strftime("%m-%d-%Y"),
         'shift': shift,
-        'i1_train_size': s1-i1_val_size,
+        'i1_train_size': s1 - i1_val_size,
         'i1_val_size': i1_val_size,
         'i1_test_size': s2,
         'c1_train_period': c1_train_period,
@@ -93,16 +94,20 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
 
     # Generate synthetic data using IHME model
     print("IHME I1 model")
-    i1_output, i1_config, i1_model_params = ihme_data_generator(district, state, disable_tracker,
-                                                                actual_start_date, i1_dataset_length,
-                                                                i1_train_val_size, i1_val_size, i1_test_size,
-                                                                ihme_config_path, output_folder,
-                                                                which_compartments=replace_compartments_enum)
+    i1_output, i1_config, i1_model_params = ihme_runner(sub_region, region, disable_tracker,
+                                                        actual_start_date, i1_dataset_length,
+                                                        i1_train_val_size, i1_val_size, i1_test_size,
+                                                        ihme_config_path, output_folder, data_source=data_source,
+                                                        which_compartments=replace_compartments_enum)
 
     # Get SEIR input dataframes
-    input_df = get_regional_data(state, district, (not disable_tracker), None, None, granular_data=False,
-                                 smooth_jump=smooth_jump, t_recov=14,
-                                 return_extra=False, which_compartments=which_compartments)
+    if smooth_jump:
+        input_df = get_regional_data(region, sub_region, (not disable_tracker), None, None, granular_data=False,
+                                     smooth_jump=smooth_jump, t_recov=14,
+                                     return_extra=False, which_compartments=which_compartments)
+    else:
+        input_df = deepcopy(data)
+    input_df['daily_cases'] = input_df['total_infected'].diff()
 
     for i, model_dict in enumerate(supported_models):
         name_prefix = model_dict['name_prefix']
@@ -110,7 +115,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
             continue
         model = model_dict['model']
         name = model_dict['name']
-        variable_param_ranges = get_variable_param_ranges_dict(district, state,
+        variable_param_ranges = get_variable_param_ranges_dict(sub_region, region,
                                                                model_type=name_prefix, train_period=c2_train_period)
         variable_param_ranges_copy = deepcopy(variable_param_ranges)
         variable_param_ranges = get_variable_param_ranges(variable_param_ranges)
@@ -120,12 +125,12 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
         input_df_c1 = input_df_c1.head(c1_dataset_length)
 
         print(name, " C1 model")
-        c1_output = seir_runner(district, state, input_df_c1, (not disable_tracker),
+        c1_output = seir_runner(sub_region, region, input_df_c1, (not disable_tracker),
                                 c1_train_period, c1_val_period, which_compartments,
                                 model=model, variable_param_ranges=variable_param_ranges,
                                 num_evals=num_evals)
 
-        original_data = deepcopy(i1_output['df_district_nora'])
+        original_data = deepcopy(input_df)
 
         # Set experiment data configs
         exp_config = [deepcopy(region_config) for _ in range(3)]
@@ -138,7 +143,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
         df, train, test, dataset_prop = dict(), dict(), dict(), dict()
         for exp in range(num_exp):
             df[exp], train[exp], test[exp], dataset_prop[exp] = get_experiment_dataset(
-                district, state, original_data, generated_data=exp_config[exp]['generated_data'],
+                sub_region, region, original_data, generated_data=exp_config[exp]['generated_data'],
                 use_actual=exp_config[exp]['use_actual'], use_synthetic=exp_config[exp]['use_synthetic'],
                 start_date=dataset_start_date, allowance=allowance, s1=s1, s2=s2, s3=s3,
                 compartments=replace_compartments_enum)
@@ -153,7 +158,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
         print(name, " C2 model")
         predictions_dicts = dict()
         for exp in range(num_exp):
-            predictions_dicts[exp] = seir_runner(district, state, input_dfs[exp], (not disable_tracker),
+            predictions_dicts[exp] = seir_runner(sub_region, region, input_dfs[exp], (not disable_tracker),
                                                  c2_train_period, c2_val_period, which_compartments,
                                                  model=model, variable_param_ranges=variable_param_ranges,
                                                  num_evals=num_evals)
@@ -161,12 +166,12 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
         # Get baseline c3 predictions for s2+s3 when trained on s1
         print(name, " C3 model")
         df_baseline, train_baseline, test_baseline, dataset_prop_baseline = get_experiment_dataset(
-            district, state, original_data, generated_data=None, use_actual=True, use_synthetic=False,
-            start_date=dataset_start_date, allowance=allowance, s1=s1, s2=0, s3=s2+s3,
+            sub_region, region, original_data, generated_data=None, use_actual=True, use_synthetic=False,
+            start_date=dataset_start_date, allowance=allowance, s1=s1, s2=0, s3=s2 + s3,
             compartments=replace_compartments_enum)
         input_df_baseline = insert_custom_dataset_into_dataframes(input_df, df_baseline, start_date=dataset_start_date,
                                                                   compartments=replace_compartments_enum)
-        predictions_dict_baseline = seir_runner(district, state, input_df_baseline, (not disable_tracker),
+        predictions_dict_baseline = seir_runner(sub_region, region, input_df_baseline, (not disable_tracker),
                                                 c3_train_period, c3_val_period, which_compartments,
                                                 model=model, variable_param_ranges=variable_param_ranges,
                                                 num_evals=num_evals)
@@ -180,12 +185,12 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
 
         print("Creating plots...")
         # Plotting all experiments
-        plot_all_experiments(input_df, predictions_dicts, district, actual_start_date,
+        plot_all_experiments(input_df, predictions_dicts, sub_region, actual_start_date,
                              allowance, s1, s2, s3, shift, c2_train_period, output_folder, name_prefix=name_prefix,
                              which_compartments=replace_compartments_enum)
 
         # Plot performance against baseline
-        plot_against_baseline(input_df, predictions_dicts, predictions_dict_baseline, district,
+        plot_against_baseline(input_df, predictions_dicts, predictions_dict_baseline, sub_region,
                               actual_start_date, allowance, s1, s2, s3, shift, c2_train_period, c3_train_period,
                               output_folder, name_prefix=name_prefix, which_compartments=replace_compartments_enum)
 
