@@ -33,7 +33,7 @@ sys.path.append('../../')
 
 from main.ihme_seir.experiments import run_experiments
 
-from data.processing import get_data
+from data.processing import get_data_from_source
 
 from main.ihme_seir.synthetic_data_generator import read_region_config
 
@@ -50,12 +50,14 @@ def run_experiments_over_time(ihme_config_path, region_config_path, num, shift):
     """
 
     region_config = read_region_config(region_config_path)
-    district = region_config['district']
-    state = region_config['state']
+    sub_region = region_config['sub_region']
+    region = region_config['region']
+    data_source = region_config['data_source']
     disable_tracker = region_config['disable_tracker']
 
     # Print data summary
-    data = get_data(state=state, district=district, disable_tracker=disable_tracker, use_dataframe='data_all')
+    data = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source,
+                                disable_tracker=disable_tracker)
     print("Data summary:")
     print(data)
 
@@ -63,8 +65,8 @@ def run_experiments_over_time(ihme_config_path, region_config_path, num, shift):
     now = datetime.now()
     date_now = now.strftime("%Y%m%d")
     time_now = now.strftime("%H%M%S")
-    region = district if district is not None else state
-    root_folder = f'{region}/{date_now}/{time_now}'
+    region_name = sub_region if sub_region is not None else region
+    root_folder = f'{region_name}/{date_now}/{time_now}'
 
     if num == 1:
         start_time = time.time()

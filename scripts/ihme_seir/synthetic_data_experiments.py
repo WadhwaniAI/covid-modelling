@@ -1,5 +1,5 @@
 """
-Script to run IHME-SEIR synthetic data experiments. Executed using runner.sh to perform multiple runs.
+Script to run IHME-SEIR synthetic data experiments. Executed using runner_synthetic_data.sh to perform multiple runs.
 Data generators:
     IHME I1 model (1)
     Compartmental C1 model
@@ -21,7 +21,7 @@ Baseline models:
         SIRD model (11)
 
 Usage example (single run):
-    python3 synthetic_data_experiments.py -i ../ihme/config/pune.yaml -r config/pune.yaml -f test -n 2
+    python3 experiments.py -i ../ihme/config/pune.yaml -r config/pune.yaml -f test -n 2
 """
 
 import argparse
@@ -31,7 +31,7 @@ sys.path.append('../../')
 
 from main.ihme_seir.experiments import run_experiments
 
-from data.processing import get_data
+from data.processing import get_data_from_source
 
 from main.ihme_seir.synthetic_data_generator import read_region_config
 
@@ -49,18 +49,20 @@ def runner(ihme_config_path, region_config_path, output_folder, num):
     """
 
     region_config = read_region_config(region_config_path)
-    district = region_config['district']
-    state = region_config['state']
+    sub_region = region_config['sub_region']
+    region = region_config['region']
+    data_source = region_config['data_source']
     disable_tracker = region_config['disable_tracker']
     shift_period = region_config['shift_period']
 
     # Print data summary
-    data = get_data(state=state, district=district, disable_tracker=disable_tracker, use_dataframe='data_all')
+    data = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source,
+                                disable_tracker=disable_tracker)
 
     # Output folder
-    region = district if district is not None else state
-    root_folder = f'{region}/{output_folder}'
-    print(region, ": Run no. ", num+1, " with shift of ", shift_period * num)
+    region_name = sub_region if sub_region is not None else region
+    root_folder = f'{region_name}/{output_folder}'
+    print(region_name, ": Run no. ", num+1, " with shift of ", shift_period * num)
     run_experiments(ihme_config_path, region_config_path, data, f'{root_folder}/{str(num)}', multiple=True,
                     shift_forward=shift_period * num)
 
