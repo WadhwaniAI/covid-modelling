@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import datetime
+import copy
 import requests
 
 from data.dataloader.base import BaseLoader
@@ -106,6 +107,7 @@ class Covid19IndiaLoader(BaseLoader):
             dataframes['df_districts'] = df_districts
 
         data = requests.get('https://api.covid19india.org/v4/data-all.json').json()
+        data_copy = copy.deepcopy(data)
 
         for date in data.keys():
             date_dict = data[date]
@@ -160,6 +162,42 @@ class Covid19IndiaLoader(BaseLoader):
         numeric_cols = ['confirmed', 'active', 'recovered', 'deceased', 'tested', 'migrated']
         df_districts_all.loc[:, numeric_cols] = df_districts_all.loc[:, numeric_cols].apply(pd.to_numeric)
         dataframes['df_districts_all'] = df_districts_all
+
+        data = copy.deepcopy(data_copy)
+        for date in data.keys():
+            date_dict = data[date]
+            # Remove all the states which don't have district data in them
+            date_dict = {state : state_dict for state, state_dict in date_dict.items() if 'districts' in state_dict.keys()}
+            data[date] = date_dict
+            
+        # Remove all the dates which have 0 states with district data after pruning
+        data = {date : date_dict for date, date_dict in data.items() if len(date_dict) > 0}
+
+        # Make the districts key data the only data available for the state key
+        for date in data.keys():
+            for state in data[date].keys():
+                # Make the districts key dict the main dict itself for a particular date, state
+                data[date][state] = data[date][state]['total']
+                
+            date_dict = {state: state_dict for state, state_dict in data[date].items() \
+                        if {'confirmed', 'recovered', 'deceased'} <= state_dict.keys()}
+            data[date] = date_dict
+            
+        # Remove all the dates which have 0 states with district data after pruning
+        data = {date : date_dict for date, date_dict in data.items() if len(date_dict) > 0}
+
+        df_states_all = pd.DataFrame(columns=['date', 'state', 'confirmed', 'active', 'recovered', 'deceased', 'tested', 'migrated'])
+        for date in data.keys():
+            df_date = pd.DataFrame.from_dict(data[date]).T.reset_index()
+            df_date = df_date.rename({'index' : 'state'}, axis='columns')
+            df_date['active'] = df_date['confirmed'] - (df_date['recovered'] + df_date['deceased'])
+            df_date['state'] = pd.Series([statecode_to_state_dict[state_code] for state_code in df_date['state']])
+            df_date['date'] = date
+            df_states_all = pd.concat([df_states_all, df_date], ignore_index=True)
+        
+        numeric_cols = ['confirmed', 'active', 'recovered', 'deceased', 'tested', 'migrated']
+        df_states_all.loc[:, numeric_cols] = df_states_all.loc[:, numeric_cols].apply(pd.to_numeric)
+        dataframes['df_states_all'] = df_states_all
 
         # Parse travel_history.json file
         # Create dataframe for travel history

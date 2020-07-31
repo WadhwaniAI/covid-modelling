@@ -85,7 +85,7 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
         df_result['state'] == state.lower(), df_result['district'] == district.lower())]
     df_result = df_result.loc[:, :'deceased']
     df_result.dropna(axis=0, how='any', inplace=True)
-    df_result['date'] = pd.to_datetime(df_result['date'])
+    df_result.loc[:, 'date'] = pd.to_datetime(df_result['date'])
     df_result.reset_index(inplace=True, drop=True)
     df_result = df_result.rename({'total': 'total_infected', 'active': 'hospitalised'}, axis='columns')
     for col in df_result.columns:
@@ -104,7 +104,6 @@ def get_custom_data_from_file(filename, data_format='new'):
         df_result.drop(np.arange(3), inplace=True)
         df_result['date'] = pd.to_datetime(df_result['date'], format='%m-%d-%Y')
         df_result = df_result.dropna(subset=['state'], how='any')
-        # df_result = df_result[np.logical_not(df_result['state'].isna())]
         df_result.reset_index(inplace=True, drop=True)
         df_result.loc[:, ['total_infected', 'hospitalised', 'recovered', 'deceased']] = df_result[[
             'total_infected', 'hospitalised', 'recovered', 'deceased']].apply(pd.to_numeric)
@@ -120,12 +119,12 @@ def get_custom_data_from_file(filename, data_format='new'):
     return df_result
         
 def get_state_time_series(state='Delhi'):
-    loader = RootnetLoader()
-    rootnet_dataframes = loader.get_rootnet_api_data()
-    df_states = rootnet_dataframes['df_state_time_series']
+    dataframes = get_dataframes_cached()
+    df_states = copy.copy(dataframes['df_states_all'])
     df_state = df_states[df_states['state'] == state]
-    df_state = df_state.loc[df_state['date'] >= '2020-04-24', :]
-    df_state = df_state.loc[df_state['date'] < datetime.date.today().strftime("%Y-%m-%d"), :]
+    df_state['date'] = pd.to_datetime(df_state['date'])
+    df_state = df_state.rename(
+        {'active': 'hospitalised', 'confirmed': 'total_infected'}, axis='columns')
     df_state.reset_index(inplace=True, drop=True)
     return df_state
 
