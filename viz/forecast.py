@@ -134,7 +134,7 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=N
     for compartment in which_compartments:
         fig, ax = plt.subplots(figsize=(12, 12))
         texts = []
-        ax.plot(df_true[Columns.date.name], df_true[compartment.name],
+        ax.plot(df_true[Columns.date.name].to_numpy(), df_true[compartment.name].to_numpy(),
                 '-o', color='C0', label=f'{compartment.label} (Observed)')
         if plot_individual_curves == True:
             for i, df_prediction in enumerate(predictions):
