@@ -1,13 +1,8 @@
 import os
-import pdb
 import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import seaborn as sns
-from hyperopt import hp, tpe, fmin, Trials
-from tqdm import tqdm
 from adjustText import adjust_text
 
 from collections import OrderedDict, defaultdict
@@ -25,8 +20,8 @@ from main.seir.optimiser import Optimiser
 
 from utils.enums import Columns, SEIRParams
 
-def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train_fit='m2', best_params=None, 
-                 verbose=True, lockdown_removal_date=None):
+def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train_fit='m2', model=SEIRHD,
+                 best_params=None, verbose=True, lockdown_removal_date=None):
     """Returns the forecasts for a given set of params of a particular geographical area
 
     Arguments:
@@ -43,7 +38,8 @@ def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train
     if verbose:
         print("getting forecasts ..")
     if simulate_till == None:
-        simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + datetime.timedelta(days=days)
+        simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + \
+            datetime.timedelta(days=days)
     if best_params == None:
         best_params = predictions_dict[train_fit]['best_params']
 
@@ -57,12 +53,13 @@ def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train
     df_prediction = predictions_dict[train_fit]['optimiser'].solve(best_params,
                                                                    default_params,
                                                                    predictions_dict[train_fit]['df_train'], 
+                                                                   model=model,
                                                                    end_date=simulate_till)
 
     return df_prediction
 
 
-def create_region_csv(predictions_dict: dict, region: str, regionType: str, df_prediction=None, 
+def create_region_csv(predictions_dict: dict, region: str, regionType: str, model=SEIRHD, df_prediction=None,
                       icu_fraction=0.02, best_params=None, days=30):
     """Created the CSV file for one particular geographical area in the format Keshav consumes
 
@@ -89,7 +86,7 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, df_p
     df_output = pd.DataFrame(columns=columns)
 
     if df_prediction is None:
-        df_prediction = get_forecast(predictions_dict, best_params=best_params, days=days)
+        df_prediction = get_forecast(predictions_dict, model=model, best_params=best_params, days=days)
 
     df_true = predictions_dict['m1']['df_district']
     prediction_daterange = np.union1d(df_true['date'], df_prediction['date'])
@@ -274,7 +271,7 @@ def _get_top_k_trials(m_dict: dict, k=10):
     params_array, losses_array = _order_trials_by_loss(m_dict)
     return params_array[:k], losses_array[:k]
 
-def forecast_top_k_trials(predictions_dict: dict, k=10, train_fit='m2', forecast_days=37):
+def forecast_top_k_trials(predictions_dict: dict, model=SEIRHD, k=10, train_fit='m2', forecast_days=37):
     """Creates forecasts for the top k Bayesian Opt trials (ordered by loss) for a specified number of days
 
     Args:
@@ -292,11 +289,12 @@ def forecast_top_k_trials(predictions_dict: dict, k=10, train_fit='m2', forecast
         datetime.timedelta(days=forecast_days)
     print("getting forecasts ..")
     for i, params_dict in tqdm(enumerate(top_k_params)):
-        predictions.append(get_forecast(
-            predictions_dict, best_params=params_dict, train_fit=train_fit, simulate_till=simulate_till, verbose=False))
+        predictions.append(get_forecast(predictions_dict, best_params=params_dict, model=model, 
+                                        train_fit=train_fit, simulate_till=simulate_till, verbose=False))
     return predictions, top_k_losses, top_k_params
 
-def forecast_all_trials(predictions_dict, train_fit='m2', forecast_days=37):
+
+def forecast_all_trials(predictions_dict, model=SEIRHD, train_fit='m2', forecast_days=37):
     """Forecasts all trials in a particular train_fit, in predictions dict
 
     Args:
@@ -310,6 +308,7 @@ def forecast_all_trials(predictions_dict, train_fit='m2', forecast_days=37):
     predictions, losses, params = forecast_top_k_trials(
         predictions_dict, 
         k=len(predictions_dict[train_fit]['trials']), 
+        model=model,
         train_fit=train_fit,
         forecast_days=forecast_days
     )
@@ -391,7 +390,9 @@ def set_r0_multiplier(params_dict, mul):
     new_params['post_lockdown_R0']= params_dict['lockdown_R0']*mul
     return new_params
 
-def predict_r0_multipliers(region_dict, params_dict, days, multipliers=[0.9, 1, 1.1, 1.25], lockdown_removal_date='2020-06-01'):
+
+def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
+                           multipliers=[0.9, 1, 1.1, 1.25], lockdown_removal_date='2020-06-01'):
     """
     Function to predict what-if scenarios with different post-lockdown R0s
 
@@ -418,6 +419,7 @@ def predict_r0_multipliers(region_dict, params_dict, days, multipliers=[0.9, 1, 
         predictions_mul_dict[mul]['params'] = new_params
         predictions_mul_dict[mul]['df_prediction'] = get_forecast(region_dict,
             train_fit = "m2",
+            model=model,
             best_params=new_params,
             lockdown_removal_date=lockdown_removal_date,
             days=days)    
