@@ -85,7 +85,10 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
     df['state'] = 'maharashtra'
     df.dropna(axis=0, how='any', inplace=True)
     df.replace(',', '', regex=True, inplace=True)
-    df = df[np.logical_and(df['state'] == state.lower(), df['district'] == district.lower())]
+    try:
+        df = df[np.logical_and(df['state'] == state.lower(), df['district'] == district.lower())]
+    except:
+        pass
     df.loc[:, 'total':'ventilator_occupied'] = df.loc[:, 'total':'ventilator_occupied'].apply(pd.to_numeric)
     df['date'] = pd.to_datetime(df['date'])
     df = df.infer_objects()
