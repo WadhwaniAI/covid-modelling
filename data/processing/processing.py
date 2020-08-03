@@ -9,25 +9,30 @@ from collections import defaultdict
 from data.dataloader import Covid19IndiaLoader, RootnetLoader, AthenaLoader
 
 
-def get_dataframes_cached(loader_class=Covid19IndiaLoader):
+def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
     if loader_class == Covid19IndiaLoader:
         loader_key = 'tracker'
     if loader_class == AthenaLoader:
         loader_key = 'athena'
     picklefn = "../../cache/dataframes_ts_{today}_{loader_key}.pkl".format(
         today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
-    try:
-        print(picklefn)
-        with open(picklefn, 'rb') as pickle_file:
-            dataframes = pickle.load(pickle_file)
-    except:
+    if reload_data:
         print("pulling from source")
         loader = loader_class()
         dataframes = loader.load_data()
-        if not os.path.exists('../../cache/'):
-            os.mkdir('../../cache/')
-        with open(picklefn, 'wb+') as pickle_file:
-            pickle.dump(dataframes, pickle_file)
+    else:
+        try:
+            with open(picklefn, 'rb') as pickle_file:
+                dataframes = pickle.load(pickle_file)
+            print(f'loading from {picklefn}')
+        except:
+            print("pulling from source")
+            loader = loader_class()
+            dataframes = loader.load_data()
+            if not os.path.exists('../../cache/'):
+                os.mkdir('../../cache/')
+            with open(picklefn, 'wb+') as pickle_file:
+                pickle.dump(dataframes, pickle_file)
     return dataframes
 
 
@@ -77,8 +82,11 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
     dataframes = get_dataframes_cached(loader_class=AthenaLoader)
     df_result = copy.copy(dataframes['new_covid_case_summary'])
     df_result['state'] = 'maharashtra'
-    df_result = df_result[np.logical_and(
-        df_result['state'] == state.lower(), df_result['district'] == district.lower())]
+    try:
+        df_result = df_result[np.logical_and(
+            df_result['state'] == state.lower(), df_result['district'] == district.lower())]
+    except:
+        pass
     df_result = df_result.loc[:, :'deceased']
     df_result.dropna(axis=0, how='any', inplace=True)
     df_result.loc[:, 'date'] = pd.to_datetime(df_result['date'])
