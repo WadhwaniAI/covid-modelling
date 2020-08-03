@@ -15,7 +15,8 @@ from utils.loss import Loss_Calculator
 from utils.enums import Columns
 
 class MCUncertainty(Uncertainty):
-    def __init__(self, region_dict, date_of_interest):
+    def __init__(self, region_dict, date_of_interest, 
+                 loss_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered']):
         """
         Initializes uncertainty object, finds beta for distribution
 
@@ -27,6 +28,7 @@ class MCUncertainty(Uncertainty):
         self.date_of_interest = datetime.datetime.strptime(date_of_interest, '%Y-%m-%d')
         self.beta = self.find_beta(num_evals=100)
         self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
+        self.loss_compartments = loss_compartments
         self.get_distribution()
 
     def get_distribution(self):
@@ -92,7 +94,7 @@ class MCUncertainty(Uncertainty):
             deciles_forecast[key]['params'] =  params[ptile_dict[key]]
             deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
                 df_train_nora, None, df_predictions, train_period=7,
-                which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
+                which_compartments=self.loss_compartments)
         return deciles_forecast
 
     def avg_weighted_error(self, hp, loss_method='mape', return_dict=False):
