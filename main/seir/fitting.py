@@ -67,7 +67,7 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
     return variable_param_ranges
    
 def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5,
-                    which_columns=['total_infected', 'hospitalised', 'recovered', 'deceased']):
+                    which_columns=None):
     """Creates train val split on dataframe
 
     # TODO : Add support for creating train val test split
@@ -163,6 +163,8 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
                                         which_compartments=which_compartments, description=f'Smoothing')
     
     df_district['daily_cases'] = df_district['total_infected'].diff()
+    df_district.dropna(axis=0, how='any', inplace=True)
+    df_district.reset_index(drop=True, inplace=True)
 
     if return_extra:
         extra = {
