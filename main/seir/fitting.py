@@ -201,7 +201,7 @@ def data_setup(df_district, val_period):
 def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, 
               default_params=None, train_period=7, data_from_tracker=True,
               which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], 
-              num_evals=1500, N=1e7, initialisation='starting', back_offset=0):
+              num_evals=1500, N=1e7, initialisation='starting', test_period=0):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -247,10 +247,10 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     if variable_param_ranges == None:
         variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
 
-    if back_offset == 0:
+    if test_period == 0:
         loss_indices = [-train_period, None]
     else:
-        loss_indices = [-(train_period+back_offset), -back_offset]
+        loss_indices = [-(train_period+test_period), -test_period]
     # Perform Bayesian Optimisation
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
@@ -286,7 +286,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
 
 def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ranges=None, default_params=None, #Main 
                          data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
-                         train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', back_offset=0,  #Misc
+                         train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', test_period=0,  #Misc
                          which_compartments=['hospitalised', 'total_infected'], #Compartments
                          smooth_jump=False): #Smoothing
     """Main function which user runs for running an entire fitting cycle for a particular district
@@ -337,7 +337,7 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
         state, district, observed_dataframes, 
         model=model, variable_param_ranges=variable_param_ranges, default_params=default_params,
         data_from_tracker=data_from_tracker, train_period=train_period, 
-        which_compartments=which_compartments, N=N, back_offset=back_offset,
+        which_compartments=which_compartments, N=N, test_period=test_period,
         num_evals=num_evals, initialisation=initialisation
     )
 
