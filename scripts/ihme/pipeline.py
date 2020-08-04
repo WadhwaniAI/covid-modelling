@@ -19,7 +19,7 @@ from utils.data import lograte_to_cumulative, rate_to_cumulative
 
 from viz import plot_ihme_results
 from main.ihme.fitting import create_output_folder, single_cycle
-from utils.util import read_config
+from utils.config import read_config
 from utils.enums import Columns
 
 import warnings

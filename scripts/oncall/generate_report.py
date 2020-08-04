@@ -20,7 +20,7 @@ from main.seir.forecast import order_trials, get_all_trials
 from viz import plot_forecast, plot_trials
 from utils.create_report import create_report, trials_to_df
 from utils.enums import Columns
-from utils.util import read_config
+from utils.config import read_config
 
 '''
 Please keep this script at par functionally with 

@@ -11,7 +11,7 @@ sys.path.append('../..')
 from data.processing import get_dataframes_cached
 from main.seir.fitting import get_regional_data
 from main.seir.backtesting import SEIRBacktest
-from utils.util import read_config
+from utils.config import read_config
 from viz import plot_backtest, plot_backtest_errors
 
 districts_dict = {
