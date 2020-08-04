@@ -16,7 +16,7 @@ from viz.utils import axis_formatter
 
 
 def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame,
-                              which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered']):
+                              which_compartments=['active', 'total', 'deceased', 'recovered']):
     df_temp = copy.copy(df_prediction)
     df_temp.loc[:, which_compartments] = df_prediction.loc[:,
                                                            which_compartments]*(1 - 0.01*df_loss['val'])
@@ -29,7 +29,7 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
 
 
 def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], log_scale=False, filename=None,
-                  which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'],
+                  which_compartments=['active', 'total', 'deceased', 'recovered'],
                   fileformat='eps', error_bars=False, days=30):
     """Function for plotting forecasts (both best fit and uncertainty deciles)
 
@@ -38,7 +38,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         region {tuple} -- Region Name eg : ('Maharashtra', 'Mumbai')
 
     Keyword Argument
-        which_compartments {list} -- Which compartments to plot (default: {['hospitalised', 'total_infected', 'deceased', 'recovered']})
+        which_compartments {list} -- Which compartments to plot (default: {['active', 'total', 'deceased', 'recovered']})
         df_prediction {pd.DataFrame} -- DataFrame of predictions (default: {None})
         both_forecasts {bool} -- If true, plot both forecasts (default: {False})
         log_scale {bool} -- If true, y is in log scale (default: {False})
@@ -161,7 +161,7 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=N
 def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, multipliers):
     df_true = region_dict['m2']['df_district']
     fig, ax = plt.subplots(figsize=(12, 12))
-    ax.plot(df_true['date'], df_true['hospitalised'],
+    ax.plot(df_true['date'], df_true['active'],
         '-o', color='orange', label='Active Cases (Observed)')
     for i, (mul, mul_dict) in enumerate(predictions_mul_dict.items()):
         df_prediction = mul_dict['df_prediction']
@@ -170,7 +170,7 @@ def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, mult
                     ls='-', label=f'Active Cases ({mul} - R0 {true_r0})')
         plt.text(
             x=df_prediction['date'].iloc[-1],
-            y=df_prediction['hospitalised'].iloc[-1], s=true_r0
+            y=df_prediction['active'].iloc[-1], s=true_r0
         )
     axis_formatter(ax, log_scale=log_scale)
     state, dist = region_dict['state'], region_dict['dist']

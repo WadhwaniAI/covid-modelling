@@ -98,13 +98,13 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, mode
     df_output['region'] = [region]*no_of_data_points
     df_output['model_name'] = ['SEIR']*no_of_data_points
     df_output['error_function'] = ['MAPE']*no_of_data_points
-    error = predictions_dict['m1']['df_loss'].loc['total_infected', 'val']
+    error = predictions_dict['m1']['df_loss'].loc['total', 'val']
     df_output['error_value'] = [error]*no_of_data_points
 
     df_output.set_index('predictionDate', inplace=True)
 
-    pred_hospitalisations = df_prediction['hospitalised'].to_numpy()
-    error = predictions_dict['m1']['df_loss'].loc['hospitalised', 'val']
+    pred_hospitalisations = df_prediction['active'].to_numpy()
+    error = predictions_dict['m1']['df_loss'].loc['active', 'val']
     df_output.loc[df_output.index.isin(df_prediction['date']), 'active_mean'] = pred_hospitalisations
     df_output.loc[df_output.index.isin(df_prediction['date']), 'active_min'] = (1 - 0.01*error)*pred_hospitalisations
     df_output.loc[df_output.index.isin(df_prediction['date']), 'active_max'] = (1 + 0.01*error)*pred_hospitalisations
@@ -129,14 +129,14 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, mode
     df_output.loc[df_output.index.isin(df_prediction['date']), 'deceased_min'] = (1 - 0.01*error)*pred_fatalities
     df_output.loc[df_output.index.isin(df_prediction['date']), 'deceased_max'] = (1 + 0.01*error)*pred_fatalities
     
-    pred_total_cases = df_prediction['total_infected'].to_numpy()
-    error = predictions_dict['m1']['df_loss'].loc['total_infected', 'val']
+    pred_total_cases = df_prediction['total'].to_numpy()
+    error = predictions_dict['m1']['df_loss'].loc['total', 'val']
     df_output.loc[df_output.index.isin(df_prediction['date']), 'total_mean'] = pred_total_cases
     df_output.loc[df_output.index.isin(df_prediction['date']), 'total_min'] = (1 - 0.01*error)*pred_total_cases
     df_output.loc[df_output.index.isin(df_prediction['date']), 'total_max'] = (1 + 0.01*error)*pred_total_cases
     
-    df_output.loc[df_output.index.isin(df_true['date']), 'current_total'] = df_true['total_infected'].to_numpy()
-    df_output.loc[df_output.index.isin(df_true['date']), 'current_hospitalized'] = df_true['hospitalised'].to_numpy()
+    df_output.loc[df_output.index.isin(df_true['date']), 'current_total'] = df_true['total'].to_numpy()
+    df_output.loc[df_output.index.isin(df_true['date']), 'current_hospitalized'] = df_true['active'].to_numpy()
     df_output.loc[df_output.index.isin(df_true['date']), 'current_deceased'] = df_true['deceased'].to_numpy()
     df_output.loc[df_output.index.isin(df_true['date']), 'current_recovered'] = df_true['recovered'].to_numpy()
     df_output.reset_index(inplace=True)
@@ -179,17 +179,17 @@ def create_decile_csv(predictions_dict: dict, region: str, regionType: str, icu_
         df_prediction = predictions_dict['m2']['forecasts'][decile]
         df_prediction = df_prediction.set_index('date')
         # df_loss = predictions_dict[decile]['df_loss']
-        df_output.loc[df_prediction.index, f'active_{decile}'] = df_prediction['hospitalised']
-        df_output.loc[df_prediction.index, f'hospitalised_{decile}'] = df_prediction['hospitalised']
-        # df_output.loc[df_prediction.index, f'icu_{decile}'] = icu_fraction*df_prediction['hospitalised']
+        df_output.loc[df_prediction.index, f'active_{decile}'] = df_prediction['active']
+        df_output.loc[df_prediction.index, f'hospitalised_{decile}'] = df_prediction['active']
+        # df_output.loc[df_prediction.index, f'icu_{decile}'] = icu_fraction*df_prediction['active']
         df_output.loc[df_prediction.index, f'recovered_{decile}'] = df_prediction['recovered']
         df_output.loc[df_prediction.index, f'deceased_{decile}'] = df_prediction['deceased']
-        df_output.loc[df_prediction.index, f'total_{decile}'] = df_prediction['total_infected']
+        df_output.loc[df_prediction.index, f'total_{decile}'] = df_prediction['total']
         # df_output.loc[df_prediction.index, f'error_{decile}'] = df_loss.loc[:, 'train'].sum()
 
     df_true = df_true.set_index('date')
-    df_output.loc[df_true.index, 'current_total'] = df_true['total_infected'].to_numpy()
-    df_output.loc[df_true.index, 'current_hospitalised'] = df_true['hospitalised'].to_numpy()
+    df_output.loc[df_true.index, 'current_total'] = df_true['total'].to_numpy()
+    df_output.loc[df_true.index, 'current_hospitalised'] = df_true['active'].to_numpy()
     df_output.loc[df_true.index, 'current_deceased'] = df_true['deceased'].to_numpy()
     df_output.loc[df_true.index, 'current_recovered'] = df_true['recovered'].to_numpy()
     
@@ -365,7 +365,7 @@ def scale_up_testing_and_forecast(predictions_dict, which_fit='m2', model=SEIRHD
     best, trials = optimiser.bayes_opt(df_whatif, default_params, variable_param_ranges, model=model,
                                        total_days=total_days, method='mape', num_evals=500, 
                                        loss_indices=[-time_window_to_scale, None], 
-                                       which_compartments=['total_infected'])
+                                       which_compartments=['total'])
 
     df_unscaled_forecast = predictions_dict[which_fit]['forecasts'][scenario_on_which_df]
 
@@ -434,7 +434,7 @@ def save_r0_mul(predictions_mul_dict, folder):
             {multiplier: {params: dict, df_predicted: pd.DataFrame}}
         folder (str): assets will be saved in reports/{folder}/ 
     """    
-    columns_for_csv = ['date', 'total_infected', 'hospitalised', 'recovered', 'deceased']
+    columns_for_csv = ['date', 'total', 'active', 'recovered', 'deceased']
     for (mul, val) in predictions_mul_dict.items():
         df_prediction = val['df_prediction']
         path = f'../../misc/reports/{folder}/what-ifs/'

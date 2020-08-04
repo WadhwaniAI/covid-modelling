@@ -107,13 +107,13 @@ class SEIRHD_Bed(SEIR):
             state_init_values['R_oxy'] = observed_values['o2_beds']
             state_init_values['R_icu'] = observed_values['icu']
             state_init_values['R_vent'] = observed_values['ventilator']
-            state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['hospitalised']
+            state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['active']
             
             state_init_values['C'] = observed_values['recovered']
             state_init_values['D'] = observed_values['deceased']
 
-            state_init_values['E'] = self.E_hosp_ratio * observed_values['hospitalised']
-            state_init_values['I'] = self.I_hosp_ratio * observed_values['hospitalised']
+            state_init_values['E'] = self.E_hosp_ratio * observed_values['active']
+            state_init_values['I'] = self.I_hosp_ratio * observed_values['active']
             
             nonSsum = sum(state_init_values.values())
             state_init_values['S'] = (self.N - nonSsum)
@@ -175,9 +175,9 @@ class SEIRHD_Bed(SEIR):
         df_prediction['o2_beds'] = df_prediction['R_oxy']
         df_prediction['icu'] = df_prediction['R_icu']
         df_prediction['ventilator'] = df_prediction['R_vent']
-        df_prediction['hospitalised'] = df_prediction['hq'] + df_prediction['non_o2_beds'] + \
+        df_prediction['active'] = df_prediction['hq'] + df_prediction['non_o2_beds'] + \
             df_prediction['o2_beds'] + df_prediction['icu'] + df_prediction['ventilator']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
+        df_prediction['total'] = df_prediction['active'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction

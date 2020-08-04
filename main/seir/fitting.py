@@ -162,7 +162,7 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
         smoothing_plot = plot_smoothing(orig_df_district, df_district, state, district,
                                         which_compartments=which_compartments, description=f'Smoothing')
     
-    df_district['daily_cases'] = df_district['total_infected'].diff()
+    df_district['daily_cases'] = df_district['total'].diff()
     df_district.dropna(axis=0, how='any', inplace=True)
     df_district.reset_index(drop=True, inplace=True)
 
@@ -200,7 +200,7 @@ def data_setup(df_district, val_period):
 
 def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, 
               default_params=None, train_period=7, data_from_tracker=True,
-              which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], 
+              which_compartments=['active', 'total', 'recovered', 'deceased'], 
               num_evals=1500, N=1e7, initialisation='starting', test_period=0):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
@@ -214,7 +214,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
         data_from_tracker {bool} -- If true, data is from covid19india API (default: {True})
         train_period {int} -- Length of training period (default: {7})
         which_compartments {list} -- Whci compartments to apply loss over 
-        (default: {['hospitalised', 'total_infected', 'recovered', 'deceased']})
+        (default: {['active', 'total', 'recovered', 'deceased']})
         num_evals {int} -- Number of evaluations for hyperopt (default: {1500})
         N {float} -- Population of area (default: {1e7})
         initialisation {str} -- Method of initialisation (default: {'starting'})
@@ -287,7 +287,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
 def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ranges=None, default_params=None, #Main 
                          data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
                          train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', test_period=0,  #Misc
-                         which_compartments=['hospitalised', 'total_infected'], #Compartments
+                         which_compartments=['active', 'total'], #Compartments
                          smooth_jump=False): #Smoothing
     """Main function which user runs for running an entire fitting cycle for a particular district
 
@@ -305,7 +305,7 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
         filename {str} -- If None, Athena database is used. Otherwise, data in filename is read (default: {None})
         data_format {str} -- The format type of the filename user is providing ('old'/'new') (default: {'new'})
         N {float} -- The population of the geographical region (default: {1e7})
-        which_compartments {list} -- Which compartments to fit on (default: {['hospitalised', 'total_infected']})
+        which_compartments {list} -- Which compartments to fit on (default: {['active', 'total']})
         initialisation {str} -- The method of intitalisation (default: {'starting'})
 
     Returns:

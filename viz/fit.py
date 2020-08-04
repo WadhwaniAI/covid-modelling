@@ -11,7 +11,7 @@ from utils.enums.columns import *
 from viz.utils import axis_formatter
 
 def plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, district,
-             which_compartments=['hospitalised', 'total_infected'], description='', savepath=None):
+             which_compartments=['active', 'total'], description='', savepath=None):
     """Helper function for creating plots for the training pipeline
 
     Arguments:
@@ -25,7 +25,7 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, 
         district {str} -- Name of district
 
     Keyword Arguments:
-        which_compartments {list} -- Which buckets to plot (default: {['hospitalised', 'total_infected']})
+        which_compartments {list} -- Which buckets to plot (default: {['active', 'total']})
         description {str} -- Additional description for the plots (if any) (default: {''})
 
     Returns:

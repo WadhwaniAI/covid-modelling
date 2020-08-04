@@ -154,10 +154,10 @@ class SEIR_Testing(SEIR):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['hospitalised'] = df_prediction['R_mild'] + \
+        df_prediction['active'] = df_prediction['R_mild'] + \
             df_prediction['R_severe'] + df_prediction['R_fatal']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['total_infected'] = df_prediction['hospitalised'] + \
+        df_prediction['total'] = df_prediction['active'] + \
             df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction

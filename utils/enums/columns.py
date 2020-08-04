@@ -30,8 +30,8 @@ class Columns(Enum):
     stable_asymptomatic = Column('stable_asymptomatic', 'Stable Asymptomatic', 'cyan')
     recovered = Column('recovered', 'Recovered Cases', 'green')
     deceased = Column('deceased', 'Deceased Cases', 'red')
-    active = Column('hospitalised', 'Active Cases', 'orange')
-    confirmed = Column('total_infected', 'Confirmed Cases', 'C0')
+    active = Column('active', 'Active Cases', 'orange')
+    confirmed = Column('total', 'Confirmed Cases', 'C0')
     daily_cases = Column('daily_cases', 'New Cases Added', 'indigo')
     ventilator = Column('ventilator', 'Ventilator Beds', bed_colors[0])
     icu = Column('icu', 'ICU Beds', bed_colors[1])
@@ -65,9 +65,9 @@ class Columns(Enum):
             return Columns.recovered
         elif name == 'deceased':
             return Columns.deceased
-        elif name == 'hospitalised':
+        elif name == 'active':
             return Columns.active
-        elif name == 'total_infected':
+        elif name == 'total':
             return Columns.confirmed
         else:
             raise Exception(f"Enum for name {name} not found")
@@ -80,8 +80,8 @@ severity_colors = [cmap(i) for i in np.linspace(0.4, 0.9, 3)]
 compartments = {
     'date': [Column('date', 'date', None)],
     'base': [
-        Column('total_infected', 'Confirmed Cases', 'C0'),
-        Column('hospitalised', 'Active Cases', 'orange'),
+        Column('total', 'Confirmed Cases', 'C0'),
+        Column('active', 'Active Cases', 'orange'),
         Column('recovered', 'Recovered Cases', 'green'),
         Column('deceased', 'Deceased Cases', 'red')
     ],

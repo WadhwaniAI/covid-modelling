@@ -16,7 +16,7 @@ from utils.enums import Columns
 
 class MCUncertainty(Uncertainty):
     def __init__(self, region_dict, date_of_interest, 
-                 loss_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered']):
+                 loss_compartments=['active', 'total', 'deceased', 'recovered']):
         """
         Initializes uncertainty object, finds beta for distribution
 
@@ -88,7 +88,7 @@ class MCUncertainty(Uncertainty):
         for key in ptile_dict.keys():
             deciles_forecast[key] = {}
             df_predictions = predictions[ptile_dict[key]]
-            df_predictions['daily_cases'] = df_predictions['total_infected'].diff()
+            df_predictions['daily_cases'] = df_predictions['total'].diff()
             df_predictions.dropna(axis=0, how='any', inplace=True)
             deciles_forecast[key]['df_prediction'] = df_predictions
             deciles_forecast[key]['params'] =  params[ptile_dict[key]]
@@ -114,7 +114,7 @@ class MCUncertainty(Uncertainty):
         beta_loss = np.exp(-beta*losses)
 
         predictions = self.region_dict['m1']['trials_processed']['predictions']
-        allcols = ['hospitalised', 'recovered', 'deceased', 'total_infected']
+        allcols = ['active', 'recovered', 'deceased', 'total']
         predictions_stacked = np.array([df.loc[:, allcols].to_numpy() for df in predictions])
         predictions_stacked_weighted_by_beta = beta_loss[:, None, None] * predictions_stacked / beta_loss.sum()
         weighted_pred = np.sum(predictions_stacked_weighted_by_beta, axis=0)

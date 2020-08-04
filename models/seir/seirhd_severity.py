@@ -99,13 +99,13 @@ class SEIRHD_Severity(SEIR):
             state_init_values['R_mild'] = observed_values['stable_asymptomatic']
             state_init_values['R_moderate'] = observed_values['stable_symptomatic']
             state_init_values['R_severe'] = observed_values['critical']
-            state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['hospitalised']
+            state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['active']
             
             state_init_values['C'] = observed_values['recovered']
             state_init_values['D'] = observed_values['deceased']
 
-            state_init_values['E'] = self.E_hosp_ratio * observed_values['hospitalised']
-            state_init_values['I'] = self.I_hosp_ratio * observed_values['hospitalised']
+            state_init_values['E'] = self.E_hosp_ratio * observed_values['active']
+            state_init_values['I'] = self.I_hosp_ratio * observed_values['active']
             
             nonSsum = sum(state_init_values.values())
             state_init_values['S'] = (self.N - nonSsum)
@@ -160,12 +160,12 @@ class SEIRHD_Severity(SEIR):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['hospitalised'] = df_prediction['R_mild'] + \
+        df_prediction['active'] = df_prediction['R_mild'] + \
             df_prediction['R_moderate'] + df_prediction['R_severe']
         df_prediction['stable_asymptomatic'] = df_prediction['R_mild']
         df_prediction['stable_symptomatic'] = df_prediction['R_moderate']
         df_prediction['critical'] = df_prediction['R_severe']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
+        df_prediction['total'] = df_prediction['active'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction

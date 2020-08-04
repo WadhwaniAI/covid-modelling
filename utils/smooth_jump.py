@@ -47,7 +47,7 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
 
     elif 'weighted' in method:
         if method == 'weighted-recov':
-            newcases = df_district['total_infected'].shift(t_recov) - df_district['total_infected'].shift(t_recov + 1)
+            newcases = df_district['total'].shift(t_recov) - df_district['total'].shift(t_recov + 1)
         elif method == 'weighted-diff' or method == 'weighted':
             newcases = df_district.loc[:, smoothing_var].shift(0) - df_district.loc[:, smoothing_var].shift(1)
         elif method == 'weighted-mag':
@@ -82,47 +82,47 @@ def smooth_big_jump(df_district, data_from_tracker=False, method='weighted-mag',
     d1 = '2020-05-28'
     length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
     df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
         description=description)
 
     d1 = '2020-06-14'
     length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
     df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
         description=description)
 
     d1 = '2020-06-15'
     length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
     df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
         description=description)
 
     d1 = '2020-06-23'
     length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-06-15', '%Y-%m-%d')).days
     df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
         description=description)
 
     d1 = '2020-06-24'
     length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-06-15', '%Y-%m-%d')).days
     df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
         description=description)
 
     d1 = '2020-07-01'
     length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
     df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'hospitalised', d1, smoothing_length=length, method=method, 
+        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
         description=description)
 
     d1 = '2020-06-15'
     length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
     df_district, description = smooth_big_jump_helper(
-        df_district, 'deceased', 'total_infected', d1, smoothing_length=length, method=method, 
+        df_district, 'deceased', 'total', d1, smoothing_length=length, method=method, 
         description=description, aux_var_add=True)
             
-    print(sum(df_district['total_infected'] == df_district['recovered'] \
-              + df_district['deceased'] + df_district['hospitalised']), len(df_district))
+    print(sum(df_district['total'] == df_district['recovered'] \
+              + df_district['deceased'] + df_district['active']), len(df_district))
 
     return df_district, description
 
@@ -133,17 +133,17 @@ def smooth_big_jump_stratified(df_strat, df_not_strat, method='weighted-mag', sm
     df_strat_smoothed = copy.copy(df_strat)
     # Compute difference array
     diff_array = df_smoothed.loc[df_smoothed['date'].isin(
-        df_strat['date']), 'hospitalised'].reset_index(drop=True) - df_strat['hospitalised']
+        df_strat['date']), 'active'].reset_index(drop=True) - df_strat['active']
 
     # Copy the unstratified array smoothed columns to the smoothed stratified dataframe
-    base_columns = ['total_infected', 'hospitalised', 'recovered', 'deceased']
+    base_columns = ['total', 'active', 'recovered', 'deceased']
     df_strat_smoothed.loc[:, base_columns] = df_smoothed.loc[df_smoothed['date'].isin(
         df_strat['date']), base_columns].reset_index(drop=True)
     
     # Since hq and stable_asymptomatic are inferred time series, infer them again with new time smoothed active time series
-    df_strat_smoothed['hq'] = df_strat_smoothed['hospitalised'] - \
+    df_strat_smoothed['hq'] = df_strat_smoothed['active'] - \
         df_strat_smoothed.loc[:, ['o2_beds', 'non_o2_beds', 'icu', 'ventilator']].sum(axis=1)
-    df_strat_smoothed['stable_asymptomatic'] = df_strat_smoothed['hospitalised'] - (
+    df_strat_smoothed['stable_asymptomatic'] = df_strat_smoothed['active'] - (
         df_strat_smoothed['stable_symptomatic'] + df_strat_smoothed['critical'])
 
     if smooth_stratified_additionally:

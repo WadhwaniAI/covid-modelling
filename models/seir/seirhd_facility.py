@@ -143,9 +143,9 @@ class SEIRHD_Facility(SEIR):
         df_prediction['o2_beds'] = df_prediction['R_oxy']
         df_prediction['icu'] = df_prediction['R_icu'] + df_prediction['R_vent']
         df_prediction['ventilator'] = df_prediction['R_vent']
-        df_prediction['hospitalised'] = df_prediction['hq'] + df_prediction['non_o2_beds'] + \
+        df_prediction['active'] = df_prediction['hq'] + df_prediction['non_o2_beds'] + \
             df_prediction['o2_beds'] + df_prediction['icu']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
+        df_prediction['total'] = df_prediction['active'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction

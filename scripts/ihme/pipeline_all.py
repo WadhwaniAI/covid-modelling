@@ -50,7 +50,7 @@ df_true = m1_results['df_district']
 df_pred = m1_results['df_prediction']
 
 makesum = copy(df_pred)
-makesum['total_infected'] = df_pred['recovered'] + df_pred['deceased'] + df_pred['hospitalised']
+makesum['total'] = df_pred['recovered'] + df_pred['deceased'] + df_pred['active']
 
 plot_fit(
     makesum.reset_index(), df_train, df_val, df_train_nora, df_val_nora, 
@@ -69,7 +69,7 @@ df_true = m2_results['df_district']
 df_pred = m2_results['df_prediction']
 
 makesum = copy(df_pred)
-makesum['total_infected'] = df_pred['recovered'] + df_pred['deceased'] + df_pred['hospitalised']
+makesum['total'] = df_pred['recovered'] + df_pred['deceased'] + df_pred['active']
 
 plot_fit(
     makesum.reset_index(), df_train, df_val, df_train_nora, df_val_nora, 

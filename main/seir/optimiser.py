@@ -60,7 +60,7 @@ class Optimiser():
 
     # TODO add cross validation support
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIR_Testing,
-                               which_compartments=['hospitalised', 'recovered', 'total_infected', 'deceased'], 
+                               which_compartments=['active', 'recovered', 'total', 'deceased'], 
                                loss_indices=[-20, -10], loss_method='rmse', return_dict=False, debug=False):
         """The function that computes solves the ODE for a given set of input params and computes loss on train set
 
@@ -73,7 +73,7 @@ class Optimiser():
         Keyword Arguments:
             model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
             which_compartments {list} -- Which compartments to apply loss on 
-            (default: {['hospitalised', 'recovered', 'total_infected', 'deceased']})
+            (default: {['active', 'recovered', 'total', 'deceased']})
             loss_indices {list} -- Which indices of the train set to apply loss on (default: {[-20, -10]})
             loss_method {str} -- Loss Method (default: {'rmse'})
             return_dict {bool} -- If True, instead of returning single loss value, will return loss value 
@@ -168,7 +168,7 @@ class Optimiser():
         return default_params
 
     def gridsearch(self, df_true, default_params, variable_param_ranges, model=SEIR_Testing, method='rmse',
-                   loss_indices=[-20, -10], which_compartments=['total_infected'], total_days=None, debug=False):
+                   loss_indices=[-20, -10], which_compartments=['total'], total_days=None, debug=False):
         """Implements gridsearch based optimisation
 
         Arguments:
@@ -190,7 +190,7 @@ class Optimiser():
             model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
             method {str} -- The loss method (default: {'rmse'})
             loss_indices {list} -- The indices on the train set to apply the loss on (default: {[-20, -10]})
-            which_compartments {list} -- Which compartments to apply loss on (default: {['total_infected']})
+            which_compartments {list} -- Which compartments to apply loss on (default: {['total']})
             debug {bool} -- If debug is true, gridsearch is not parellelised. For debugging (default: {False})
 
         Returns:
@@ -220,7 +220,7 @@ class Optimiser():
         return loss_array, list_of_param_dicts
 
     def bayes_opt(self, df_true, default_params, variable_param_ranges, model=SEIR_Testing, total_days=None, 
-                  method='rmse', num_evals=3500, loss_indices=[-20, -10], which_compartments=['total_infected']):
+                  method='rmse', num_evals=3500, loss_indices=[-20, -10], which_compartments=['total']):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -243,7 +243,7 @@ class Optimiser():
             method {str} -- Loss Method (default: {'rmse'})
             num_evals {int} -- Number of hyperopt evaluations (default: {3500})
             loss_indices {list} -- The indices of the train set to apply the losses on (default: {[-20, -10]})
-            which_compartments {list} -- Which compartments to apply loss on (default: {['total_infected']})
+            which_compartments {list} -- Which compartments to apply loss on (default: {['total']})
 
         Returns:
             dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt

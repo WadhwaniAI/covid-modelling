@@ -62,7 +62,7 @@ def get_data(state=None, district=None, use_dataframe='districts_daily', disable
 
     Returns:
         pd.DataFrame -- dataframe of cases for a particular state, district with 4 columns : 
-        ['total_infected', 'hospitalised', 'deceased', 'recovered']
+        ['total', 'active', 'deceased', 'recovered']
         (All columns are populated except using raw_data.json)
        
     """
@@ -89,9 +89,8 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
     df_result.dropna(axis=0, how='any', inplace=True)
     df_result.loc[:, 'date'] = pd.to_datetime(df_result['date'])
     df_result.reset_index(inplace=True, drop=True)
-    df_result = df_result.rename({'total': 'total_infected', 'active': 'hospitalised'}, axis='columns')
     for col in df_result.columns:
-        if col in ['hospitalised', 'total_infected', 'recovered', 'deceased']:
+        if col in ['active', 'total', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
     return df_result
     
@@ -102,21 +101,21 @@ def get_custom_data_from_file(filename, data_format='new'):
         df_result = df_result.drop(['Ward/block name', 'Ward number (if applicable)', 'Mild cases (isolated)',
                                     'Moderate cases (hospitalized)', 'Severe cases (In ICU)', 
                                     'Critical cases (ventilated patients)'], axis=1)
-        df_result.columns = ['state', 'district', 'date', 'total_infected', 'hospitalised', 'recovered', 'deceased']
+        df_result.columns = ['state', 'district', 'date', 'total', 'active', 'recovered', 'deceased']
         df_result.drop(np.arange(3), inplace=True)
         df_result['date'] = pd.to_datetime(df_result['date'], format='%m-%d-%Y')
         df_result = df_result.dropna(subset=['state'], how='any')
         df_result.reset_index(inplace=True, drop=True)
-        df_result.loc[:, ['total_infected', 'hospitalised', 'recovered', 'deceased']] = df_result[[
-            'total_infected', 'hospitalised', 'recovered', 'deceased']].apply(pd.to_numeric)
-        df_result = df_result[['date', 'state', 'district', 'total_infected', 'hospitalised', 'recovered', 'deceased']]
+        df_result.loc[:, ['total', 'active', 'recovered', 'deceased']] = df_result[[
+            'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
+        df_result = df_result[['date', 'state', 'district', 'total', 'active', 'recovered', 'deceased']]
         df_result = df_result.dropna(subset=['date'], how='all')
         
     if data_format == 'old':
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
-        df_result.columns = [x if x != 'active' else 'hospitalised' for x in df_result.columns]
-        df_result.columns = [x if x != 'confirmed' else 'total_infected' for x in df_result.columns]
+        df_result.columns = [x if x != 'active' else 'active' for x in df_result.columns]
+        df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
         
     return df_result
         
@@ -125,8 +124,7 @@ def get_state_time_series(state='Delhi'):
     df_states = copy.copy(dataframes['df_states_all'])
     df_state = df_states[df_states['state'] == state]
     df_state['date'] = pd.to_datetime(df_state['date'])
-    df_state = df_state.rename(
-        {'active': 'hospitalised', 'confirmed': 'total_infected'}, axis='columns')
+    df_state = df_state.rename({'confirmed': 'total'}, axis='columns')
     df_state.reset_index(inplace=True, drop=True)
     return df_state
 
@@ -137,8 +135,7 @@ def get_district_time_series(state='Karnataka', district='Bengaluru', use_datafr
         df_districts = copy.copy(dataframes['df_districts_all'])
         df_district = df_districts.loc[(df_districts['state'] == state) & (df_districts['district'] == district)]
         df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
-        df_district = df_district.rename(
-            {'active': 'hospitalised', 'confirmed': 'total_infected'}, axis='columns')
+        df_district = df_district.rename({'confirmed': 'total'}, axis='columns')
         df_district.reset_index(inplace=True, drop=True)
         return df_district
     
@@ -148,8 +145,7 @@ def get_district_time_series(state='Karnataka', district='Bengaluru', use_datafr
         del df_district['notes']
         df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
         df_district = df_district.loc[df_district['date'] >= '2020-04-24', :]
-        df_district = df_district.rename(
-            {'active': 'hospitalised', 'confirmed': 'total_infected'}, axis='columns')
+        df_district = df_district.rename({'confirmed': 'total'}, axis='columns')
         df_district.reset_index(inplace=True, drop=True)
         return df_district
 
@@ -165,8 +161,8 @@ def get_district_time_series(state='Karnataka', district='Bengaluru', use_datafr
 
         if len(df_raw_data_1) == 0:
             out = pd.DataFrame({
-                'total_infected':pd.Series([], dtype='int'), 
-                'hospitalised':pd.Series([], dtype='int'), 
+                'total':pd.Series([], dtype='int'), 
+                'active':pd.Series([], dtype='int'), 
                 'deceased':pd.Series([], dtype='int'), 
                 'recovered':pd.Series([], dtype='int'),
                 'district':pd.Series([], dtype='object'),
@@ -179,17 +175,17 @@ def get_district_time_series(state='Karnataka', district='Bengaluru', use_datafr
 
         index = pd.date_range(np.min(df_raw_data_1['dateannounced']), np.max(df_raw_data_1['dateannounced']))
 
-        df_district = pd.DataFrame(columns=['total_infected'], index=index)
-        df_district['total_infected'] = [0]*len(index)
+        df_district = pd.DataFrame(columns=['total'], index=index)
+        df_district['total'] = [0]*len(index)
         for _, row in df_raw_data_1.iterrows():
             try:
-                df_district.loc[row['dateannounced']:, 'total_infected'] += 1*int(row['numcases'])
+                df_district.loc[row['dateannounced']:, 'total'] += 1*int(row['numcases'])
             except Exception:
-                df_district.loc[row['dateannounced']:, 'total_infected'] += 1
+                df_district.loc[row['dateannounced']:, 'total'] += 1
 
         df_district.reset_index(inplace=True)
-        df_district.columns = ['date', 'total_infected']
-        df_district['hospitalised'] = [0]*len(df_district)
+        df_district.columns = ['date', 'total']
+        df_district['active'] = [0]*len(df_district)
         df_district['deceased'] = [0]*len(df_district)
         df_district['recovered'] = [0]*len(df_district)
         df_district['district'] = district

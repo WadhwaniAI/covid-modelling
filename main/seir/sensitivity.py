@@ -6,7 +6,7 @@ from main.seir.optimiser import Optimiser
 
 
 def gridsearch_single_param(predictions_dict, which_fit='m1', var_name=None, param_range=np.linspace(1, 100, 201),
-                            df_train=None, train_period=None, comp_name='recovered', aux_comp='total_infected',
+                            df_train=None, train_period=None, comp_name='recovered', aux_comp='total',
                             debug=False):
     if var_name == None:
         var_name = 'T_recov_{}'.format(comp_name)
@@ -26,7 +26,7 @@ def gridsearch_single_param(predictions_dict, which_fit='m1', var_name=None, par
     loss_indices = [-train_period, None]
 
     if aux_comp == 'all':
-        which_compartments = ['recovered', 'deceased', 'hospitalised', 'total_infected']
+        which_compartments = ['recovered', 'deceased', 'active', 'total']
     elif aux_comp == None:
         which_compartments = [comp_name]
     else:
@@ -51,12 +51,12 @@ def gridsearch_single_param(predictions_dict, which_fit='m1', var_name=None, par
 def calculate_sensitivity_and_plot(predictions_dict, which_fit='m1', var_tuples=None):
     if var_tuples == None:
         var_tuples = [
-            ('lockdown_R0', np.linspace(1, 1.5, 101), 'total_infected', None),
-            ('I_hosp_ratio', np.linspace(0, 1, 201), 'total_infected', None),
-            ('E_hosp_ratio', np.linspace(0, 2, 201), 'total_infected', None),
-            ('P_fatal', np.linspace(0, 1, 201), 'deceased', 'total_infected'),
-            ('T_recov_severe', np.linspace(1, 100, 101), 'recovered', 'total_infected'),
-            ('T_recov_fatal', np.linspace(1, 100, 101), 'deceased', 'total_infected')
+            ('lockdown_R0', np.linspace(1, 1.5, 101), 'total', None),
+            ('I_hosp_ratio', np.linspace(0, 1, 201), 'total', None),
+            ('E_hosp_ratio', np.linspace(0, 2, 201), 'total', None),
+            ('P_fatal', np.linspace(0, 1, 201), 'deceased', 'total'),
+            ('T_recov_severe', np.linspace(1, 100, 101), 'recovered', 'total'),
+            ('T_recov_fatal', np.linspace(1, 100, 101), 'deceased', 'total')
         ]
 
     best_params = copy.copy(predictions_dict[which_fit]['best_params'])
@@ -85,7 +85,7 @@ def calculate_sensitivity_and_plot(predictions_dict, which_fit='m1', var_tuples=
     return fig, best_params, df_prediction
 
 
-def plot_single_comp(params_dict, loss_array, comp_name='total_infected'):
+def plot_single_comp(params_dict, loss_array, comp_name='total'):
     fig, ax = plt.subplots(figsize=(12, 12))
     var_name = list(params_dict[0].keys())[0]
     ax.plot([x[list(x.keys())[0]] for x in params_dict], loss_array)
