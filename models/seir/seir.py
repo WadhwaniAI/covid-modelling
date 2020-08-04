@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from models import Model
+from models.model import Model
 
 import pandas as pd
 import numpy as np

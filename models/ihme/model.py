@@ -13,7 +13,7 @@ sys.path.append('../../')
 
 from utils.data import get_daily_vals
 from utils.util import rollingavg
-from models import Model
+from models.model import Model
 
 class IHME(Model):
 
