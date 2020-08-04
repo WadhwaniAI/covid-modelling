@@ -437,9 +437,9 @@ def save_r0_mul(predictions_mul_dict, folder):
     columns_for_csv = ['date', 'total_infected', 'hospitalised', 'recovered', 'deceased']
     for (mul, val) in predictions_mul_dict.items():
         df_prediction = val['df_prediction']
-        path = f'../../reports/{folder}/what-ifs/'
+        path = f'../../misc/reports/{folder}/what-ifs/'
         if not os.path.exists(path):
             os.makedirs(path)
         df_prediction[columns_for_csv].to_csv(os.path.join(path, f'what-if-{mul}.csv'))
     pd.DataFrame({key: val['params'] for key, val in predictions_mul_dict.items()}) \
-        .to_csv(f'../../reports/{folder}/what-ifs/what-ifs-params.csv')
+        .to_csv(f'../../misc/reports/{folder}/what-ifs/what-ifs-params.csv')

@@ -97,13 +97,13 @@ kforecasts = plot_trials(
 predictions_dict['m2']['forecast_confirmed_topk'] = kforecasts[Columns.confirmed]
 predictions_dict['m2']['forecast_active_topk'] = kforecasts[Columns.active]
 
-create_report(predictions_dict, ROOT_DIR=f'../../reports/{args.folder}') 
-predictions_dict['m1']['all_trials'].to_csv(f'../../reports/{args.folder}/m1-trials.csv')
-predictions_dict['m2']['all_trials'].to_csv(f'../../reports/{args.folder}/m2-trials.csv')
-predictions_dict['m2']['df_district_unsmoothed'].to_csv(f'../../reports/{args.folder}/true.csv')
-predictions_dict['m2']['df_district'].to_csv(f'../../reports/{args.folder}/smoothed.csv')
+create_report(predictions_dict, ROOT_DIR=f'../../misc/reports/{args.folder}') 
+predictions_dict['m1']['all_trials'].to_csv(f'../../misc/reports/{args.folder}/m1-trials.csv')
+predictions_dict['m2']['all_trials'].to_csv(f'../../misc/reports/{args.folder}/m2-trials.csv')
+predictions_dict['m2']['df_district_unsmoothed'].to_csv(f'../../misc/reports/{args.folder}/true.csv')
+predictions_dict['m2']['df_district'].to_csv(f'../../misc/reports/{args.folder}/smoothed.csv')
 
 df_output = create_region_csv(predictions_dict, region=district, regionType='district', icu_fraction=0.02, days=config['forecast_days'])
-write_csv(df_output, filename=f'../../reports/{args.folder}/output-{now}.csv')
+write_csv(df_output, filename=f'../../misc/reports/{args.folder}/output-{now}.csv')
 
-print(f"yeet. done: view files at ../../reports/{args.folder}/")
+print(f"yeet. done: view files at ../../misc/reports/{args.folder}/")
