@@ -1,0 +1,7 @@
+base:
+  smooth_jump: TRUE
+  ktrials: 10
+run:
+  forecast_days: 37
+  date_of_interest: 2020-06-30
+  lockdown_removal_date: 2020-06-30
