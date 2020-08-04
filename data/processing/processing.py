@@ -82,11 +82,8 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
     dataframes = get_dataframes_cached(loader_class=AthenaLoader)
     df_result = copy.copy(dataframes['new_covid_case_summary'])
     df_result['state'] = 'maharashtra'
-    try:
-        df_result = df_result[np.logical_and(
-            df_result['state'] == state.lower(), df_result['district'] == district.lower())]
-    except:
-        pass
+    df_result = df_result[np.logical_and(
+        df_result['state'] == state.lower(), df_result['district'] == district.lower())]
     df_result = df_result.loc[:, :'deceased']
     df_result.dropna(axis=0, how='any', inplace=True)
     df_result.loc[:, 'date'] = pd.to_datetime(df_result['date'])
