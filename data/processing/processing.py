@@ -14,7 +14,8 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
         loader_key = 'tracker'
     if loader_class == AthenaLoader:
         loader_key = 'athena'
-    picklefn = "../../cache/dataframes_ts_{today}_{loader_key}.pkl".format(
+    os.makedirs("../../misc/cache/", exist_ok=True)
+    picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}.pkl".format(
         today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
     if reload_data:
         print("pulling from source")
