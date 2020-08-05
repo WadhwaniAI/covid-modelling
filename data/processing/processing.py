@@ -30,8 +30,6 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
             print("pulling from source")
             loader = loader_class()
             dataframes = loader.load_data()
-            if not os.path.exists('../../cache/'):
-                os.mkdir('../../cache/')
             with open(picklefn, 'wb+') as pickle_file:
                 pickle.dump(dataframes, pickle_file)
     return dataframes
