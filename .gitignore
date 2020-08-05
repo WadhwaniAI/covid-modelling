@@ -33,6 +33,8 @@ sftp-config.json
 **mcmc/
 *temp/
 **temp/
+*wandb/
+**wandb/
 cache/
 optim/
 
