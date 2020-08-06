@@ -22,10 +22,9 @@ supported_models = [
 ]
 
 
-def ihme_runner(sub_region, region, disable_tracker, actual_start_date, dataset_length,
-                train_val_size, val_size, test_size,
-                config_path, output_folder, variant='log_erf', data_source='india_district',
-                which_compartments=Columns.curve_fit_compartments()):
+def ihme_runner(sub_region, region, disable_tracker, actual_start_date, dataset_length, train_val_size, val_size,
+                test_size, config_path, output_folder, variant='log_erf', model_priors=None,
+                data_source='covid19india', which_compartments=Columns.curve_fit_compartments()):
     """Runs IHME model, creates plots and returns results
 
     Args:
@@ -61,6 +60,12 @@ def ihme_runner(sub_region, region, disable_tracker, actual_start_date, dataset_
     model_params['func'] = variant
     if variant == 'log_expit':  # Predictive validity only supported by Gaussian family of functions
         model_params['pipeline_args']['n_draws'] = 0
+    if model_priors is not None:
+        model_params['priors'] = model_priors
+
+    print(config)
+    print(model_params)
+    print(which_compartments)
 
     ihme_res = single_cycle(sub_region, region, area_names, model_params, which_compartments=which_compartments,
                             **config)
@@ -69,7 +74,7 @@ def ihme_runner(sub_region, region, disable_tracker, actual_start_date, dataset_
     # If fitting to all compartments, constrain total_infected as sum of other compartments
     if set(which_compartments) == set(Columns.curve_fit_compartments()):
         predictions['total_infected'] = ihme_res['df_prediction']['recovered'] + ihme_res['df_prediction']['deceased'] \
-                                    + ihme_res['df_prediction']['hospitalised']
+                                        + ihme_res['df_prediction']['hospitalised']
 
     ihme_res['df_final_prediction'] = predictions
 
@@ -81,11 +86,12 @@ def ihme_runner(sub_region, region, disable_tracker, actual_start_date, dataset_
 
     plot_forecast_agnostic(ihme_res['df_district'], predictions.reset_index(), model_name='IHME',
                            dist=sub_region, state=region, which_compartments=which_compartments,
-                           filename=os.path.join(output_folder, f'ihme_i1_forecast__{variant}.png'))
+                           filename=os.path.join(output_folder, f'ihme_i1_forecast_{variant}.png'))
 
     for plot_col in which_compartments:
-        plot_fit_uncertainty(predictions.reset_index(), ihme_res['df_train'], ihme_res['df_val'], ihme_res['df_train_nora'],
-                             ihme_res['df_val_nora'], train_val_size, test_size, region, sub_region,
+        plot_fit_uncertainty(predictions.reset_index(), ihme_res['df_train'], ihme_res['df_val'],
+                             ihme_res['df_train_nora'],
+                             ihme_res['df_val_nora'], train_val_size, test_size, region, sub_region, uncertainty=False,
                              draws=ihme_res['draws'], which_compartments=[plot_col.name], description='Train and test',
                              savepath=os.path.join(output_folder, f'ihme_i1_{plot_col.name}_{variant}.png'))
 
@@ -94,9 +100,8 @@ def ihme_runner(sub_region, region, disable_tracker, actual_start_date, dataset_
     return ihme_res, config, model_params
 
 
-def seir_runner(sub_region, region, input_df, data_from_tracker,
-                train_period, val_period, which_compartments,
-                model=SEIR_Testing, variable_param_ranges=None, num_evals=1500):
+def seir_runner(sub_region, region, input_df, data_from_tracker, train_period, val_period, which_compartments,
+                model=SEIR_Testing, variable_param_ranges=None, num_evals=1500, N=7e6):
     """Wrapper for main.seir.fitting.run_cycle
 
     Args:
@@ -120,16 +125,15 @@ def seir_runner(sub_region, region, input_df, data_from_tracker,
         region, sub_region, observed_dataframes,
         model=model, variable_param_ranges=variable_param_ranges,
         data_from_tracker=data_from_tracker, train_period=train_period,
-        which_compartments=which_compartments, N=1e7,
+        which_compartments=which_compartments, N=N,
         num_evals=num_evals, initialisation='intermediate'
     )
     return predictions_dict
 
 
-def log_experiment_local(output_folder, region_config, i1_config, i1_model_params, i1_output,
-                         c1_output, datasets, predictions_dicts, which_compartments, replace_compartments,
-                         dataset_properties, series_properties, baseline_predictions_dict=None, name_prefix="",
-                         variable_param_ranges=None):
+def log_experiment_local(output_folder, region_config, i1_config, i1_model_params, i1_output, c1_output, datasets,
+                         predictions_dicts, which_compartments, replace_compartments, dataset_properties,
+                         series_properties, baseline_predictions_dict=None, name_prefix="", variable_param_ranges=None):
     """Logs all results
 
     Args:
@@ -147,12 +151,13 @@ def log_experiment_local(output_folder, region_config, i1_config, i1_model_param
         series_properties (dict): Properties of series used in experiments
         baseline_predictions_dict (dict, optional): Results dict of SEIR c3 baseline model
         name_prefix (str): prefix for filename
+        variable_param_ranges(dict): parameter search spaces
     """
 
     params_dict = {
         'compartments_replaced': replace_compartments,
         'dataset_properties': {
-            'exp' + str(i+1): dataset_properties[i] for i in range(len(dataset_properties))
+            'exp' + str(i + 1): dataset_properties[i] for i in range(len(dataset_properties))
         },
         'series_properties': series_properties
     }
@@ -161,8 +166,8 @@ def log_experiment_local(output_folder, region_config, i1_config, i1_model_param
         json.dump(region_config, outfile, indent=4)
 
     for i in datasets:
-        filename = 'dataset_experiment_' + str(i+1) + '.csv'
-        datasets[i].to_csv(output_folder+filename)
+        filename = 'dataset_experiment_' + str(i + 1) + '.csv'
+        datasets[i].to_csv(output_folder + filename)
 
     c1 = c1_output['df_loss'].T[which_compartments]
     c1.to_csv(output_folder + name_prefix + "_c1_loss.csv")
@@ -186,14 +191,15 @@ def log_experiment_local(output_folder, region_config, i1_config, i1_model_param
     loss_dfs = []
     for i in predictions_dicts:
         loss_df = predictions_dicts[i]['df_loss'].T[which_compartments]
-        loss_df['exp'] = i+1
+        loss_df['exp'] = i + 1
         loss_dfs.append(loss_df)
-        predictions_dicts[i]['plots']['fit'].savefig(output_folder + name_prefix + '_c2_experiment_'+str(i+1)+'.png')
+        predictions_dicts[i]['plots']['fit'].savefig(
+            output_folder + name_prefix + '_c2_experiment_' + str(i + 1) + '.png')
         predictions_dicts[i]['pointwise_train_loss'].to_csv(
-            output_folder + name_prefix + "_c2_pointwise_train_loss_exp_"+str(i+1)+".csv")
+            output_folder + name_prefix + "_c2_pointwise_train_loss_exp_" + str(i + 1) + ".csv")
         predictions_dicts[i]['pointwise_val_loss'].to_csv(
-            output_folder + name_prefix + "_c2_pointwise_val_loss_exp_"+str(i+1)+".csv")
-        with open(f'{output_folder}{name_prefix}_c2_best_params_exp_{str(i+1)}.json', 'w') as outfile:
+            output_folder + name_prefix + "_c2_pointwise_val_loss_exp_" + str(i + 1) + ".csv")
+        with open(f'{output_folder}{name_prefix}_c2_best_params_exp_{str(i + 1)}.json', 'w') as outfile:
             json.dump(predictions_dicts[i]['best_params'], outfile, indent=4)
 
     loss = pd.concat(loss_dfs, axis=0)
@@ -260,7 +266,7 @@ def create_output_folder(fname):
     return output_folder
 
 
-def get_variable_param_ranges_dict(district, state, model_type='seirt', train_period=7):
+def get_variable_param_ranges_dict(district, state, model_type='seirt', train_period=None):
     """Gets dictionary of variable param ranges from config file
 
     Args:
@@ -277,10 +283,11 @@ def get_variable_param_ranges_dict(district, state, model_type='seirt', train_pe
     else:
         config_name = district.lower().replace(" ", "_")
 
-    return read_region_params_config(f'../../scripts/ihme_seir/config/{config_name}.yaml', model_type, train_period)
+    return read_region_params_config(f'../../scripts/ihme_seir/config/{config_name}.yaml', model_type,
+                                     train_period)
 
 
-def read_region_config(path):
+def read_region_config(path, key='base'):
     """Reads config file for synthetic data generation experiments
 
     Args:
@@ -298,11 +305,11 @@ def read_region_config(path):
     for k in config.keys():
         if type(config[k]) is dict and region_config.get(k) is not None:
             config[k].update(region_config[k])
-    config = config['base']
+    config = config[key]
     return config
 
 
-def read_region_params_config(path, model_type, train_period):
+def read_region_params_config(path, model_type, train_period=None):
     """Reads config file for variable param ranges for a region
 
     Args:
@@ -325,7 +332,10 @@ def read_region_params_config(path, model_type, train_period):
         base_config = yaml.load(configfile, Loader=yaml.SafeLoader)
 
     try:
-        config = config[f'params_{model_type}_tp_{train_period}']
+        if train_period is None:
+            config = config[f'params_{model_type}']
+        else:
+            config = config[f'params_{model_type}_tp_{train_period}']
     except KeyError:
         config = base_config[f'params_{model_type}_tp_{train_period}']
     return config
