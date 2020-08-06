@@ -6,7 +6,7 @@ import pickle
 import datetime
 from collections import defaultdict
 
-from data.dataloader import Covid19IndiaLoader, RootnetLoader, AthenaLoader, JHULoader, NYTLoader
+from data.dataloader import Covid19IndiaLoader, RootnetLoader, AthenaLoader, JHULoader, NYTLoader, CovidTrackingLoader
 
 
 def get_dataframes_cached(loader_class=Covid19IndiaLoader):
@@ -18,6 +18,8 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader):
         loader_key = 'jhu'
     if loader_class == NYTLoader:
         loader_key = 'nyt'
+    if loader_class == CovidTrackingLoader:
+        loader_key = 'us_tracker'
     picklefn = "../../cache/dataframes_ts_{today}_{loader_key}.pkl".format(
         today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
     try:
@@ -323,34 +325,34 @@ def get_concat_data(dataframes, state, district, new_district_name=None, concat=
             assert new_district_name != None, "must provide new_district_name"
             all_dfs = defaultdict(list)
             for dist in district:
-                raw = get_data(dataframes, state=state, district=dist, use_dataframe='raw_data')
+                raw = get_data(state=state, district=dist, use_dataframe='raw_data')
                 if len(raw) != 0:
                     all_dfs['from_df_raw_data'].append(raw)
-                dr = get_data(dataframes, state=state, district=dist, use_dataframe='deaths_recovs')
+                dr = get_data(state=state, district=dist, use_dataframe='deaths_recovs')
                 if len(dr) != 0:
                     all_dfs['from_df_deaths_recoveries'].append(dr)
-                dwise = get_data(dataframes, state=state, district=dist, use_dataframe='districts_daily')
+                dwise = get_data(state=state, district=dist, use_dataframe='districts_daily')
                 if len(dwise) != 0:
                     all_dfs['from_df_districtwise'].append(dwise)
             from_df_raw_data = combine_districts(all_dfs['from_df_raw_data'], new_district=new_district_name)
             from_df_deaths_recoveries = combine_districts(all_dfs['from_df_deaths_recoveries'], new_district=new_district_name)
             from_df_districtwise = combine_districts(all_dfs['from_df_districtwise'], new_district=new_district_name)
         else:
-            from_df_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
-            from_df_deaths_recoveries = get_data(dataframes, state=state, district=district, use_dataframe='deaths_recovs')
-            from_df_districtwise = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
+            from_df_raw_data = get_data(state=state, district=district, use_dataframe='raw_data')
+            from_df_deaths_recoveries = get_data(state=state, district=district, use_dataframe='deaths_recovs')
+            from_df_districtwise = get_data(state=state, district=district, use_dataframe='districts_daily')
         return concat_sources(from_df_raw_data, from_df_deaths_recoveries, from_df_districtwise)
     else:
         if type(district) == list:
             assert new_district_name != None, "must provide new_district_name"
             all_dfs = []
             for dist in district:
-                dwise = get_data(dataframes, state=state, district=dist, use_dataframe='districts_daily')
+                dwise = get_data(state=state, district=dist, use_dataframe='districts_daily')
                 if len(dwise) != 0:
                     all_dfs.append(dwise)
             from_df_districtwise = combine_districts(all_dfs, new_district=new_district_name)
         else:
-            from_df_districtwise = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
+            from_df_districtwise = get_data(state=state, district=district, use_dataframe='districts_daily')
         return from_df_districtwise
 
 def get_jhu_data(region, sub_region=None):
@@ -378,6 +380,9 @@ def get_ny_times_data(state, county=None):
     df.drop('fips', axis=1)
     return df
 
+def get_covid_tracking_data(state, county=None):
+    pass
+
 def get_data_from_source(region=None, sub_region=None, data_source='covid19india', use_dataframe='data_all',
                          disable_tracker=False, filename=None, data_format='new'):
     if data_source in ['covid19india', 'athena', 'rootnet', 'file']:
@@ -387,6 +392,8 @@ def get_data_from_source(region=None, sub_region=None, data_source='covid19india
         data = get_jhu_data(region, sub_region=sub_region)
     elif data_source == 'ny_times':
         data = get_ny_times_data(region, county=sub_region)
+    elif data_source == 'covid_tracking':
+        data = get_covid_tracking_data(region, sub_region)
     else:
         raise Exception('Invalid data source')
     return data
