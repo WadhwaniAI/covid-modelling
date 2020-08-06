@@ -1,16 +1,16 @@
 import argparse
+import ast
+import json
 import sys
-import pandas as pd
-import numpy as np
+
 import matplotlib.colors
 import matplotlib.pyplot as plt
-import json
-import ast
+import numpy as np
+import pandas as pd
 
 sys.path.append('../../')
 
 from main.ihme_seir.synthetic_data_generator import create_output_folder
-
 
 compartments = ['hospitalised', 'deceased', 'recovered', 'total_infected']
 c1 = ['orange', 'lightcoral', 'lime', 'lightblue']
@@ -23,9 +23,9 @@ titles = ['Using ground truth train data', 'Using IHME forecast as train data', 
 
 
 def colorFader(c1, c2, mix=0.0):
-    c1=np.array(matplotlib.colors.to_rgb(c1))
-    c2=np.array(matplotlib.colors.to_rgb(c2))
-    return matplotlib.colors.to_hex((1-mix)*c1 + mix*c2)
+    c1 = np.array(matplotlib.colors.to_rgb(c1))
+    c2 = np.array(matplotlib.colors.to_rgb(c2))
+    return matplotlib.colors.to_hex((1 - mix) * c1 + mix * c2)
 
 
 def get_ihme_loss_dict(path, file, num):
@@ -93,7 +93,7 @@ def save_ihme_model_params(path, output_folder, num, dates):
             param_dict[i] = json.load(infile)
             if isinstance(param_dict[i], str):
                 params_str = param_dict[i][param_dict[i].find("'priors'"):]
-                params_str = "".join(['{', params_str[:params_str.find('}')+1], '}'])
+                params_str = "".join(['{', params_str[:params_str.find('}') + 1], '}'])
                 param_dict[i] = ast.literal_eval(params_str)['priors']
                 if i == 0:
                     param_ranges = param_dict[i]['fe_bounds']
@@ -148,7 +148,7 @@ def get_seir_loss_exp(loss_dict, compartment, split, exp):
 
 def get_error_diff(pointwise_loss_dict1, pointwise_loss_dict2, compartment, loss_fn, shift):
     total_diff = np.zeros(shift)
-    total = np.array([len(pointwise_loss_dict1)]*shift)
+    total = np.array([len(pointwise_loss_dict1)] * shift)
     for i in range(len(pointwise_loss_dict1)):
         exp_losses = pointwise_loss_dict1[i].loc[(compartment, loss_fn)].values
         baseline_losses = pointwise_loss_dict2[i].loc[(compartment, loss_fn)]
@@ -156,7 +156,7 @@ def get_error_diff(pointwise_loss_dict1, pointwise_loss_dict2, compartment, loss
         diff = np.subtract(baseline_losses[:shift], exp_losses[:shift])
         diff = np.where(diff >= 0, 1, 0)  # if diff >= 0, baseline loss is higher and we add 1 for the experiment
         total_diff += diff
-    return total_diff/total
+    return total_diff / total
 
 
 def save_error_diff(path, output_folder, num, shift):
@@ -199,13 +199,13 @@ def all_outputs(root_folder, region, num, shift, start_date):
     for i, compartment in enumerate(compartments):
         train_losses = get_ihme_loss(i1_loss_dict, compartment, 'train', 'mape')
         val_losses = get_ihme_loss(i1_loss_dict, compartment, 'val', 'mape')
-        ax[i//2][i % 2].plot(dates, train_losses, 'o-', label='IHME train MAPE on s1', color='blue')
-        ax[i//2][i % 2].plot(dates, val_losses, 'o-', label='IHME test MAPE on s2', color='red')
-        ax[i//2][i % 2].title.set_text(compartment)
-        ax[i//2][i % 2].set_xlabel(f'Training start date', fontsize=12)
-        ax[i//2][i % 2].set_ylabel('MAPE', fontsize=12)
-        ax[i//2][i % 2].grid()
-        ax[i//2][i % 2].tick_params(labelrotation=45)
+        ax[i // 2][i % 2].plot(dates, train_losses, 'o-', label='IHME train MAPE on s1', color='blue')
+        ax[i // 2][i % 2].plot(dates, val_losses, 'o-', label='IHME test MAPE on s2', color='red')
+        ax[i // 2][i % 2].title.set_text(compartment)
+        ax[i // 2][i % 2].set_xlabel(f'Training start date', fontsize=12)
+        ax[i // 2][i % 2].set_ylabel('MAPE', fontsize=12)
+        ax[i // 2][i % 2].grid()
+        ax[i // 2][i % 2].tick_params(labelrotation=45)
     plt.legend()
     fig.tight_layout()
     fig.subplots_adjust(top=0.94)
@@ -253,7 +253,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
             ax[k].title.set_text(model_type[k])
             for j, l in enumerate(losses[k]):
                 ax[k].plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
-                        label=f'Test APE for {l.index[0]} to {l.index[-1]}')
+                           label=f'Test APE for {l.index[0]} to {l.index[-1]}')
             ax[k].set_xlabel('Date', fontsize=12)
             ax[k].set_ylabel('APE', fontsize=12)
             ax[k].tick_params(labelrotation=45)
@@ -294,15 +294,17 @@ def all_outputs(root_folder, region, num, shift, start_date):
     for i, compartment in enumerate(compartments):
         colors = ['green', 'red', 'blue']
         for j in range(3):
-            seirt_exp_losses = get_seir_loss_exp(seirt_c2_loss, compartment, 'val', j+1)
-            ax[i//2][i % 2].plot(dates, seirt_exp_losses, 'o-', label=f'SEIRT test MAPE on s3 {titles[j]}', color=colors[j])
+            seirt_exp_losses = get_seir_loss_exp(seirt_c2_loss, compartment, 'val', j + 1)
+            ax[i // 2][i % 2].plot(dates, seirt_exp_losses, 'o-', label=f'SEIRT test MAPE on s3 {titles[j]}',
+                                   color=colors[j])
         seirt_baseline_losses = get_seir_loss(seirt_c3_loss, compartment, 'val')
-        ax[i//2][i % 2].plot(dates, seirt_baseline_losses, 'o-', label='SEIRT baseline test MAPE on s3', color='black')
-        ax[i//2][i % 2].title.set_text(compartment)
-        ax[i//2][i % 2].set_xlabel(f'Training start date', fontsize=12)
-        ax[i//2][i % 2].set_ylabel('MAPE', fontsize=12)
-        ax[i//2][i % 2].grid()
-        ax[i//2][i % 2].tick_params(labelrotation=45)
+        ax[i // 2][i % 2].plot(dates, seirt_baseline_losses, 'o-', label='SEIRT baseline test MAPE on s3',
+                               color='black')
+        ax[i // 2][i % 2].title.set_text(compartment)
+        ax[i // 2][i % 2].set_xlabel(f'Training start date', fontsize=12)
+        ax[i // 2][i % 2].set_ylabel('MAPE', fontsize=12)
+        ax[i // 2][i % 2].grid()
+        ax[i // 2][i % 2].tick_params(labelrotation=45)
     plt.legend()
     fig.tight_layout()
     fig.subplots_adjust(top=0.94)
@@ -319,10 +321,10 @@ def all_outputs(root_folder, region, num, shift, start_date):
         for j in range(3):
             seirt_exp_losses = get_seir_loss_exp(seirt_c2_loss, compartment, 'val', j + 1)
             ax[i].plot(dates, seirt_exp_losses, 'o-', label=f'SEIRT test MAPE on s3 {titles[j]}',
-                                   color=colors[j])
+                       color=colors[j])
         seirt_baseline_losses = get_seir_loss(seirt_c3_loss, compartment, 'val')
         ax[i].plot(dates, seirt_baseline_losses, 'o-', label='SEIRT baseline test MAPE on s3',
-                               color='black')
+                   color='black')
         ax[i].title.set_text(compartment)
         ax[i].set_xlabel(f'Training start date', fontsize=12)
         ax[i].set_ylabel('MAPE', fontsize=12)
@@ -343,14 +345,15 @@ def all_outputs(root_folder, region, num, shift, start_date):
         colors = ['green', 'red', 'blue']
         for j in range(3):
             sird_exp_losses = get_seir_loss_exp(sird_c2_loss, compartment, 'val', j + 1)
-            ax[i//2][i % 2].plot(dates, sird_exp_losses, 'o-', label=f'SIRD test MAPE on s3 {titles[j]}', color=colors[j])
+            ax[i // 2][i % 2].plot(dates, sird_exp_losses, 'o-', label=f'SIRD test MAPE on s3 {titles[j]}',
+                                   color=colors[j])
         sird_baseline_losses = get_seir_loss(sird_c3_loss, compartment, 'val')
-        ax[i//2][i % 2].plot(dates, sird_baseline_losses, 'o-', label='SIRD baseline test MAPE on s3', color='black')
-        ax[i//2][i % 2].title.set_text(compartment)
-        ax[i//2][i % 2].set_xlabel(f'Training start date', fontsize=12)
-        ax[i//2][i % 2].set_ylabel('MAPE', fontsize=12)
-        ax[i//2][i % 2].grid()
-        ax[i//2][i % 2].tick_params(labelrotation=45)
+        ax[i // 2][i % 2].plot(dates, sird_baseline_losses, 'o-', label='SIRD baseline test MAPE on s3', color='black')
+        ax[i // 2][i % 2].title.set_text(compartment)
+        ax[i // 2][i % 2].set_xlabel(f'Training start date', fontsize=12)
+        ax[i // 2][i % 2].set_ylabel('MAPE', fontsize=12)
+        ax[i // 2][i % 2].grid()
+        ax[i // 2][i % 2].tick_params(labelrotation=45)
     plt.legend()
     fig.tight_layout()
     fig.subplots_adjust(top=0.94)
@@ -390,7 +393,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
         fig.suptitle(f'{region} - {compartment} - IHME pointwise test APE on s2')
         val_losses = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'val', 'ape')
         for j, l in enumerate(val_losses):
-            ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j/num),
+            ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
                     label=f'Test APE for {l.index[0]} to {l.index[-1]}')
             ax.set_xlabel('Date', fontsize=12)
             ax.set_ylabel('APE', fontsize=12)
@@ -410,7 +413,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
         fig.suptitle(f'{region} - {compartment} - IHME pointwise train APE on s1')
         train_losses = get_ihme_pointwise_loss(i1_pointwise_loss_dict, compartment, 'train', 'ape')
         for j, l in enumerate(train_losses):
-            ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j/num),
+            ax.plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
                     label=f'Train APE for {l.index[0]} to {l.index[-1]}')
             ax.set_xlabel('Date', fontsize=12)
             ax.set_ylabel('APE', fontsize=12)
@@ -516,7 +519,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
                 losses = None
                 for exp in range(3):
                     c2_pointwise_loss_dict = get_seir_pointwise_loss_dict(
-                        path, f'{name_prefix}_c2_pointwise_{split}_loss_exp_{exp+1}.csv', num)
+                        path, f'{name_prefix}_c2_pointwise_{split}_loss_exp_{exp + 1}.csv', num)
                     losses = get_seir_pointwise_loss(c2_pointwise_loss_dict, compartment, 'ape')
                     for j, l in enumerate(losses):
                         ax[exp].plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
