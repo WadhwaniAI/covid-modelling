@@ -1,6 +1,6 @@
-import pandas as pd
-
 from datetime import timedelta
+
+import pandas as pd
 
 from utils.enums import Columns
 from utils.util import train_test_split
@@ -113,7 +113,7 @@ def format_custom_dataset(dataset, state=None, district=None, compartments=Colum
     col_names = [col.name for col in compartments]
 
     # Include or exclude required columns
-    dataset = dataset[['date']+col_names]
+    dataset = dataset[['date'] + col_names]
     if state:
         dataset.insert(1, "state", state)
     if district:
