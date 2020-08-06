@@ -60,7 +60,8 @@ def get_regional_data(sub_region, region, area_names, test_size, smooth_window, 
     col_names = [c.name for c in Columns.curve_fit_compartments()]
     if smooth_window > 0:
         for col in col_names:
-            df[col] = rollingavg(df[col], smooth_window)
+            if col in df.columns:
+                df[col] = rollingavg(df[col], smooth_window)
 
     # df = df.loc[df['deceased_rate'].gt(1e-15).idxmax():, :].reset_index()
     # df_nora = df_nora.loc[df_nora['deceased_rate'].gt(1e-15).idxmax():, :].reset_index()

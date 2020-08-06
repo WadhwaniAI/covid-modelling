@@ -92,8 +92,9 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     if which_columns == None:
         which_columns = df_true_fitting.select_dtypes(include='number').columns
     for column in which_columns:
-        df_true_fitting[column] = df_true_fitting[column].rolling(
-            rolling_window, center=True).mean()
+        if column in df_true_fitting.columns:
+            df_true_fitting[column] = df_true_fitting[column].rolling(
+                rolling_window, center=True).mean()
 
     # Since the rolling average method is center, we need an offset variable where the ends of the series will
     # use the true observations instead (as rolling averages for those offset days don't exist)
