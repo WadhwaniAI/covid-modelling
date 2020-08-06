@@ -7,6 +7,7 @@ import os
 import pickle
 import sys
 from copy import deepcopy
+import pandas as pd
 
 from datetime import timedelta
 
@@ -15,10 +16,12 @@ sys.path.append('../../')
 from data.processing import get_data_from_source
 from main.ihme_seir.synthetic_data_generator import read_region_config, create_output_folder, ihme_runner
 from utils.enums import Columns
+from viz.forecast import plot_errors_for_lookaheads
 
 
 def run_experiments(ihme_config_path, region_config_path, data, root_folder, multiple=False, shift_forward=0):
     region_config = read_region_config(region_config_path)
+    model_priors = read_region_config(region_config_path, key='priors')
 
     # Unpack parameters from config and set local parameters
     sub_region = region_config['sub_region']
@@ -29,6 +32,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
     ihme_variants = region_config['ihme_variants']
     disable_tracker = region_config['disable_tracker']
     allowance = region_config['allowance']
+    verbose = region_config['verbose']
     s1 = region_config['s1']
     s2 = region_config['s2']
     if multiple:
@@ -51,6 +55,9 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
     dataset_start_date = data['date'].min() + timedelta(shift)  # First date in dataset
     actual_start_date = dataset_start_date + timedelta(allowance)  # Excluding allowance at beginning
 
+    if verbose:
+        print("Training starts on:", actual_start_date)
+
     # Create output folder
     output_folder = create_output_folder(f'{experiment_name}/{root_folder}/')
 
@@ -66,15 +73,34 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
 
     # Run model for different functions
     for variant in ihme_variants:
+        variant_model_priors = model_priors[variant]
         results, config, model_params = ihme_runner(sub_region, region, disable_tracker, actual_start_date,
                                                     dataset_length, train_val_size, val_size, test_size,
                                                     ihme_config_path, output_folder, variant=variant,
-                                                    data_source=data_source, which_compartments=which_compartments_enum)
+                                                    model_priors=variant_model_priors, data_source=data_source,
+                                                    which_compartments=which_compartments_enum)
 
         model_params['func'] = variant
         model_params['ycol'] = which_compartments
 
+        if verbose:
+            print("Model params")
+            print(model_params)
+
         log_experiments(output_folder, results, config, model_params, region_config, series_properties, variant=variant)
+
+    error_dict = dict()
+    lookaheads = [i for i in range(1, test_size+1)]
+    error_dict['lookahead'] = lookaheads
+    error_dict['errors'] = dict()
+    for compartment in which_compartments:
+        for variant in ihme_variants:
+            errors = pd.read_csv(f'{output_folder}ihme_{variant}_pointwise_test_loss.csv',
+                                 index_col=['compartment', 'split', 'loss_function'])
+            errors = errors.loc[(compartment, 'val', 'ape')].tolist()
+            error_dict['errors'][variant] = errors
+
+    plot_errors_for_lookaheads(error_dict, path=os.path.join(output_folder, 'lookahead_errors.png'))
 
 
 def log_experiments(output_folder, results, model_config, model_params, region_config, series_properties,
@@ -102,7 +128,7 @@ def log_experiments(output_folder, results, model_config, model_params, region_c
         individual_res = res_dump['individual_results'][var]
         del individual_res['optimiser']
 
-    picklefn = os.path.join(output_folder, f'i1_{variant}.pkl')
+    picklefn = os.path.join(output_folder, f'ihme_{variant}.pkl')
     with open(picklefn, 'wb') as pickle_file:
         pickle.dump(res_dump, pickle_file)
 
@@ -124,7 +150,7 @@ def runner(ihme_config_path, region_config_path, output_folder, num):
     region_name = sub_region if sub_region is not None else region
     root_folder = f'{region_name}/{output_folder}'
     print(region_name, ": Run no. ", num + 1, " with shift of ", shift_period * num)
-    run_experiments(ihme_config_path, region_config_path, data, f'{root_folder}/{str(num)}', multiple=True,
+    run_experiments(ihme_config_path, region_config_path, data, f'{root_folder}/{str(num)}', multiple=False,
                     shift_forward=shift_period * num)
 
 

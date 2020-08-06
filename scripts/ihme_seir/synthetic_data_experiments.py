@@ -62,7 +62,7 @@ def runner(ihme_config_path, region_config_path, output_folder, num):
     # Output folder
     region_name = sub_region if sub_region is not None else region
     root_folder = f'{region_name}/{output_folder}'
-    print(region_name, ": Run no. ", num+1, " with shift of ", shift_period * num)
+    print(region_name, ": Run no. ", num + 1, " with shift of ", shift_period * num)
     run_experiments(ihme_config_path, region_config_path, data, f'{root_folder}/{str(num)}', multiple=True,
                     shift_forward=shift_period * num)
 

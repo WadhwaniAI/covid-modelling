@@ -1,14 +1,12 @@
 from copy import deepcopy
 from datetime import timedelta
 
-from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset
-from utils.loss import Loss_Calculator
-from utils.enums import Columns
-
 from main.ihme_seir.synthetic_data_generator import ihme_runner, seir_runner, log_experiment_local, \
     create_output_folder, get_variable_param_ranges_dict, read_region_config, supported_models
 from main.seir.fitting import get_regional_data, get_variable_param_ranges
-
+from utils.enums import Columns
+from utils.loss import Loss_Calculator
+from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset
 from viz.synthetic_data import plot_all_experiments, plot_against_baseline
 
 

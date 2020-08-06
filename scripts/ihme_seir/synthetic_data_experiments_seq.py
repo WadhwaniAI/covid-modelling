@@ -77,9 +77,9 @@ def run_experiments_over_time(ihme_config_path, region_config_path, num, shift):
     else:
         for i in range(num):
             start_time = time.time()
-            print("Run no. ", i+1)
+            print("Run no. ", i + 1)
             run_experiments(ihme_config_path, region_config_path, data, f'{root_folder}/{str(i)}', multiple=True,
-                            shift_forward=shift*i)
+                            shift_forward=shift * i)
             runtime = time.time() - start_time
             print("Run time: ", runtime)
 
