@@ -110,7 +110,7 @@ def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False,
                      ls='-', color=col.color, label=f'{col.label} ({model_name} Forecast)')
 
     axis_formatter(ax, log_scale=log_scale)
-    fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
+    fig.suptitle('Forecast - ({} {})'.format(dist, state), fontsize=16)
     if filename != None:
         plt.savefig(filename)
 
@@ -176,3 +176,20 @@ def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, mult
     state, dist = region_dict['state'], region_dict['dist']
     fig.suptitle(f'Forecast - ({state} {dist})', fontsize=16)
     return fig
+
+
+def plot_errors_for_lookaheads(error_dict, path=None):
+    # error dict format:
+    # {'lookahead': lookaheads, 'errors': {'model1': errors, 'model2': errors, ...}}
+    lookaheads = np.array(error_dict['lookahead'])
+    errors = error_dict['errors']
+    fig, ax = plt.subplots(figsize=(10, 10))
+    width = 0.2
+
+    for i, key in enumerate(errors):
+        ax.bar(x=lookaheads+i*width, height=errors[key], label=key, width=width)
+        ax.legend(loc='upper right')
+    plt.xlabel('Lookahead (days)')
+    plt.ylabel('MAPE')
+    if path is not None:
+        plt.savefig(path)

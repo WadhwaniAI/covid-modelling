@@ -1,9 +1,8 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from matplotlib.lines import Line2D
-
 from datetime import timedelta
+
+import matplotlib.dates as mdates
+import pandas as pd
+from matplotlib.lines import Line2D
 
 from utils.enums.columns import *
 from viz.fit import axis_formatter
@@ -80,9 +79,9 @@ def plot_compartment_for_datasets(ax, df_true, df_prediction, df_train, district
     return ax
 
 
-def plot_all_experiments(df_true, predictions_dict, district,
-                         actual_start_date, allowance, s1, s2, s3, shift, train_period,
-                         output_folder, name_prefix="", which_compartments=Columns.which_compartments(), titles=None):
+def plot_all_experiments(df_true, predictions_dict, district, actual_start_date, allowance, s1, s2, s3, shift,
+                         train_period, output_folder, name_prefix="",
+                         which_compartments=Columns.which_compartments(), titles=None):
     """Create plots for all buckets and all datasets
 
     Args:
@@ -131,7 +130,7 @@ def plot_all_experiments(df_true, predictions_dict, district,
 
 
 def plot_fit_uncertainty(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, test_period,
-                         state, district, draws=None, which_compartments=['hospitalised', 'total_infected'],
+                         state, district, uncertainty=False, draws=None, which_compartments=['hospitalised', 'total_infected'],
                          description='', savepath=None):
     # TODO: Use plot_fit from fit.py with modifications instead
     """Helper function for creating plots for the training pipeline
@@ -201,10 +200,10 @@ def plot_fit_uncertainty(df_prediction, df_train, df_val, df_train_nora, df_val_
                         '-', color=compartment.color, label='{} (Obs RA)'.format(compartment.label))
                 ax.plot(df_predicted_plotting[compartments['date'][0].name], df_predicted_plotting[compartment.name],
                         '-.', color=compartment.color, label='{} (Predicted)'.format(compartment.label))
-                if draws is not None:
-                    ax.errorbar(df_prediction['date'][train_period:train_period+test_period],
-                                df_prediction[compartment.name][train_period:train_period+test_period],
-                                yerr=draws[compartment.name]['draws'][:, train_period:train_period+test_period],
+                if draws is not None and uncertainty:
+                    ax.errorbar(df_prediction['date'][train_period:train_period + test_period],
+                                df_prediction[compartment.name][train_period:train_period + test_period],
+                                yerr=draws[compartment.name]['draws'][:, train_period:train_period + test_period],
                                 lw=1.0, ls='-.', color='lightcoral', barsabove='False', label='draws')
 
                 legend_elements.append(
@@ -212,7 +211,7 @@ def plot_fit_uncertainty(df_prediction, df_train, df_val, df_train_nora, df_val_
 
         ax.axvline(x=df_train.iloc[-train_period, :]['date'], ls=':', color='brown', label='Train starts')
         if isinstance(df_val, pd.DataFrame) and len(df_val) > 0:
-            ax.axvline(x=df_val.iloc[0, ]['date'], ls=':', color='black', label='Val starts')
+            ax.axvline(x=df_val.iloc[0,]['date'], ls=':', color='black', label='Val starts')
 
         axis_formatter(ax, legend_elements, custom_legend=False)
         i += 1
@@ -349,7 +348,7 @@ def plot_against_baseline(df_true, df_prediction, df_prediction_baseline, distri
     for col in range(len(which_compartments)):
         fig, ax = plt.subplots(2, sharex=True, sharey=True, figsize=(15, 15))
         for row in range(len(ax)):
-            ax[row] = plot_compartment_against_baseline(ax[row], df_true, df_prediction[row+1]['df_prediction'],
+            ax[row] = plot_compartment_against_baseline(ax[row], df_true, df_prediction[row + 1]['df_prediction'],
                                                         df_prediction_baseline['df_prediction'],
                                                         df_prediction[row + 1]['df_district'],
                                                         district, s1_start, s2_start, s3_start, train_start, test_start,
