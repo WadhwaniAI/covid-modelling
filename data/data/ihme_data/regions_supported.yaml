@@ -34,3 +34,15 @@ italy:
   sub_region: null
   region: Italy
   area_names: null
+los angeles:
+  sub_region: Los Angeles
+  region: California
+  area_names: null
+new york:
+  sub_region: null
+  region: New York
+  area_names: null
+india:
+  sub_region: null
+  region: India
+  area_names: null
