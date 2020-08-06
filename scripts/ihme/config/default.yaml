@@ -3,7 +3,7 @@ base:
   disable_tracker: FALSE # use athena instead of covid19api
   max_evals: 100 # optimiser evals (trials)
   sd: FALSE # use social distancing covariate for beta
-  smooth: 0 # window to smooth data (rolling avg) - 0 means no smoothing
+  smooth: 5 # window to smooth data (rolling avg) - 0 means no smoothing
   test_size: 7 # witheld from model entirely
   scoring: mape
   val_size: 7 # val set for hyperopt

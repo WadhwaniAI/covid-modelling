@@ -1,24 +1,34 @@
 base:
-  sub_region: Bengaluru Urban
-  region: Karnataka
+  sub_region: New York City
+  region: New York
   s1: 20
-  s2: 5
+  s2: 30
   s3: 7
-  shift: 0
-  i1_val_size: 6
+  shift: 45
+  i1_val_size: 3
   c2_train_period: 20
   c3_train_period: 20
-  data_source: covid19india
+  data_source: ny_times
+  verbose: True
 priors:
   log_erf:
-    fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -1]]
-  log_derf:
-    fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -2]]
+    fe_init: [-2.0, 5.0, -10.0]
+    fe_bounds: [[-4.0, -1.0], [0,10], [-15, -5]]
   log_expit:
+    fe_init: [-2.0, 15.0, -6.0]
+    fe_bounds: [[-4.0, -0.5], [5,20], [-10, -2]]
+  log_derf: # not tuned
     fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -3]]
+    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
+params_seirt:
+  lockdown_R0: [1, 2]
+  T_inc: [2, 15]
+  T_inf: [2, 10]
+  T_recov_severe: [5, 60]
+  T_recov_fatal: [0, 40]
+  P_fatal: [0, 0.3]
+  E_hosp_ratio: [0, 2]
+  I_hosp_ratio: [0, 1]
 params_seirt_tp_7:
   lockdown_R0: [1, 2.5]
   T_inc: [2, 15]

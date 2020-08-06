@@ -1,5 +1,5 @@
 base:
-  experiment_name: experiments
+  experiment_name: compartmental_set
   disable_tracker: FALSE # use athena instead of covid19api
   use_synthetic: TRUE # if True, use synthetic data to train c2 model
   use_actual: TRUE # if True, use actual data to train c2 model
@@ -15,8 +15,19 @@ base:
   shift_period: 4 # number of periods to shift forward in each run
   which_compartments: [total_infected] # compartments to fit to
   replace_compartments: [total_infected] # compartments to use synthetic data for
-  compartmental_models: [sird] # compartmental models used in experiments
+  compartmental_models: [seirt] # compartmental models used in experiments
   ihme_variants: [log_erf, log_expit]
+  verbose: False
+priors:
+  log_erf:
+    fe_init: [-1.1, 16.0, -9.0]
+    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
+  log_derf:
+    fe_init: [-1.1, 16.0, -9.0]
+    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
+  log_expit:
+    fe_init: [-1.1, 16.0, -9.0]
+    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
 params_seirt_tp_7:
   lockdown_R0: [1, 1.5]
   T_inc: [4, 15]

@@ -1,24 +1,23 @@
 base:
-  sub_region: Bengaluru Urban
-  region: Karnataka
-  s1: 20
-  s2: 5
+  sub_region: null
+  region: Italy
+  s1: 30
+  s2: 30
   s3: 7
-  shift: 0
+  shift: 26
   i1_val_size: 6
   c2_train_period: 20
   c3_train_period: 20
-  data_source: covid19india
-priors:
-  log_erf:
-    fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -1]]
-  log_derf:
-    fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -2]]
-  log_expit:
-    fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -3]]
+  data_source: jhu
+params_seirt:
+  lockdown_R0: [1, 1.15]
+  T_inc: [3, 4]
+  T_inf: [4, 5]
+  T_recov_severe: [5, 60]
+  T_recov_fatal: [0, 40]
+  P_fatal: [0, 0.3]
+  E_hosp_ratio: [0, 2]
+  I_hosp_ratio: [0, 1]
 params_seirt_tp_7:
   lockdown_R0: [1, 2.5]
   T_inc: [2, 15]

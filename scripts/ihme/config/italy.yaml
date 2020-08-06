@@ -1,0 +1,7 @@
+base:
+  n_days_optimize: FALSE
+  active_log_derf: FALSE
+model_params:
+  priors: # for when log is TRUE
+    fe_init: [-1.1, 16.0, -9.0]
+    fe_bounds: [[-7.0, -0.5], [10,50], [-25, -5]]
