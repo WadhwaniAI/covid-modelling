@@ -110,4 +110,8 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
 
     col = df.pop('non_o2_beds')
     df.insert(int(np.where(df.columns == 'o2_beds')[0][0]), 'non_o2_beds', col)
+    date_difference = df['date'].diff()
+    date_difference.fillna(pd.Timedelta(days=2), inplace=True)
+    df = df[df['date'].diff() == pd.Timedelta(days=1)]
+    df.reset_index(inplace=True, drop=True)
     return df
