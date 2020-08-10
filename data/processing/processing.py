@@ -35,7 +35,7 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
     return dataframes
 
 
-def get_data(state=None, district=None, use_dataframe='districts_daily', disable_tracker=False,
+def get_data(state=None, district=None, use_dataframe='data_all', disable_tracker=False,
              filename=None, data_format='new'):
     """Handshake between data module and training module. Returns a dataframe of cases for a particular district/state
        from multiple sources
