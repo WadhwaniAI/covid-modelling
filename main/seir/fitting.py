@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import seaborn as sns
-from hyperopt import hp, tpe, fmin, Trials
+from hyperopt import hp, tpe, rand, fmin, Trials
 from tqdm import tqdm
 
 from collections import OrderedDict, defaultdict
@@ -39,7 +39,7 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
     """
     if variable_param_ranges == None:
         variable_param_ranges = {
-            'lockdown_R0': (1, 1.3),
+            'lockdown_R0': (1, 1.5),
             'T_inc': (4, 5),
             'T_inf': (3, 4),
             'T_recov_severe': (5, 60),
@@ -201,7 +201,7 @@ def data_setup(df_district, val_period):
 def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, 
               default_params=None, train_period=7, data_from_tracker=True,
               which_compartments=['active', 'total', 'recovered', 'deceased'], 
-              num_evals=1500, N=1e7, initialisation='starting', test_period=0):
+              num_evals=1500, N=1e7, initialisation='starting', test_period=0, algo=tpe):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -255,7 +255,8 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
                                               num_evals=num_evals, loss_indices=loss_indices, method='mape',
-                                              total_days=total_days, which_compartments=which_compartments)
+                                              total_days=total_days, which_compartments=which_compartments, 
+                                              algo=algo)
     print('best parameters\n', best_params)
 
     if not isinstance(df_val, pd.DataFrame):
@@ -287,7 +288,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
 def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ranges=None, default_params=None, #Main 
                          data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
                          train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', test_period=0,  #Misc
-                         which_compartments=['active', 'total'], #Compartments
+                         algo=tpe, which_compartments=['active', 'total'], #Compartments
                          smooth_jump=False): #Smoothing
     """Main function which user runs for running an entire fitting cycle for a particular district
 

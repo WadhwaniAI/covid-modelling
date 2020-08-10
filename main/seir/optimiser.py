@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import seaborn as sns
-from hyperopt import hp, tpe, fmin, Trials
+from hyperopt import hp, tpe, rand, fmin, Trials
 from tqdm import tqdm
 from tqdm.notebook import tqdm
 
@@ -220,7 +220,7 @@ class Optimiser():
         return loss_array, list_of_param_dicts
 
     def bayes_opt(self, df_true, default_params, variable_param_ranges, model=SEIR_Testing, total_days=None, 
-                  method='rmse', num_evals=3500, loss_indices=[-20, -10], which_compartments=['total']):
+                  method='rmse', num_evals=3500, loss_indices=[-20, -10], which_compartments=['total'], algo=tpe):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -261,7 +261,7 @@ class Optimiser():
         trials = Trials()
         best = fmin(partial_solve_and_compute_loss,
                     space=searchspace,
-                    algo=tpe.suggest,
+                    algo=algo.suggest,
                     max_evals=num_evals,
                     trials=trials)
         
