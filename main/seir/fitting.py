@@ -39,9 +39,9 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
     """
     if variable_param_ranges == None:
         variable_param_ranges = {
-            'lockdown_R0': (1, 1.5),
-            'T_inc': (4, 5),
-            'T_inf': (3, 4),
+            'lockdown_R0': (0.8, 1.5),
+            'T_inc': (5.2, 5.25),
+            'T_inf': (2.9, 2.95),
             'T_recov_severe': (5, 60),
             'T_recov_fatal': (0, 40),
             'P_fatal': (0, 0.3),
