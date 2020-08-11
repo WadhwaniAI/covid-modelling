@@ -143,20 +143,16 @@ def create_region_csv(predictions_dict: dict, region: str, regionType: str, mode
     df_output = df_output[columns]
     return df_output
 
-def create_decile_csv(predictions_dict: dict, region: str, regionType: str, icu_fraction=0.02):
+def create_decile_csv(predictions_dict: dict, region: str, regionType: str):
     print("compiling csv data ..")
-    columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'current_total', 'current_active', 'current_recovered',
-               'current_deceased', 'current_hospitalised', 'current_icu', 'current_ventilator', 'predictionDate']
+    columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'predictionDate',
+               'current_total', 'current_active', 'current_recovered', 'current_deceased']
     
+    forecast_columns = [x for x in predictions_dict['m2']['forecasts']['best'].columns if not x[0].isupper()]
+    forecast_columns = [x for x in forecast_columns if x != 'date']
+
     for decile in predictions_dict['m2']['forecasts'].keys():
-        columns += [f'active_{decile}',
-            f'hospitalised_{decile}',
-            f'icu_{decile}',
-            f'recovered_{decile}',
-            f'deceased_{decile}',
-            f'total_{decile}',
-            f'error_{decile}',
-        ]
+        columns += [f'{x}_{decile}' for x in forecast_columns]
 
     df_output = pd.DataFrame(columns=columns)
 
@@ -168,33 +164,28 @@ def create_decile_csv(predictions_dict: dict, region: str, regionType: str, icu_
     no_of_data_points = len(prediction_daterange)
     df_output['predictionDate'] = prediction_daterange
 
-    df_output['forecastRunDate'] = [datetime.datetime.today().date()]*no_of_data_points
+    df_output['forecastRunDate'] = [datetime.datetime.strptime(
+        predictions_dict['fitting_date'], '%Y-%m-%d')]*no_of_data_points
     df_output['regionType'] = [regionType]*no_of_data_points
     df_output['region'] = [region]*no_of_data_points
-    df_output['model_name'] = ['SEIR']*no_of_data_points
+    df_output['model_name'] = [predictions_dict['m2']['run_params']['model']]*no_of_data_points
     df_output['error_function'] = ['MAPE']*no_of_data_points
     df_output.set_index('predictionDate', inplace=True)
 
-    for decile in predictions_dict['m2']['forecasts'].keys():
-        df_prediction = predictions_dict['m2']['forecasts'][decile]
+    for decile, df_prediction in predictions_dict['m2']['forecasts'].items():
         df_prediction = df_prediction.set_index('date')
-        # df_loss = predictions_dict[decile]['df_loss']
-        df_output.loc[df_prediction.index, f'active_{decile}'] = df_prediction['hospitalised']
-        df_output.loc[df_prediction.index, f'hospitalised_{decile}'] = df_prediction['hospitalised']
-        # df_output.loc[df_prediction.index, f'icu_{decile}'] = icu_fraction*df_prediction['hospitalised']
-        df_output.loc[df_prediction.index, f'recovered_{decile}'] = df_prediction['recovered']
-        df_output.loc[df_prediction.index, f'deceased_{decile}'] = df_prediction['deceased']
-        df_output.loc[df_prediction.index, f'total_{decile}'] = df_prediction['total_infected']
-        # df_output.loc[df_prediction.index, f'error_{decile}'] = df_loss.loc[:, 'train'].sum()
+        for column in forecast_columns:
+            df_output.loc[df_prediction.index, f'{column}_{decile}'] = df_prediction[column]
 
     df_true = df_true.set_index('date')
     df_output.loc[df_true.index, 'current_total'] = df_true['total_infected'].to_numpy()
-    df_output.loc[df_true.index, 'current_hospitalised'] = df_true['hospitalised'].to_numpy()
+    df_output.loc[df_true.index, 'current_active'] = df_true['hospitalised'].to_numpy()
     df_output.loc[df_true.index, 'current_deceased'] = df_true['deceased'].to_numpy()
     df_output.loc[df_true.index, 'current_recovered'] = df_true['recovered'].to_numpy()
     
     df_output.reset_index(inplace=True)
-    # df_output = df_output[columns]
+    df_output.columns = [x.replace('hospitalised', 'active') for x in df_output.columns]
+    df_output.columns = [x.replace('total_infected', 'total') for x in df_output.columns]
     return df_output
 
 def create_all_csvs(predictions_dict: dict, district:str='Mumbai', days=30, icu_fraction=0.02):
