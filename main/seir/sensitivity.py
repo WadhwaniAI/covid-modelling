@@ -51,7 +51,7 @@ def gridsearch_single_param(predictions_dict, which_fit='m1', var_name=None, par
 def calculate_sensitivity_and_plot(predictions_dict, which_fit='m1', var_tuples=None):
     if var_tuples == None:
         var_tuples = [
-            ('lockdown_R0', np.linspace(1, 1.5, 101), 'total_infected', None),
+            ('lockdown_R0', np.linspace(0.7, 1.5, 101), 'total_infected', None),
             ('I_hosp_ratio', np.linspace(0, 1, 201), 'total_infected', None),
             ('E_hosp_ratio', np.linspace(0, 2, 201), 'total_infected', None),
             ('P_fatal', np.linspace(0, 1, 201), 'deceased', 'total_infected'),
