@@ -172,6 +172,12 @@ def smooth_big_jump_stratified(df_strat, df_not_strat, method='weighted-mag', sm
             df_strat_smoothed, 'stable_symptomatic', 'stable_asymptomatic', d1, smoothing_length=length,
             method=method, description=description)
 
+        d1 = '2020-07-20'
+        length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-07-02', '%Y-%m-%d')).days
+        df_strat_smoothed, description = smooth_big_jump_helper(
+            df_strat_smoothed, 'stable_symptomatic', 'stable_asymptomatic', d1, smoothing_length=length,
+            method=method, description=description)
+
         # Smoothing of columns stratified by bed type
         d1 = '2020-05-31'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days

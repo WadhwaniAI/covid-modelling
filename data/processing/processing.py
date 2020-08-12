@@ -9,7 +9,7 @@ from collections import defaultdict
 from data.dataloader import Covid19IndiaLoader, RootnetLoader, AthenaLoader, JHULoader, NYTLoader, CovidTrackingLoader
 
 
-def get_dataframes_cached(loader_class=Covid19IndiaLoader):
+def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
     if loader_class == Covid19IndiaLoader:
         loader_key = 'tracker'
     if loader_class == AthenaLoader:
@@ -22,18 +22,23 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader):
         loader_key = 'us_tracker'
     picklefn = "../../cache/dataframes_ts_{today}_{loader_key}.pkl".format(
         today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
-    try:
-        print(picklefn)
-        with open(picklefn, 'rb') as pickle_file:
-            dataframes = pickle.load(pickle_file)
-    except:
+    if reload_data:
         print("pulling from source")
         loader = loader_class()
         dataframes = loader.load_data()
-        if not os.path.exists('../../cache/'):
-            os.mkdir('../../cache/')
-        with open(picklefn, 'wb+') as pickle_file:
-            pickle.dump(dataframes, pickle_file)
+    else:
+        try:
+            with open(picklefn, 'rb') as pickle_file:
+                dataframes = pickle.load(pickle_file)
+            print(f'loading from {picklefn}')
+        except:
+            print("pulling from source")
+            loader = loader_class()
+            dataframes = loader.load_data()
+            if not os.path.exists('../../cache/'):
+                os.mkdir('../../cache/')
+            with open(picklefn, 'wb+') as pickle_file:
+                pickle.dump(dataframes, pickle_file)
     return dataframes
 
 

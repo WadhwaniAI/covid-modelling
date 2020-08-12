@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 
 Column = namedtuple('Column', ['name', 'label', 'color'])
 
+cmap = plt.get_cmap('plasma')
+bed_colors = [cmap(i) for i in np.linspace(0, 0.8, 5)]
+
 class Columns(Enum):
 
     @property
@@ -30,6 +33,11 @@ class Columns(Enum):
     active = Column('hospitalised', 'Active Cases', 'orange')
     confirmed = Column('total_infected', 'Confirmed Cases', 'C0')
     daily_cases = Column('daily_cases', 'New Cases Added', 'indigo')
+    ventilator = Column('ventilator', 'Ventilator Beds', bed_colors[0])
+    icu = Column('icu', 'ICU Beds', bed_colors[1])
+    o2_beds = Column('o2_beds', 'O2 Beds', bed_colors[2])
+    non_o2_beds = Column('non_o2_beds', 'Non O2 Beds', bed_colors[3])
+    hq = Column('hq', 'Home Quarantine', bed_colors[4])
 
     @classmethod
     def which_compartments(cls):
