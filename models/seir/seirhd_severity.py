@@ -96,8 +96,8 @@ class SEIRHD_Severity(SEIR):
 
         if initialisation == 'intermediate':
             
-            state_init_values['R_mild'] = observed_values['stable_asymptomatic']
-            state_init_values['R_moderate'] = observed_values['stable_symptomatic']
+            state_init_values['R_mild'] = observed_values['asymptomatic']
+            state_init_values['R_moderate'] = observed_values['symptomatic']
             state_init_values['R_severe'] = observed_values['critical']
             state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['active']
             
@@ -162,8 +162,8 @@ class SEIRHD_Severity(SEIR):
 
         df_prediction['active'] = df_prediction['R_mild'] + \
             df_prediction['R_moderate'] + df_prediction['R_severe']
-        df_prediction['stable_asymptomatic'] = df_prediction['R_mild']
-        df_prediction['stable_symptomatic'] = df_prediction['R_moderate']
+        df_prediction['asymptomatic'] = df_prediction['R_mild']
+        df_prediction['symptomatic'] = df_prediction['R_moderate']
         df_prediction['critical'] = df_prediction['R_severe']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']

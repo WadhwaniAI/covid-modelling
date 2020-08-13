@@ -56,6 +56,7 @@ def get_custom_data_from_file(filename, state='Maharashtra', district='Mumbai'):
     df.columns = [x.replace('_occupied', '') for x in df.columns]
     df = df.rename({'city': 'district', 'total_cases': 'total', 'active_cases': 'active',
                     'icu_beds': 'icu', 'ventilator_beds': 'ventilator', 
+                    'stable_symptomatic': 'symptomatic', 'stable_asymptomatic': 'asymptomatic', 
                     'recoveries': 'recovered', 'deaths': 'deceased'}, axis='columns')
     # New column creation
     df['hq'] = df['active'] - df['total_beds']
@@ -74,8 +75,7 @@ def get_custom_data_from_file(filename, state='Maharashtra', district='Mumbai'):
     #Data checks
     beds_check = sum(df.loc[:, ['hq', 'non_o2_beds', 'o2_beds', 'icu']].sum(axis=1) == df['active'])
     facility_check = sum(df.loc[:, ['ccc2', 'dchc', 'dch']].sum(axis=1) == df['total_beds'])
-    severity_check = sum(df.loc[:, ['stable_asymptomatic', 'stable_symptomatic', 
-                                    'critical']].sum(axis=1) == df['active'])
+    severity_check = sum(df.loc[:, ['asymptomatic', 'symptomatic', 'critical']].sum(axis=1) == df['active'])
     return df
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):

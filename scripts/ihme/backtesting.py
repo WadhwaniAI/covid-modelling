@@ -50,7 +50,7 @@ def backtest(dist, st, area_names, config, model_params, folder):
 
     for runday in res['results'].keys():
         pred = res['results'][runday]['df_prediction']
-        # res['results']['df_prediction'][Columns.active.name] = pred[Columns.stable_asymptomatic.name] + pred[Columns.stable_asymptomatic.name] + pred[Columns.critical.name]
+        # res['results']['df_prediction'][Columns.active.name] = pred[Columns.asymptomatic.name] + pred[Columns.asymptomatic.name] + pred[Columns.critical.name]
         res['results'][runday]['df_prediction'][Columns.confirmed.name] = pred[Columns.active.name] + pred[Columns.recovered.name] + pred[Columns.deceased.name]
     
     plt.clf()

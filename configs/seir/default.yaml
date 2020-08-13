@@ -29,12 +29,12 @@ fitting:
     num_evals: 1000
     initialisation: 'intermediate'
     #Optimisation related parameters
-    which_compartments: ['total', 'active', 'recovered', 'deceased', 'stable_asymptomatic', 'stable_symptomatic', 'critical']
+    which_compartments: ['total', 'active', 'recovered', 'deceased', 'asymptomatic', 'symptomatic', 'critical']
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
-    plot_topk_trials_for_columns: [confirmed, active, stable_symptomatic, stable_asymptomatic]
-    plot_ptiles_for_columns: [confirmed, active, stable_symptomatic, stable_asymptomatic]
+    plot_topk_trials_for_columns: [confirmed, active, symptomatic, asymptomatic]
+    plot_ptiles_for_columns: [confirmed, active, symptomatic, asymptomatic]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:

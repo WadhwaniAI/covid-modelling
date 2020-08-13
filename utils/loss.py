@@ -7,7 +7,7 @@ class Loss_Calculator():
 
     def __init__(self):
       self.columns = ['active', 'recovered', 'deceased', 'total', 'total', 'active', 
-                      'stable_asymptomatic', 'stable_symptomatic', 'critical', 'ccc2', 'dchc', 'dch', 'hq', 
+                      'asymptomatic', 'symptomatic', 'critical', 'ccc2', 'dchc', 'dch', 'hq', 
                       'non_o2_beds', 'o2_beds', 'icu', 'ventilator']
 
     def _calc_rmse(self, y_pred, y_true, log=False):

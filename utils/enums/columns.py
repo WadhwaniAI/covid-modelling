@@ -26,8 +26,8 @@ class Columns(Enum):
 
     date = Column('date', 'date', None)
     critical = Column('critical', 'Critical', 'brown')
-    stable_symptomatic = Column('stable_symptomatic', 'Stable Symptomatic', 'magenta')
-    stable_asymptomatic = Column('stable_asymptomatic', 'Stable Asymptomatic', 'cyan')
+    symptomatic = Column('symptomatic', 'Stable Symptomatic', 'magenta')
+    asymptomatic = Column('asymptomatic', 'Stable Asymptomatic', 'cyan')
     recovered = Column('recovered', 'Recovered Cases', 'green')
     deceased = Column('deceased', 'Deceased Cases', 'red')
     active = Column('active', 'Active Cases', 'orange')
@@ -49,7 +49,7 @@ class Columns(Enum):
     
     @classmethod
     def active_compartments(cls):
-        return [cls.stable_asymptomatic, cls.stable_symptomatic, cls.critical]
+        return [cls.asymptomatic, cls.symptomatic, cls.critical]
 
     @classmethod
     def curve_fit_compartments(cls):
@@ -90,8 +90,8 @@ compartments = {
     ],
     'severity': [
         Column('critical', 'Critical', severity_colors[0]),
-        Column('stable_symptomatic', 'Stable Symptomatic', severity_colors[1]),
-        Column('stable_asymptomatic', 'Stable Asymptomatic', severity_colors[2])
+        Column('symptomatic', 'Stable Symptomatic', severity_colors[1]),
+        Column('asymptomatic', 'Stable Asymptomatic', severity_colors[2])
     ],
     'bed': [
         Column('ventilator', 'Ventilator Beds', bed_colors[0]),

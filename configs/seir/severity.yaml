@@ -32,23 +32,23 @@ fitting:
     num_evals: 1000
     initialisation: 'intermediate'
     #Optimisation related parameters
-    which_compartments: ['total', 'active', 'recovered', 'deceased', 'stable_asymptomatic', 'stable_symptomatic', 'critical']
+    which_compartments: ['total', 'active', 'recovered', 'deceased', 'asymptomatic', 'symptomatic', 'critical']
 sensitivity:
     lockdown_R0: [[1, 1.5], 101, 'total', None]
     I_hosp_ratio: [[0, 1], 201, 'total', None]
     E_hosp_ratio: [[0, 2], 201, 'total', None]
-    P_moderate: [[0, 0.5], 201, 'stable_symptomatic', 'total']
+    P_moderate: [[0, 0.5], 201, 'symptomatic', 'total']
     P_severe: [[0, 0.5], 201, 'critical', 'total']
     P_fatal: [[0, 0.5], 201, 'deceased', 'total']
-    T_recov_mild: [[1, 100], 101, 'stable_asymptomatic', 'total']
-    T_recov_moderate: [[1, 100], 101, 'stable_symptomatic', 'total']
+    T_recov_mild: [[1, 100], 101, 'asymptomatic', 'total']
+    T_recov_moderate: [[1, 100], 101, 'symptomatic', 'total']
     T_recov_severe: [[1, 100], 101, 'critical', 'total']
     T_recov_fatal: [[1, 100], 101, 'deceased', 'total']
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
-    plot_topk_trials_for_columns: [confirmed, active, stable_symptomatic, stable_asymptomatic]
-    plot_ptiles_for_columns: [confirmed, active, stable_symptomatic, stable_asymptomatic]
+    plot_topk_trials_for_columns: [confirmed, active, symptomatic, asymptomatic]
+    plot_ptiles_for_columns: [confirmed, active, symptomatic, asymptomatic]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:

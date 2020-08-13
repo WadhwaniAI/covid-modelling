@@ -140,42 +140,42 @@ def smooth_big_jump_stratified(df_strat, df_not_strat, method='weighted-mag', sm
     df_strat_smoothed.loc[:, base_columns] = df_smoothed.loc[df_smoothed['date'].isin(
         df_strat['date']), base_columns].reset_index(drop=True)
     
-    # Since hq and stable_asymptomatic are inferred time series, infer them again with new time smoothed active time series
+    # Since hq and asymptomatic are inferred time series, infer them again with new time smoothed active time series
     df_strat_smoothed['hq'] = df_strat_smoothed['active'] - \
         df_strat_smoothed.loc[:, ['o2_beds', 'non_o2_beds', 'icu', 'ventilator']].sum(axis=1)
-    df_strat_smoothed['stable_asymptomatic'] = df_strat_smoothed['active'] - (
-        df_strat_smoothed['stable_symptomatic'] + df_strat_smoothed['critical'])
+    df_strat_smoothed['asymptomatic'] = df_strat_smoothed['active'] - (
+        df_strat_smoothed['symptomatic'] + df_strat_smoothed['critical'])
 
     if smooth_stratified_additionally:
         # Smoothing of columns stratified by severity
         d1 = '2020-06-10'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
         df_strat_smoothed, description = smooth_big_jump_helper(
-            df_strat_smoothed, 'stable_symptomatic', 'stable_asymptomatic', d1, smoothing_length=length, 
+            df_strat_smoothed, 'symptomatic', 'asymptomatic', d1, smoothing_length=length, 
             method=method, description=description)
 
         d1 = '2020-06-15'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
         df_strat_smoothed, description = smooth_big_jump_helper(
-            df_strat_smoothed, 'stable_symptomatic', 'stable_asymptomatic', d1, smoothing_length=length,
+            df_strat_smoothed, 'symptomatic', 'asymptomatic', d1, smoothing_length=length,
             method=method, description=description)
 
         d1 = '2020-07-01'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
         df_strat_smoothed, description = smooth_big_jump_helper(
-            df_strat_smoothed, 'stable_symptomatic', 'stable_asymptomatic', d1, smoothing_length=length,
+            df_strat_smoothed, 'symptomatic', 'asymptomatic', d1, smoothing_length=length,
             method=method, description=description)
 
         d1 = '2020-07-02'
         length = (datetime.strptime(d1, '%Y-%m-%d') - df_strat_smoothed.loc[0, 'date']).days
         df_strat_smoothed, description = smooth_big_jump_helper(
-            df_strat_smoothed, 'stable_symptomatic', 'stable_asymptomatic', d1, smoothing_length=length,
+            df_strat_smoothed, 'symptomatic', 'asymptomatic', d1, smoothing_length=length,
             method=method, description=description)
 
         d1 = '2020-07-20'
         length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-07-02', '%Y-%m-%d')).days
         df_strat_smoothed, description = smooth_big_jump_helper(
-            df_strat_smoothed, 'stable_symptomatic', 'stable_asymptomatic', d1, smoothing_length=length,
+            df_strat_smoothed, 'symptomatic', 'asymptomatic', d1, smoothing_length=length,
             method=method, description=description)
 
         # Smoothing of columns stratified by bed type
