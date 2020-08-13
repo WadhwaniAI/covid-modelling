@@ -8,16 +8,13 @@ fitting:
     filename: None
     smooth_jump: TRUE
     #Choose Model and Ranges
-    model: SEIRHD_Severity
+    model: SEIRHD
     variable_param_ranges:  
         lockdown_R0: [1, 1.15]
         T_inc: [4, 5]
         T_inf: [3, 4]
-        T_recov_mild: [20, 30]
-        T_recov_moderate: [20, 30]
         T_recov_severe: [0, 40]
-        P_moderate: [0, 0.5]
-        P_severe: [0, 0.1]
+        T_recov_fatal: [0, 40]
         P_fatal: [0, 0.1]
         E_hosp_ratio: [0, 2]
         I_hosp_ratio: [0, 1]
