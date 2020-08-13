@@ -221,6 +221,62 @@ def get_district_time_series(state='Karnataka', district='Bengaluru', use_datafr
         out.index.name = 'date'
         return out.reset_index()
 
+def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5,
+                    which_columns=None):
+    """Creates train val split on dataframe
+
+    # TODO : Add support for creating train val test split
+
+    Arguments:
+        df_district {pd.DataFrame} -- The observed dataframe
+
+    Keyword Arguments:
+        train_rollingmean {bool} -- If true, apply rolling mean on train (default: {False})
+        val_rollingmean {bool} -- If true, apply rolling mean on val (default: {False})
+        val_size {int} -- Size of val set (default: {5})
+        rolling_window {int} -- Size of rolling window. The rolling window is centered (default: {5})
+
+    Returns:
+        pd.DataFrame, pd.DataFrame, pd.DataFrame -- train dataset, val dataset, concatenation of rolling average dfs
+    """
+    print("splitting data ..")
+    df_true_fitting = copy.copy(df_district)
+    # Perform rolling average on all columns with numeric datatype
+    df_true_fitting = df_true_fitting.infer_objects()
+    if which_columns == None:
+        which_columns = df_true_fitting.select_dtypes(include='number').columns
+    for column in which_columns:
+        df_true_fitting[column] = df_true_fitting[column].rolling(
+            rolling_window, center=True).mean()
+
+    # Since the rolling average method is center, we need an offset variable where the ends of the series will
+    # use the true observations instead (as rolling averages for those offset days don't exist)
+    offset_window = rolling_window // 2
+
+    df_true_fitting.dropna(axis=0, how='any', subset=which_columns, inplace=True)
+    df_true_fitting.reset_index(inplace=True, drop=True)
+
+    if train_rollingmean:
+        if val_size == 0:
+            df_train = pd.concat(
+                [df_true_fitting, df_district.iloc[-(val_size+offset_window):, :]], ignore_index=True)
+            return df_train, None
+        else:
+            df_train = df_true_fitting.iloc[:-(val_size-offset_window), :]
+    else:
+        if val_size == 0:
+            return df_district, None
+        else:
+            df_train = df_district.iloc[:-val_size, :]
+
+    if val_rollingmean:
+        df_val = pd.concat([df_true_fitting.iloc[-(val_size-offset_window):, :],
+                            df_district.iloc[-offset_window:, :]], ignore_index=True)
+    else:
+        df_val = df_district.iloc[-val_size:, :]
+    df_val.reset_index(inplace=True, drop=True)
+    return df_train, df_val
+
 def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
     picklefn = "../../cache/{district}_ts_{src}_{today}.pkl".format(
         district=district, today=datetime.datetime.today().strftime("%d%m%Y"), 
