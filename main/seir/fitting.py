@@ -2,23 +2,15 @@ import os
 import json
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import seaborn as sns
-from hyperopt import hp, tpe, fmin, Trials
-from tqdm import tqdm
 
 from collections import OrderedDict, defaultdict
-import itertools
-from functools import partial
 import datetime
-from joblib import Parallel, delayed
 import copy
 
 from data.processing import get_data
 from data.processing import granular
 
-from models.seir.seir_testing import SEIR_Testing
+from models.seir import SEIRHD
 from main.seir.optimiser import Optimiser
 from utils.loss import Loss_Calculator
 from utils.enums import Columns
@@ -83,7 +75,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     
 
 def get_regional_data(state, district, data_from_tracker, data_format, filename, loss_compartments,
-                      granular_data=False, smooth_jump=False, t_recov=14, return_extra=False):
+                      granular_data=False, smooth_jump=False, return_extra=False):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -157,7 +149,7 @@ def data_setup(df_district, val_period):
     return observed_dataframes
 
 
-def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, 
+def run_cycle(state, district, observed_dataframes, model=SEIRHD, variable_param_ranges=None, 
               default_params=None, train_period=7, data_from_tracker=True,
               loss_compartments=['active', 'total', 'recovered', 'deceased'], 
               num_evals=1500, N=1e7, test_period=0):
@@ -169,7 +161,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
         observed_dataframes {dict(pd.DataFrame)} -- Dict of all observed dataframes
 
     Keyword Arguments:
-        model {class} -- The epi model class we're using to perform optimisation (default: {SEIR_Testing})
+        model {class} -- The epi model class we're using to perform optimisation (default: {SEIRHD})
         data_from_tracker {bool} -- If true, data is from covid19india API (default: {True})
         train_period {int} -- Length of training period (default: {7})
         loss_compartments {list} -- Whci compartments to apply loss over 
@@ -225,13 +217,13 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
     for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
-                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'plot_fit', 'trials', 'data_last_date']:
+                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
 
     return results_dict
 
 
-def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ranges=None, default_params=None, #Main 
+def single_fitting_cycle(state, district, model=SEIRHD, variable_param_ranges=None, default_params=None, #Main 
                          data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
                          train_period=7, val_period=7, num_evals=1500, N=1e7, test_period=0,  #Misc
                          loss_compartments=['active', 'total'], #Compartments
@@ -244,7 +236,7 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
         district {str} -- District Name (in title case)
 
     Keyword Arguments:
-        model_class {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
+        model_class {class} -- The epi model class to be used for modelling (default: {SEIRHD})
         train_period {int} -- The training period (default: {7})
         val_period {int} -- The validation period (default: {7})
         num_evals {int} -- Number of evaluations of Bayesian Optimsation (default: {1500})

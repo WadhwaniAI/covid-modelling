@@ -1,8 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import seaborn as sns
 from hyperopt import hp, tpe, fmin, Trials
 from tqdm import tqdm
 from tqdm.notebook import tqdm
@@ -13,7 +10,7 @@ from functools import partial, reduce
 import datetime
 from joblib import Parallel, delayed
 
-from models.seir.seir_testing import SEIR_Testing
+from models.seir import SEIRHD
 from utils.loss import Loss_Calculator
 
 class Optimiser():
@@ -48,7 +45,7 @@ class Optimiser():
 
     return variable_param_ranges
 
-    def solve(self, variable_params : dict, default_params :dict, df_true : pd.DataFrame, model=SEIR_Testing, 
+    def solve(self, variable_params : dict, default_params :dict, df_true : pd.DataFrame, model=SEIRHD, 
               start_date=None, end_date=None):
         """This function solves the ODE for an input of params (but does not compute loss)
 
@@ -58,7 +55,7 @@ class Optimiser():
             df_true {pd.DataFrame} -- The training dataset
 
         Keyword Arguments:
-            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
             start_date {str} -- The start date (usually not specifed, inferred from the params_dict) (default: {None})
             end_date {str} -- Last date of projection (default: {None})
 
@@ -84,7 +81,7 @@ class Optimiser():
 
 
     # TODO add cross validation support
-    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIR_Testing,
+    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIRHD,
                                which_compartments=['active', 'recovered', 'total', 'deceased'], 
                                loss_indices=[-20, -10], loss_method='rmse', return_dict=False, debug=False):
         """The function that computes solves the ODE for a given set of input params and computes loss on train set
@@ -96,7 +93,7 @@ class Optimiser():
             total_days {int} -- Total number of days into the future for which we want to simulate
 
         Keyword Arguments:
-            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
             which_compartments {list} -- Which compartments to apply loss on 
             (default: {['active', 'recovered', 'total', 'deceased']})
             loss_indices {list} -- Which indices of the train set to apply loss on (default: {[-20, -10]})
@@ -186,7 +183,7 @@ class Optimiser():
 
         return default_params
 
-    def gridsearch(self, df_true, default_params, variable_param_ranges, model=SEIR_Testing, method='rmse',
+    def gridsearch(self, df_true, default_params, variable_param_ranges, model=SEIRHD, method='rmse',
                    loss_indices=[-20, -10], which_compartments=['total'], total_days=None, debug=False):
         """Implements gridsearch based optimisation
 
@@ -206,7 +203,7 @@ class Optimiser():
         }
 
         Keyword Arguments:
-            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
             method {str} -- The loss method (default: {'rmse'})
             loss_indices {list} -- The indices on the train set to apply the loss on (default: {[-20, -10]})
             which_compartments {list} -- Which compartments to apply loss on (default: {['total']})
@@ -238,7 +235,7 @@ class Optimiser():
                     
         return loss_array, list_of_param_dicts
 
-    def bayes_opt(self, df_true, default_params, variable_param_ranges, model=SEIR_Testing, total_days=None, 
+    def bayes_opt(self, df_true, default_params, variable_param_ranges, model=SEIRHD, total_days=None, 
                   method='rmse', num_evals=3500, loss_indices=[-20, -10], which_compartments=['total']):
         """Implements Bayesian Optimisation using hyperopt library
 
@@ -257,7 +254,7 @@ class Optimiser():
         }
 
         Keyword Arguments:
-            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
             total_days {int} -- total days to simulate for (deprecated) (default: {None})
             method {str} -- Loss Method (default: {'rmse'})
             num_evals {int} -- Number of hyperopt evaluations (default: {3500})
