@@ -24,47 +24,6 @@ from utils.loss import Loss_Calculator
 from utils.enums import Columns
 from utils.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
 from viz import plot_smoothing, plot_fit
-
-def get_variable_param_ranges(variable_param_ranges=None, initialisation='intermediate', as_str=False, 
-                              mode='hyperopt', searchspace_len=21):
-    """Returns the ranges for the variable params in the search space
-
-    Keyword Arguments:
-        initialisation {str} -- The method of initialisation (default: {'intermediate'})
-        as_str {bool} -- If true, the parameters are not returned as a hyperopt object, but as a dict in 
-        string form (default: {False})
-
-    Returns:
-        dict -- dict of ranges of variable params
-    """
-    if variable_param_ranges == None:
-        variable_param_ranges = {
-            'lockdown_R0': (1, 1.3),
-            'T_inc': (4, 5),
-            'T_inf': (3, 4),
-            'T_recov_severe': (5, 60),
-            'T_recov_fatal': (0, 40),
-            'P_fatal': (0, 0.3),
-            'E_hosp_ratio': (0, 2),
-            'I_hosp_ratio': (0, 1)
-        }
-    if initialisation != 'intermediate':
-        del variable_param_ranges['E_hosp_ratio']
-        del variable_param_ranges['I_hosp_ratio']
-    if as_str:
-        return str(variable_param_ranges)
-
-    if mode == 'hyperopt':
-        for key in variable_param_ranges.keys():
-            variable_param_ranges[key] = hp.uniform(
-                key, variable_param_ranges[key][0], variable_param_ranges[key][1])
-
-    if mode == 'gridsearch':
-        for key in variable_param_ranges.keys():
-            variable_param_ranges[key] = np.linspace(
-                variable_param_ranges[key][0], variable_param_ranges[key][1], searchspace_len)
-
-    return variable_param_ranges
    
 def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5,
                     which_columns=None):
@@ -123,7 +82,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     return df_train, df_val
     
 
-def get_regional_data(state, district, data_from_tracker, data_format, filename, which_compartments,
+def get_regional_data(state, district, data_from_tracker, data_format, filename, loss_compartments,
                       granular_data=False, smooth_jump=False, t_recov=14, return_extra=False):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
@@ -160,7 +119,7 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
             df_district, description = smooth_big_jump(df_district, data_from_tracker=data_from_tracker)
 
         smoothing_plot = plot_smoothing(orig_df_district, df_district, state, district,
-                                        which_compartments=which_compartments, description=f'Smoothing')
+                                        loss_compartments=loss_compartments, description=f'Smoothing')
     
     df_district['daily_cases'] = df_district['total'].diff()
     df_district.dropna(axis=0, how='any', inplace=True)
@@ -200,7 +159,7 @@ def data_setup(df_district, val_period):
 
 def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, 
               default_params=None, train_period=7, data_from_tracker=True,
-              which_compartments=['active', 'total', 'recovered', 'deceased'], 
+              loss_compartments=['active', 'total', 'recovered', 'deceased'], 
               num_evals=1500, N=1e7, initialisation='starting', test_period=0):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
@@ -213,7 +172,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
         model {class} -- The epi model class we're using to perform optimisation (default: {SEIR_Testing})
         data_from_tracker {bool} -- If true, data is from covid19india API (default: {True})
         train_period {int} -- Length of training period (default: {7})
-        which_compartments {list} -- Whci compartments to apply loss over 
+        loss_compartments {list} -- Whci compartments to apply loss over 
         (default: {['active', 'total', 'recovered', 'deceased']})
         num_evals {int} -- Number of evaluations for hyperopt (default: {1500})
         N {float} -- Population of area (default: {1e7})
@@ -243,10 +202,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
         default_params = {**std_default_params, **default_params}
     else:
         default_params = std_default_params
-    # Get/create searchspace of variable params
-    if variable_param_ranges == None:
-        variable_param_ranges = get_variable_param_ranges(initialisation=initialisation)
-
+    # Get/create searchspace of variable paramms
     if test_period == 0:
         loss_indices = [-train_period, None]
     else:
@@ -255,7 +211,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
                                               num_evals=num_evals, loss_indices=loss_indices, method='mape',
-                                              total_days=total_days, which_compartments=which_compartments)
+                                              total_days=total_days, loss_compartments=loss_compartments)
     print('best parameters\n', best_params)
 
     if not isinstance(df_val, pd.DataFrame):
@@ -267,16 +223,15 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     
     lc = Loss_Calculator()
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, train_period, 
-                                              which_compartments=which_compartments)
+                                              loss_compartments=loss_compartments)
 
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, district,
-                        which_compartments=which_compartments)
+                        loss_compartments=loss_compartments)
 
     results_dict = {}
     results_dict['plots'] = {}
     results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
-    variable_param_ranges = get_variable_param_ranges(initialisation=initialisation, as_str=True)
     for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
                  'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'plot_fit', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
@@ -287,7 +242,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
 def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ranges=None, default_params=None, #Main 
                          data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
                          train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', test_period=0,  #Misc
-                         which_compartments=['active', 'total'], #Compartments
+                         loss_compartments=['active', 'total'], #Compartments
                          smooth_jump=False): #Smoothing
     """Main function which user runs for running an entire fitting cycle for a particular district
 
@@ -305,7 +260,7 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
         filename {str} -- If None, Athena database is used. Otherwise, data in filename is read (default: {None})
         data_format {str} -- The format type of the filename user is providing ('old'/'new') (default: {'new'})
         N {float} -- The population of the geographical region (default: {1e7})
-        which_compartments {list} -- Which compartments to fit on (default: {['active', 'total']})
+        loss_compartments {list} -- Which compartments to fit on (default: {['active', 'total']})
         initialisation {str} -- The method of intitalisation (default: {'starting'})
 
     Returns:
@@ -321,7 +276,7 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
     # Get data
     df_district, extra = get_regional_data(
         state, district, data_from_tracker, data_format, filename, 
-        which_compartments=which_compartments, granular_data=granular_data,
+        loss_compartments=loss_compartments, granular_data=granular_data,
         smooth_jump=smooth_jump, return_extra=True
     )
     smoothing_plot = extra['smoothing_plot']
@@ -337,7 +292,7 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
         state, district, observed_dataframes, 
         model=model, variable_param_ranges=variable_param_ranges, default_params=default_params,
         data_from_tracker=data_from_tracker, train_period=train_period, 
-        which_compartments=which_compartments, N=N, test_period=test_period,
+        loss_compartments=loss_compartments, N=N, test_period=test_period,
         num_evals=num_evals, initialisation=initialisation
     )
 
