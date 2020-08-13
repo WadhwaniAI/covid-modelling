@@ -2,11 +2,12 @@ fitting:
     # Geographical Location
     state: 'Maharashtra'
     district: 'Mumbai'
-    #Data
-    data_from_tracker: False
-    granular_data: True
-    filename: None
-    smooth_jump: TRUE
+    data:
+        dataloader: Covid19IndiaLoader
+        data_from_tracker: False
+        granular_data: True
+        filename: None
+        smooth_jump: TRUE
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:  
@@ -22,14 +23,19 @@ fitting:
         N: 1.0e+7
         lockdown_date: 2020-03-25
         lockdown_removal_date: 2020-06-30
+    fitting_method: bayes_opt
+    fitting_method_params:
+        num_evals: 1000
+        prior: uniform
+        algo: tpe
+
     #Choose Fitting Periods and num evaluations
     train_period: 7
     val_period: 7
     test_period: 0
-    num_evals: 1000
-    initialisation: 'intermediate'
     #Optimisation related parameters
-    which_compartments: ['total', 'active', 'recovered', 'deceased', 'asymptomatic', 'symptomatic', 'critical']
+    loss_compartments: ['total', 'active', 'recovered', 'deceased', 'asymptomatic', 'symptomatic', 'critical']
+    loss_weights: [1, 1, 1, 1, 1, 1, 1]
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
@@ -42,5 +48,6 @@ uncertainty:
         date_of_sorting_trials: 2020-07-31
         sort_trials_by_column: confirmed
         loss_compartments: ['total', 'active', 'recovered', 'deceased']
+        loss_weights: [1, 1, 1, 1]
 
     
