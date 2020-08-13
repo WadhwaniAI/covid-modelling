@@ -58,91 +58,6 @@ def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train
 
     return df_prediction
 
-
-def create_region_csv(predictions_dict: dict, region: str, regionType: str, model=SEIRHD, df_prediction=None,
-                      icu_fraction=0.02, best_params=None, days=30):
-    """Created the CSV file for one particular geographical area in the format Keshav consumes
-
-    Arguments:
-        predictions_dict {dict} -- Dict of predictions for a geographical region
-        region {str} -- Region Name
-        regionType {str} -- Region type ('dist', 'state')
-
-    Keyword Arguments:
-        icu_fraction {float} -- Percentage of people that are in ICU (as a fraction of active cases) (default: {0.02})
-        best_params {dict} -- If not none, these params are used to get predictions, not 
-        the predictions_dict['best_params'] (default: {None})
-
-    Returns:
-        pd.DataFrame -- The output CSV file in the format Keshav consumes
-    """
-    print("compiling csv data ..")
-    columns = ['forecastRunDate', 'predictionDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value',
-                'current_total', 'current_active', 'current_recovered', 'current_deceased', 'current_hospitalized', 
-                'current_icu', 'current_ventilator', 'active_mean', 'active_min',
-                'active_max', 'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 
-                'icu_max', 'deceased_mean', 'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 
-                'recovered_max', 'total_mean', 'total_min', 'total_max']
-    df_output = pd.DataFrame(columns=columns)
-
-    if df_prediction is None:
-        df_prediction = get_forecast(predictions_dict, model=model, best_params=best_params, days=days)
-
-    df_true = predictions_dict['m1']['df_district']
-    prediction_daterange = np.union1d(df_true['date'], df_prediction['date'])
-    no_of_data_points = len(prediction_daterange)
-    df_output['predictionDate'] = prediction_daterange
-
-    df_output['forecastRunDate'] = [datetime.datetime.today().date()]*no_of_data_points
-    df_output['regionType'] = [regionType]*no_of_data_points
-    df_output['region'] = [region]*no_of_data_points
-    df_output['model_name'] = ['SEIR']*no_of_data_points
-    df_output['error_function'] = ['MAPE']*no_of_data_points
-    error = predictions_dict['m1']['df_loss'].loc['total', 'val']
-    df_output['error_value'] = [error]*no_of_data_points
-
-    df_output.set_index('predictionDate', inplace=True)
-
-    pred_hospitalisations = df_prediction['active'].to_numpy()
-    error = predictions_dict['m1']['df_loss'].loc['active', 'val']
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'active_mean'] = pred_hospitalisations
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'active_min'] = (1 - 0.01*error)*pred_hospitalisations
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'active_max'] = (1 + 0.01*error)*pred_hospitalisations
-    
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'hospitalized_mean'] = pred_hospitalisations
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'hospitalized_min'] = (1 - 0.01*error)*pred_hospitalisations
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'hospitalized_max'] = (1 + 0.01*error)*pred_hospitalisations
-    
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'icu_mean'] = icu_fraction*pred_hospitalisations
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'icu_min'] = (1 - 0.01*error)*icu_fraction*pred_hospitalisations
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'icu_max'] = (1 + 0.01*error)*icu_fraction*pred_hospitalisations
-    
-    pred_recoveries = df_prediction['recovered'].to_numpy()
-    error = predictions_dict['m1']['df_loss'].loc['recovered', 'val']
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'recovered_mean'] = pred_recoveries
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'recovered_min'] = (1 - 0.01*error)*pred_recoveries
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'recovered_max'] = (1 + 0.01*error)*pred_recoveries
-    
-    pred_fatalities = df_prediction['deceased'].to_numpy()
-    error = predictions_dict['m1']['df_loss'].loc['deceased', 'val']
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'deceased_mean'] = pred_fatalities
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'deceased_min'] = (1 - 0.01*error)*pred_fatalities
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'deceased_max'] = (1 + 0.01*error)*pred_fatalities
-    
-    pred_total_cases = df_prediction['total'].to_numpy()
-    error = predictions_dict['m1']['df_loss'].loc['total', 'val']
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'total_mean'] = pred_total_cases
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'total_min'] = (1 - 0.01*error)*pred_total_cases
-    df_output.loc[df_output.index.isin(df_prediction['date']), 'total_max'] = (1 + 0.01*error)*pred_total_cases
-    
-    df_output.loc[df_output.index.isin(df_true['date']), 'current_total'] = df_true['total'].to_numpy()
-    df_output.loc[df_output.index.isin(df_true['date']), 'current_hospitalized'] = df_true['active'].to_numpy()
-    df_output.loc[df_output.index.isin(df_true['date']), 'current_deceased'] = df_true['deceased'].to_numpy()
-    df_output.loc[df_output.index.isin(df_true['date']), 'current_recovered'] = df_true['recovered'].to_numpy()
-    df_output.reset_index(inplace=True)
-    df_output = df_output[columns]
-    return df_output
-
 def create_decile_csv(predictions_dict: dict, region: str, regionType: str, icu_fraction=0.02):
     print("compiling csv data ..")
     columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'current_total', 'current_active', 'current_recovered',
@@ -196,33 +111,6 @@ def create_decile_csv(predictions_dict: dict, region: str, regionType: str, icu_
     df_output.reset_index(inplace=True)
     # df_output = df_output[columns]
     return df_output
-
-def create_all_csvs(predictions_dict: dict, district:str='Mumbai', days=30, icu_fraction=0.02):
-    """Creates the output for all geographical regions (not just one)
-
-    Arguments:
-        predictions_dict {dict} -- The predictions dict for all geographical regions
-
-    Keyword Arguments:
-        icu_fraction {float} -- Percentage of active cases that are in the ICU (default: {0.02})
-
-    Returns:
-        pd.DataFrame -- output for all geographical regions
-    """
-    columns = ['forecastRunDate', 'predictionDate', 'regionType', 'region', 'model_name', 'error_function', 'error_value', 'which_forecast',
-                'current_total', 'current_active', 'current_recovered', 'current_deceased', 'current_hospitalized', 
-                'current_icu', 'current_ventilator', 'active_mean', 'active_min', 'active_max', 
-                'hospitalized_mean', 'hospitalized_min', 'hospitalized_max', 'icu_mean', 'icu_min', 'icu_max', 
-                'deceased_mean', 'deceased_min', 'deceased_max', 'recovered_mean', 'recovered_min', 'recovered_max', 
-                'total_mean', 'total_min', 'total_max']
-    df_final = pd.DataFrame(columns=columns)
-    for forecast, df_prediction in predictions_dict['m2']['forecasts'].items():
-        df_output = create_region_csv(predictions_dict, region=district, regionType='district',
-                                      df_prediction=df_prediction, icu_fraction=icu_fraction, days=days)
-        df_output['which_forecast'] = forecast
-        df_final = pd.concat([df_final, df_output], ignore_index=True)
-    
-    return df_final
 
 def write_csv(df_final: pd.DataFrame, filename:str=None):
     """Helper function for saving the CSV files
