@@ -23,6 +23,31 @@ class Optimiser():
     def __init__(self):
         self.loss_calculator = Loss_Calculator()
 
+    def get_variable_param_ranges(self, variable_param_ranges, mode='bayes_opt', prior='uniform'):
+    """Returns the ranges for the variable params in the search space
+
+    Keyword Arguments:
+        initialisation {str} -- The method of initialisation (default: {'intermediate'})
+        as_str {bool} -- If true, the parameters are not returned as a hyperopt object, but as a dict in 
+        string form (default: {False})
+
+    Returns:
+        dict -- dict of ranges of variable params
+    """
+
+    # TODO add support for different prior for each variable
+    if mode == 'bayes_opt':
+        for key in variable_param_ranges.keys():
+            variable_param_ranges[key] = getattr(hp, 'uniform')(
+                key, variable_param_ranges[key][0], variable_param_ranges[key][1])
+
+    if mode == 'gridsearch':
+        for key in variable_param_ranges.keys():
+            variable_param_ranges[key] = np.linspace(
+                variable_param_ranges[key][0], variable_param_ranges[key][1], variable_param_ranges[key][2])
+
+    return variable_param_ranges
+
     def solve(self, variable_params : dict, default_params :dict, df_true : pd.DataFrame, model=SEIR_Testing, 
               start_date=None, end_date=None):
         """This function solves the ODE for an input of params (but does not compute loss)
