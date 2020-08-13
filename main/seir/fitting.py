@@ -160,7 +160,7 @@ def data_setup(df_district, val_period):
 def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, 
               default_params=None, train_period=7, data_from_tracker=True,
               loss_compartments=['active', 'total', 'recovered', 'deceased'], 
-              num_evals=1500, N=1e7, initialisation='starting', test_period=0):
+              num_evals=1500, N=1e7, test_period=0):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -176,7 +176,6 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
         (default: {['active', 'total', 'recovered', 'deceased']})
         num_evals {int} -- Number of evaluations for hyperopt (default: {1500})
         N {float} -- Population of area (default: {1e7})
-        initialisation {str} -- Method of initialisation (default: {'starting'})
 
     Returns:
         dict -- Dict of all predictions
@@ -190,14 +189,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
     # Initialise Optimiser
     optimiser = Optimiser()
     # Get the fixed params
-    if initialisation == 'starting':
-        observed_values = df_district.iloc[0, :]
-        start_date = df_district.iloc[0, :]['date']
-        std_default_params = optimiser.init_default_params(df_train, N=N, observed_values=observed_values,
-                                                           start_date=start_date, initialisation=initialisation)
-    elif initialisation == 'intermediate':
-        std_default_params = optimiser.init_default_params(df_train, N=N, initialisation=initialisation,
-                                                           train_period=train_period)
+    std_default_params = optimiser.init_default_params(df_train, N=N, train_period=train_period)
     if default_params is not None:
         default_params = {**std_default_params, **default_params}
     else:
@@ -241,7 +233,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
 
 def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ranges=None, default_params=None, #Main 
                          data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
-                         train_period=7, val_period=7, num_evals=1500, N=1e7, initialisation='starting', test_period=0,  #Misc
+                         train_period=7, val_period=7, num_evals=1500, N=1e7, test_period=0,  #Misc
                          loss_compartments=['active', 'total'], #Compartments
                          smooth_jump=False): #Smoothing
     """Main function which user runs for running an entire fitting cycle for a particular district
@@ -261,7 +253,6 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
         data_format {str} -- The format type of the filename user is providing ('old'/'new') (default: {'new'})
         N {float} -- The population of the geographical region (default: {1e7})
         loss_compartments {list} -- Which compartments to fit on (default: {['active', 'total']})
-        initialisation {str} -- The method of intitalisation (default: {'starting'})
 
     Returns:
         dict -- dict of everything related to prediction
@@ -293,7 +284,7 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
         model=model, variable_param_ranges=variable_param_ranges, default_params=default_params,
         data_from_tracker=data_from_tracker, train_period=train_period, 
         loss_compartments=loss_compartments, N=N, test_period=test_period,
-        num_evals=num_evals, initialisation=initialisation
+        num_evals=num_evals
     )
 
     if smoothing_plot != None:

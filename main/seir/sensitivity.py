@@ -37,7 +37,7 @@ def gridsearch_single_param(predictions_dict, which_fit='m1', var_name=None, par
     except Exception as err:
         print('')
     optimiser = Optimiser()
-    extra_params = optimiser.init_default_params(df_train, N=1e7, initialisation='intermediate', 
+    extra_params = optimiser.init_default_params(df_train, N=1e7, 
                                                  train_period=train_period)
     default_params = {**default_params, **extra_params}
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days

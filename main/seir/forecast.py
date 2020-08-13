@@ -235,7 +235,7 @@ def scale_up_testing_and_forecast(predictions_dict, which_fit='m2', model=SEIRHD
                                         time_window_to_scale=time_window_to_scale)
 
     optimiser = Optimiser()
-    extra_params = optimiser.init_default_params(df_whatif, N=1e7, initialisation='intermediate', 
+    extra_params = optimiser.init_default_params(df_whatif, N=1e7, 
                                                  train_period=time_window_to_scale)
     best_params = copy.copy(predictions_dict[which_fit]['best_params'])
     del best_params['T_inf']

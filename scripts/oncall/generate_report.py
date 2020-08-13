@@ -59,12 +59,12 @@ state, district = districts_dict[args.district.strip().lower()]
 
 predictions_dict['m1'] = single_fitting_cycle(
     dataframes, state, district, train_period=7, val_period=7, num_evals=config['max_evals'],
-    data_from_tracker=not config['disable_tracker'], initialisation='intermediate', model=SEIR_Testing, 
+    data_from_tracker=not config['disable_tracker'], model=SEIR_Testing, 
     smooth_jump=config['smooth_jump'], smoothing_method=config['smooth_method'], smoothing_length=config['smooth_ndays'],
     which_compartments=['active', 'total', 'deceased', 'recovered'])
 predictions_dict['m2'] = single_fitting_cycle(
     dataframes, state, district, train_period=7, val_period=0, num_evals=config['max_evals'],
-    data_from_tracker=not config['disable_tracker'], initialisation='intermediate', model=SEIR_Testing, 
+    data_from_tracker=not config['disable_tracker'], model=SEIR_Testing, 
     smooth_jump=config['smooth_jump'], smoothing_method=config['smooth_method'], smoothing_length=config['smooth_ndays'],
     which_compartments=['active', 'total', 'deceased', 'recovered'])
     

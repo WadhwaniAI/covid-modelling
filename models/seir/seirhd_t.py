@@ -21,7 +21,7 @@ class SEIRHD_t(SEIR):
         The model further implements 
         - time varying parameters
         - pre, post, and during lockdown behaviour 
-        - different initialisations : intermediate and starting 
+
 
         The state variables are : 
 
@@ -67,7 +67,6 @@ class SEIRHD_t(SEIR):
 
         Misc - 
         N: Total population
-        initialisation : method of initialisation ('intermediate'/'starting')
         """
         STATES = ['S', 'E', 'I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]

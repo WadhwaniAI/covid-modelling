@@ -27,7 +27,7 @@ class Optimiser():
     """Returns the ranges for the variable params in the search space
 
     Keyword Arguments:
-        initialisation {str} -- The method of initialisation (default: {'intermediate'})
+
         as_str {bool} -- If true, the parameters are not returned as a hyperopt object, but as a dict in 
         string form (default: {False})
 
@@ -152,8 +152,7 @@ class Optimiser():
         return params_dict
 
     def init_default_params(self, df_train, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-06-30', 
-                            initialisation='intermediate', train_period=7, start_date=None,
-                            observed_values=None):
+                            train_period=7, observed_values=None):
         """Function for creating all default params for the optimisation (hyperopt/gridsearch)
 
         Arguments:
@@ -163,9 +162,7 @@ class Optimiser():
             N {float} -- Population of region (default: {1e7})
             lockdown_date {str} -- The date on which lockdown is implemented (default: {'2020-03-25'})
             lockdown_removal_date {str} -- The date on which lockdown is removed (default: {'2020-05-31'})
-            initialisation {str} -- The method of initialisation (default: {'intermediate'})
             train_period {int} -- The number of days for which the model is trained (default: {7})
-            start_date {str} -- If initialisation=='starting', start_date must be provided (default: {None})
             observed_values {pd.Series} -- This is a row of a pandas dataframe that corresponds to the observed values 
             on the initialisation date (to initialise the latent params) (default: {None})
 
@@ -176,11 +173,8 @@ class Optimiser():
         intervention_date = datetime.datetime.strptime(lockdown_date, '%Y-%m-%d')
         lockdown_removal_date = datetime.datetime.strptime(lockdown_removal_date, '%Y-%m-%d')
 
-        if initialisation == 'intermediate':
-            observed_values = df_train.iloc[-train_period, :]
-            start_date = observed_values['date']
-        if initialisation == 'starting':
-            assert start_date != None
+        observed_values = df_train.iloc[-train_period, :]
+        start_date = observed_values['date']
 
         default_params = {
             'N' : N,

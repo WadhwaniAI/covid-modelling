@@ -14,7 +14,7 @@ class SEIR(Model):
     @abstractmethod
     def __init__(self, STATES, R_STATES, p_params, t_params, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None,
                  T_inf=2.9, T_inc=5.2, N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 
-                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
+                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
 
         # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
         if post_lockdown_R0 == None:
@@ -54,27 +54,22 @@ class SEIR(Model):
         state_init_values = OrderedDict()
         for key in STATES:
             state_init_values[key] = 0
-        if initialisation == 'starting':
-            init_infected = max(observed_values['init_infected'], 1)
-            state_init_values['S'] = (self.N - init_infected)/self.N
-            state_init_values['I'] = init_infected/self.N
 
-        if initialisation == 'intermediate':
-            for state in R_STATES:
-                statename = state.split('R_')[1]
-                P_keyname = [k for k in p_params.keys() if k.split('P_')[1] == statename][0]
-                state_init_values[state] = p_params[P_keyname] * observed_values['active']
-            
-            state_init_values['C'] = observed_values['recovered']
-            state_init_values['D'] = observed_values['deceased']
+        for state in R_STATES:
+            statename = state.split('R_')[1]
+            P_keyname = [k for k in p_params.keys() if k.split('P_')[1] == statename][0]
+            state_init_values[state] = p_params[P_keyname] * observed_values['active']
+        
+        state_init_values['C'] = observed_values['recovered']
+        state_init_values['D'] = observed_values['deceased']
 
-            state_init_values['E'] = self.E_hosp_ratio * observed_values['active']
-            state_init_values['I'] = self.I_hosp_ratio * observed_values['active']
-            
-            nonSsum = sum(state_init_values.values())
-            state_init_values['S'] = (self.N - nonSsum)
-            for key in state_init_values.keys():
-                state_init_values[key] = state_init_values[key]/self.N
+        state_init_values['E'] = self.E_hosp_ratio * observed_values['active']
+        state_init_values['I'] = self.I_hosp_ratio * observed_values['active']
+        
+        nonSsum = sum(state_init_values.values())
+        state_init_values['S'] = (self.N - nonSsum)
+        for key in state_init_values.keys():
+            state_init_values[key] = state_init_values[key]/self.N
         
         self.state_init_values = state_init_values
         

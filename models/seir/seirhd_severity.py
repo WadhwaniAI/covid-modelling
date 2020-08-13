@@ -15,13 +15,13 @@ class SEIRHD_Severity(SEIR):
                  P_moderate=0.4, P_severe=0.2, P_fatal=0.02,  #Clinical Probabs
                  T_recov_severe=14, T_recov_mild=11, T_recov_moderate=11, T_recov_fatal=32, #Clinical Time
                  N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', #Misc
-                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, #Init
+                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, #Init
                  super_init=False, **kwargs): #Init
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
         The model further implements 
         - pre, post, and during lockdown behaviour 
-        - different initialisations : intermediate and starting 
+
 
         The state variables are : 
 
@@ -70,7 +70,6 @@ class SEIRHD_Severity(SEIR):
 
         Misc - 
         N: Total population
-        initialisation : method of initialisation ('intermediate'/'starting')
         """
         STATES = ['S', 'E', 'I', 'R_mild', 'R_moderate', 'R_severe', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]
