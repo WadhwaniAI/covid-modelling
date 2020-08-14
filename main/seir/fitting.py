@@ -18,8 +18,8 @@ from utils.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
 from viz import plot_smoothing, plot_fit
 
 
-def get_regional_data(state, district, data_from_tracker, data_format, filename, loss_compartments,
-                      granular_data=False, smooth_jump=False, return_extra=False):
+def data_setup(state, district, data_from_tracker, data_format, filename, val_period, loss_compartments,
+               granular_data=False, smooth_jump=False):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -61,27 +61,15 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
     df_district.dropna(axis=0, how='any', inplace=True)
     df_district.reset_index(drop=True, inplace=True)
 
-    if return_extra:
-        extra = {
+    smoothing = {}
+    if smooth_jump:
+        smoothing = {
             'smoothing_description': description,
             'smoothing_plot': smoothing_plot,
             'df_district_unsmoothed': orig_df_district
         }
-        print(extra['smoothing_description'])
-        return df_district, extra 
-    return df_district 
-
-def data_setup(df_district, val_period):
-    """Helper function for single_fitting_cycle which sets up the data including doing the train val split
-
-    Arguments:
-        df_district {pd.DataFrame} -- True observations from districts_daily/custom file/athena DB
-        val_period {int} -- Length of val period
-
-    Returns:
-        dict(pd.DataFrame) -- Dict of pd.DataFrame objects
-    """
-    # Get train val split 
+        print(smoothing['smoothing_description'])
+     
     df_train, df_val = train_val_split(
         df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period, rolling_window=7)
     df_train_nora, df_val_nora = train_val_split(
@@ -90,7 +78,7 @@ def data_setup(df_district, val_period):
     observed_dataframes = {}
     for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
         observed_dataframes[name] = eval(name)
-    return observed_dataframes
+    return observed_dataframes, smoothing
 
 
 def run_cycle(state, district, observed_dataframes, model=SEIRHD, variable_param_ranges=None, 
@@ -201,16 +189,12 @@ def single_fitting_cycle(state, district, model=SEIRHD, variable_param_ranges=No
     print('Performing {} fit ..'.format('m2' if val_period == 0 else 'm1'))
 
     # Get data
-    df_district, extra = get_regional_data(
-        state, district, data_from_tracker, data_format, filename, 
+    observed_dataframes, smoothing = data_setup(
+        state, district, data_from_tracker, data_format, filename, val_period, 
         loss_compartments=loss_compartments, granular_data=granular_data,
-        smooth_jump=smooth_jump, return_extra=True
-    )
-    smoothing_plot = extra['smoothing_plot']
-    orig_df_district = extra['df_district_unsmoothed']
-
-    # Process the data to get rolling averages and other stuff
-    observed_dataframes = data_setup(df_district, val_period)
+        smooth_jump=smooth_jump)
+    smoothing_plot = smoothing['smoothing_plot']
+    orig_df_district = smoothing['df_district_unsmoothed']
 
     print('train\n', observed_dataframes['df_train'].tail())
     print('val\n', observed_dataframes['df_val'])
@@ -225,7 +209,7 @@ def single_fitting_cycle(state, district, model=SEIRHD, variable_param_ranges=No
 
     if smoothing_plot != None:
         predictions_dict['plots']['smoothing'] = smoothing_plot
-        predictions_dict['smoothing_description'] = extra['smoothing_description']
+        predictions_dict['smoothing_description'] = smoothing['smoothing_description']
     predictions_dict['df_district_unsmoothed'] = orig_df_district
 
     # record parameters for reproducibility
