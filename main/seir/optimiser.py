@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from hyperopt import hp, tpe, fmin, Trials
-from tqdm import tqdm
 from tqdm.notebook import tqdm
 
 from collections import OrderedDict
@@ -82,7 +81,7 @@ class Optimiser():
 
     # TODO add cross validation support
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIRHD,
-                               which_compartments=['active', 'recovered', 'total', 'deceased'], 
+                               loss_compartments=['active', 'recovered', 'total', 'deceased'], 
                                loss_indices=[-20, -10], loss_method='rmse', return_dict=False, debug=False):
         """The function that computes solves the ODE for a given set of input params and computes loss on train set
 
@@ -94,7 +93,7 @@ class Optimiser():
 
         Keyword Arguments:
             model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
-            which_compartments {list} -- Which compartments to apply loss on 
+            loss_compartments {list} -- Which compartments to apply loss on 
             (default: {['active', 'recovered', 'total', 'deceased']})
             loss_indices {list} -- Which indices of the train set to apply loss on (default: {[-20, -10]})
             loss_method {str} -- Loss Method (default: {'rmse'})
@@ -149,7 +148,7 @@ class Optimiser():
         return params_dict
 
     def init_default_params(self, df_train, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-06-30', 
-                            train_period=7, observed_values=None):
+                            train_period=7):
         """Function for creating all default params for the optimisation (hyperopt/gridsearch)
 
         Arguments:
@@ -183,8 +182,8 @@ class Optimiser():
 
         return default_params
 
-    def gridsearch(self, df_true, default_params, variable_param_ranges, model=SEIRHD, method='rmse',
-                   loss_indices=[-20, -10], which_compartments=['total'], total_days=None, debug=False):
+    def gridsearch(self, df_true, default_params, variable_param_ranges, model=SEIRHD, loss_method='rmse',
+                   loss_indices=[-20, -10], loss_compartments=['total'], total_days=None, debug=False):
         """Implements gridsearch based optimisation
 
         Arguments:
@@ -222,8 +221,8 @@ class Optimiser():
 
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
                                                  df_true=df_true, total_days=total_days, model=model,
-                                                 loss_method=method, loss_indices=loss_indices, 
-                                                 which_compartments=which_compartments, debug=debug)
+                                                 loss_method=loss_method, loss_indices=loss_indices,
+                                                 loss_compartments=loss_compartments, debug=debug)
         
         # If debugging is enabled the gridsearch is not parallelised
         if debug:
@@ -236,7 +235,7 @@ class Optimiser():
         return loss_array, list_of_param_dicts
 
     def bayes_opt(self, df_true, default_params, variable_param_ranges, model=SEIRHD, total_days=None, 
-                  method='rmse', num_evals=3500, loss_indices=[-20, -10], which_compartments=['total']):
+                  loss_method='rmse', num_evals=3500, loss_indices=[-20, -10], loss_compartments=['total']):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -269,8 +268,8 @@ class Optimiser():
         
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
                                                  default_params=default_params, total_days=total_days,
-                                                 loss_method=method, loss_indices=loss_indices, df_true=df_true,
-                                                 which_compartments=which_compartments)
+                                                 loss_method=loss_method, loss_indices=loss_indices, df_true=df_true,
+                                                 loss_compartments=loss_compartments)
         
         searchspace = variable_param_ranges
         
