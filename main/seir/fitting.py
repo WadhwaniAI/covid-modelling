@@ -34,8 +34,7 @@ def data_setup(state, district, data_from_tracker, data_format, filename, val_pe
         pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
     """
     if granular_data:
-        df_not_strat = get_data(
-            state=state, district=district, filename=filename, disable_tracker=True)
+        df_not_strat = get_data(state=state, district=district, filename=filename, disable_tracker=True)
         df_district = granular.get_data(filename=filename)
     else:
         if data_from_tracker:
@@ -113,11 +112,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIRHD, variable_param
     # Initialise Optimiser
     optimiser = Optimiser()
     # Get the fixed params
-    std_default_params = optimiser.init_default_params(df_train, N=N, train_period=train_period)
-    if default_params is not None:
-        default_params = {**std_default_params, **default_params}
-    else:
-        default_params = std_default_params
+    default_params = optimiser.init_default_params(df_train, default_params, train_period=train_period)
     # Get/create searchspace of variable paramms
     if test_period == 0:
         loss_indices = [-train_period, None]
@@ -126,7 +121,7 @@ def run_cycle(state, district, observed_dataframes, model=SEIRHD, variable_param
     # Perform Bayesian Optimisation
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
-                                              num_evals=num_evals, loss_indices=loss_indices, method='mape',
+                                              num_evals=num_evals, loss_indices=loss_indices, loss_method='mape',
                                               total_days=total_days, loss_compartments=loss_compartments)
     print('best parameters\n', best_params)
 

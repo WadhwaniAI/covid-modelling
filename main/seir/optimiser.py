@@ -147,8 +147,7 @@ class Optimiser():
         params_dict = {param_names[i]: values[i] for i in range(len(values))}
         return params_dict
 
-    def init_default_params(self, df_train, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-06-30', 
-                            train_period=7):
+    def init_default_params(self, df_train, default_params, train_period=7):
         """Function for creating all default params for the optimisation (hyperopt/gridsearch)
 
         Arguments:
@@ -166,13 +165,13 @@ class Optimiser():
             dict -- Dict of default params
         """
 
-        intervention_date = datetime.datetime.strptime(lockdown_date, '%Y-%m-%d')
-        lockdown_removal_date = datetime.datetime.strptime(lockdown_removal_date, '%Y-%m-%d')
+        intervention_date = datetime.datetime.strptime(default_params['lockdown_date'], '%Y-%m-%d')
+        lockdown_removal_date = datetime.datetime.strptime(default_params['lockdown_removal_date'], '%Y-%m-%d')
 
         observed_values = df_train.iloc[-train_period, :]
         start_date = observed_values['date']
 
-        default_params = {
+        extra_params = {
             'N' : N,
             'lockdown_day' : (intervention_date - start_date).days,
             'lockdown_removal_day': (lockdown_removal_date - start_date).days,
@@ -180,7 +179,7 @@ class Optimiser():
             'observed_values': observed_values
         }
 
-        return default_params
+        return {**default_params, **extra_params}
 
     def gridsearch(self, df_true, default_params, variable_param_ranges, model=SEIRHD, loss_method='rmse',
                    loss_indices=[-20, -10], loss_compartments=['total'], total_days=None, debug=False):
