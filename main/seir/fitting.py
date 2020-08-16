@@ -260,7 +260,6 @@ def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable
                                                   num_evals=num_evals, loss_indices=loss_indices, method='mape',
                                                   total_days=total_days, which_compartments=which_compartments)
     print('best parameters\n', best_params)
-
     if not isinstance(df_val, pd.DataFrame):
         df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'],
                                         model=model)

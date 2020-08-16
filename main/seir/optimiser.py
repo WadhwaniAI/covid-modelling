@@ -88,6 +88,7 @@ class Optimiser():
         # Returning a very high loss value for the cases where the sampled values of probabilities are > 1
         P_keys = [k for k in params_dict.keys() if k[:2] == 'P_']
         P_values = [params_dict[k] for k in params_dict.keys() if k[:2] == 'P_']
+        #import pdb; pdb.set_trace()
         if sum(P_values) > 1:
             return 1e10
 

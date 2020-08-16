@@ -10,7 +10,7 @@ from tqdm import tqdm
 from data.processing import get_district_time_series
 from uncertainty.mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
     avg_sum_multiple_chains, get_state, get_formatted_trials
-
+import pdb
 
 class MCMC(object):
 
@@ -117,11 +117,156 @@ class MCMC(object):
         for param in theta_old:
             old_value = theta_old[param]
             new_value = -1
-            while np.isnan(new_value) or new_value <=0:
+            lower_bound = self.__dict__['prior_ranges'][param][0]
+            upper_bound = self.__dict__['prior_ranges'][param][1]
+            #print(lower_bound, upper_bound)
+            while np.isnan(new_value):
+                #Gaussian proposal
                 new_value = np.random.normal(loc=np.exp(old_value), scale=np.exp(self.proposal_sigmas[param]))
+                if new_value < lower_bound or new_value > upper_bound: 
+                    continue
                 new_value = np.log(new_value)
             theta_new[param] = new_value
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         return theta_new
 
     def _gaussian_log_likelihood(self, true, pred, sigma):
@@ -140,7 +285,7 @@ class MCMC(object):
         ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (np.sum(((true - pred) ** 2) / (2 * sigma ** 2)))
         return ll
 
-    def _poisson_log_likelihood(self, true, pred, **ignored):
+    def _poisson_log_likelihood(self, true, pred, *ignored):
         """
         Calculates the log-likelihood of the data as per a poisson distribution.
         
