@@ -1,9 +1,9 @@
 fitting:
     # Geographical Location
-    state: 'Maharashtra'
-    district: 'Mumbai'
     data:
         dataloader: Covid19IndiaLoader
+        state: Maharashtra
+        district: Mumbai
         data_from_tracker: False
         granular_data: True
         filename: None
@@ -22,7 +22,7 @@ fitting:
     default_params:
         N: 1.0e+7
         lockdown_date: 2020-03-25
-        lockdown_removal_date: 2020-06-30
+        lockdown_removal_date: 2020-08-30
     fitting_method: bayes_opt
     fitting_method_params:
         num_evals: 1000
@@ -30,24 +30,29 @@ fitting:
         algo: tpe
 
     #Choose Fitting Periods and num evaluations
-    train_period: 7
-    val_period: 7
-    test_period: 0
+    split:
+        train_period: 7
+        val_period: 7
+        test_period: 0
     #Optimisation related parameters
-    loss_compartments: ['total', 'active', 'recovered', 'deceased', 'asymptomatic', 'symptomatic', 'critical']
-    loss_weights: [1, 1, 1, 1, 1, 1, 1]
+    loss:
+        loss_method: mape
+        loss_compartments: [total, active, recovered, deceased]
+        loss_weights: [1, 1, 1, 1]
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
-    plot_topk_trials_for_columns: [confirmed, active, symptomatic, asymptomatic]
-    plot_ptiles_for_columns: [confirmed, active, symptomatic, asymptomatic]
+    plot_topk_trials_for_columns: [total, active]
+    plot_ptiles_for_columns: [total, active]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
         num_evals: 100
         date_of_sorting_trials: 2020-07-31
         sort_trials_by_column: confirmed
-        loss_compartments: ['total', 'active', 'recovered', 'deceased']
-        loss_weights: [1, 1, 1, 1]
+        loss:
+            loss_method: mape
+            loss_compartments: [total, active, recovered, deceased]
+            loss_weights: [1, 1, 1, 1]
 
     
