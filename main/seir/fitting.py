@@ -54,7 +54,7 @@ def data_setup(state, district, data_from_tracker, data_format, filename, val_pe
             df_district, description = smooth_big_jump(df_district, data_from_tracker=data_from_tracker)
 
         smoothing_plot = plot_smoothing(orig_df_district, df_district, state, district,
-                                        loss_compartments=loss_compartments, description=f'Smoothing')
+                                        which_compartments=loss_compartments, description=f'Smoothing')
     
     df_district['daily_cases'] = df_district['total'].diff()
     df_district.dropna(axis=0, how='any', inplace=True)
@@ -119,10 +119,9 @@ def run_cycle(state, district, observed_dataframes, model=SEIRHD, variable_param
     else:
         loss_indices = [-(train_period+test_period), -test_period]
     # Perform Bayesian Optimisation
-    total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
                                               num_evals=num_evals, loss_indices=loss_indices, loss_method='mape',
-                                              total_days=total_days, loss_compartments=loss_compartments)
+                                              loss_compartments=loss_compartments)
     print('best parameters\n', best_params)
 
     if not isinstance(df_val, pd.DataFrame):

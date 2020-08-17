@@ -5,6 +5,7 @@ from tqdm.notebook import tqdm
 
 from collections import OrderedDict
 import itertools
+import importlib
 from functools import partial, reduce
 import datetime
 from joblib import Parallel, delayed
@@ -182,7 +183,7 @@ class Optimiser():
         return {**default_params, **extra_params}
 
     def gridsearch(self, df_true, default_params, variable_param_ranges, model=SEIRHD, loss_method='rmse',
-                   loss_indices=[-20, -10], loss_compartments=['total'], total_days=None, debug=False):
+                   loss_indices=[-20, -10], loss_compartments=['total'], debug=False):
         """Implements gridsearch based optimisation
 
         Arguments:
@@ -210,8 +211,7 @@ class Optimiser():
         Returns:
             arr, list(dict) -- Array of loss values, and a list of parameter dicts
         """
-        if total_days == None:
-            total_days = len(df_true['date'])
+        total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
 
         rangelists = list(variable_param_ranges.values())
         cartesian_product_tuples = itertools.product(*rangelists)
@@ -233,8 +233,9 @@ class Optimiser():
                     
         return loss_array, list_of_param_dicts
 
-    def bayes_opt(self, df_true, default_params, variable_param_ranges, model=SEIRHD, total_days=None, 
-                  loss_method='rmse', num_evals=3500, loss_indices=[-20, -10], loss_compartments=['total']):
+    def bayes_opt(self, df_true, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
+                  loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], 
+                  prior='uniform', algo=tpe, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -262,20 +263,20 @@ class Optimiser():
         Returns:
             dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
         """
-        if total_days == None:
-            total_days = len(df_true['date'])
+        total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
         
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
                                                  default_params=default_params, total_days=total_days,
                                                  loss_method=loss_method, loss_indices=loss_indices, df_true=df_true,
                                                  loss_compartments=loss_compartments)
-        
-        searchspace = variable_param_ranges
+
+        algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
+        searchspace = self.get_variable_param_ranges(variable_param_ranges, mode=kwargs['fitting_method'], prior=prior)
         
         trials = Trials()
         best = fmin(partial_solve_and_compute_loss,
                     space=searchspace,
-                    algo=tpe.suggest,
+                    algo=algo_module.suggest,
                     max_evals=num_evals,
                     trials=trials)
         
