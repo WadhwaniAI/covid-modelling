@@ -6,11 +6,12 @@ import pandas as pd
 from collections import OrderedDict, defaultdict
 import datetime
 import copy
+import importlib
 
 from data.processing.processing import get_data, train_val_split
 from data.processing import granular
 
-from models.seir import SEIRHD
+import models.seir
 from main.seir.optimiser import Optimiser
 from utils.loss import Loss_Calculator
 from utils.enums import Columns
@@ -18,8 +19,8 @@ from utils.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
 from viz import plot_smoothing, plot_fit
 
 
-def data_setup(state, district, data_from_tracker, data_format, filename, val_period, loss_compartments,
-               granular_data=False, smooth_jump=False):
+def data_setup(state, district, data_from_tracker, filename, val_period, loss_compartments,
+               data_format=None, granular_data=False, smooth_jump=False, **kwargs):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -80,10 +81,12 @@ def data_setup(state, district, data_from_tracker, data_format, filename, val_pe
     return observed_dataframes, smoothing
 
 
-def run_cycle(state, district, observed_dataframes, model=SEIRHD, variable_param_ranges=None, 
-              default_params=None, train_period=7, data_from_tracker=True,
-              loss_compartments=['active', 'total', 'recovered', 'deceased'], 
-              num_evals=1500, N=1e7, test_period=0):
+def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_params, fitting_method,
+              fitting_method_params, split, loss):
+            #   state, district, observed_dataframes, model=SEIRHD, variable_param_ranges=None, 
+            #   default_params=None, train_period=7,
+            #   loss_compartments=['active', 'total', 'recovered', 'deceased'], 
+            #   num_evals=1500, N=1e7, test_period=0):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -103,8 +106,6 @@ def run_cycle(state, district, observed_dataframes, model=SEIRHD, variable_param
     Returns:
         dict -- Dict of all predictions
     """
-    if district is None:
-        district = ''
 
     df_district, df_train, df_val, df_train_nora, df_val_nora = [
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
@@ -112,48 +113,38 @@ def run_cycle(state, district, observed_dataframes, model=SEIRHD, variable_param
     # Initialise Optimiser
     optimiser = Optimiser()
     # Get the fixed params
-    default_params = optimiser.init_default_params(df_train, default_params, train_period=train_period)
+    default_params = optimiser.init_default_params(df_train, default_params, train_period=split['train_period'])
     # Get/create searchspace of variable paramms
-    if test_period == 0:
-        loss_indices = [-train_period, None]
-    else:
-        loss_indices = [-(train_period+test_period), -test_period]
+    loss_indices = [-(split['train_period']), None]
     # Perform Bayesian Optimisation
     best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
                                               num_evals=num_evals, loss_indices=loss_indices, loss_method='mape',
                                               loss_compartments=loss_compartments)
     print('best parameters\n', best_params)
 
-    if not isinstance(df_val, pd.DataFrame):
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'],
-                                        model=model)
-    else:
-        df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'], 
-                                        model=model)
+    df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_district.iloc[-1, :]['date'], 
+                                    model=model)
     
     lc = Loss_Calculator()
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, train_period, 
-                                              loss_compartments=loss_compartments)
+                                              which_compartments=loss_compartments)
 
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, district,
-                        loss_compartments=loss_compartments)
+                        which_compartments=loss_compartments)
 
     results_dict = {}
     results_dict['plots'] = {}
     results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
-    for name in ['data_from_tracker', 'best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
+    for name in ['best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
                  'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
 
     return results_dict
 
 
-def single_fitting_cycle(state, district, model=SEIRHD, variable_param_ranges=None, default_params=None, #Main 
-                         data_from_tracker=True, granular_data=False, filename=None, data_format='new', #Data
-                         train_period=7, val_period=7, num_evals=1500, N=1e7, test_period=0,  #Misc
-                         loss_compartments=['active', 'total'], #Compartments
-                         smooth_jump=False): #Smoothing
+def single_fitting_cycle(data, model, variable_param_ranges, default_params, fitting_method, 
+                         fitting_method_params, split, loss):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -177,29 +168,25 @@ def single_fitting_cycle(state, district, model=SEIRHD, variable_param_ranges=No
     """
     # record parameters for reproducability
     run_params = locals()
+    model = getattr(models.seir, model)
     run_params['model'] = model.__name__
     run_params['model_class'] = model
     
-    print('Performing {} fit ..'.format('m2' if val_period == 0 else 'm1'))
+    print('Performing {} fit ..'.format('m2' if split['val_period'] == 0 else 'm1'))
 
     # Get data
-    observed_dataframes, smoothing = data_setup(
-        state, district, data_from_tracker, data_format, filename, val_period, 
-        loss_compartments=loss_compartments, granular_data=granular_data,
-        smooth_jump=smooth_jump)
+    params = {**data}
+    params['val_period'] = split['val_period']
+    params['loss_compartments'] = loss['loss_compartments']
+    observed_dataframes, smoothing = data_setup(**params)
     smoothing_plot = smoothing['smoothing_plot']
     orig_df_district = smoothing['df_district_unsmoothed']
 
     print('train\n', observed_dataframes['df_train'].tail())
     print('val\n', observed_dataframes['df_val'])
     
-    predictions_dict = run_cycle(
-        state, district, observed_dataframes, 
-        model=model, variable_param_ranges=variable_param_ranges, default_params=default_params,
-        data_from_tracker=data_from_tracker, train_period=train_period, 
-        loss_compartments=loss_compartments, N=N, test_period=test_period,
-        num_evals=num_evals
-    )
+    predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
+            default_params, fitting_method, fitting_method_params, split, loss)
 
     if smoothing_plot != None:
         predictions_dict['plots']['smoothing'] = smoothing_plot
