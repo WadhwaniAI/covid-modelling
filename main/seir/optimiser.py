@@ -166,14 +166,14 @@ class Optimiser():
             dict -- Dict of default params
         """
 
-        intervention_date = datetime.datetime.strptime(default_params['lockdown_date'], '%Y-%m-%d')
-        lockdown_removal_date = datetime.datetime.strptime(default_params['lockdown_removal_date'], '%Y-%m-%d')
+        intervention_date = default_params['lockdown_date']
+        lockdown_removal_date = default_params['lockdown_removal_date']
 
         observed_values = df_train.iloc[-train_period, :]
-        start_date = observed_values['date']
+        start_date = observed_values['date'].date()
 
         extra_params = {
-            'N' : N,
+            'N' : default_params['N'],
             'lockdown_day' : (intervention_date - start_date).days,
             'lockdown_removal_day': (lockdown_removal_date - start_date).days,
             'starting_date' : start_date,
