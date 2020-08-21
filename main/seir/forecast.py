@@ -15,7 +15,7 @@ import copy
 
 from data.processing.whatifs import scale_up_acc_to_testing
 from main.seir.fitting import *
-from models.seir import SEIRHD, SEIR_Movement, SEIR_Movement_Testing, SEIR_Testing
+from models.seir import SEIRHD
 from main.seir.optimiser import Optimiser
 
 from utils.enums import Columns, SEIRParams
@@ -50,9 +50,7 @@ def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train
         lockdown_removal_date = datetime.datetime.strptime(lockdown_removal_date, '%Y-%m-%d')
         default_params['lockdown_removal_day'] = (lockdown_removal_date - start_date).days
     
-    df_prediction = predictions_dict[train_fit]['optimiser'].solve(best_params,
-                                                                   default_params,
-                                                                   predictions_dict[train_fit]['df_train'], 
+    df_prediction = predictions_dict[train_fit]['optimiser'].solve({**best_params, **default_params},
                                                                    model=model,
                                                                    end_date=simulate_till)
 

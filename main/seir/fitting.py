@@ -7,6 +7,7 @@ from collections import OrderedDict, defaultdict
 import datetime
 import copy
 import importlib
+from tabulate import tabulate
 
 from data.processing.processing import get_data, train_val_split
 from data.processing import granular
@@ -180,9 +181,10 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     smoothing_plot = smoothing['smoothing_plot']
     orig_df_district = smoothing['df_district_unsmoothed']
 
-    print('train\n', observed_dataframes['df_train'].tail())
-    print('val\n', observed_dataframes['df_val'])
-    
+    print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
+    if not observed_dataframes['df_val'] is None:
+        print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
+        
     predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
             default_params, fitting_method, fitting_method_params, split, loss)
 

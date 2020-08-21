@@ -74,6 +74,7 @@ def get_data(state=None, district=None, use_dataframe='districts_daily', disable
         df_result = get_district_time_series(state=state, district=district, use_dataframe=use_dataframe)
     else:
         df_result = get_state_time_series(state=state)
+    df_result = df_result.infer_objects()
     return df_result
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
@@ -275,6 +276,8 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     else:
         df_val = df_district.iloc[-val_size:, :]
     df_val.reset_index(inplace=True, drop=True)
+    df_train = df_train.infer_objects()
+    df_val = df_val.infer_objects()
     return df_train, df_val
 
 def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
