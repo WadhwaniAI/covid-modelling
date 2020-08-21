@@ -14,7 +14,6 @@ from utils.enums.columns import *
 from viz.utils import axis_formatter
 
 
-
 def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame,
                               which_compartments=['active', 'total', 'deceased', 'recovered']):
     df_temp = copy.copy(df_prediction)
