@@ -167,7 +167,6 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     """
     # record parameters for reproducability
     run_params = locals()
-    model = getattr(models.seir, model)
     run_params['model'] = model.__name__
     run_params['model_class'] = model
     
