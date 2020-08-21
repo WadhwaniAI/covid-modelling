@@ -83,10 +83,6 @@ def data_setup(state, district, data_from_tracker, filename, val_period, loss_co
 
 def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_params, fitting_method,
               fitting_method_params, split, loss):
-            #   state, district, observed_dataframes, model=SEIRHD, variable_param_ranges=None, 
-            #   default_params=None, train_period=7,
-            #   loss_compartments=['active', 'total', 'recovered', 'deceased'], 
-            #   num_evals=1500, N=1e7, test_period=0):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -123,15 +119,16 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     best_params, trials = getattr(optimiser, fitting_method)(**args)
     print('best parameters\n', best_params)
 
-    df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_district.iloc[-1, :]['date'], 
+    df_prediction = optimiser.solve({**best_params, **default_params}, 
+                                    end_date=df_district.iloc[-1, :]['date'], 
                                     model=model)
     
     lc = Loss_Calculator()
-    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, train_period, 
-                                              which_compartments=loss_compartments)
+    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'], 
+                                              which_compartments=loss['loss_compartments'])
 
-    fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, district,
-                        which_compartments=loss_compartments)
+    fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
+                        data['state'], data['district'], which_compartments=loss['loss_compartments'])
 
     results_dict = {}
     results_dict['plots'] = {}

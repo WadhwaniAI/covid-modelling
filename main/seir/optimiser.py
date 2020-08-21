@@ -45,37 +45,23 @@ class Optimiser():
 
         return variable_param_ranges
 
-    def solve(self, variable_params : dict, default_params :dict, df_true : pd.DataFrame, model=SEIRHD, 
-              start_date=None, end_date=None):
+    def solve(self, params_dict :dict, model=SEIRHD, end_date=None):
         """This function solves the ODE for an input of params (but does not compute loss)
 
         Arguments:
             variable_params {dict} -- The values for the params that are variable across the searchspace
             default_params {dict} -- The values for the params that are fixed across the searchspace
-            df_true {pd.DataFrame} -- The training dataset
 
         Keyword Arguments:
             model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
-            start_date {str} -- The start date (usually not specifed, inferred from the params_dict) (default: {None})
             end_date {str} -- Last date of projection (default: {None})
 
         Returns:
             pd.DataFrame -- DataFrame of predictions
         """
 
-        params_dict = {**variable_params, **default_params}
-        if end_date == None:
-            end_date = df_true.iloc[-1, :]['date']
-        else:
-            if type(end_date) is str:
-                end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
-        
-        if start_date != None:
-            if type(start_date) is str:
-                start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-            params_dict['starting_date'] = start_date
         solver = model(**params_dict)
-        total_days = (end_date - params_dict['starting_date']).days
+        total_days = (end_date.date() - params_dict['starting_date']).days
         df_prediction = solver.predict(total_days=total_days)
         return df_prediction
 
