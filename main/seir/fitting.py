@@ -116,10 +116,11 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     default_params = optimiser.init_default_params(df_train, default_params, train_period=split['train_period'])
     # Get/create searchspace of variable paramms
     loss_indices = [-(split['train_period']), None]
+    loss['loss_indices'] = loss_indices
     # Perform Bayesian Optimisation
-    best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, model=model, 
-                                              num_evals=num_evals, loss_indices=loss_indices, loss_method='mape',
-                                              loss_compartments=loss_compartments)
+    args = {'df_train': df_train, 'default_params': default_params, 'variable_param_ranges':variable_param_ranges, 
+            'model':model, 'fitting_method': fitting_method, **fitting_method_params, **split, **loss}
+    best_params, trials = getattr(optimiser, fitting_method)(**args)
     print('best parameters\n', best_params)
 
     df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_district.iloc[-1, :]['date'], 

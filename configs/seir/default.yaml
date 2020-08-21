@@ -31,7 +31,7 @@ fitting:
 
     #Choose Fitting Periods and num evaluations
     split:
-        train_period: 7
+        train_period: 21
         val_period: 7
         test_period: 0
     #Optimisation related parameters

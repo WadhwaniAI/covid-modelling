@@ -20,7 +20,7 @@ class Optimiser():
     def __init__(self):
         self.loss_calculator = Loss_Calculator()
 
-    def get_variable_param_ranges(self, variable_param_ranges, mode='bayes_opt', prior='uniform'):
+    def format_variable_param_ranges(self, variable_param_ranges, mode='bayes_opt', prior='uniform'):
         """Returns the ranges for the variable params in the search space
 
         Keyword Arguments:
@@ -35,7 +35,7 @@ class Optimiser():
         # TODO add support for different prior for each variable
         if mode == 'bayes_opt':
             for key in variable_param_ranges.keys():
-                variable_param_ranges[key] = getattr(hp, 'uniform')(
+                variable_param_ranges[key] = getattr(hp, prior)(
                     key, variable_param_ranges[key][0], variable_param_ranges[key][1])
 
         if mode == 'gridsearch':
@@ -132,7 +132,7 @@ class Optimiser():
             loss = self.loss_calculator.calc_loss_dict(df_prediction_slice, df_true_slice, method=loss_method)
         else:
             loss = self.loss_calculator.calc_loss(df_prediction_slice, df_true_slice, 
-                                                  which_compartments=which_compartments, method=loss_method)
+                                                  which_compartments=loss_compartments, method=loss_method)
         return loss
 
     def _create_dict(self, param_names, values):
@@ -152,7 +152,7 @@ class Optimiser():
         """Function for creating all default params for the optimisation (hyperopt/gridsearch)
 
         Arguments:
-            df_train {pd.DataFramw} -- The train dataset
+            df_train {pd.DataFrame} -- The train dataset
 
         Keyword Arguments:
             N {float} -- Population of region (default: {1e7})
@@ -182,12 +182,12 @@ class Optimiser():
 
         return {**default_params, **extra_params}
 
-    def gridsearch(self, df_true, default_params, variable_param_ranges, model=SEIRHD, loss_method='rmse',
+    def gridsearch(self, df_train, default_params, variable_param_ranges, model=SEIRHD, loss_method='rmse',
                    loss_indices=[-20, -10], loss_compartments=['total'], debug=False):
         """Implements gridsearch based optimisation
 
         Arguments:
-            df_true {pd.DataFrame} -- The train set
+            df_train {pd.DataFrame} -- The train set
             default_params {dict} -- Dict of default (fixed) params
             variable_param_ranges {dict} -- The range of variable params (the searchspace)
 
@@ -211,7 +211,7 @@ class Optimiser():
         Returns:
             arr, list(dict) -- Array of loss values, and a list of parameter dicts
         """
-        total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
+        total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
 
         rangelists = list(variable_param_ranges.values())
         cartesian_product_tuples = itertools.product(*rangelists)
@@ -219,7 +219,7 @@ class Optimiser():
             variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
 
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
-                                                 df_true=df_true, total_days=total_days, model=model,
+                                                 df_true=df_train, total_days=total_days, model=model,
                                                  loss_method=loss_method, loss_indices=loss_indices,
                                                  loss_compartments=loss_compartments, debug=debug)
         
@@ -233,13 +233,13 @@ class Optimiser():
                     
         return loss_array, list_of_param_dicts
 
-    def bayes_opt(self, df_true, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
+    def bayes_opt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
                   loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], 
                   prior='uniform', algo=tpe, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
-            df_true {pd.DataFrame} -- The training dataset
+            df_train {pd.DataFrame} -- The training dataset
             default_params {str} -- Dict of default (static) params
             variable_param_ranges {dict} -- The ranges for the variable params (the searchspace)
 
@@ -263,16 +263,15 @@ class Optimiser():
         Returns:
             dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
         """
-        total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
+        total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
         
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
                                                  default_params=default_params, total_days=total_days,
-                                                 loss_method=loss_method, loss_indices=loss_indices, df_true=df_true,
+                                                 loss_method=loss_method, loss_indices=loss_indices, df_true=df_train,
                                                  loss_compartments=loss_compartments)
 
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
-        searchspace = self.get_variable_param_ranges(variable_param_ranges, mode=kwargs['fitting_method'], prior=prior)
-        
+        searchspace = self.format_variable_param_ranges(variable_param_ranges, mode=kwargs['fitting_method'], prior=prior)
         trials = Trials()
         best = fmin(partial_solve_and_compute_loss,
                     space=searchspace,
