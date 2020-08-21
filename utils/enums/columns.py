@@ -31,7 +31,7 @@ class Columns(Enum):
     recovered = Column('recovered', 'Recovered Cases', 'green')
     deceased = Column('deceased', 'Deceased Cases', 'red')
     active = Column('active', 'Active Cases', 'orange')
-    confirmed = Column('total', 'Confirmed Cases', 'C0')
+    total = Column('total', 'Confirmed Cases', 'C0')
     daily_cases = Column('daily_cases', 'New Cases Added', 'indigo')
     ventilator = Column('ventilator', 'Ventilator Beds', bed_colors[0])
     icu = Column('icu', 'ICU Beds', bed_colors[1])
@@ -41,7 +41,7 @@ class Columns(Enum):
 
     @classmethod
     def which_compartments(cls):
-        return [cls.recovered, cls.deceased, cls.active, cls.confirmed]
+        return [cls.recovered, cls.deceased, cls.active, cls.total]
 
     @classmethod
     def total_compartments(cls):
@@ -53,24 +53,16 @@ class Columns(Enum):
 
     @classmethod
     def curve_fit_compartments(cls):
-        # TODO: we only want to fit the curve fits on the first three and calc confirmed as sum
-            # the scripts don't accomodate this yet because confirmed is left out of df_true
-        return [cls.recovered, cls.deceased, cls.active, cls.confirmed]
+        # TODO: we only want to fit the curve fits on the first three and calc total as sum
+            # the scripts don't accomodate this yet because total is left out of df_true
+        return [cls.recovered, cls.deceased, cls.active, cls.total]
 
     @staticmethod
     def from_name(name):
-        if name == 'date':
-            return Columns.date
-        elif name == 'recovered':
-            return Columns.recovered
-        elif name == 'deceased':
-            return Columns.deceased
-        elif name == 'active':
-            return Columns.active
-        elif name == 'total':
-            return Columns.confirmed
-        else:
-            raise Exception(f"Enum for name {name} not found")
+        try:
+            return getattr(Columns, name)
+        except Exception as e:
+            print(e)
     
 cmap = plt.get_cmap('plasma')
 bed_colors = [cmap(i) for i in np.linspace(0, 0.8, 5)]
