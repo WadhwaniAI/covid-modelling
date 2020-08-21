@@ -49,7 +49,7 @@ uncertainty:
     uncertainty_params:
         num_evals: 100
         date_of_sorting_trials: 2020-07-31
-        sort_trials_by_column: confirmed
+        sort_trials_by_column: total
         loss:
             loss_method: mape
             loss_compartments: [total, active, recovered, deceased]
