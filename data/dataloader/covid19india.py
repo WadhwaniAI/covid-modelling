@@ -153,8 +153,8 @@ class Covid19IndiaLoader(BaseLoader):
         dataframes['df_districts_all'] = df_districts_all
         return dataframes
 
-    def _load_data_all_json_state(self, dataframes):
-        data = copy.deepcopy(data_copy)
+    def _load_data_all_json_state(self, dataframes, statecode_to_state_dict):
+        data = requests.get('https://api.covid19india.org/v4/data-all.json').json()
         for date in data.keys():
             date_dict = data[date]
             # Remove all the states which don't have district data in them
@@ -216,7 +216,7 @@ class Covid19IndiaLoader(BaseLoader):
         if load_districts_daily:
             dataframes = self._load_districts_daily_json(dataframes)
         dataframes = self._load_data_all_json_district(dataframes, statecode_to_state_dict)
-        dataframes = self._load_data_all_json_state(dataframes)
+        dataframes = self._load_data_all_json_state(dataframes, statecode_to_state_dict)
 
         return dataframes
 
