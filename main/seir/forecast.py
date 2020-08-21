@@ -196,26 +196,6 @@ def forecast_all_trials(predictions_dict, model=SEIRHD, train_fit='m2', forecast
     }
     return return_dict
 
-def trials_to_df(trials_processed, column=Columns.active):
-    predictions = trials_processed['predictions']
-    params = trials_processed['params']
-    losses = trials_processed['losses']
-    
-    cols = ['loss', 'compartment']
-    for key in params[0].keys():
-        cols.append(key)
-    trials = pd.DataFrame(columns=cols)
-    for i in range(len(params)):
-        to_add = copy.copy(params[i])
-        to_add['loss'] = losses[i]
-        to_add['compartment'] = column.name
-        trials = trials.append(to_add, ignore_index=True)
-    pred = pd.DataFrame(columns=predictions[0]['date'])
-    for i in range(len(params)):
-        pred = pred.append(predictions[i].set_index('date').loc[:, [column.name]].transpose(), ignore_index=True)
-    return pd.concat([trials, pred], axis=1)
-
-
 def scale_up_testing_and_forecast(predictions_dict, which_fit='m2', model=SEIRHD, scenario_on_which_df='best', 
                                   testing_scaling_factor=1.5, time_window_to_scale=14):
     
@@ -238,7 +218,7 @@ def scale_up_testing_and_forecast(predictions_dict, which_fit='m2', model=SEIRHD
         'E_hosp_ratio': (0, 2),
         'I_hosp_ratio': (0, 1)
     }
-    variable_param_ranges = get_variable_param_ranges(variable_param_ranges=variable_param_ranges)
+    variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges)
     best, trials = optimiser.bayes_opt(df_whatif, default_params, variable_param_ranges, model=model,
                                        total_days=total_days, method='mape', num_evals=500, 
                                        loss_indices=[-time_window_to_scale, None], 
