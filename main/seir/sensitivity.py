@@ -22,7 +22,7 @@ def gridsearch_single_param(predictions_dict, which_fit='m1', var_name=None, par
 
     model = run_params['model_class']
     if train_period == None:
-        train_period = run_params['train_period']
+        train_period = run_params['split']['train_period']
     loss_indices = [-train_period, None]
 
     if aux_comp == 'all':
@@ -36,10 +36,7 @@ def gridsearch_single_param(predictions_dict, which_fit='m1', var_name=None, par
             del default_params[key]
     except Exception as err:
         print('')
-    optimiser = Optimiser()
-    extra_params = optimiser.init_default_params(df_train, N=1e7, 
-                                                 train_period=train_period)
-    default_params = {**default_params, **extra_params}
+    optimiser = predictions_dict[which_fit]['optimiser']
     total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     loss_array, params_dict = optimiser.gridsearch(df_train, default_params, variable_param_ranges, model=model, 
                                                    method='mape', loss_indices=loss_indices, 
@@ -48,18 +45,14 @@ def gridsearch_single_param(predictions_dict, which_fit='m1', var_name=None, par
 
     return params_dict, loss_array
 
-def calculate_sensitivity_and_plot(predictions_dict, which_fit='m1', var_tuples=None):
-    if var_tuples == None:
-        var_tuples = [
-            ('lockdown_R0', np.linspace(1, 1.5, 101), 'total', None),
-            ('I_hosp_ratio', np.linspace(0, 1, 201), 'total', None),
-            ('E_hosp_ratio', np.linspace(0, 2, 201), 'total', None),
-            ('P_fatal', np.linspace(0, 1, 201), 'deceased', 'total'),
-            ('T_recov_severe', np.linspace(1, 100, 101), 'recovered', 'total'),
-            ('T_recov_fatal', np.linspace(1, 100, 101), 'deceased', 'total')
-        ]
-
+def calculate_sensitivity_and_plot(predictions_dict, config_sensitivity, which_fit='m1'):
     best_params = copy.copy(predictions_dict[which_fit]['best_params'])
+
+    config_sensitivity = copy.deepcopy(config_sensitivity)
+    for key, value in config_sensitivity.items():
+        config_sensitivity[key][0] = np.linspace(value[0][0][0], value[0][0][1], value[0][1])
+
+    var_tuples = [[key]+value for key, value in config_sensitivity.items()]
 
     nrows = int(round(len(var_tuples)/2+0.01))
     fig, axs = plt.subplots(figsize=(18, 4*nrows), nrows=nrows, ncols=2)
