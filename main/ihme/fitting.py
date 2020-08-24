@@ -18,7 +18,7 @@ from utils.fitting.util import train_test_split, rollingavg
 
 from models.ihme.model import IHME
 from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative
-from utils.loss import Loss_Calculator
+from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 from main.ihme.optimiser import Optimiser
 from utils.smooth_jump import smooth_big_jump

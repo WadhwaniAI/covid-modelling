@@ -12,7 +12,7 @@ from hyperopt import fmin, tpe, hp, Trials
 sys.path.append('../../../')
 from main.seir.forecast import get_forecast
 from .uncertainty_base import Uncertainty
-from utils.loss import Loss_Calculator
+from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 
 class MCUncertainty(Uncertainty):
