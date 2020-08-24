@@ -20,7 +20,7 @@ class Optimiser():
     def __init__(self):
         self.loss_calculator = Loss_Calculator()
 
-    def format_variable_param_ranges(self, variable_param_ranges, mode='bayes_opt', prior='uniform'):
+    def format_variable_param_ranges(self, variable_param_ranges, fitting_method='bayes_opt'):
         """Returns the ranges for the variable params in the search space
 
         Keyword Arguments:
@@ -33,15 +33,16 @@ class Optimiser():
         """
 
         # TODO add support for different prior for each variable
-        if mode == 'bayes_opt':
+        if fitting_method == 'bayes_opt':
             for key in variable_param_ranges.keys():
-                variable_param_ranges[key] = getattr(hp, prior)(
-                    key, variable_param_ranges[key][0], variable_param_ranges[key][1])
+                variable_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
+                    key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
 
-        if mode == 'gridsearch':
+        if fitting_method == 'gridsearch':
             for key in variable_param_ranges.keys():
-                variable_param_ranges[key] = np.linspace(
-                    variable_param_ranges[key][0], variable_param_ranges[key][1], variable_param_ranges[key][2])
+                variable_param_ranges[key] = np.linspace(variable_param_ranges[key][0][0], 
+                                                         variable_param_ranges[key][0][1], 
+                                                         variable_param_ranges[key][1])
 
         return variable_param_ranges
 
@@ -257,10 +258,9 @@ class Optimiser():
                                                  loss_compartments=loss_compartments)
 
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
-        searchspace = self.format_variable_param_ranges(variable_param_ranges, mode=kwargs['fitting_method'], prior=prior)
         trials = Trials()
         best = fmin(partial_solve_and_compute_loss,
-                    space=searchspace,
+                    space=variable_param_ranges,
                     algo=algo_module.suggest,
                     max_evals=num_evals,
                     trials=trials)

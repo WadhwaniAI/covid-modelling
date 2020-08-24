@@ -11,14 +11,14 @@ fitting:
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:  
-        lockdown_R0: [1, 1.15]
-        T_inc: [4, 5]
-        T_inf: [3, 4]
-        T_recov_severe: [0, 40]
-        T_recov_fatal: [0, 40]
-        P_fatal: [0, 0.1]
-        E_hosp_ratio: [0, 2]
-        I_hosp_ratio: [0, 1]
+        lockdown_R0: [[1, 1.15], uniform]
+        T_inc: [[4, 5], uniform]
+        T_inf: [[3, 4], uniform]
+        T_recov_severe: [[0, 40], uniform]
+        T_recov_fatal: [[0, 40], uniform]
+        P_fatal: [[0, 0.1], uniform]
+        E_hosp_ratio: [[0, 2], uniform]
+        I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
         lockdown_date: 2020-03-25
@@ -26,7 +26,6 @@ fitting:
     fitting_method: bayes_opt
     fitting_method_params:
         num_evals: 1000
-        prior: uniform
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
@@ -37,7 +36,7 @@ fitting:
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
-        loss_weights: [1, 1, 1, 1]
+        loss_weights: [0.25, 0.25, 0.25, 0.25]
 sensitivity:
         lockdown_R0: [[[1, 1.5], 101], total, None]
         I_hosp_ratio: [[[0, 1], 201], total, None]
@@ -63,6 +62,6 @@ uncertainty:
         loss:
             loss_method: mape
             loss_compartments: [total, active, recovered, deceased]
-            loss_weights: [1, 1, 1, 1]
+            loss_weights: [0.25, 0.25, 0.25, 0.25]
 
     
