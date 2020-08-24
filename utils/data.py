@@ -4,7 +4,7 @@ import pandas as pd
 import sys
 sys.path.append('../..')
 from utils.population import get_district_population
-from utils.enums import Columns
+from utils.generic.enums import Columns
 
 # tuples: (district, state, census_area_name(s))
 mumbai = 'Mumbai', 'Maharashtra', ['District - Mumbai (23)', 'District - Mumbai Suburban (22)']

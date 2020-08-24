@@ -18,7 +18,7 @@ from main.seir.fitting import *
 from models.seir import SEIRHD
 from main.seir.optimiser import Optimiser
 
-from utils.enums import Columns, SEIRParams
+from utils.generic.enums import Columns, SEIRParams
 
 def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train_fit='m2', model=SEIRHD,
                  best_params=None, verbose=True, lockdown_removal_date=None):

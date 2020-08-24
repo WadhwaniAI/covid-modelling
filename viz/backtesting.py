@@ -11,8 +11,8 @@ import copy
 from datetime import timedelta
 
 from viz.utils import setup_plt
-from utils.enums import Columns, SEIRParams
-from utils.enums.columns import *
+from utils.generic.enums import Columns, SEIRParams
+from utils.generic.enums.columns import *
 
 def plot_backtest(results, data, dist, which_compartments=Columns.which_compartments(), 
                   scoring='mape', dtp=None, axis_name='No. People', savepath=None):

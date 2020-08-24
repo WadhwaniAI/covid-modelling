@@ -15,7 +15,7 @@ import sys
 sys.path.append('../..')
 from utils.util import HidePrints
 from viz import setup_plt
-from utils.enums import Columns
+from utils.generic.enums import Columns
 from main.ihme.fitting import run_cycle_compartments
 
 class IHMEBacktest:

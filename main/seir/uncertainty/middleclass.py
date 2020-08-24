@@ -13,7 +13,7 @@ sys.path.append('../../../')
 from main.seir.forecast import get_forecast
 from .uncertainty_base import Uncertainty
 from utils.loss import Loss_Calculator
-from utils.enums import Columns
+from utils.generic.enums import Columns
 
 class MCUncertainty(Uncertainty):
     def __init__(self, predictions_dict, num_evals, date_of_sorting_trials, sort_trials_by_column, loss):

@@ -5,7 +5,7 @@ import numpy as np
 import datetime
 import copy
 
-from utils.enums.columns import *
+from utils.generic.enums.columns import *
 from viz.utils import axis_formatter
 
 

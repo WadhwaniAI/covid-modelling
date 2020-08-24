@@ -18,7 +18,7 @@ from utils.data import cities
 from main.ihme.backtesting import IHMEBacktest
 from main.ihme.fitting import setup, create_output_folder
 from viz import plot_backtest, plot_backtest_errors, plot
-from utils.enums import Columns
+from utils.generic.enums import Columns
 
 from utils.generic.config import read_config
 

@@ -9,8 +9,8 @@ import datetime
 import copy
 
 from main.seir.forecast import get_forecast, forecast_top_k_trials
-from utils.enums import Columns, SEIRParams
-from utils.enums.columns import *
+from utils.generic.enums import Columns, SEIRParams
+from utils.generic.enums.columns import *
 from viz.utils import axis_formatter
 
 

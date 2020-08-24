@@ -3,7 +3,7 @@ import os
 
 import models
 import main.seir.uncertainty as uncertainty_module
-from utils.enums import Columns
+from utils.generic.enums import Columns
 
 
 def read_config(filename='default.yaml'):

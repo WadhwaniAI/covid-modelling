@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
 
-from utils.enums.columns import *
+from utils.generic.enums.columns import *
 from viz.utils import setup_plt, axis_formatter
 
 def plot_smoothing(orig_df_district, new_df_district, state, district,
