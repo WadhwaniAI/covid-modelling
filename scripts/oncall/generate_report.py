@@ -18,7 +18,7 @@ from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
 from main.seir.forecast import get_forecast, create_region_csv, write_csv
 from main.seir.forecast import order_trials, get_all_trials
 from viz import plot_forecast, plot_trials
-from utils.create_report import create_report, trials_to_df
+from utils.generic.create_report import save_dict_and_create_report, trials_to_df
 from utils.enums import Columns
 from utils.config import read_config
 

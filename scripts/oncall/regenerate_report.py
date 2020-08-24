@@ -5,7 +5,7 @@ import pickle
 import sys
 sys.path.append('../../')
 
-from utils.create_report import create_report
+from utils.generic.create_report import save_dict_and_create_report
 
 '''
 Regenerates report from pickled file
