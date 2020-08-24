@@ -17,7 +17,7 @@ from adjustText import adjust_text
 
 import sys
 sys.path.append('../..')
-from utils.data import cities
+from utils.fitting.data import cities
 from utils.generic.config import read_config
 from main.seir.forecast import get_forecast, order_trials, top_k_trials, forecast_k
 from utils.generic.enums import Columns
