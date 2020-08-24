@@ -3,7 +3,7 @@ import pandas as pd
 
 import sys
 sys.path.append('../..')
-from utils.population import get_district_population
+from utils.fitting.population import get_district_population
 from utils.generic.enums import Columns
 
 # tuples: (district, state, census_area_name(s))
