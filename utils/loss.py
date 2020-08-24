@@ -6,9 +6,9 @@ from sklearn.metrics import mean_squared_error, mean_squared_log_error
 class Loss_Calculator():
 
     def __init__(self):
-      self.columns = ['active', 'recovered', 'deceased', 'total', 'total', 'active', 
-                      'asymptomatic', 'symptomatic', 'critical', 'ccc2', 'dchc', 'dch', 'hq', 
-                      'non_o2_beds', 'o2_beds', 'icu', 'ventilator']
+      self.columns = ['active', 'recovered', 'deceased', 'total', 
+                      'asymptomatic', 'symptomatic', 'critical', 'ccc2', 'dchc', 'dch',
+                      'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator']
 
     def _calc_rmse(self, y_pred, y_true, log=False):
         if log:
@@ -42,11 +42,11 @@ class Loss_Calculator():
         return losses
 
     def calc_loss(self, df_prediction, df_true, method='rmse', 
-                  which_compartments=['active', 'recovered', 'total', 'deceased']):
+                  which_compartments=['active', 'recovered', 'total', 'deceased'], loss_weights=[1, 1, 1, 1]):
         losses = self.calc_loss_dict(df_prediction, df_true, method)
         loss = 0
-        for compartment in which_compartments:
-            loss += losses[compartment]
+        for i, compartment in enumerate(which_compartments):
+            loss += loss_weights[i]*losses[compartment]
         return loss
 
     def evaluate(self, y_true, y_pred):
