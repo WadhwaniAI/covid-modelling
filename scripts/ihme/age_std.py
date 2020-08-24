@@ -18,7 +18,7 @@ from utils.fitting.population import standardise_age
 
 from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative
 from main.ihme.fitting import run_cycle, create_output_folder
-from utils.util import train_test_split, read_config
+from utils.fitting.util import train_test_split, read_config
 # -------------------
 
 def find_init(country, triple):

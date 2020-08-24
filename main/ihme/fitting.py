@@ -13,7 +13,7 @@ sys.path.append('../..')
 from models.ihme.model import IHME
 from utils.fitting.data import get_rates
 from data.processing import get_district_timeseries_cached
-from utils.util import train_test_split, rollingavg
+from utils.fitting.util import train_test_split, rollingavg
 
 
 from models.ihme.model import IHME

@@ -12,7 +12,7 @@ import sys
 sys.path.append('../../')
 
 from utils.fitting.data import get_daily_vals
-from utils.util import rollingavg
+from utils.fitting.util import rollingavg
 from models.model import Model
 
 class IHME(Model):

@@ -13,7 +13,7 @@ import matplotlib as mpl
 
 import sys
 sys.path.append('../..')
-from utils.util import HidePrints
+from utils.fitting.util import HidePrints
 from viz import setup_plt
 from utils.generic.enums import Columns
 from main.ihme.fitting import run_cycle_compartments

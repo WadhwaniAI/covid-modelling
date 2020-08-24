@@ -11,7 +11,7 @@ from datetime import timedelta
 
 import sys
 sys.path.append('../..')
-from utils.util import HidePrints, train_test_split
+from utils.fitting.util import HidePrints, train_test_split
 
 class Optimiser():
     def __init__(self, model: IHME, data: pd.DataFrame, args=None):
