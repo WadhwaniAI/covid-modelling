@@ -140,7 +140,7 @@ class MCUncertainty(Uncertainty):
         beta_loss = np.exp(-beta*losses)
 
         predictions = self.predictions_dict['m1']['trials_processed']['predictions']
-        allcols = ['active', 'recovered', 'deceased', 'total']
+        allcols = self.loss_compartments
         predictions_stacked = np.array([df.loc[:, allcols].to_numpy() for df in predictions])
         predictions_stacked_weighted_by_beta = beta_loss[:, None, None] * predictions_stacked / beta_loss.sum()
         weighted_pred = np.sum(predictions_stacked_weighted_by_beta, axis=0)
@@ -151,7 +151,8 @@ class MCUncertainty(Uncertainty):
         lc = Loss_Calculator()
         if return_dict:
             return lc.calc_loss_dict(weighted_pred_df, df_val, method=self.loss_method)
-        return lc.calc_loss(weighted_pred_df, df_val, method=self.loss_method)
+        return lc.calc_loss(weighted_pred_df, df_val, method=self.loss_method, 
+                            which_compartments=allcols, loss_weights=self.loss_weights)
 
     def find_beta(self, num_evals=1000):
         """

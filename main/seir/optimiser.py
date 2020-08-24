@@ -69,7 +69,8 @@ class Optimiser():
     # TODO add cross validation support
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIRHD,
                                loss_compartments=['active', 'recovered', 'total', 'deceased'], 
-                               loss_indices=[-20, -10], loss_method='rmse', return_dict=False, debug=False):
+                               loss_weights = [1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse', 
+                               debug=False):
         """The function that computes solves the ODE for a given set of input params and computes loss on train set
 
         Arguments:
@@ -114,11 +115,9 @@ class Optimiser():
             import pdb; pdb.set_trace()
         df_prediction_slice.reset_index(inplace=True, drop=True)
         df_true_slice.reset_index(inplace=True, drop=True)
-        if return_dict:
-            loss = self.loss_calculator.calc_loss_dict(df_prediction_slice, df_true_slice, method=loss_method)
-        else:
-            loss = self.loss_calculator.calc_loss(df_prediction_slice, df_true_slice, 
-                                                  which_compartments=loss_compartments, method=loss_method)
+        loss = self.loss_calculator.calc_loss(df_prediction_slice, df_true_slice, 
+                                              which_compartments=loss_compartments, method=loss_method,
+                                              loss_weights=loss_weights)
         return loss
 
     def _create_dict(self, param_names, values):
@@ -220,7 +219,7 @@ class Optimiser():
         return loss_array, list_of_param_dicts
 
     def bayes_opt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
-                  loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], 
+                  loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
                   prior='uniform', algo=tpe, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
@@ -253,7 +252,8 @@ class Optimiser():
         
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
                                                  default_params=default_params, total_days=total_days,
-                                                 loss_method=loss_method, loss_indices=loss_indices, df_true=df_train,
+                                                 loss_method=loss_method, loss_indices=loss_indices, 
+                                                 loss_weights=loss_weights, df_true=df_train,
                                                  loss_compartments=loss_compartments)
 
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
