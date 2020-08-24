@@ -8,7 +8,7 @@ import datetime
 import copy
 
 from models.seir.seir import SEIR
-from utils.ode import ODE_Solver
+from utils.fitting.ode import ODE_Solver
 
 class SEIR_Testing(SEIR):
 

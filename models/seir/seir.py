@@ -7,7 +7,7 @@ import numpy as np
 from collections import OrderedDict
 import datetime
 
-from utils.ode import ODE_Solver
+from utils.fitting.ode import ODE_Solver
 
 class SEIR(Model):
 

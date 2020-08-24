@@ -8,7 +8,7 @@ import datetime
 import copy
 
 from models.seir.seir import SEIR
-from utils.ode import ODE_Solver
+from utils.fitting.ode import ODE_Solver
 
 class SEIR_Movement(SEIR):
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
