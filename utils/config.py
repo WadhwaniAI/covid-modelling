@@ -1,19 +1,32 @@
 import yaml
+import os
+
+import models
+import main.seir.uncertainty as uncertainty_module
+from utils.enums import Columns
 
 
-def read_config(path, backtesting=False):
-    default_path = os.path.join(os.path.dirname(path), 'default.yaml')
-    with open(default_path) as default:
-        config = yaml.load(default, Loader=yaml.SafeLoader)
-    with open(path) as configfile:
-        new = yaml.load(configfile, Loader=yaml.SafeLoader)
-    for k in config.keys():
-        if type(config[k]) is dict and new.get(k) is not None:
-            config[k].update(new[k])
-    model_params = config['model_params']
-    if backtesting:
-        config['base'].update(config['backtesting'])
-    else:
-        config['base'].update(config['run'])
-    config = config['base']
-    return config, model_params
+def read_config(filename='default.yaml'):
+    with open(f'../../configs/seir/{filename}') as configfile:
+        config = yaml.load(configfile, Loader=yaml.SafeLoader)
+
+    for key in config['fitting']['data'].keys():
+        if config['fitting']['data'][key] == 'None':
+            config['fitting']['data'][key] = None
+
+    config['fitting']['model'] = getattr(models.seir, config['fitting']['model'])
+
+    for key, value in config['sensitivity'].items():
+        config['sensitivity'][key] = [None if x == 'None' else x for x in value]
+
+    config['forecast']['plot_topk_trials_for_columns'] = [Columns.from_name(
+        column) for column in config['forecast']['plot_topk_trials_for_columns']]
+    config['forecast']['plot_ptiles_for_columns'] = [Columns.from_name(
+        column) for column in config['forecast']['plot_ptiles_for_columns']]
+
+    config['uncertainty']['method'] = getattr(uncertainty_module, config['uncertainty']['method'])
+    config['uncertainty']['uncertainty_params']['sort_trials_by_column'] = Columns.from_name(
+        config['uncertainty']['uncertainty_params']['sort_trials_by_column'])
+
+        
+    return config
