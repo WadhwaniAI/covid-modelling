@@ -20,7 +20,7 @@ from main.ihme.fitting import setup, create_output_folder
 from viz import plot_backtest, plot_backtest_errors, plot
 from utils.enums import Columns
 
-from utils.config import read_config
+from utils.generic.config import read_config
 
 import warnings
 pd.options.mode.chained_assignment = None
