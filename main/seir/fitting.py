@@ -16,7 +16,7 @@ import models.seir
 from main.seir.optimiser import Optimiser
 from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
-from utils.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
+from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
 from viz import plot_smoothing, plot_fit
 
 
