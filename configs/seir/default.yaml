@@ -1,16 +1,21 @@
 fitting:
     # Geographical Location
     data:
-        dataloader: Covid19IndiaLoader
-        state: Maharashtra
-        district: Mumbai
-        data_from_tracker: False
-        granular_data: True
-        filename: None
+        data_source: covid19india
+        stratified_data: FALSE
+        dataloading_params:
+            state: Maharashtra
+            district: Mumbai
+            use_dataframe: data_all
         smooth_jump: TRUE
+        rolling_average: TRUE
+        rolling_average_params:
+            center: TRUE
+            window: 7
+            win_type: None
     #Choose Model and Ranges
     model: SEIRHD
-    variable_param_ranges:  
+    variable_param_ranges:
         lockdown_R0: [[1, 1.15], uniform]
         T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
