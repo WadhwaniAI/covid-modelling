@@ -20,8 +20,8 @@ from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratifie
 from viz import plot_smoothing, plot_fit
 
 
-def data_setup(state, district, data_from_tracker, filename, val_period, loss_compartments,
-               data_format=None, granular_data=False, smooth_jump=False, **kwargs):
+def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, val_period, loss_compartments,  
+               rolling_average, rolling_average_params, **kwargs):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -35,31 +35,29 @@ def data_setup(state, district, data_from_tracker, filename, val_period, loss_co
     Returns:
         pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
     """
-    if granular_data:
-        df_not_strat = get_data(state=state, district=district, filename=filename, disable_tracker=True)
-        df_district = granular.get_data(filename=filename)
+    if stratified_data:
+        df_not_strat = get_data(data_source, dataloading_params)
+        df_district = granular.get_data(data_source)
     else:
-        if data_from_tracker:
-            df_district = get_data(state=state, district=district, use_dataframe='data_all')
-        else:
-            df_district = get_data(state=state, district=district, disable_tracker=True, filename=filename, 
-                                   data_format=data_format)
+        df_district = get_data(data_source, dataloading_params)
     
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
 
     if smooth_jump:
-        if granular_data:
+        if stratified_data:
             df_district, description = smooth_big_jump_stratified(
                 df_district, df_not_strat, smooth_stratified_additionally=True)
         else:
-            df_district, description = smooth_big_jump(df_district, data_from_tracker=data_from_tracker)
+            df_district, description = smooth_big_jump(df_district)
 
-        smoothing_plot = plot_smoothing(orig_df_district, df_district, state, district,
-                                        which_compartments=loss_compartments, description=f'Smoothing')
-    
+        smoothing_plot = plot_smoothing(orig_df_district, df_district, dataloading_params['state'], 
+                                        dataloading_params['district'], which_compartments=loss_compartments, 
+                                        description='Smoothing')
+    import pdb; pdb.set_trace()
     df_district['daily_cases'] = df_district['total'].diff()
-    df_district.dropna(axis=0, how='any', inplace=True)
+    df_district.dropna(axis=0, how='any', subset=['total', 'active', 'recovered', 'deceased', 'daily_cases'], 
+                       inplace=True)
     df_district.reset_index(drop=True, inplace=True)
 
     smoothing = {}
@@ -71,10 +69,18 @@ def data_setup(state, district, data_from_tracker, filename, val_period, loss_co
         }
         print(smoothing['smoothing_description'])
      
-    df_train, df_val = train_val_split(
-        df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period, rolling_window=7)
-    df_train_nora, df_val_nora = train_val_split(
-        df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
+    rap = rolling_average_params
+    if rolling_average:
+        df_train, df_val = train_val_split(df_district, train_rollingmean=True, val_rollingmean=True, 
+                                           val_size=val_period, window_size=rap['window_size'], center=rap['center'], 
+                                           win_type=rap['win_type'])
+    else:
+        df_train, df_val = train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
+                                           val_size=val_period, window_size=rap['window_size'], center=rap['center'],
+                                           win_type=rap['win_type'])
+
+    df_train_nora, df_val_nora = train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, 
+                                                 val_size=val_period)
 
     observed_dataframes = {}
     for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
