@@ -78,7 +78,7 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
     return df_district.reset_index(), description
 
 
-def smooth_big_jump(df_district, data_from_tracker=False, method='weighted-mag', description=""):
+def smooth_big_jump(df_district, method='weighted-mag', description=""):
     d1 = '2020-05-28'
     length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
     df_district, description = smooth_big_jump_helper(
