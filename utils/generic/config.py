@@ -14,6 +14,10 @@ def read_config(filename='default.yaml'):
         if config['fitting']['data'][key] == 'None':
             config['fitting']['data'][key] = None
 
+    for key in config['fitting']['data']['rolling_average_params'].keys():
+        if config['fitting']['data']['rolling_average_params'][key] == 'None':
+            config['fitting']['data']['rolling_average_params'][key] = None
+
     config['fitting']['model'] = getattr(models.seir, config['fitting']['model'])
 
     for key, value in config['sensitivity'].items():
