@@ -11,7 +11,7 @@ fitting:
         rolling_average: TRUE
         rolling_average_params:
             center: TRUE
-            window: 7
+            window_size: 7
             win_type: None
     #Choose Model and Ranges
     model: SEIRHD
@@ -43,16 +43,16 @@ fitting:
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
 sensitivity:
-        lockdown_R0: [[[1, 1.5], 101], total, None]
-        I_hosp_ratio: [[[0, 1], 201], total, None]
-        E_hosp_ratio: [[[0, 2], 201], total, None]
-        P_moderate: [[[0, 0.5], 201], symptomatic, total]
-        P_severe: [[[0, 0.5], 201], critical, total]
-        P_fatal: [[[0, 0.5], 201], deceased, total]
-        T_recov_mild: [[[1, 100], 101], asymptomatic, total]
-        T_recov_moderate: [[[1, 100], 101], symptomatic, total]
-        T_recov_severe: [[[1, 100], 101], critical, total]
-        T_recov_fatal: [[[1, 100], 101], deceased, total]
+    lockdown_R0: [[[1, 1.5], 101], total, None]
+    I_hosp_ratio: [[[0, 1], 201], total, None]
+    E_hosp_ratio: [[[0, 2], 201], total, None]
+    P_moderate: [[[0, 0.5], 201], symptomatic, total]
+    P_severe: [[[0, 0.5], 201], critical, total]
+    P_fatal: [[[0, 0.5], 201], deceased, total]
+    T_recov_mild: [[[1, 100], 101], asymptomatic, total]
+    T_recov_moderate: [[[1, 100], 101], symptomatic, total]
+    T_recov_severe: [[[1, 100], 101], critical, total]
+    T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
