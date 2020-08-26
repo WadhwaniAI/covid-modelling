@@ -139,6 +139,7 @@ def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_
         df_district = df_districts.loc[(df_districts['state'] == state) & (df_districts['district'] == district)]
         df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
         df_district = df_district.rename({'confirmed': 'total'}, axis='columns')
+        del df_district['migrated']
         df_district.reset_index(inplace=True, drop=True)
         return df_district
     
@@ -231,8 +232,8 @@ def get_data_from_jhu():
     pass
     #TODO implement JHU processing function
 
-def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5,
-                    which_columns=None):
+def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, window_size=5,
+                    center=True, win_type=None, which_columns=None):
     """Creates train val split on dataframe
 
     # TODO : Add support for creating train val test split
@@ -244,12 +245,13 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
         train_rollingmean {bool} -- If true, apply rolling mean on train (default: {False})
         val_rollingmean {bool} -- If true, apply rolling mean on val (default: {False})
         val_size {int} -- Size of val set (default: {5})
-        rolling_window {int} -- Size of rolling window. The rolling window is centered (default: {5})
+        window_size {int} -- Size of rolling window. The rolling window is centered (default: {5})
 
     Returns:
         pd.DataFrame, pd.DataFrame, pd.DataFrame -- train dataset, val dataset, concatenation of rolling average dfs
     """
     print("splitting data ..")
+    import pdb; pdb.set_trace()
     df_true_fitting = copy.copy(df_district)
     # Perform rolling average on all columns with numeric datatype
     df_true_fitting = df_true_fitting.infer_objects()
@@ -257,11 +259,11 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
         which_columns = df_true_fitting.select_dtypes(include='number').columns
     for column in which_columns:
         df_true_fitting[column] = df_true_fitting[column].rolling(
-            rolling_window, center=True).mean()
+            window=window_size, center=center, win_type=win_type).mean()
 
     # Since the rolling average method is center, we need an offset variable where the ends of the series will
     # use the true observations instead (as rolling averages for those offset days don't exist)
-    offset_window = rolling_window // 2
+    offset_window = window_size // 2
 
     df_true_fitting.dropna(axis=0, how='any', subset=which_columns, inplace=True)
     df_true_fitting.reset_index(inplace=True, drop=True)
