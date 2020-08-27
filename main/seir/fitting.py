@@ -136,7 +136,8 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
                                               which_compartments=loss['loss_compartments'])
 
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
-                        data['state'], data['district'], which_compartments=loss['loss_compartments'])
+                        data['dataloading_params']['state'], data['dataloading_params']['district'], 
+                        which_compartments=loss['loss_compartments'])
 
     results_dict = {}
     results_dict['plots'] = {}
