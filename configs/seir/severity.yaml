@@ -1,49 +1,79 @@
 fitting:
-    # Geographical Location
-    state: 'Maharashtra'
-    district: 'Mumbai'
-    #Data
-    data_from_tracker: False
-    granular_data: True
-    filename: None
-    smooth_jump: TRUE
+    data:
+        data_source: athena
+        stratified_data: FALSE
+        dataloading_params:
+            state: Maharashtra
+            district: Mumbai
+        smooth_jump: TRUE
+        smooth_jump_params:
+            2020-05-28: [None, recovered, active, FALSE, weighted-mag]
+            2020-06-14: [None, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [None, recovered, active, FALSE, weighted-mag]
+            2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [None, deceased, total, TRUE, weighted-mag]
+            stratified_smoothing:
+                2020-06-10: [None, symptomatic, asymptomatic, FALSE, weighted-mag]
+                2020-06-15: [None, symptomatic, asymptomatic, FALSE, weighted-mag]
+                2020-07-01: [None, symptomatic, asymptomatic, FALSE, weighted-mag]
+                2020-07-02: [None, symptomatic, asymptomatic, FALSE, weighted-mag]
+                2020-07-20: [2020-07-02, symptomatic, asymptomatic, FALSE, weighted-mag]
+                2020-05-31: [None, non_o2_beds, hq, FALSE, weighted-mag]
+                2020-06-15: [None, non_o2_beds, o2_beds, FALSE, weighted-mag]
+                2020-05-31: [None, icu, hq, FALSE, weighted-mag]
+                2020-06-15: [None, ventilator, hq, FALSE, weighted-mag]
+                2020-06-30: [2020-06-20, icu, hq, FALSE, weighted-mag]
+                2020-06-30: [2020-06-20, ventilator, hq, FALSE, weighted-mag]
+        rolling_average: TRUE
+        rolling_average_params:
+            center: TRUE
+            window_size: 7
+            win_type: None
     #Choose Model and Ranges
     model: SEIRHD_Severity
     variable_param_ranges:  
-        lockdown_R0: [1, 1.15]
-        T_inc: [4, 5]
-        T_inf: [3, 4]
-        T_recov_mild: [20, 30]
-        T_recov_moderate: [20, 30]
-        T_recov_severe: [0, 40]
-        P_moderate: [0, 0.5]
-        P_severe: [0, 0.1]
-        P_fatal: [0, 0.1]
-        E_hosp_ratio: [0, 2]
-        I_hosp_ratio: [0, 1]
+        lockdown_R0: [[1, 1.15], uniform]
+        T_inc: [[4, 5], uniform]
+        T_inf: [[3, 4], uniform]
+        T_recov_mild: [[20, 30], uniform]
+        T_recov_moderate: [[20, 30], uniform]
+        T_recov_severe: [[0, 40], uniform]
+        P_moderate: [[0, 0.5], uniform]
+        P_severe: [[0, 0.1], uniform]
+        P_fatal: [[0, 0.1], uniform]
+        E_hosp_ratio: [[0, 2], uniform]
+        I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
         lockdown_date: 2020-03-25
-        lockdown_removal_date: 2020-06-30
+        lockdown_removal_date: 2020-08-30
+    fitting_method: bayes_opt
+    fitting_method_params:
+        num_evals: 1000
+        algo: tpe
     #Choose Fitting Periods and num evaluations
-    train_period: 7
-    val_period: 7
-    test_period: 0
-    num_evals: 1000
-    initialisation: 'intermediate'
+    split:
+        train_period: 21
+        val_period: 7
+        test_period: 0
+    loss:
+        loss_method: mape
+        loss_compartments: [total, active, recovered, deceased, asymptomatic, symptomatic, critical]
+        loss_weights: [1, 1, 1, 1, 1, 1, 1]
     #Optimisation related parameters
-    which_compartments: ['total', 'active', 'recovered', 'deceased', 'asymptomatic', 'symptomatic', 'critical']
 sensitivity:
-    lockdown_R0: [[1, 1.5], 101, 'total', None]
-    I_hosp_ratio: [[0, 1], 201, 'total', None]
-    E_hosp_ratio: [[0, 2], 201, 'total', None]
-    P_moderate: [[0, 0.5], 201, 'symptomatic', 'total']
-    P_severe: [[0, 0.5], 201, 'critical', 'total']
-    P_fatal: [[0, 0.5], 201, 'deceased', 'total']
-    T_recov_mild: [[1, 100], 101, 'asymptomatic', 'total']
-    T_recov_moderate: [[1, 100], 101, 'symptomatic', 'total']
-    T_recov_severe: [[1, 100], 101, 'critical', 'total']
-    T_recov_fatal: [[1, 100], 101, 'deceased', 'total']
+    lockdown_R0: [[[1, 1.5], 101], total, None]
+    I_hosp_ratio: [[[0, 1], 201], total, None]
+    E_hosp_ratio: [[[0, 2], 201], total, None]
+    P_moderate: [[[0, 0.5], 201], symptomatic, total]
+    P_severe: [[[0, 0.5], 201], critical, total]
+    P_fatal: [[[0, 0.5], 201], deceased, total]
+    T_recov_mild: [[[1, 100], 101], asymptomatic, total]
+    T_recov_moderate: [[[1, 100], 101], symptomatic, total]
+    T_recov_severe: [[[1, 100], 101], critical, total]
+    T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
@@ -53,8 +83,9 @@ uncertainty:
     method: MCUncertainty
     uncertainty_params:
         num_evals: 100
-        date_of_sorting_trials: 2020-07-31
-        sort_trials_by_column: confirmed
-        loss_compartments: ['total', 'active', 'recovered', 'deceased']
-
-    
+        date_of_sorting_trials: 2020-08-31
+        sort_trials_by_column: total
+        loss:
+            loss_method: mape
+            loss_compartments: [total, active, recovered, deceased]
+            loss_weights: [0.25, 0.25, 0.25, 0.25]
