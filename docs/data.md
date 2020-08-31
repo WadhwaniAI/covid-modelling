@@ -74,3 +74,9 @@ Currently we use only stratification by bed type and severity as that is what ou
 ## JHU
 
 This gets data from the [JHU dashboard](https://github.com/CSSEGISandData/COVID-19/) which tracks time series of cases for all countries and specific subregions of certain countries. The main use case of this data is for running experiments of different models across different geographies. 
+
+# Code
+
+The classes for loading data from the above sources have been implemented [here](../data/dataloader/). There are 4 classes - `Covid19IndiaLoader, RootnetLoader, AthenaLoader, JHULoader`. Each class has a `_load_data` function that returns a dict of `pd.DataFrame`s. Filtering/Processing of that data is done [here](../data/processing/processing.py). The function user is going to interact with most is `get_data` in `data/processing/processing.py`.
+
+If the user wishes to implement a new class of dataloader, that class should be a child of the abstract class in `data/dataloader/base.py` (as are all other classes).
