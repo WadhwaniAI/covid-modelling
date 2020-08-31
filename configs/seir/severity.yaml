@@ -7,6 +7,7 @@ fitting:
             district: Mumbai
         smooth_jump: TRUE
         smooth_jump_params:
+        # NOT IMPLEMENTED
             2020-05-28: [None, recovered, active, FALSE, weighted-mag]
             2020-06-14: [None, recovered, active, FALSE, weighted-mag]
             2020-06-15: [None, recovered, active, FALSE, weighted-mag]
@@ -31,6 +32,7 @@ fitting:
             center: TRUE
             window_size: 7
             win_type: None
+            split_after_rolling: TRUE # NOT IMPLEMENTED
     #Choose Model and Ranges
     model: SEIRHD_Severity
     variable_param_ranges:  
@@ -55,15 +57,18 @@ fitting:
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
+        start_date: None # NOT IMPLEMENTED
+        end_date: None # NOT IMPLEMENTED
         train_period: 21
         val_period: 7
-        test_period: 0
+        test_period: 0 # NOT IMPLEMENTED
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased, asymptomatic, symptomatic, critical]
         loss_weights: [1, 1, 1, 1, 1, 1, 1]
     #Optimisation related parameters
 sensitivity:
+    # NOT IMPLEMENTED
     lockdown_R0: [[[1, 1.5], 101], total, None]
     I_hosp_ratio: [[[0, 1], 201], total, None]
     E_hosp_ratio: [[[0, 2], 201], total, None]

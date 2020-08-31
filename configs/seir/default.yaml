@@ -9,6 +9,7 @@ fitting:
             use_dataframe: data_all
         smooth_jump: TRUE
         smooth_jump_params:
+            # NOT IMPLEMENTED
             2020-05-28: [None, recovered, active, FALSE, weighted-mag]
             2020-06-14: [None, recovered, active, FALSE, weighted-mag]
             2020-06-15: [None, recovered, active, FALSE, weighted-mag]
@@ -21,7 +22,7 @@ fitting:
             center: TRUE
             window_size: 7
             win_type: None
-            split_after_rolling: TRUE
+            split_after_rolling: TRUE # NOT IMPLEMENTED
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
@@ -43,17 +44,18 @@ fitting:
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
-        start_date: None
-        end_date: None
+        start_date: None # NOT IMPLEMENTED
+        end_date: None # NOT IMPLEMENTED
         train_period: 21
         val_period: 7
-        test_period: 0
+        test_period: 0 # NOT IMPLEMENTED
     #Optimisation related parameters
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
 sensitivity:
+    # NOT IMPLEMENTED
     lockdown_R0: [[[1, 1.5], 101], total, None]
     I_hosp_ratio: [[[0, 1], 201], total, None]
     E_hosp_ratio: [[[0, 2], 201], total, None]
