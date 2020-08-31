@@ -7,7 +7,7 @@ from adjustText import adjust_text
 import datetime
 import copy
 
-from utils.enums import Columns, SEIRParams
+from utils.generic.enums import Columns, SEIRParams
 from viz.utils import axis_formatter
 
 

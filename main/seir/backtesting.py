@@ -22,7 +22,7 @@ class SEIRBacktest:
     def test(self, fit, train_period=7, val_period=7, increment=5, 
         future_days=7, N=1e7, num_evals=1000, pre_lockdown=False,
         initialisation='intermediate',
-        which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered']):
+        which_compartments=['active', 'total', 'deceased', 'recovered']):
         
         val_period = val_period if fit == 'm1' else 0
 

@@ -8,20 +8,20 @@ import datetime
 import copy
 
 from models.seir.seir import SEIR
-from utils.ode import ODE_Solver
+from utils.fitting.ode import ODE_Solver
 
 class SEIRHD_Bed(SEIR):
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
                  P_nonoxy=0.4, P_oxy=0.2, P_icu=0.02, P_vent=0.02, P_fatal=0.02, 
                  T_recov_hq=14, T_recov_non_oxy=14, T_recov_oxy=14, T_recov_icu=14, T_recov_vent=14, T_recov_fatal=14,
                  N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 
-                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
+                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
         
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
         The model further implements 
         - pre, post, and during lockdown behaviour 
-        - different initialisations : intermediate and starting 
+
 
         The state variables are : 
 
@@ -76,7 +76,6 @@ class SEIRHD_Bed(SEIR):
 
         Misc - 
         N: Total population
-        initialisation : method of initialisation ('intermediate'/'starting')
         """
         STATES = ['S', 'E', 'I', 'R_hq', 'R_nonoxy', 'R_oxy', 'R_icu', 'R_vent', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]
@@ -107,13 +106,13 @@ class SEIRHD_Bed(SEIR):
             state_init_values['R_oxy'] = observed_values['o2_beds']
             state_init_values['R_icu'] = observed_values['icu']
             state_init_values['R_vent'] = observed_values['ventilator']
-            state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['hospitalised']
+            state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['active']
             
             state_init_values['C'] = observed_values['recovered']
             state_init_values['D'] = observed_values['deceased']
 
-            state_init_values['E'] = self.E_hosp_ratio * observed_values['hospitalised']
-            state_init_values['I'] = self.I_hosp_ratio * observed_values['hospitalised']
+            state_init_values['E'] = self.E_hosp_ratio * observed_values['active']
+            state_init_values['I'] = self.I_hosp_ratio * observed_values['active']
             
             nonSsum = sum(state_init_values.values())
             state_init_values['S'] = (self.N - nonSsum)
@@ -175,9 +174,9 @@ class SEIRHD_Bed(SEIR):
         df_prediction['o2_beds'] = df_prediction['R_oxy']
         df_prediction['icu'] = df_prediction['R_icu']
         df_prediction['ventilator'] = df_prediction['R_vent']
-        df_prediction['hospitalised'] = df_prediction['hq'] + df_prediction['non_o2_beds'] + \
+        df_prediction['active'] = df_prediction['hq'] + df_prediction['non_o2_beds'] + \
             df_prediction['o2_beds'] + df_prediction['icu'] + df_prediction['ventilator']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
+        df_prediction['total'] = df_prediction['active'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction

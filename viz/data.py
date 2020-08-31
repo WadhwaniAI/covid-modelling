@@ -2,11 +2,11 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
 
-from utils.enums.columns import *
+from utils.generic.enums.columns import *
 from viz.utils import setup_plt, axis_formatter
 
 def plot_smoothing(orig_df_district, new_df_district, state, district,
-                   which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], 
+                   which_compartments=['active', 'total', 'recovered', 'deceased'], 
                    description='Smoothing'):
     """Helper function for creating plots for the smoothing
 
@@ -18,7 +18,7 @@ def plot_smoothing(orig_df_district, new_df_district, state, district,
         district {str} -- Name of district
 
     Keyword Arguments:
-        which_compartments {list} -- Which buckets to plot (default: {['hospitalised', 'total_infected', 'recovered', 'deceased']})
+        which_compartments {list} -- Which buckets to plot (default: {['active', 'total', 'recovered', 'deceased']})
         description {str} -- Additional description for the plots (if any) (default: {''})
 
     Returns:

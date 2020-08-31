@@ -164,7 +164,7 @@ def _log_tables(mdFile, m2_dict):
     mdFile.new_paragraph(tbl)
 
 
-def save_dict_and_create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../reports/'):
+def save_dict_and_create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../misc/reports/'):
     """Creates report (BOTH MD and DOCX) for an input of a dict of predictions for a particular district/region
     The DOCX file can directly be uploaded to Google Drive and shared with the people who have to review
 
@@ -172,7 +172,7 @@ def save_dict_and_create_report(predictions_dict, forecast_dict=None, ROOT_DIR='
         predictions_dict {dict} -- Dict of predictions for a particual district/region [NOT ALL Districts]
 
     Keyword Arguments:
-        ROOT_DIR {str} -- the path where the plots and the report would be saved (default: {'../../reports/'})
+        ROOT_DIR {str} -- the path where the plots and the report would be saved (default: {'../../misc/reports/'})
     """
 
     if not os.path.exists(ROOT_DIR):

@@ -54,11 +54,12 @@ def get_custom_data_from_file(filename, state='Maharashtra', district='Mumbai'):
     #Column renaming and pruning
     df = df.drop([x for x in df.columns if '_capacity' in x], axis=1)
     df.columns = [x.replace('_occupied', '') for x in df.columns]
-    df = df.rename({'city': 'district', 'total_cases': 'total_infected', 'active_cases': 'hospitalised',
+    df = df.rename({'city': 'district', 'total_cases': 'total', 'active_cases': 'active',
                     'icu_beds': 'icu', 'ventilator_beds': 'ventilator', 
+                    'stable_symptomatic': 'symptomatic', 'stable_asymptomatic': 'asymptomatic', 
                     'recoveries': 'recovered', 'deaths': 'deceased'}, axis='columns')
     # New column creation
-    df['hq'] = df['hospitalised'] - df['total_beds']
+    df['hq'] = df['active'] - df['total_beds']
     df['non_o2_beds'] = df['total_beds'] - (df['o2_beds']+df['icu'])
 
     # Rearranging columns
@@ -72,10 +73,9 @@ def get_custom_data_from_file(filename, state='Maharashtra', district='Mumbai'):
     df.insert(int(np.where(df.columns == 'o2_beds')[0][0]), 'non_o2_beds', col)
 
     #Data checks
-    beds_check = sum(df.loc[:, ['hq', 'non_o2_beds', 'o2_beds', 'icu']].sum(axis=1) == df['hospitalised'])
+    beds_check = sum(df.loc[:, ['hq', 'non_o2_beds', 'o2_beds', 'icu']].sum(axis=1) == df['active'])
     facility_check = sum(df.loc[:, ['ccc2', 'dchc', 'dch']].sum(axis=1) == df['total_beds'])
-    severity_check = sum(df.loc[:, ['stable_asymptomatic', 'stable_symptomatic', 
-                                    'critical']].sum(axis=1) == df['hospitalised'])
+    severity_check = sum(df.loc[:, ['asymptomatic', 'symptomatic', 'critical']].sum(axis=1) == df['active'])
     return df
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
@@ -94,11 +94,11 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
 
     #Column renaming and pruning
     df = df.drop([x for x in df.columns if '_capacity' in x] + ['partition_0'], axis=1)
-    df = df.rename({'total': 'total_infected', 'active': 'hospitalised',
-                    'total_occupied': 'total_beds', 'o2_occupied': 'o2_beds'}, axis='columns')
+    df = df.rename({'total_occupied': 'total_beds', 'o2_occupied': 'o2_beds', 
+                    'stable_symptomatic': 'symptomatic', 'stable_asymptomatic': 'asymptomatic'}, axis='columns')
     df.columns = [x.replace('_occupied', '') for x in df.columns]
     # New column creation
-    df['hq'] = df['hospitalised'] - df['total_beds']
+    df['hq'] = df['active'] - df['total_beds']
     df['non_o2_beds'] = df['total_beds'] - (df['o2_beds']+df['icu'])
 
     # Rearranging columns
