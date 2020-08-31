@@ -21,6 +21,7 @@ fitting:
             center: TRUE
             window_size: 7
             win_type: None
+            split_after_rolling: TRUE
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
@@ -42,6 +43,8 @@ fitting:
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
+        start_date: None
+        end_date: None
         train_period: 21
         val_period: 7
         test_period: 0
