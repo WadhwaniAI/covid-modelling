@@ -29,7 +29,6 @@ class AthenaLoader(BaseLoader):
         with open(pyathena_rc_path) as f:
             lines = f.readlines()
 
-        # import pdb; pdb.set_trace()
         lines = [x.strip() for x in lines]
         lines = [x.split('export ')[1] for x in lines]
         lines = [line.replace('=', '="') + '"' if '="' not in line else line for line in lines]

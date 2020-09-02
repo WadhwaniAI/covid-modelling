@@ -54,7 +54,6 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, va
         smoothing_plot = plot_smoothing(orig_df_district, df_district, dataloading_params['state'], 
                                         dataloading_params['district'], which_compartments=loss_compartments, 
                                         description='Smoothing')
-    import pdb; pdb.set_trace()
     df_district['daily_cases'] = df_district['total'].diff()
     df_district.dropna(axis=0, how='any', subset=['total', 'active', 'recovered', 'deceased', 'daily_cases'], 
                        inplace=True)

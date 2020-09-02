@@ -251,7 +251,6 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
         pd.DataFrame, pd.DataFrame, pd.DataFrame -- train dataset, val dataset, concatenation of rolling average dfs
     """
     print("splitting data ..")
-    import pdb; pdb.set_trace()
     df_true_fitting = copy.copy(df_district)
     # Perform rolling average on all columns with numeric datatype
     df_true_fitting = df_true_fitting.infer_objects()
