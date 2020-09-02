@@ -29,7 +29,7 @@ fitting:
         lockdown_R0: [[1, 1.15], uniform]
         T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
-        T_recov_severe: [[0, 40], uniform]
+        T_recov: [[0, 40], uniform]
         T_recov_fatal: [[0, 40], uniform]
         P_fatal: [[0, 0.1], uniform]
         E_hosp_ratio: [[0, 2], uniform]
