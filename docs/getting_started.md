@@ -18,7 +18,7 @@ It would be highly recommended that you use either conda or virtualenv
 
 ### Run notebook
 
-run the cells in `notebooks/seir/[STABLE] generate_report.ipynb` ([here](notebooks/seir/)) end to end to get an idea of the end-to-end modelling pipeline.
+run the cells in `notebooks/seir/[STABLE] generate_report.ipynb` ([here](../notebooks/seir/)) end to end to get an idea of the end-to-end modelling pipeline.
 
 # Further Reading
 
