@@ -37,9 +37,9 @@ def _save_trials(m1_dict, m2_dict, ROOT_DIR):
 
 def _create_md_file(predictions_dict, ROOT_DIR):
     fitting_date = predictions_dict['fitting_date']
-    data_last_date = predictions_dict['data_last_date']
-    state = predictions_dict['state']
-    dist = predictions_dict['dist']
+    data_last_date = predictions_dict['m1']['data_last_date']
+    state = predictions_dict['m1']['state']
+    dist = predictions_dict['m1']['dist']
     filename = os.path.join(ROOT_DIR, f'{state.title()}-{dist.title()}_report_{fitting_date}')
     mdFile = MdUtils(file_name=filename, title=f'{dist.title()} Fits [Based on data until {data_last_date}]')
     return mdFile, filename
@@ -164,7 +164,7 @@ def _log_tables(mdFile, m2_dict):
     mdFile.new_paragraph(tbl)
 
 
-def save_dict_and_create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../misc/reports/'):
+def save_dict_and_create_report(predictions_dict, ROOT_DIR='../../misc/reports/', config_filename='default.yaml'):
     """Creates report (BOTH MD and DOCX) for an input of a dict of predictions for a particular district/region
     The DOCX file can directly be uploaded to Google Drive and shared with the people who have to review
 
@@ -182,8 +182,8 @@ def save_dict_and_create_report(predictions_dict, forecast_dict=None, ROOT_DIR='
     m2_dict = predictions_dict['m2']
 
     _dump_predictions_dict(predictions_dict, ROOT_DIR)
-    _dump_params(m1_dict, m2_dict, ROOT_DIR)
-    _save_trials(m1_dict, m2_dict, ROOT_DIR)
+
+    # _save_trials(m1_dict, m2_dict, ROOT_DIR)
 
     mdFile, filename = _create_md_file(predictions_dict, ROOT_DIR)
     _log_hyperparams(mdFile, predictions_dict)
