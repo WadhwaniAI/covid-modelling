@@ -4,11 +4,12 @@ import pickle
 from copy import deepcopy
 
 import pandas as pd
-import yaml
 
+from data.processing.processing import get_observed_dataframes
 from main.ihme.fitting import single_cycle
-from main.seir.fitting import data_setup, run_cycle
-from models.seir import SEIR_Testing, SIRD
+from main.ihme_seir.utils import read_params_file
+from main.seir.fitting import run_cycle
+from models.seir import SEIR_Testing, SIRD, SEIRHD, SIR
 from utils.data import get_supported_regions
 from utils.enums import Columns
 from utils.util import read_config
@@ -18,20 +19,21 @@ from viz.synthetic_data import plot_fit_uncertainty
 
 supported_models = [
     {'model': SEIR_Testing, 'name': 'SEIR Testing', 'name_prefix': 'seirt'},
-    {'model': SIRD, 'name': 'SIRD', 'name_prefix': 'sird'}
+    {'model': SIRD, 'name': 'SIRD', 'name_prefix': 'sird'},
+    {'model': SEIRHD, 'name': 'SEIRHD', 'name_prefix': 'seirhd'},
+    {'model': SIR, 'name': 'SIR', 'name_prefix': 'sir'}
 ]
 
 
-def ihme_runner(sub_region, region, disable_tracker, actual_start_date, dataset_length, train_val_size, val_size,
-                test_size, config_path, output_folder, variant='log_erf', model_priors=None,
-                data_source='covid19india', which_compartments=Columns.curve_fit_compartments()):
+def ihme_runner(sub_region, region, start_date, dataset_length, train_val_size, val_size, test_size, config_path,
+                output_folder, variant='log_erf', model_priors=None, data_source='covid19india',
+                which_compartments=Columns.curve_fit_compartments()):
     """Runs IHME model, creates plots and returns results
 
     Args:
         sub_region (str): name of sub-region (province/state/district)
         region (str): name of region (country/state)
-        disable_tracker (bool): If False, data from tracker is not used
-        actual_start_date (datetime.datetime): date from which series s1 begins
+        start_date (datetime.datetime): date from which series s1 begins
         dataset_length (int): length of dataset used
         train_val_size (int): length of train+val split
         val_size (int): length of val split (within train+val split)
@@ -51,21 +53,21 @@ def ihme_runner(sub_region, region, disable_tracker, actual_start_date, dataset_
     sub_region, region, area_names = region_dict['sub_region'], region_dict['region'], region_dict['area_names']
     config, model_params = read_config(config_path)
 
-    config['start_date'] = actual_start_date
+    config['start_date'] = start_date
     config['dataset_length'] = dataset_length
-    config['disable_tracker'] = disable_tracker
     config['test_size'] = test_size
     config['val_size'] = val_size
     config['data_source'] = data_source
+    params_csv_path = config['params_csv']
     model_params['func'] = variant
     if variant == 'log_expit':  # Predictive validity only supported by Gaussian family of functions
         model_params['pipeline_args']['n_draws'] = 0
     if model_priors is not None:
         model_params['priors'] = model_priors
 
-    print(config)
-    print(model_params)
-    print(which_compartments)
+    if config['params_from_csv']:
+        param_ranges = read_params_file(params_csv_path, start_date)
+        model_params['priors']['fe_bounds'] = [param_ranges['alpha'], param_ranges['beta'], param_ranges['p']]
 
     ihme_res = single_cycle(sub_region, region, area_names, model_params, which_compartments=which_compartments,
                             **config)
@@ -100,15 +102,14 @@ def ihme_runner(sub_region, region, disable_tracker, actual_start_date, dataset_
     return ihme_res, config, model_params
 
 
-def seir_runner(sub_region, region, input_df, data_from_tracker, train_period, val_period, which_compartments,
-                model=SEIR_Testing, variable_param_ranges=None, num_evals=1500, N=7e6):
+def seir_runner(sub_region, region, input_df, train_period, val_period, which_compartments, model=SEIR_Testing,
+                variable_param_ranges=None, num_evals=1500, N=7e6):
     """Wrapper for main.seir.fitting.run_cycle
 
     Args:
         sub_region (str): name of district
         region (str): name of state
         input_df (tuple): dataframe of observations from districts_daily/custom file/athena DB, dataframe of raw data
-        data_from_tracker (bool): If False, data from tracker is not used
         train_period (int): length of train period
         val_period (int): length of val period
         which_compartments (list(enum)): list of compartments to fit on
@@ -119,15 +120,11 @@ def seir_runner(sub_region, region, input_df, data_from_tracker, train_period, v
     Returns:
         dict: results
     """
-
-    observed_dataframes = data_setup(input_df, val_period, continuous_ra=False)
-    predictions_dict = run_cycle(
-        region, sub_region, observed_dataframes,
-        model=model, variable_param_ranges=variable_param_ranges,
-        data_from_tracker=data_from_tracker, train_period=train_period,
-        which_compartments=which_compartments, N=N,
-        num_evals=num_evals, initialisation='intermediate'
-    )
+    observed_dataframes = get_observed_dataframes(input_df, val_period, 0, which_columns=which_compartments)
+    predictions_dict = run_cycle(region, sub_region, observed_dataframes, model=model,
+                                 variable_param_ranges=variable_param_ranges, train_period=train_period,
+                                 which_compartments=which_compartments, num_evals=num_evals, N=N,
+                                 initialisation='intermediate')
     return predictions_dict
 
 
@@ -248,94 +245,3 @@ def log_experiment_local(output_folder, region_config, i1_config, i1_model_param
     picklefn = f'{output_folder}/{name_prefix}_c3.pkl'
     with open(picklefn, 'wb') as pickle_file:
         pickle.dump(baseline_predictions_dict, pickle_file)
-
-
-def create_output_folder(fname):
-    """Creates folder in outputs/ihme_seir/
-
-    Args:
-        fname (str): name of folder within outputs/ihme_seir/
-
-    Returns:
-        str: output_folder path
-    """
-
-    output_folder = f'../../outputs/ihme_seir/{fname}'
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    return output_folder
-
-
-def get_variable_param_ranges_dict(district, state, model_type='seirt', train_period=None):
-    """Gets dictionary of variable param ranges from config file
-
-    Args:
-        district (str): name of district
-        state (str): name of state
-        model_type (str, optional): type of compartmental model [seirt or sird]
-        train_period (int): length of training period
-
-    Returns:
-        dict: variable param ranges
-    """
-    if district is None:
-        config_name = state.lower()
-    else:
-        config_name = district.lower().replace(" ", "_")
-
-    return read_region_params_config(f'../../scripts/ihme_seir/config/{config_name}.yaml', model_type,
-                                     train_period)
-
-
-def read_region_config(path, key='base'):
-    """Reads config file for synthetic data generation experiments
-
-    Args:
-        path (str): path to config file
-
-    Returns:
-        dict: config for synthetic data generation experiments
-    """
-
-    default_path = os.path.join(os.path.dirname(path), 'base.yaml')
-    with open(default_path) as base:
-        config = yaml.load(base, Loader=yaml.SafeLoader)
-    with open(path) as configfile:
-        region_config = yaml.load(configfile, Loader=yaml.SafeLoader)
-    for k in config.keys():
-        if type(config[k]) is dict and region_config.get(k) is not None:
-            config[k].update(region_config[k])
-    config = config[key]
-    return config
-
-
-def read_region_params_config(path, model_type, train_period=None):
-    """Reads config file for variable param ranges for a region
-
-    Args:
-        path (str): path to config file
-        model_type (str, optional): type of compartmental model [seirt or sird]
-        train_period (int): length of training period
-
-    Returns:
-        dict: variable param ranges for region
-    """
-    config = None
-    try:
-        with open(path) as configfile:
-            config = yaml.load(configfile, Loader=yaml.SafeLoader)
-    except OSError:
-        pass
-
-    path = f'../../scripts/ihme_seir/config/base.yaml'
-    with open(path) as configfile:
-        base_config = yaml.load(configfile, Loader=yaml.SafeLoader)
-
-    try:
-        if train_period is None:
-            config = config[f'params_{model_type}']
-        else:
-            config = config[f'params_{model_type}_tp_{train_period}']
-    except KeyError:
-        config = base_config[f'params_{model_type}_tp_{train_period}']
-    return config
