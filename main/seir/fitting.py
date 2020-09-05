@@ -1,29 +1,17 @@
-import os
-import json
+import copy
+
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import seaborn as sns
-from hyperopt import hp, tpe, fmin, Trials
-from tqdm import tqdm
-
-from collections import OrderedDict, defaultdict
-import itertools
-from functools import partial
-import datetime
-from joblib import Parallel, delayed
-import copy
+from hyperopt import hp
 
 from data.processing import get_data
 from data.processing import granular
-
-from models.seir.seir_testing import SEIR_Testing
 from main.seir.optimiser import Optimiser
+from models.seir.seir_testing import SEIR_Testing
 from utils.loss import Loss_Calculator
-from utils.enums import Columns
 from utils.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
 from viz import plot_smoothing, plot_fit
+
 
 def get_variable_param_ranges(variable_param_ranges=None, initialisation='intermediate', as_str=False, 
                               mode='hyperopt', searchspace_len=21):
@@ -51,6 +39,8 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
     if initialisation != 'intermediate':
         del variable_param_ranges['E_hosp_ratio']
         del variable_param_ranges['I_hosp_ratio']
+        if 'I_tot_ratio' in variable_param_ranges:
+            del variable_param_ranges['I_tot_ratio']
     if as_str:
         return str(variable_param_ranges)
 
@@ -65,7 +55,8 @@ def get_variable_param_ranges(variable_param_ranges=None, initialisation='interm
                 variable_param_ranges[key][0], variable_param_ranges[key][1], searchspace_len)
 
     return variable_param_ranges
-   
+
+
 def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, rolling_window=5,
                     which_columns=['total_infected', 'hospitalised', 'recovered', 'deceased'], continuous_ra=True):
     """Creates train val split on dataframe
@@ -94,7 +85,7 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
     for column in which_columns:
         if column in df_true_fitting.columns:
             df_true_fitting[column] = df_true_fitting[column].rolling(
-                rolling_window, center=True).mean()
+                rolling_window, center=True, min_periods=1).mean()
 
     # Since the rolling average method is center, we need an offset variable where the ends of the series will
     # use the true observations instead (as rolling averages for those offset days don't exist)
@@ -165,7 +156,7 @@ def get_regional_data(state, district, data_from_tracker, data_format, filename,
             df_district, description = smooth_big_jump_stratified(
                 df_district, df_not_strat, smooth_stratified_additionally=True)
         else:
-            df_district, description = smooth_big_jump(df_district, data_from_tracker=data_from_tracker)
+            df_district, description = smooth_big_jump(df_district)
 
         smoothing_plot = plot_smoothing(orig_df_district, df_district, state, district,
                                         which_compartments=which_compartments, description=f'Smoothing')
@@ -208,9 +199,9 @@ def data_setup(df_district, val_period, continuous_ra=True):
     return observed_dataframes
 
 
-def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, variable_param_ranges=None, 
-              default_params=None, train_period=7, data_from_tracker=True,
-              which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'], 
+def run_cycle(state, district, observed_dataframes, model=SEIR_Testing, data_from_tracker=False,
+              variable_param_ranges=None, default_params=None,
+              train_period=7, which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'],
               num_evals=1500, N=1e7, initialisation='starting', test_period=0):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
@@ -349,13 +340,10 @@ def single_fitting_cycle(state, district, model=SEIR_Testing, variable_param_ran
     print('train\n', observed_dataframes['df_train'].tail())
     print('val\n', observed_dataframes['df_val'])
     
-    predictions_dict = run_cycle(
-        state, district, observed_dataframes, 
-        model=model, variable_param_ranges=variable_param_ranges, default_params=default_params,
-        data_from_tracker=data_from_tracker, train_period=train_period, 
-        which_compartments=which_compartments, N=N, test_period=test_period,
-        num_evals=num_evals, initialisation=initialisation
-    )
+    predictions_dict = run_cycle(state, district, observed_dataframes, model=model,
+                                 variable_param_ranges=variable_param_ranges, default_params=default_params,
+                                 train_period=train_period, which_compartments=which_compartments, num_evals=num_evals,
+                                 N=N, initialisation=initialisation, test_period=test_period)
 
     if smoothing_plot != None:
         predictions_dict['plots']['smoothing'] = smoothing_plot

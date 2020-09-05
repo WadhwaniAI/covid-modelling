@@ -1,14 +1,11 @@
-import pandas as pd
-from datetime import datetime
-import time
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import matplotlib as mpl
-
 import sys
+import time
+
+import pandas as pd
+
 sys.path.append('../..')
 from main.seir.fitting import data_setup, run_cycle
-from viz import setup_plt
+
 
 class SEIRBacktest:
     def __init__(self, state, district, df_district, df_district_raw_data, data_from_tracker):
@@ -43,11 +40,9 @@ class SEIRBacktest:
             observed_dataframes = data_setup(df_district_incr, df_district_raw_data_incr, future_days)
             
             # FIT/PREDICT
-            res = run_cycle(
-                self.state, self.district, observed_dataframes, data_from_tracker=self.data_from_tracker,
-                train_period=train_period, num_evals=num_evals, N=N, 
-                which_compartments=which_compartments, initialisation=initialisation
-            )
+            res = run_cycle(self.state, self.district, observed_dataframes, train_period=train_period,
+                            which_compartments=which_compartments, num_evals=num_evals, N=N,
+                            initialisation=initialisation)
 
             results[run_day] = res
 
