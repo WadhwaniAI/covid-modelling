@@ -8,9 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-sys.path.append('../../')
+from main.ihme_seir.utils import get_seir_pointwise_loss, get_seir_pointwise_loss_dict, get_ihme_loss_dict, \
+    get_ihme_loss, get_ihme_pointwise_loss, get_seir_loss_dict, get_seir_loss, create_output_folder
 
-from main.ihme_seir.synthetic_data_generator import create_output_folder
+sys.path.append('../../')
 
 compartments = ['hospitalised', 'deceased', 'recovered', 'total_infected']
 c1 = ['orange', 'lightcoral', 'lime', 'lightblue']
@@ -26,28 +27,6 @@ def colorFader(c1, c2, mix=0.0):
     c1 = np.array(matplotlib.colors.to_rgb(c1))
     c2 = np.array(matplotlib.colors.to_rgb(c2))
     return matplotlib.colors.to_hex((1 - mix) * c1 + mix * c2)
-
-
-def get_ihme_loss_dict(path, file, num):
-    loss_dict = dict()
-    for i in range(num):
-        loss_dict[i] = pd.read_csv(f'{path}/{str(i)}/{file}',
-                                   index_col=['compartment', 'split', 'loss_function'])
-    return loss_dict
-
-
-def get_seir_loss_dict(path, file, num):
-    loss_dict = dict()
-    for i in range(num):
-        loss_dict[i] = pd.read_csv(f'{path}/{str(i)}/{file}', index_col=0)
-    return loss_dict
-
-
-def get_seir_pointwise_loss_dict(path, file, num):
-    loss_dict = dict()
-    for i in range(num):
-        loss_dict[i] = pd.read_csv(f'{path}/{str(i)}/{file}', index_col=['compartment', 'loss_function'])
-    return loss_dict
 
 
 def get_best_params(path, file, num, dates, var_param_ranges_file=None):
@@ -110,34 +89,6 @@ def save_ihme_model_params(path, output_folder, num, dates):
     params_df.to_csv(f'{output_folder}/ihme_params.csv')
 
 
-def get_ihme_loss(loss_dict, compartment, split, loss_fn):
-    losses = []
-    for i in loss_dict:
-        losses.append(loss_dict[i].loc[(compartment, split, loss_fn)]['loss'])
-    return losses
-
-
-def get_ihme_pointwise_loss(loss_dict, compartment, split, loss_fn):
-    losses = []
-    for i in loss_dict:
-        losses.append(loss_dict[i].loc[(compartment, split, loss_fn)])
-    return losses
-
-
-def get_seir_loss(loss_dict, compartment, split):
-    losses = []
-    for i in loss_dict:
-        losses.append(loss_dict[i].loc[split][compartment])
-    return losses
-
-
-def get_seir_pointwise_loss(loss_dict, compartment, loss_fn):
-    losses = []
-    for i in loss_dict:
-        losses.append(loss_dict[i].loc[(compartment, loss_fn)])
-    return losses
-
-
 def get_seir_loss_exp(loss_dict, compartment, split, exp):
     losses = []
     for i in loss_dict:
@@ -160,13 +111,13 @@ def get_error_diff(pointwise_loss_dict1, pointwise_loss_dict2, compartment, loss
 
 
 def save_error_diff(path, output_folder, num, shift):
-    c3_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c3_pointwise_val_loss.csv', num)
+    c3_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c3_pointwise_val_loss.csv', 0, num)
     shift_range = [f'day_{i}' for i in range(1, shift + 1)]
     col_index = pd.MultiIndex.from_product([compartments, shift_range])
     comparison_df = pd.DataFrame(columns=col_index, index=[1, 2, 3])
     for exp in range(3):
         c2_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, f'seirt_c2_pointwise_val_loss_exp_{exp + 1}.csv',
-                                                              num)
+                                                              0, num)
         for compartment in compartments:
             comparison_df.loc[exp + 1, :][compartment] = \
                 get_error_diff(c2_pointwise_loss_dict, c3_pointwise_loss_dict, compartment, 'ape', shift)
@@ -193,7 +144,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
 
     # PLOT: IHME I1 plot (train and val)
     print("IHME I1 plot of train and val MAPE on s1 and s2 respectively")
-    i1_loss_dict = get_ihme_loss_dict(path, 'ihme_i1_loss.csv', num)
+    i1_loss_dict = get_ihme_loss_dict(path, 'ihme_i1_loss.csv', num, 0)
     fig, ax = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(15, 10))
     fig.suptitle(f'{region}: IHME MAPE on s2')
     for i, compartment in enumerate(compartments):
@@ -238,9 +189,9 @@ def all_outputs(root_folder, region, num, shift, start_date):
 
     # PLOT: IHME I1, SEIHRD C1 AND SIRD C1 (pointwise)
     print("IHME I1, SEIR_Testing C1 and SIRD C1 pointwise val losses on s2")
-    i1_pointwise_loss_dict = get_ihme_loss_dict(path, 'ihme_i1_pointwise_test_loss.csv', num)
-    seirt_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c1_pointwise_val_loss.csv', num)
-    sird_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'sird_c1_pointwise_val_loss.csv', num)
+    i1_pointwise_loss_dict = get_ihme_loss_dict(path, 'ihme_i1_pointwise_test_loss.csv', num, 0)
+    seirt_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c1_pointwise_val_loss.csv', 0, num)
+    sird_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'sird_c1_pointwise_val_loss.csv', 0, num)
     model_type = ['IHME', 'SEIR_Testing', 'SIRD']
     for i, compartment in enumerate(compartments):
         fig, ax = plt.subplots(3, 1, sharex=True, sharey=True, figsize=(20, 15))
@@ -386,7 +337,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
     plt.close()
 
     # PLOT: IHME I1 pointwise - val
-    i1_pointwise_loss_dict = get_ihme_loss_dict(path, 'ihme_i1_pointwise_test_loss.csv', num)
+    i1_pointwise_loss_dict = get_ihme_loss_dict(path, 'ihme_i1_pointwise_test_loss.csv', num, 0)
     print("IHME pointwise test APE on s2")
     for i, compartment in enumerate(compartments):
         fig, ax = plt.subplots(1, figsize=(20, 10))
@@ -406,7 +357,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
         plt.close()
 
     # PLOT: IHME I1 pointwise - train
-    i1_pointwise_loss_dict = get_ihme_loss_dict(path, 'ihme_i1_pointwise_train_loss.csv', num)
+    i1_pointwise_loss_dict = get_ihme_loss_dict(path, 'ihme_i1_pointwise_train_loss.csv', num, 0)
     print("IHME pointwise train APE on s1")
     for i, compartment in enumerate(compartments):
         fig, ax = plt.subplots(1, figsize=(20, 10))
@@ -426,7 +377,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
         plt.close()
 
     # PLOT: SEIRT C1 pointwise - val
-    seirt_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c1_pointwise_val_loss.csv', num)
+    seirt_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c1_pointwise_val_loss.csv', 0, num)
     print("SEIR_Testing pointwise test APE on s2")
     for i, compartment in enumerate(compartments):
         fig, ax = plt.subplots(1, figsize=(20, 10))
@@ -446,7 +397,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
         plt.close()
 
     # PLOT: SEIRT C1 pointwise - train
-    seirt_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c1_pointwise_train_loss.csv', num)
+    seirt_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'seirt_c1_pointwise_train_loss.csv', 0, num)
     print("SEIR_Testing pointwise train APE on s1")
     for i, compartment in enumerate(compartments):
         fig, ax = plt.subplots(1, figsize=(20, 10))
@@ -466,7 +417,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
         plt.close()
 
     # PLOT: SIRD C1 pointwise -  val
-    sird_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'sird_c1_pointwise_val_loss.csv', num)
+    sird_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'sird_c1_pointwise_val_loss.csv', 0, num)
     print("SIRD pointwise test APE on s2")
     for i, compartment in enumerate(compartments):
         fig, ax = plt.subplots(1, figsize=(20, 10))
@@ -486,7 +437,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
         plt.close()
 
     # PLOT: SIRD C1 pointwise -  train
-    sird_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'sird_c1_pointwise_train_loss.csv', num)
+    sird_c1_pointwise_loss_dict = get_seir_pointwise_loss_dict(path, 'sird_c1_pointwise_train_loss.csv', 0, num)
     print("SIRD pointwise train APE on s1")
     for i, compartment in enumerate(compartments):
         fig, ax = plt.subplots(1, figsize=(20, 10))
@@ -519,7 +470,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
                 losses = None
                 for exp in range(3):
                     c2_pointwise_loss_dict = get_seir_pointwise_loss_dict(
-                        path, f'{name_prefix}_c2_pointwise_{split}_loss_exp_{exp + 1}.csv', num)
+                        path, f'{name_prefix}_c2_pointwise_{split}_loss_exp_{exp + 1}.csv', 0, num)
                     losses = get_seir_pointwise_loss(c2_pointwise_loss_dict, compartment, 'ape')
                     for j, l in enumerate(losses):
                         ax[exp].plot(l, '-o', color=colorFader(c1[i], c2[i], j / num),
@@ -532,7 +483,7 @@ def all_outputs(root_folder, region, num, shift, start_date):
 
                 if split == 'val':
                     c3_pointwise_loss_dict = get_seir_pointwise_loss_dict(
-                        path, f'{name_prefix}_c3_pointwise_{split}_loss.csv', num)
+                        path, f'{name_prefix}_c3_pointwise_{split}_loss.csv', 0, num)
                     baseline_losses = get_seir_pointwise_loss(c3_pointwise_loss_dict, compartment, 'ape')
                     baseline_losses = [loss.iloc[-len(losses[0]):] for loss in baseline_losses]
                     for j, l in enumerate(baseline_losses):

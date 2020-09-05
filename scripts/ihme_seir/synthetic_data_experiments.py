@@ -33,7 +33,7 @@ from main.ihme_seir.experiments import run_experiments
 
 from data.processing import get_data_from_source
 
-from main.ihme_seir.synthetic_data_generator import read_region_config
+from main.ihme_seir.utils import read_region_config
 
 
 def runner(ihme_config_path, region_config_path, output_folder, num):
@@ -52,12 +52,10 @@ def runner(ihme_config_path, region_config_path, output_folder, num):
     sub_region = region_config['sub_region']
     region = region_config['region']
     data_source = region_config['data_source']
-    disable_tracker = region_config['disable_tracker']
     shift_period = region_config['shift_period']
 
     # Print data summary
-    data = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source,
-                                disable_tracker=disable_tracker)
+    data = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source)
 
     # Output folder
     region_name = sub_region if sub_region is not None else region

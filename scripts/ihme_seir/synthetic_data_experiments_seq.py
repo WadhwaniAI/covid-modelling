@@ -35,7 +35,7 @@ from main.ihme_seir.experiments import run_experiments
 
 from data.processing import get_data_from_source
 
-from main.ihme_seir.synthetic_data_generator import read_region_config
+from main.ihme_seir.utils import read_region_config
 
 
 def run_experiments_over_time(ihme_config_path, region_config_path, num, shift):
@@ -53,11 +53,9 @@ def run_experiments_over_time(ihme_config_path, region_config_path, num, shift):
     sub_region = region_config['sub_region']
     region = region_config['region']
     data_source = region_config['data_source']
-    disable_tracker = region_config['disable_tracker']
 
     # Print data summary
-    data = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source,
-                                disable_tracker=disable_tracker)
+    data = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source)
     print("Data summary:")
     print(data)
 
