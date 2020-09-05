@@ -41,6 +41,8 @@ def run_experiments(config_path, output_folder, num):
     num_evals = config['num_evals']
     shift = config['shift']
     start_date = datetime.strptime(config['start_date'], '%m-%d-%Y') + timedelta(shift * num)
+    if start_date + timedelta(data_length) > datetime.today():
+        raise Exception('Insufficient data available')
     params_csv_path = config['params_csv']
     synth_data_path = config['synth']['synth_data_path']
     synth_model = config['synth']['synth_model']

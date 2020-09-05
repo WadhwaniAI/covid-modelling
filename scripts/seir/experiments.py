@@ -42,7 +42,7 @@ def run_experiments(config_path, output_folder, num):
     shift = config['shift']
     start_date = datetime.strptime(config['start_date'], '%m-%d-%Y') + timedelta(shift * num)
     if start_date + timedelta(data_length) > datetime.today():
-        exit(0)
+        raise Exception('Insufficient data available')
     params_csv_path = config['params_csv']
     verbose = config['verbose']
     output_config.update(config)

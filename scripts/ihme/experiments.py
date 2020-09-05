@@ -37,8 +37,11 @@ def run_experiments(config_path, output_folder, num):
     models = base['models']
     train_val_period = base['train_size']
     test_period = base['test_size']
+    data_length = train_val_period + test_period
     shift = base['shift']
     start_date = datetime.strptime(base['start_date'], '%m-%d-%Y') + timedelta(shift * num)
+    if start_date + timedelta(data_length) > datetime.today():
+        raise Exception('Insufficient data available')
     base['start_date'] = convert_date(start_date, to_str=True, format='%m-%d-%Y')
     params_csv_path = base['params_csv']
     verbose = base['verbose']
