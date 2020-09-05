@@ -1,5 +1,5 @@
 base:
-  disable_tracker: TRUE # use athena instead of covid19api
+  data_source: 'athena' 
   smooth: 3 # window to smooth data (rolling avg) - 0 means no smoothing
   smooth_jump: TRUE
   smooth_jump_method: weighted

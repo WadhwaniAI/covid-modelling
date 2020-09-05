@@ -1,4 +1,10 @@
 base:
+  sub_region: Bengaluru Urban
+  region: Karnataka
+  data_source: covid19india
+  start_date: null
+  params_from_csv: False
+  params_csv: null
   n_days_optimize: FALSE
   active_log_derf: FALSE
 model_params:

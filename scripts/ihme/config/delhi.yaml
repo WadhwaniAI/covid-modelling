@@ -1,7 +1,13 @@
 base:
+  sub_region: null
+  region: Delhi
+  data_source: covid19india
+  start_date: 03-29-2020
+  params_from_csv: True
+  params_csv: delhi_log_erf_params.csv
   n_days_optimize: FALSE
   active_log_derf: FALSE
-model_params:
-  priors: # for when log is TRUE
+priors:
+  log_erf:
     fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-7.0, -0.5], [12,45], [-25, -5]]
+    fe_bounds: [[-7.0, -0.1], [1, 50], [-40, -1]]

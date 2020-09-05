@@ -1,17 +1,21 @@
 base:
-  log: TRUE # fit on log of model_params: ycol
-  disable_tracker: FALSE # use athena instead of covid19api
+  experiment_name: ihme_v0
   max_evals: 100 # optimiser evals (trials)
+  log: TRUE # fit on log of model_params: ycol
   sd: FALSE # use social distancing covariate for beta
-  smooth: 5 # window to smooth data (rolling avg) - 0 means no smoothing
-  test_size: 7 # witheld from model entirely
   scoring: mape
-  val_size: 7 # val set for hyperopt
   min_days: 7 # min days to train on
+  train_size: 30 # train set + val set
+  val_size: 6 # val set for hyperopt
+  test_size: 30 # test set witheld from model entirely
+  shift: 1
+  models: [log_erf]
+  compartments: [total_infected]
+  smooth: 5 # window to smooth data (rolling avg) - 0 means no smoothing
   smooth_jump: FALSE
   smooth_jump_method: weighted
   smooth_jump_days: 33
-  continuous_ra: FALSE
+  verbose: True
 run:
   forecast_days: 60
   num_hyperopt: 1 # number of times to run optimiser - done in parallel
@@ -25,8 +29,8 @@ model_params:
   ycol: deceased
   func: log_erf
   priors: # for when log is TRUE
-    fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
+      fe_init: [-1.1, 16.0, -9.0]
+      fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
   pipeline_args:
     n_draws: 20
     cv_threshold: 1.e-2
