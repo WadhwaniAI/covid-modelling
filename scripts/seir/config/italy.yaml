@@ -1,0 +1,14 @@
+sub_region: null
+region: Italy
+data_source: jhu
+start_date: 02-15-2020
+params_from_csv: False
+params_csv: italy_sir_synth_params.csv
+synth:
+  synth_data_path: ../../outputs/ihme_seir/ihme_multiple/Italy/20200824_170936
+  synth_model: log_erf
+  synth_addition: 5
+params_sir:
+  lockdown_R0: [0.5, 3.5]
+  T_inf: [1, 20]
+  I_tot_ratio: [0, 20]

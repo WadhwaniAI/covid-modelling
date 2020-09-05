@@ -1,0 +1,14 @@
+sub_region: New York City
+region: New York
+data_source: ny_times
+start_date: 03-01-2020
+params_from_csv: True
+params_csv: new_york_city_sir_synth_params.csv
+synth:
+  synth_data_path: ../../outputs/ihme_seir/ihme_v0/New York City/20200830_203052
+  synth_model: log_erf
+  synth_addition: 5
+params_sir:
+  lockdown_R0: [0.5, 3.5]
+  T_inf: [1, 20]
+  I_tot_ratio: [0, 20]

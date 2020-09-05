@@ -1,0 +1,14 @@
+sub_region: Pune
+region: Maharashtra
+data_source: covid19india
+start_date: 04-26-2020
+params_from_csv: False
+params_csv: pune_sir_params.csv
+synth:
+  synth_data_path: null
+  synth_model: log_erf
+  synth_addition: 5
+params_sir:
+  lockdown_R0: [0.5, 3.5]
+  T_inf: [1, 20]
+  I_tot_ratio: [0, 20]
