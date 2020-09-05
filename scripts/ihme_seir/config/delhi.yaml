@@ -1,14 +1,20 @@
 base:
   sub_region: null
   region: Delhi
-  s1: 20
-  s2: 5
+  s1: 30
+  s2: 30
   s3: 7
   shift: 0
   i1_val_size: 6
   c2_train_period: 20
   c3_train_period: 20
-  data_source: rootnet
+  data_source: covid19india
+  params_from_csv: True
+  params_csv: delhi_log_erf_params.csv
+priors:
+  log_erf:
+    fe_init: [-1.1, 16.0, -9.0]
+    fe_bounds: [[-7.0, -0.1], [1, 50], [-40, -1]]
 params_seirt_tp_7:
   lockdown_R0: [1, 2.5]
   T_inc: [4, 20]

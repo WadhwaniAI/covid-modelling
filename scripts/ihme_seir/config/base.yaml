@@ -1,10 +1,9 @@
 base:
-  experiment_name: compartmental_set
-  disable_tracker: FALSE # use athena instead of covid19api
+  experiment_name: ihme_multiple
   use_synthetic: TRUE # if True, use synthetic data to train c2 model
   use_actual: TRUE # if True, use actual data to train c2 model
-  allowance: 5 # number of days of ground data before train split to prevent nan when rolling average is taken
-  s1: 20 # length of series s1
+  allowance: 0 # number of days of ground data before train split to prevent nan when rolling average is taken
+  s1: 30 # length of series s1
   s2: 5 # length of series s2
   s3: 7 # length of series s3
   shift: 0 # number of days to shift forward in each run
@@ -12,12 +11,12 @@ base:
   c2_train_period: 20 # train period of c2 compartmental model
   c3_train_period: 20 # train period of c3 baseline compartmental model
   num_evals: 1500 # number of evals for compartmental models
-  shift_period: 4 # number of periods to shift forward in each run
+  shift_period: 1 # number of periods to shift forward in each run
   which_compartments: [total_infected] # compartments to fit to
   replace_compartments: [total_infected] # compartments to use synthetic data for
-  compartmental_models: [seirt] # compartmental models used in experiments
-  ihme_variants: [log_erf, log_expit]
-  verbose: False
+  compartmental_models: [sir] # compartmental models used in experiments
+  ihme_variants: [log_erf]
+  verbose: True
 priors:
   log_erf:
     fe_init: [-1.1, 16.0, -9.0]
