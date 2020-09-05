@@ -2,7 +2,7 @@ base:
   sub_region: Pune
   region: Maharashtra
   data_source: covid19india
-  start_date: null
+  start_date: 04-26-2020
   params_from_csv: False
   params_csv: null
   n_days_optimize: FALSE
@@ -10,4 +10,4 @@ base:
 model_params:
   priors: # for when log is TRUE
     fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-7.0, -0.5], [12,45], [-25, -5]]
+    fe_bounds: [[-7.0, -0.1], [12,45], [-25, -5]]

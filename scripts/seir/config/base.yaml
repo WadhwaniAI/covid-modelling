@@ -2,7 +2,7 @@ experiment_name: compartmental_paper
 train_period: 30 # length of train period
 val_period: 30 # length of val period
 test_period: 0 # length of test period
-num_evals: 1 # number of evals
+num_evals: 1500 # number of evals
 which_compartments: [total_infected] # compartments to fit to
 models: [sir] # compartmental models used in experiments
 shift: 1 # number of days to shift forward if there are multiple runs
