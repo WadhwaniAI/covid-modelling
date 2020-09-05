@@ -1,18 +1,14 @@
-import pandas as pd
-import datetime
+import numpy as np
+import copy
 
-from abc import abstractmethod
-from collections import OrderedDict
-
-from utils.ode import ODE_Solver
+from models.seir.sir_base import SIRBase
 
 
-class SIR:
+class SIR(SIRBase):
 
-    @abstractmethod
-    def __init__(self, STATES, R_STATES, p_params, t_params, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None,
-                 T_inf=2.9, T_inc=5.2, N=7e6, lockdown_day=10, lockdown_removal_day=75,
-                 starting_date='2020-03-09', initialisation='intermediate', observed_values=None, ** kwargs):
+    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_fatal=7,
+                 N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', I_tot_ratio=0.5,
+                 initialisation='intermediate', observed_values=None, I_hosp_ratio=0.5, ** kwargs):
         """
         This class implements SIR
         The model further implements
@@ -24,100 +20,78 @@ class SIR:
         S : No of susceptible people
         I : No of infected people
         R : No of recovered people
+        D: No of deceased people
 
         The sum total is is always N (total population)
 
         """
 
-        # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
-        if post_lockdown_R0 is None:
-            post_lockdown_R0 = lockdown_R0
+        """
+        The parameters are : 
 
-        params = {
-            # R0 values
-            'pre_lockdown_R0': pre_lockdown_R0,  # R0 value pre-lockdown
-            'lockdown_R0': lockdown_R0,  # R0 value during lockdown
-            'post_lockdown_R0': post_lockdown_R0,  # R0 value post-lockdown
+        R0 values - 
+        lockdown_R0: R0 value during lockdown (float)
 
-            # Transmission parameters
-            'T_inc': T_inc,  # The incubation time of the infection
-            'T_inf': T_inf,  # The duration for which an individual is infectious
+        Transmission parameters - 
+        T_inc: The incubation time of the infection (float)
+        T_inf: The duration for which an individual is infectious (float)
 
-            # Lockdown parameters
-            'starting_date': starting_date,  # Datetime value that corresponds to Day 0 of modelling
-            'lockdown_day': lockdown_day,  # Number of days from the starting_date, after which lockdown is initiated
-            'lockdown_removal_day': lockdown_removal_day,
-            # Number of days from the starting_date, after which lockdown is removed
-            'N': N,
+        Lockdown parameters - 
+        starting_date: Datetime value that corresponds to Day 0 of modelling (datetime/str)
+        lockdown_day: Number of days from the starting_date, after which lockdown is initiated (int)
+        lockdown_removal_day: Number of days from the starting_date, after which lockdown is removed (int)
 
-        }
+        Misc - 
+        N: Total population
+        initialisation : method of initialisation ('intermediate'/'starting')
+        E_hosp_ratio : Ratio for Exposed to hospitalised for initialisation
+        I_hosp_ratio : Ratio for Infected to hospitalised for initialisation
+        """
 
-        for key in params:
-            setattr(self, key, params[key])
+        STATES = ['S', 'I', 'R']
+        R_STATES = [x for x in STATES if 'R_' in x]
+        input_args = copy.deepcopy(locals())
+        del input_args['self']
+        del input_args['kwargs']
+        p_params = {k: input_args[k] for k in input_args.keys() if 'P_' in k}
+        t_params = {k: input_args[k] for k in input_args.keys() if 'T_' in k}
+        input_args['p_params'] = p_params
+        input_args['t_params'] = t_params
+        super().__init__(**input_args)
 
-        for key in p_params:
-            setattr(self, key, p_params[key])
-
-        for key in t_params:
-            setattr(self, key, t_params[key])
-
-        # Initialisation
-        state_init_values = OrderedDict()
-        for key in STATES:
-            state_init_values[key] = 0
-        if initialisation == 'starting':
-            init_infected = max(observed_values['init_infected'], 1)
-            state_init_values['S'] = (self.N - init_infected) / self.N
-            state_init_values['I'] = init_infected / self.N
-
-        if initialisation == 'intermediate':
-            for state in R_STATES:
-                statename = state.split('R_')[1]
-                P_keyname = [k for k in p_params.keys() if k.split('P_')[1] == statename][0]
-                state_init_values[state] = p_params[P_keyname] * observed_values['hospitalised']
-
-            state_init_values['R'] = observed_values['recovered']
-            state_init_values['D'] = observed_values['deceased']
-            state_init_values['I'] = observed_values['hospitalised']
-
-            nonSsum = sum(state_init_values.values())
-            state_init_values['S'] = (self.N - nonSsum)
-            for key in state_init_values.keys():
-                state_init_values[key] = state_init_values[key] / self.N
-
-        self.state_init_values = state_init_values
-
-    @abstractmethod
     def get_derivative(self, t, y):
         """
         Calculates derivative at time t
         """
-        pass
 
-    @abstractmethod
+        # Init state variables
+        for i, _ in enumerate(y):
+            y[i] = max(y[i], 0)
+        S, I, R = y
+
+        self.R0 = self.lockdown_R0
+        self.T_trans = self.T_inf/self.R0
+
+        # Init derivative vector
+        dydt = np.zeros(y.shape)
+
+        # Write differential equations
+        dydt[0] = - I * S / self.T_trans  # S
+        dydt[1] = I * S / self.T_trans - (I / self.T_inf)  # I
+        dydt[2] = I / self.T_inf  # R
+
+        return dydt
+
     def predict(self, total_days=50, time_step=1, method='Radau'):
         """
         Returns predictions of the model
         """
         # Solve ODE get result
-        solver = ODE_Solver()
-        state_init_values_arr = [self.state_init_values[x]
-                                 for x in self.state_init_values]
+        df_prediction = super().predict(total_days=total_days,
+                                        time_step=time_step, method=method)
 
-        sol = solver.solve_ode(state_init_values_arr, self.get_derivative, method=method,
-                               total_days=total_days, time_step=time_step)
-
-        states_time_matrix = (sol.y * self.N).astype('int')
-
-        dataframe_dict = {}
-        for i, key in enumerate(self.state_init_values.keys()):
-            dataframe_dict[key] = states_time_matrix[i]
-
-        df_prediction = pd.DataFrame.from_dict(dataframe_dict)
-        df_prediction['date'] = pd.date_range(self.starting_date,
-                                              self.starting_date + datetime.timedelta(days=df_prediction.shape[0] - 1))
-        columns = list(df_prediction.columns)
-        columns.remove('date')
-        df_prediction = df_prediction[['date'] + columns]
+        df_prediction['hospitalised'] = float('nan')
+        df_prediction['recovered'] = float('nan')
+        df_prediction['deceased'] = float('nan')
+        df_prediction['total_infected'] = df_prediction['R']
         return df_prediction
-
