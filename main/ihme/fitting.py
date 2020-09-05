@@ -8,10 +8,12 @@ import pandas as pd
 from curvefit.core import functions
 from pathos.multiprocessing import ProcessingPool as Pool
 
+from data.processing.processing import train_val_test_split
+
 sys.path.append('../..')
 from utils.data import get_rates
 from data.processing import get_data_from_source
-from utils.util import train_test_split, rollingavg
+from utils.util import get_subset
 
 from models.ihme.model import IHME
 from utils.data import lograte_to_cumulative, rate_to_cumulative
@@ -21,8 +23,17 @@ from main.ihme.optimiser import Optimiser
 from utils.smooth_jump import smooth_big_jump
 
 
-def get_regional_data(sub_region, region, area_names, test_size, smooth_window, disable_tracker, smooth_jump,
-                      start_date=None, dataset_length=0, data_source='covid19india', continuous_ra=True):
+def preprocess(timeseries, region, sub_region=None, area_names=None, trim_deceased=False):
+    df, dtp = get_rates(timeseries, region, sub_region=sub_region, area_names=area_names)
+    df.loc[:, 'sd'] = df['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
+    if trim_deceased:
+        df = df.loc[df['deceased_rate'].gt(1e-15).idxmax():, :].reset_index()
+    df.loc[:, 'day'] = (df['date'] - np.min(df['date'])).apply(lambda x: x.days)
+    return df, dtp
+
+
+def get_regional_data(sub_region, region, area_names, test_size, smooth_window, smooth_jump, start_date=None,
+                      data_length=0, data_source='covid19india'):
     """
     Function to get regional data and shape it for IHME consumption
 
@@ -32,79 +43,41 @@ def get_regional_data(sub_region, region, area_names, test_size, smooth_window, 
         area_names (list): census area_names for the district
         test_size (int): size of test set
         smooth_window (int): apply rollingavg smoothing
-        disable_tracker (bool): disable covid19api, use athena instead
         smooth_jump (bool): whether to smooth_big_jump
         start_date (str, optional): start date for data
-        dataset_length (int, optional): total length of data used
+        data_length (int, optional): total length of data used
         data_source (str, optional): data source used (default: covid19india)
-        continuous_ra (bool, optional): if True, end values of train use data from val set for rolling mean
-            (default: True)
 
     Returns:
         dict: contains smoothed and unsmoothed dataframes: train, test, df
     """
-    timeseries_nora = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source,
-                                           disable_tracker=disable_tracker)
-
-    if smooth_jump:
-        timeseries = smooth_big_jump(timeseries_nora, not disable_tracker)
-    else:
-        timeseries = copy(timeseries_nora)
-
-    df_nora, _ = get_rates(timeseries_nora, region, sub_region=sub_region, area_names=area_names)
-    df, dtp = get_rates(timeseries, region, sub_region=sub_region, area_names=area_names)
-
-    df.loc[:, 'sd'] = df['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
-    df_nora.loc[:, 'sd'] = df_nora['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
-
+    timeseries, df = dict(), dict()
+    timeseries['df'] = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source)
+    timeseries['df_nora'] = smooth_big_jump(timeseries['df']) if smooth_jump else copy(timeseries['df'])
     col_names = [c.name for c in Columns.curve_fit_compartments()]
-    if smooth_window > 0:
-        for col in col_names:
-            if col in df.columns:
-                df[col] = rollingavg(df[col], smooth_window)
+    col_names.extend([f'{c.name}_rate' for c in Columns.curve_fit_compartments()])
+    col_names.extend([f'log_{c.name}_rate' for c in Columns.curve_fit_compartments()])
 
-    # df = df.loc[df['deceased_rate'].gt(1e-15).idxmax():, :].reset_index()
-    # df_nora = df_nora.loc[df_nora['deceased_rate'].gt(1e-15).idxmax():, :].reset_index()
+    for df_type in ['df', 'df_nora']:
+        df[df_type], dtp = preprocess(timeseries[df_type], region, sub_region=sub_region, area_names=area_names)
+        start_date = pd.to_datetime(start_date, dayfirst=False) if start_date is not None else df['date'].min()
+        df[df_type] = get_subset(
+            df[df_type], lower=start_date, upper=start_date+timedelta(data_length-1), col='date').reset_index(drop=True)
 
-    df.loc[:, 'day'] = (df['date'] - np.min(df['date'])).apply(lambda x: x.days)
-    df_nora.loc[:, 'day'] = (df_nora['date'] - np.min(df_nora['date'])).apply(lambda x: x.days)
+    df['train'], _, df['test'] = train_val_test_split(df['df'], val_size=0, test_size=test_size,
+                                                      rolling_window=smooth_window, end='actual', dropna=False,
+                                                      train_rollingmean=True, val_rollingmean=True,
+                                                      test_rollingmean=True, which_columns=col_names)
+    df['train_nora'], _, df['test_nora'] = train_val_test_split(df['df_nora'], val_size=0, test_size=test_size,
+                                                                rolling_window=smooth_window, end='actual', dropna=False,
+                                                                train_rollingmean=False, val_rollingmean=False,
+                                                                test_rollingmean=False, which_columns=col_names)
 
-    if start_date is None:
-        start_date = df['date'].min()
-    else:
-        start_date = pd.to_datetime(start_date, dayfirst=False)
-
-    threshold = start_date - timedelta(1)
-
-    _, df_ = train_test_split(df, threshold)
-    _, df_nora_ = train_test_split(df_nora, threshold)
-
-    if dataset_length == 0:
-        dataset_length = df.shape[0]
-
-    df_ = df_.head(dataset_length)
-    df_nora_ = df_nora_.head(dataset_length)
-
-    threshold = df_['date'].max() - timedelta(days=test_size)
-
-    train, test = train_test_split(df_, threshold)
-    train_nora, test_nora = train_test_split(df_nora_, threshold)
-    if not continuous_ra:
-        train = pd.concat([train.iloc[:-2, :], train_nora.iloc[-2:, :]])
-
-    dataframes = {
-        'train': train,
-        'test': test,
-        'df': df,
-        'train_nora': train_nora,
-        'test_nora': test_nora,
-        'df_nora': df_nora,
-    }
-    return dataframes, dtp
+    return df, dtp
 
 
-def setup(sub_region, region, area_names, model_params, sd, smooth, test_size, disable_tracker, smooth_jump, start_date,
-          dataset_length, continuous_ra, data_source, **config):
+def setup(sub_region, region, area_names, model_params, sd, smooth, test_size, smooth_jump, start_date, data_length,
+          data_source, **config):
     """
     gets data and sets up the model_parameters to be ready for IHME consumption
 
@@ -116,11 +89,9 @@ def setup(sub_region, region, area_names, model_params, sd, smooth, test_size, d
         sd (boolean): use social distancing covariates
         smooth (int): apply rollingavg smoothing
         test_size (int): size of test set
-        disable_tracker (boolean): disable covid19api, use athena instead
         smooth_jump (boolean): whether to smooth_big_jump
         start_date (str): start date for data
-        dataset_length (int): total length of data used
-        continuous_ra (bool): if True, end values of train use data from val set for rolling mean
+        data_length (int): total length of data used
         data_source (str): data source used
 
     Returns:
@@ -129,9 +100,8 @@ def setup(sub_region, region, area_names, model_params, sd, smooth, test_size, d
     model_params['func'] = getattr(functions, model_params['func'])
     model_params['covs'] = ['covs', 'sd', 'covs'] if sd else ['covs', 'covs', 'covs']
     dataframes, dtp = get_regional_data(sub_region, region, area_names, test_size=test_size, smooth_window=smooth,
-                                        disable_tracker=disable_tracker, smooth_jump=smooth_jump, start_date=start_date,
-                                        dataset_length=dataset_length, data_source=data_source,
-                                        continuous_ra=continuous_ra)
+                                        smooth_jump=smooth_jump, start_date=start_date, data_length=data_length,
+                                        data_source=data_source, )
 
     return dataframes, dtp, model_params
 
@@ -229,6 +199,7 @@ def run_cycle(dataframes, model_params, forecast_days=30,
     lc = Loss_Calculator()
     train_pred = predictions[model.ycol][:len(train)]
     train_model_ycol_numpy = train[model.ycol].to_numpy()
+    test_model_ycol_numpy, test_pred = None, None
     trainerr = lc.evaluate(train_model_ycol_numpy, train_pred)
     testerr = None
     if len(test) != 0:
@@ -417,8 +388,8 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
     return final
 
 
-def single_cycle(sub_region, region, area_names, model_params, which_compartments=Columns.curve_fit_compartments(),
-                 **config):
+def single_cycle(sub_region, region, area_names=None, model_params=None,
+                 which_compartments=Columns.curve_fit_compartments(), **config):
     """[summary]
 
     Args:
