@@ -1,10 +1,10 @@
 import numpy as np
 import copy
 
-from models.seir.sir import SIR
+from models.seir.sir_base import SIRBase
 
 
-class SIRD(SIR):
+class SIRD(SIRBase):
 
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_fatal=7,
                  N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09',
@@ -60,6 +60,8 @@ class SIRD(SIR):
         input_args['p_params'] = p_params
         input_args['t_params'] = t_params
         super().__init__(**input_args)
+        if initialisation == 'intermediate':
+            self.state_init_values['D'] = observed_values['deceased']
 
     def get_derivative(self, t, y):
         """
@@ -90,7 +92,7 @@ class SIRD(SIR):
         dydt[0] = - I * S / self.T_trans  # S
         dydt[1] = I * S / self.T_trans - (I / self.T_inf) - (I / self.T_fatal)  # I
         dydt[2] = I / self.T_inf  # R
-        dydt[3] = I / self.T_fatal  # D
+        dydt[3] = I * self.T_fatal  # D
 
         return dydt
 
@@ -102,9 +104,8 @@ class SIRD(SIR):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['hospitalised'] = df_prediction['I']
-        df_prediction['recovered'] = df_prediction['R']
+        df_prediction['hospitalised'] = float('nan')
+        df_prediction['recovered'] = float('nan')
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] \
-            + df_prediction['deceased']
+        df_prediction['total_infected'] = df_prediction['R']
         return df_prediction
