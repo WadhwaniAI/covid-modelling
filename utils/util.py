@@ -86,3 +86,10 @@ def convert_date(date, to_str=False, format='%m-%d-%Y'):
             return datetime.strptime(date, format)
     except:
         return date
+
+
+def read_file(path, file_type='yaml'):
+    if file_type == 'yaml':
+        with open(path) as infile:
+            config = yaml.load(infile, Loader=yaml.SafeLoader)
+    return config
