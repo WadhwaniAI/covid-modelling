@@ -20,7 +20,7 @@ from main.ihme_seir.utils import get_seir_pointwise_loss_dict, get_seir_pointwis
     create_pointwise_loss_csv, create_output_folder
 from main.seir.fitting import get_variable_param_ranges, run_cycle
 from utils.population import get_population
-from utils.util import get_subset
+from utils.util import get_subset, read_file
 
 
 def run_experiments(config_path, output_folder, num):
@@ -50,8 +50,8 @@ def run_experiments(config_path, output_folder, num):
     region_name = sub_region if sub_region is not None else region
     root_folder = f'{output_folder}_tp/{region_name}/{str(num)}/'
 
-    end_date = datetime.strptime(read_config('config/train_period.yaml')[region_name.lower()]['end_date'], '%m-%d-%Y')
-    end_date = end_date + timedelta(num)
+    end_date = datetime.strptime(read_file('config/train_period.yaml')[region_name.lower()]['end_date'], '%m-%d-%Y')
+    end_date = end_date + timedelta(shift*num)
 
     for i, model_dict in enumerate(supported_models):
         for train_period in range(4, 42, 2):
