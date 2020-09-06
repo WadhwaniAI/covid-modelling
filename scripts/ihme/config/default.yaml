@@ -1,10 +1,10 @@
 base:
-  experiment_name: ihme_v0
+  experiment_name: ihme_tp
   max_evals: 100 # optimiser evals (trials)
   log: TRUE # fit on log of model_params: ycol
   sd: FALSE # use social distancing covariate for beta
   scoring: mape
-  min_days: 7 # min days to train on
+  min_days: 4 # min days to train on
   train_size: 30 # train set + val set
   val_size: 6 # val set for hyperopt
   test_size: 30 # test set witheld from model entirely
