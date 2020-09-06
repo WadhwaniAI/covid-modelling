@@ -57,22 +57,22 @@ def run_experiments(config_path, output_folder, num):
 
     # Run model for different functions
     for model in models:
-        for train_period in range(6, 42, 2):
-            start_date = end_date - timedelta(train_period)
-            val_period = math.ceil(train_period // 6)
+        for train_val_period in range(6, 42, 2):
+            start_date = end_date - timedelta(train_val_period)
+            val_period = math.ceil(train_val_period // 6)
             if verbose:
                 print("Training starts on:", start_date)
             for run in range(10):
-                output_folder = create_output_folder(f'{experiment_name}/{root_folder}/train_{train_period}/run_{run}/')
+                output_folder = create_output_folder(f'{experiment_name}/{root_folder}/train_{train_val_period}/run_{run}/')
                 if verbose:
-                    print(f'Region: {region_name}, Shift: {num}, Train period: {train_period}, Run: {run}')
+                    print(f'Region: {region_name}, Shift: {num}, Train period: {train_val_period}, Run: {run}')
                 config_base, config_model_params = deepcopy(base), deepcopy(model_params)
                 config_model_params['priors'] = config['priors'][model]
                 config_model_params['func'] = model
-                config_base['train_size'] = train_period
+                config_base['train_size'] = train_val_period
                 config_base['val_size'] = val_period
                 config_base['start_date'] = convert_date(start_date, to_str=True, format='%m-%d-%Y')
-                config_base['data_length'] = train_period + test_period
+                config_base['data_length'] = train_val_period + test_period
                 if model == 'log_expit':  # Predictive validity only supported by Gaussian family of functions
                     config_model_params['pipeline_args']['n_draws'] = 0
 
