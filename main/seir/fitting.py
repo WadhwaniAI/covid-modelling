@@ -20,8 +20,8 @@ from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratifie
 from viz import plot_smoothing, plot_fit
 
 
-def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, val_period, loss_compartments,  
-               rolling_average, rolling_average_params, **kwargs):
+def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, smooth_jump_params, val_period, 
+               loss_compartments, rolling_average, rolling_average_params, **kwargs):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -47,9 +47,9 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, va
     if smooth_jump:
         if stratified_data:
             df_district, description = smooth_big_jump_stratified(
-                df_district, df_not_strat, smooth_stratified_additionally=True)
+                df_district, df_not_strat, smooth_jump_params)
         else:
-            df_district, description = smooth_big_jump(df_district)
+            df_district, description = smooth_big_jump(df_district, smooth_jump_params)
 
         smoothing_plot = plot_smoothing(orig_df_district, df_district, dataloading_params['state'], 
                                         dataloading_params['district'], which_compartments=loss_compartments, 
