@@ -3,10 +3,9 @@
 CFG=config
 
 regions=(
+    new_york_city
     italy
     delhi
-    pune
-    los_angeles
 )
 
 date=$(date '+%Y%m%d_%H%M%S')
