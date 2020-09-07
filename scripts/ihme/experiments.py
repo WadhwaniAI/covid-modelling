@@ -8,6 +8,7 @@ import pickle
 import sys
 from copy import deepcopy
 from datetime import timedelta, datetime
+from statistics import mean
 
 import pandas as pd
 
@@ -76,6 +77,11 @@ def run_experiments(config_path, output_folder, num):
             param_ranges = read_params_file(params_csv_path, start_date)
             config_model_params['priors']['fe_bounds'] = \
                 [param_ranges['alpha'], param_ranges['beta'], param_ranges['p']]
+            config_model_params['priors']['fe_init'] = \
+                [mean(param_ranges['alpha']), mean(param_ranges['beta']), mean(param_ranges['p'])]
+            if verbose:
+                print("Priors")
+                print(config_model_params['priors'])
 
         results = single_cycle(area_names=area_names, model_params=config_model_params,
                                which_compartments=which_compartments_enum, **config_base)

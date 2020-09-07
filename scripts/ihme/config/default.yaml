@@ -1,5 +1,5 @@
 base:
-  experiment_name: ihme_tp
+  experiment_name: ihme_paper
   max_evals: 100 # optimiser evals (trials)
   log: TRUE # fit on log of model_params: ycol
   sd: FALSE # use social distancing covariate for beta
