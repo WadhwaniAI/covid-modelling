@@ -29,7 +29,6 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
     """
     df_district['date'] = pd.to_datetime(df_district['date'])
     df_district = df_district.set_index('date')
-    d1 = datetime.strptime(d1, '%Y-%m-%d')
     if d2 == None:
         d2 = d1 + timedelta(days=1)
     big_jump = df_district.loc[d2, smoothing_var] - df_district.loc[d1, smoothing_var]
@@ -78,48 +77,19 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
     return df_district.reset_index(), description
 
 
-def smooth_big_jump(df_district, method='weighted-mag', description=""):
-    d1 = '2020-05-28'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-    df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
-        description=description)
+def smooth_big_jump(df_district, smooth_jump_params):
+    description = ""
+    for date, params in smooth_jump_params.items():
+        smooth_to_date, main_comp, aux_comp, aux_var_add, method = params
 
-    d1 = '2020-06-14'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-    df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
-        description=description)
-
-    d1 = '2020-06-15'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-    df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
-        description=description)
-
-    d1 = '2020-06-23'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-06-15', '%Y-%m-%d')).days
-    df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
-        description=description)
-
-    d1 = '2020-06-24'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-06-15', '%Y-%m-%d')).days
-    df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
-        description=description)
-
-    d1 = '2020-07-01'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - datetime.strptime('2020-05-28', '%Y-%m-%d')).days
-    df_district, description = smooth_big_jump_helper(
-        df_district, 'recovered', 'active', d1, smoothing_length=length, method=method, 
-        description=description)
-
-    d1 = '2020-06-15'
-    length = (datetime.strptime(d1, '%Y-%m-%d') - df_district.loc[0, 'date']).days
-    df_district, description = smooth_big_jump_helper(
-        df_district, 'deceased', 'total', d1, smoothing_length=length, method=method, 
-        description=description, aux_var_add=True)
+        if smooth_to_date is None:
+            length = (date - df_district.loc[0, 'date'].date()).days
+        else:
+            length = (date - smooth_to_date).days
+        
+        df_district, description = smooth_big_jump_helper(
+            df_district, main_comp, aux_comp, date, smoothing_length=length, method=method,
+            description=description)
             
     print(sum(df_district['total'] == df_district['recovered'] \
               + df_district['deceased'] + df_district['active']), len(df_district))
