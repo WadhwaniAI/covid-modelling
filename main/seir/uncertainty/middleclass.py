@@ -16,7 +16,8 @@ from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 
 class MCUncertainty(Uncertainty):
-    def __init__(self, predictions_dict, num_evals, date_of_sorting_trials, sort_trials_by_column, loss):
+    def __init__(self, predictions_dict, num_evals, variable_param_ranges, date_of_sorting_trials, 
+                 sort_trials_by_column, loss, percentiles):
         """
         Initializes uncertainty object, finds beta for distribution
 
