@@ -9,7 +9,6 @@ fitting:
             use_dataframe: data_all
         smooth_jump: TRUE
         smooth_jump_params:
-            # NOT IMPLEMENTED
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
             2020-06-15: [null, recovered, active, FALSE, weighted-mag]
@@ -55,12 +54,11 @@ fitting:
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
 sensitivity:
-    # NOT IMPLEMENTED
-    lockdown_R0: [[[1, 1.5], 101], total, null]
+    lockdown_R0: [[[0.5, 1.5], 101], total, null]
     I_hosp_ratio: [[[0, 1], 201], total, null]
     E_hosp_ratio: [[[0, 2], 201], total, null]
     P_fatal: [[[0, 0.5], 201], deceased, total]
-    T_recov_severe: [[[1, 100], 101], critical, total]
+    T_recov: [[[1, 100], 101], recovered, total]
     T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
     forecast_days: 30
@@ -74,7 +72,7 @@ uncertainty:
         # NOT IMPLEMENTED
         variable_param_ranges:
             beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2020-08-31
+        date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:
             loss_method: mape
