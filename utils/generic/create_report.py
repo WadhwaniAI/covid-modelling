@@ -51,10 +51,6 @@ def _log_hyperparams(mdFile, predictions_dict, config):
     mdFile.new_paragraph(f"Data available till: {predictions_dict['m2']['data_last_date']}")
     mdFile.new_paragraph(f"Fitting Date: {predictions_dict['fitting_date']}")
 
-    # mdFile.new_paragraph(f"Config:")
-    # mdFile.insert_code(pformat(config))
-    # mdFile.new_paragraph("---")
-
 
 def _log_plots_util(mdFile, ROOT_DIR, plot_filename, figure, fig_text):
     os.makedirs(os.path.join(os.path.abspath(ROOT_DIR), 'plots'), exist_ok=True)
@@ -169,8 +165,6 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
     m2_dict = predictions_dict['m2']
 
     _dump_predictions_dict(predictions_dict, ROOT_DIR)
-
-    # _save_trials(m1_dict, m2_dict, ROOT_DIR)
 
     with open(f'{config_ROOT_DIR}/{config_filename}') as configfile:
         config = yaml.load(configfile, Loader=yaml.SafeLoader)
