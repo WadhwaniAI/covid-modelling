@@ -1,20 +1,17 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import seaborn as sns
 from hyperopt import hp, tpe, fmin, Trials
-from tqdm import tqdm
 from tqdm.notebook import tqdm
 
 from collections import OrderedDict
 import itertools
+import importlib
 from functools import partial, reduce
 import datetime
 from joblib import Parallel, delayed
 
-from models.seir.seir_testing import SEIR_Testing
-from utils.loss import Loss_Calculator
+from models.seir import SEIRHD
+from utils.fitting.loss import Loss_Calculator
 
 class Optimiser():
     """Class which implements all optimisation related activites (training, evaluation, etc)
@@ -24,45 +21,58 @@ class Optimiser():
         self.loss_calculator = Loss_Calculator()
         self.use_mcmc = use_mcmc
 
-    def solve(self, variable_params : dict, default_params :dict, df_true : pd.DataFrame, model=SEIR_Testing, 
-              start_date=None, end_date=None):
+    def format_variable_param_ranges(self, variable_param_ranges, fitting_method='bayes_opt'):
+        """Returns the ranges for the variable params in the search space
+
+        Keyword Arguments:
+
+            as_str {bool} -- If true, the parameters are not returned as a hyperopt object, but as a dict in 
+            string form (default: {False})
+
+        Returns:
+            dict -- dict of ranges of variable params
+        """
+
+        # TODO add support for different prior for each variable
+        if fitting_method == 'bayes_opt':
+            for key in variable_param_ranges.keys():
+                variable_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
+                    key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
+
+        if fitting_method == 'gridsearch':
+            for key in variable_param_ranges.keys():
+                variable_param_ranges[key] = np.linspace(variable_param_ranges[key][0][0], 
+                                                         variable_param_ranges[key][0][1], 
+                                                         variable_param_ranges[key][1])
+
+        return variable_param_ranges
+
+    def solve(self, params_dict :dict, model=SEIRHD, end_date=None):
         """This function solves the ODE for an input of params (but does not compute loss)
 
         Arguments:
             variable_params {dict} -- The values for the params that are variable across the searchspace
             default_params {dict} -- The values for the params that are fixed across the searchspace
-            df_true {pd.DataFrame} -- The training dataset
 
         Keyword Arguments:
-            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
-            start_date {str} -- The start date (usually not specifed, inferred from the params_dict) (default: {None})
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
             end_date {str} -- Last date of projection (default: {None})
 
         Returns:
             pd.DataFrame -- DataFrame of predictions
         """
 
-        params_dict = {**variable_params, **default_params}
-        if end_date == None:
-            end_date = df_true.iloc[-1, :]['date']
-        else:
-            if type(end_date) is str:
-                end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
-        
-        if start_date != None:
-            if type(start_date) is str:
-                start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-            params_dict['starting_date'] = start_date
         solver = model(**params_dict)
-        total_days = (end_date - params_dict['starting_date']).days
+        total_days = (end_date.date() - params_dict['starting_date']).days
         df_prediction = solver.predict(total_days=total_days)
         return df_prediction
 
 
     # TODO add cross validation support
-    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIR_Testing,
-                               which_compartments=['hospitalised', 'recovered', 'total_infected', 'deceased'], 
-                               loss_indices=[-20, -10], loss_method='rmse', return_dict=False, debug=False):
+    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIRHD,
+                               loss_compartments=['active', 'recovered', 'total', 'deceased'], 
+                               loss_weights = [1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse', 
+                               debug=False):
         """The function that computes solves the ODE for a given set of input params and computes loss on train set
 
         Arguments:
@@ -72,9 +82,9 @@ class Optimiser():
             total_days {int} -- Total number of days into the future for which we want to simulate
 
         Keyword Arguments:
-            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
-            which_compartments {list} -- Which compartments to apply loss on 
-            (default: {['hospitalised', 'recovered', 'total_infected', 'deceased']})
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
+            loss_compartments {list} -- Which compartments to apply loss on 
+            (default: {['active', 'recovered', 'total', 'deceased']})
             loss_indices {list} -- Which indices of the train set to apply loss on (default: {[-20, -10]})
             loss_method {str} -- Loss Method (default: {'rmse'})
             return_dict {bool} -- If True, instead of returning single loss value, will return loss value 
@@ -107,11 +117,9 @@ class Optimiser():
             import pdb; pdb.set_trace()
         df_prediction_slice.reset_index(inplace=True, drop=True)
         df_true_slice.reset_index(inplace=True, drop=True)
-        if return_dict:
-            loss = self.loss_calculator.calc_loss_dict(df_prediction_slice, df_true_slice, method=loss_method)
-        else:
-            loss = self.loss_calculator.calc_loss(df_prediction_slice, df_true_slice, 
-                                                  which_compartments=which_compartments, method=loss_method)
+        loss = self.loss_calculator.calc_loss(df_prediction_slice, df_true_slice, 
+                                              which_compartments=loss_compartments, method=loss_method,
+                                              loss_weights=loss_weights)
         return loss
 
     def _create_dict(self, param_names, values):
@@ -127,21 +135,17 @@ class Optimiser():
         params_dict = {param_names[i]: values[i] for i in range(len(values))}
         return params_dict
 
-    def init_default_params(self, df_train, N=1e7, lockdown_date='2020-03-25', lockdown_removal_date='2020-06-30', 
-                            initialisation='intermediate', train_period=7, start_date=None,
-                            observed_values=None):
+    def init_default_params(self, df_train, default_params, train_period=7):
         """Function for creating all default params for the optimisation (hyperopt/gridsearch)
 
         Arguments:
-            df_train {pd.DataFramw} -- The train dataset
+            df_train {pd.DataFrame} -- The train dataset
 
         Keyword Arguments:
             N {float} -- Population of region (default: {1e7})
             lockdown_date {str} -- The date on which lockdown is implemented (default: {'2020-03-25'})
             lockdown_removal_date {str} -- The date on which lockdown is removed (default: {'2020-05-31'})
-            initialisation {str} -- The method of initialisation (default: {'intermediate'})
             train_period {int} -- The number of days for which the model is trained (default: {7})
-            start_date {str} -- If initialisation=='starting', start_date must be provided (default: {None})
             observed_values {pd.Series} -- This is a row of a pandas dataframe that corresponds to the observed values 
             on the initialisation date (to initialise the latent params) (default: {None})
 
@@ -149,31 +153,28 @@ class Optimiser():
             dict -- Dict of default params
         """
 
-        intervention_date = datetime.datetime.strptime(lockdown_date, '%Y-%m-%d')
-        lockdown_removal_date = datetime.datetime.strptime(lockdown_removal_date, '%Y-%m-%d')
+        intervention_date = default_params['lockdown_date']
+        lockdown_removal_date = default_params['lockdown_removal_date']
 
-        if initialisation == 'intermediate':
-            observed_values = df_train.iloc[-train_period, :]
-            start_date = observed_values['date']
-        if initialisation == 'starting':
-            assert start_date != None
+        observed_values = df_train.iloc[-train_period, :]
+        start_date = observed_values['date'].date()
 
-        default_params = {
-            'N' : N,
+        extra_params = {
+            'N' : default_params['N'],
             'lockdown_day' : (intervention_date - start_date).days,
             'lockdown_removal_day': (lockdown_removal_date - start_date).days,
             'starting_date' : start_date,
             'observed_values': observed_values
         }
 
-        return default_params
+        return {**default_params, **extra_params}
 
-    def gridsearch(self, df_true, default_params, variable_param_ranges, model=SEIR_Testing, method='rmse',
-                   loss_indices=[-20, -10], which_compartments=['total_infected'], total_days=None, debug=False):
+    def gridsearch(self, df_train, default_params, variable_param_ranges, model=SEIRHD, loss_method='rmse',
+                   loss_indices=[-20, -10], loss_compartments=['total'], debug=False):
         """Implements gridsearch based optimisation
 
         Arguments:
-            df_true {pd.DataFrame} -- The train set
+            df_train {pd.DataFrame} -- The train set
             default_params {dict} -- Dict of default (fixed) params
             variable_param_ranges {dict} -- The range of variable params (the searchspace)
 
@@ -188,17 +189,16 @@ class Optimiser():
         }
 
         Keyword Arguments:
-            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
             method {str} -- The loss method (default: {'rmse'})
             loss_indices {list} -- The indices on the train set to apply the loss on (default: {[-20, -10]})
-            which_compartments {list} -- Which compartments to apply loss on (default: {['total_infected']})
+            which_compartments {list} -- Which compartments to apply loss on (default: {['total']})
             debug {bool} -- If debug is true, gridsearch is not parellelised. For debugging (default: {False})
 
         Returns:
             arr, list(dict) -- Array of loss values, and a list of parameter dicts
         """
-        if total_days == None:
-            total_days = len(df_true['date'])
+        total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
 
         rangelists = list(variable_param_ranges.values())
         cartesian_product_tuples = itertools.product(*rangelists)
@@ -206,9 +206,9 @@ class Optimiser():
             variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
 
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
-                                                 df_true=df_true, total_days=total_days, model=model,
-                                                 loss_method=method, loss_indices=loss_indices, 
-                                                 which_compartments=which_compartments, debug=debug)
+                                                 df_true=df_train, total_days=total_days, model=model,
+                                                 loss_method=loss_method, loss_indices=loss_indices,
+                                                 loss_compartments=loss_compartments, debug=debug)
         
         # If debugging is enabled the gridsearch is not parallelised
         if debug:
@@ -220,12 +220,13 @@ class Optimiser():
                     
         return loss_array, list_of_param_dicts
 
-    def bayes_opt(self, df_true, default_params, variable_param_ranges, model=SEIR_Testing, total_days=None, 
-                  method='rmse', num_evals=3500, loss_indices=[-20, -10], which_compartments=['total_infected']):
+    def bayes_opt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
+                  loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
+                  prior='uniform', algo=tpe, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
-            df_true {pd.DataFrame} -- The training dataset
+            df_train {pd.DataFrame} -- The training dataset
             default_params {str} -- Dict of default (static) params
             variable_param_ranges {dict} -- The ranges for the variable params (the searchspace)
 
@@ -239,30 +240,29 @@ class Optimiser():
         }
 
         Keyword Arguments:
-            model {class} -- The epi model class to be used for modelling (default: {SEIR_Testing})
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
             total_days {int} -- total days to simulate for (deprecated) (default: {None})
             method {str} -- Loss Method (default: {'rmse'})
             num_evals {int} -- Number of hyperopt evaluations (default: {3500})
             loss_indices {list} -- The indices of the train set to apply the losses on (default: {[-20, -10]})
-            which_compartments {list} -- Which compartments to apply loss on (default: {['total_infected']})
+            which_compartments {list} -- Which compartments to apply loss on (default: {['total']})
 
         Returns:
             dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
         """
-        if total_days == None:
-            total_days = len(df_true['date'])
+        total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
         
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
                                                  default_params=default_params, total_days=total_days,
-                                                 loss_method=method, loss_indices=loss_indices, df_true=df_true,
-                                                 which_compartments=which_compartments)
-        
-        searchspace = variable_param_ranges
-        
+                                                 loss_method=loss_method, loss_indices=loss_indices, 
+                                                 loss_weights=loss_weights, df_true=df_train,
+                                                 loss_compartments=loss_compartments)
+
+        algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
         trials = Trials()
         best = fmin(partial_solve_and_compute_loss,
-                    space=searchspace,
-                    algo=tpe.suggest,
+                    space=variable_param_ranges,
+                    algo=algo_module.suggest,
                     max_evals=num_evals,
                     trials=trials)
         

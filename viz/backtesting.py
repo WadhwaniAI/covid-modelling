@@ -11,10 +11,11 @@ import copy
 from datetime import timedelta
 
 from viz.utils import setup_plt
-from utils.enums import Columns, SEIRParams
-from utils.enums.columns import *
+from utils.generic.enums import Columns, SEIRParams
+from utils.generic.enums.columns import *
 
-def plot_backtest(results, data, dist, which_compartments=Columns.which_compartments(), scoring='mape', dtp=None, axis_name='No. People', savepath=None):
+def plot_backtest(results, data, dist, which_compartments=Columns.which_compartments(), 
+                  scoring='mape', dtp=None, axis_name='No. People', savepath=None):
     title = f'{dist}' +  ' backtesting'
     # plot predictions against actual
     setup_plt(axis_name)
@@ -60,7 +61,8 @@ def plot_backtest(results, data, dist, which_compartments=Columns.which_compartm
         plt.clf()
     return
 
-def plot_backtest_errors(results, data, file_prefix, which_compartments=Columns.which_compartments(), scoring='mape', savepath=None):
+def plot_backtest_errors(results, data, file_prefix, which_compartments=Columns.which_compartments(), 
+                         scoring='mape', savepath=None):
     start = data['date'].min()
     
     title = f'{file_prefix}' +  ' backtesting errors'

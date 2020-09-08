@@ -4,9 +4,8 @@ import numpy as np
 
 
 class Uncertainty():
-    def __init__(self, region_dict):
-        self.region_dict = region_dict
-        self.distribution = None
+    def __init__(self, predictions_dict):
+        self.predictions_dict = predictions_dict
     
     @abstractmethod
     def get_distribution(self):

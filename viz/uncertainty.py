@@ -7,7 +7,8 @@ from adjustText import adjust_text
 import datetime
 import copy
 
-from utils.enums import Columns, SEIRParams
+from utils.generic.enums import Columns, SEIRParams
+from viz.utils import axis_formatter
 
 
 def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments=[Columns.active], 
@@ -25,7 +26,7 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
     for compartment in which_compartments:
         fig, ax = plt.subplots(figsize=(12, 12))
         texts = []
-        ax.plot(df_true[Columns.date.name], df_true[compartment.name],
+        ax.plot(df_true[Columns.date.name].to_numpy(), df_true[compartment.name].to_numpy(),
                 '-o', color='C0', label=f'{compartment.label} (Observed)')
         if plot_individual_curves == True:
             for i, (ptile, df_prediction) in enumerate(predictions.items()):
@@ -43,17 +44,8 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
 
         ax.set_xlim(ax.get_xlim()[0], ax.get_xlim()[1] + 10)
         adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
-        ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
-        ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
-        plt.ylabel('No of People', fontsize=16)
-        if log_scale:
-            plt.yscale('log')
-        plt.xlabel('Time', fontsize=16)
-        plt.xticks(rotation=45, horizontalalignment='right')
-        plt.legend()
-        plt.title('Forecast - ({} {})'.format(predictions_dict['state'], predictions_dict['dist']), fontsize=16)
-        plt.grid()
+        axis_formatter(ax, log_scale=log_scale)
+        fig.suptitle('Forecast of all deciles for {} '.format(compartment.name), fontsize=16)
         plots[compartment] = fig
     
     return plots
