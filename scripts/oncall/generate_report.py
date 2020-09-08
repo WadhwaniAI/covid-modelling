@@ -18,9 +18,9 @@ from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
 from main.seir.forecast import get_forecast, create_region_csv, write_csv
 from main.seir.forecast import order_trials, get_all_trials
 from viz import plot_forecast, plot_trials
-from utils.create_report import create_report, trials_to_df
-from utils.enums import Columns
-from utils.util import read_config
+from utils.generic.create_report import save_dict_and_create_report, trials_to_df
+from utils.generic.enums import Columns
+from utils.generic.config import read_config
 
 '''
 Please keep this script at par functionally with 
@@ -59,14 +59,14 @@ state, district = districts_dict[args.district.strip().lower()]
 
 predictions_dict['m1'] = single_fitting_cycle(
     dataframes, state, district, train_period=7, val_period=7, num_evals=config['max_evals'],
-    data_from_tracker=not config['disable_tracker'], initialisation='intermediate', model=SEIR_Testing, 
+    data_from_tracker=not config['disable_tracker'], model=SEIR_Testing, 
     smooth_jump=config['smooth_jump'], smoothing_method=config['smooth_method'], smoothing_length=config['smooth_ndays'],
-    which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
+    which_compartments=['active', 'total', 'deceased', 'recovered'])
 predictions_dict['m2'] = single_fitting_cycle(
     dataframes, state, district, train_period=7, val_period=0, num_evals=config['max_evals'],
-    data_from_tracker=not config['disable_tracker'], initialisation='intermediate', model=SEIR_Testing, 
+    data_from_tracker=not config['disable_tracker'], model=SEIR_Testing, 
     smooth_jump=config['smooth_jump'], smoothing_method=config['smooth_method'], smoothing_length=config['smooth_ndays'],
-    which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'])
+    which_compartments=['active', 'total', 'deceased', 'recovered'])
     
 predictions_dict['state'] = state
 predictions_dict['dist'] = district
@@ -97,13 +97,13 @@ kforecasts = plot_trials(
 predictions_dict['m2']['forecast_confirmed_topk'] = kforecasts[Columns.confirmed]
 predictions_dict['m2']['forecast_active_topk'] = kforecasts[Columns.active]
 
-create_report(predictions_dict, ROOT_DIR=f'../../reports/{args.folder}') 
-predictions_dict['m1']['all_trials'].to_csv(f'../../reports/{args.folder}/m1-trials.csv')
-predictions_dict['m2']['all_trials'].to_csv(f'../../reports/{args.folder}/m2-trials.csv')
-predictions_dict['m2']['df_district_unsmoothed'].to_csv(f'../../reports/{args.folder}/true.csv')
-predictions_dict['m2']['df_district'].to_csv(f'../../reports/{args.folder}/smoothed.csv')
+create_report(predictions_dict, ROOT_DIR=f'../../misc/reports/{args.folder}') 
+predictions_dict['m1']['all_trials'].to_csv(f'../../misc/reports/{args.folder}/m1-trials.csv')
+predictions_dict['m2']['all_trials'].to_csv(f'../../misc/reports/{args.folder}/m2-trials.csv')
+predictions_dict['m2']['df_district_unsmoothed'].to_csv(f'../../misc/reports/{args.folder}/true.csv')
+predictions_dict['m2']['df_district'].to_csv(f'../../misc/reports/{args.folder}/smoothed.csv')
 
 df_output = create_region_csv(predictions_dict, region=district, regionType='district', icu_fraction=0.02, days=config['forecast_days'])
-write_csv(df_output, filename=f'../../reports/{args.folder}/output-{now}.csv')
+write_csv(df_output, filename=f'../../misc/reports/{args.folder}/output-{now}.csv')
 
-print(f"yeet. done: view files at ../../reports/{args.folder}/")
+print(f"yeet. done: view files at ../../misc/reports/{args.folder}/")

@@ -1,4 +1,4 @@
-from utils.loss import Loss_Calculator
+from utils.fitting.loss import Loss_Calculator
 from copy import copy
 from models.ihme.model import IHME
 import numpy as np
@@ -13,9 +13,9 @@ import matplotlib as mpl
 
 import sys
 sys.path.append('../..')
-from utils.util import HidePrints
+from utils.fitting.util import HidePrints
 from viz import setup_plt
-from utils.enums import Columns
+from utils.generic.enums import Columns
 from main.ihme.fitting import run_cycle_compartments
 
 class IHMEBacktest:

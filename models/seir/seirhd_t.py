@@ -8,7 +8,7 @@ import datetime
 import copy
 
 from models.seir.seir import SEIR
-from utils.ode import ODE_Solver
+from utils.fitting.ode import ODE_Solver
 
 class SEIRHD_t(SEIR):
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_recov_fatal=32,
@@ -21,7 +21,7 @@ class SEIRHD_t(SEIR):
         The model further implements 
         - time varying parameters
         - pre, post, and during lockdown behaviour 
-        - different initialisations : intermediate and starting 
+
 
         The state variables are : 
 
@@ -67,7 +67,6 @@ class SEIRHD_t(SEIR):
 
         Misc - 
         N: Total population
-        initialisation : method of initialisation ('intermediate'/'starting')
         """
         STATES = ['S', 'E', 'I', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]
@@ -139,10 +138,10 @@ class SEIRHD_t(SEIR):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['hospitalised'] = df_prediction['R_mild'] + \
+        df_prediction['active'] = df_prediction['R_mild'] + \
             df_prediction['R_severe'] + df_prediction['R_fatal']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['total_infected'] = df_prediction['hospitalised'] + \
+        df_prediction['total'] = df_prediction['active'] + \
             df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction

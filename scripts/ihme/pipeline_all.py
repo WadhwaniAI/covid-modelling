@@ -17,13 +17,13 @@ from adjustText import adjust_text
 
 import sys
 sys.path.append('../..')
-from utils.data import cities
-from utils.util import read_config
+from utils.fitting.data import cities
+from utils.generic.config import read_config
 from main.seir.forecast import get_forecast, order_trials, top_k_trials, forecast_k
-from utils.enums import Columns
+from utils.generic.enums import Columns
 
 from main.ihme.fitting import single_cycle, create_output_folder
-from utils.enums import Columns
+from utils.generic.enums import Columns
 from viz.fit import plot_fit
 from viz.forecast import plot_forecast_agnostic as plot_forecast
 
@@ -50,7 +50,7 @@ df_true = m1_results['df_district']
 df_pred = m1_results['df_prediction']
 
 makesum = copy(df_pred)
-makesum['total_infected'] = df_pred['recovered'] + df_pred['deceased'] + df_pred['hospitalised']
+makesum['total'] = df_pred['recovered'] + df_pred['deceased'] + df_pred['active']
 
 plot_fit(
     makesum.reset_index(), df_train, df_val, df_train_nora, df_val_nora, 
@@ -69,7 +69,7 @@ df_true = m2_results['df_district']
 df_pred = m2_results['df_prediction']
 
 makesum = copy(df_pred)
-makesum['total_infected'] = df_pred['recovered'] + df_pred['deceased'] + df_pred['hospitalised']
+makesum['total'] = df_pred['recovered'] + df_pred['deceased'] + df_pred['active']
 
 plot_fit(
     makesum.reset_index(), df_train, df_val, df_train_nora, df_val_nora, 

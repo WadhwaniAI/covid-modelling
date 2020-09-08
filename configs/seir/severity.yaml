@@ -1,0 +1,101 @@
+fitting:
+    data:
+        data_source: athena
+        stratified_data: FALSE
+        dataloading_params:
+            state: Maharashtra
+            district: Mumbai
+        smooth_jump: TRUE
+        smooth_jump_params:
+        # NOT IMPLEMENTED
+            2020-05-28: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-14: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
+            stratified_smoothing:
+                2020-06-10: [null, symptomatic, asymptomatic, FALSE, weighted-mag]
+                2020-06-15: [null, symptomatic, asymptomatic, FALSE, weighted-mag]
+                2020-07-01: [null, symptomatic, asymptomatic, FALSE, weighted-mag]
+                2020-07-02: [null, symptomatic, asymptomatic, FALSE, weighted-mag]
+                2020-07-20: [2020-07-02, symptomatic, asymptomatic, FALSE, weighted-mag]
+                2020-05-31: [null, non_o2_beds, hq, FALSE, weighted-mag]
+                2020-06-15: [null, non_o2_beds, o2_beds, FALSE, weighted-mag]
+                2020-05-31: [null, icu, hq, FALSE, weighted-mag]
+                2020-06-15: [null, ventilator, hq, FALSE, weighted-mag]
+                2020-06-30: [2020-06-20, icu, hq, FALSE, weighted-mag]
+                2020-06-30: [2020-06-20, ventilator, hq, FALSE, weighted-mag]
+        rolling_average: TRUE
+        rolling_average_params:
+            center: TRUE
+            window_size: 7
+            win_type: null
+            split_after_rolling: TRUE # NOT IMPLEMENTED
+    #Choose Model and Ranges
+    model: SEIRHD_Severity
+    variable_param_ranges:  
+        lockdown_R0: [[0.7, 1.3], uniform]
+        T_inc: [[4, 5], uniform]
+        T_inf: [[3, 4], uniform]
+        T_recov_mild: [[20, 30], uniform]
+        T_recov_moderate: [[20, 30], uniform]
+        T_recov_severe: [[0, 40], uniform]
+        P_moderate: [[0, 0.5], uniform]
+        P_severe: [[0, 0.1], uniform]
+        P_fatal: [[0, 0.1], uniform]
+        E_hosp_ratio: [[0, 2], uniform]
+        I_hosp_ratio: [[0, 1], uniform]
+    default_params:
+        N: 1.0e+7
+        lockdown_date: 2020-03-25
+        lockdown_removal_date: 2020-08-30
+    fitting_method: bayes_opt
+    fitting_method_params:
+        num_evals: 1000
+        algo: tpe
+    #Choose Fitting Periods and num evaluations
+    split:
+        start_date: null # NOT IMPLEMENTED
+        end_date: null # NOT IMPLEMENTED
+        train_period: 21
+        val_period: 7
+        test_period: 0 # NOT IMPLEMENTED
+    loss:
+        loss_method: mape
+        loss_compartments: [total, active, recovered, deceased, asymptomatic, symptomatic, critical]
+        loss_weights: [1, 1, 1, 1, 1, 1, 1]
+    #Optimisation related parameters
+sensitivity:
+    # NOT IMPLEMENTED
+    lockdown_R0: [[[0.5, 1.5], 101], total, null]
+    I_hosp_ratio: [[[0, 1], 201], total, null]
+    E_hosp_ratio: [[[0, 2], 201], total, null]
+    P_moderate: [[[0, 0.5], 201], symptomatic, total]
+    P_severe: [[[0, 0.5], 201], critical, total]
+    P_fatal: [[[0, 0.5], 201], deceased, total]
+    T_recov_mild: [[[1, 100], 101], asymptomatic, total]
+    T_recov_moderate: [[[1, 100], 101], symptomatic, total]
+    T_recov_severe: [[[1, 100], 101], recovered, total]
+    T_recov_fatal: [[[1, 100], 101], deceased, total]
+forecast:
+    forecast_days: 30
+    num_trials_to_plot: 10
+    plot_topk_trials_for_columns: [confirmed, active, symptomatic, asymptomatic]
+    plot_ptiles_for_columns: [confirmed, active, symptomatic, asymptomatic]
+uncertainty:
+    method: MCUncertainty
+    uncertainty_params:
+        num_evals: 100
+        # NOT IMPLEMENTED
+        variable_param_ranges:
+            beta: [[0, 10], uniform]
+        date_of_sorting_trials: 2020-08-31
+        sort_trials_by_column: total
+        loss:
+            loss_method: mape
+            loss_compartments: [total, active, recovered, deceased]
+            loss_weights: [0.25, 0.25, 0.25, 0.25]
+        # NOT IMPLEMENTED
+        percentiles: [2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 97.5]
