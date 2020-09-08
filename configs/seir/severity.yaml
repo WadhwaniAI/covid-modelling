@@ -1,13 +1,12 @@
 fitting:
     data:
         data_source: athena
-        stratified_data: FALSE
+        stratified_data: TRUE
         dataloading_params:
             state: Maharashtra
             district: Mumbai
         smooth_jump: TRUE
         smooth_jump_params:
-        # NOT IMPLEMENTED
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
             2020-06-15: [null, recovered, active, FALSE, weighted-mag]
@@ -21,12 +20,6 @@ fitting:
                 2020-07-01: [null, symptomatic, asymptomatic, FALSE, weighted-mag]
                 2020-07-02: [null, symptomatic, asymptomatic, FALSE, weighted-mag]
                 2020-07-20: [2020-07-02, symptomatic, asymptomatic, FALSE, weighted-mag]
-                2020-05-31: [null, non_o2_beds, hq, FALSE, weighted-mag]
-                2020-06-15: [null, non_o2_beds, o2_beds, FALSE, weighted-mag]
-                2020-05-31: [null, icu, hq, FALSE, weighted-mag]
-                2020-06-15: [null, ventilator, hq, FALSE, weighted-mag]
-                2020-06-30: [2020-06-20, icu, hq, FALSE, weighted-mag]
-                2020-06-30: [2020-06-20, ventilator, hq, FALSE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
             center: TRUE
@@ -68,7 +61,6 @@ fitting:
         loss_weights: [1, 1, 1, 1, 1, 1, 1]
     #Optimisation related parameters
 sensitivity:
-    # NOT IMPLEMENTED
     lockdown_R0: [[[0.5, 1.5], 101], total, null]
     I_hosp_ratio: [[[0, 1], 201], total, null]
     E_hosp_ratio: [[[0, 2], 201], total, null]
@@ -82,13 +74,12 @@ sensitivity:
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
-    plot_topk_trials_for_columns: [confirmed, active, symptomatic, asymptomatic]
-    plot_ptiles_for_columns: [confirmed, active, symptomatic, asymptomatic]
+    plot_topk_trials_for_columns: [total, active, symptomatic, asymptomatic]
+    plot_ptiles_for_columns: [total, active, symptomatic, asymptomatic]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
         num_evals: 100
-        # NOT IMPLEMENTED
         variable_param_ranges:
             beta: [[0, 10], uniform]
         date_of_sorting_trials: 2020-08-31
@@ -97,5 +88,4 @@ uncertainty:
             loss_method: mape
             loss_compartments: [total, active, recovered, deceased]
             loss_weights: [0.25, 0.25, 0.25, 0.25]
-        # NOT IMPLEMENTED
         percentiles: [2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 97.5]
