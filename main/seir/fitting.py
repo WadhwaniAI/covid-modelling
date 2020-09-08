@@ -37,7 +37,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     """
     if stratified_data:
         df_not_strat = get_data(data_source, dataloading_params)
-        df_district = granular.get_data(data_source)
+        df_district = granular.get_data(data_source, dataloading_params)
     else:
         df_district = get_data(data_source, dataloading_params)
     
