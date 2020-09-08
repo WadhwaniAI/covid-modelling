@@ -1,4 +1,4 @@
-experiment_name: compartmental_tp
+experiment_name: synth_paper
 train_period: 30 # length of train period
 val_period: 30 # length of val period
 test_period: 0 # length of test period

@@ -2,9 +2,9 @@ base:
   sub_region: null
   region: Italy
   data_source: jhu
-  start_date: 02-19-2020
+  start_date: 02-15-2020
   params_from_csv: True
-  params_csv: italy_log_erf_params.csv
+  params_csv: italy_log_erf_params_3.csv
   n_days_optimize: FALSE
   active_log_derf: FALSE
 priors:
