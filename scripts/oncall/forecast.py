@@ -10,9 +10,9 @@ import sys
 sys.path.append('../../')
 
 from main.seir.forecast import create_decile_csv
-from utils.create_report import create_report
-from utils.enums import Columns
-from utils.config import read_config
+from utils.generic.create_report import save_dict_and_create_report
+from utils.generic.enums import Columns
+from utils.generic.config import read_config
 from viz import plot_ptiles, plot_r0_multipliers
 from main.seir.uncertainty import MCUncertainty
 from main.seir.forecast import save_r0_mul, predict_r0_multipliers

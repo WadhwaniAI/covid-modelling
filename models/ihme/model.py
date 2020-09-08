@@ -11,8 +11,8 @@ from curvefit.core.utils import data_translator
 import sys
 sys.path.append('../../')
 
-from utils.data import get_daily_vals
-from utils.util import rollingavg
+from utils.fitting.data import get_daily_vals
+from utils.fitting.util import rollingavg
 from models.model import Model
 
 class IHME(Model):

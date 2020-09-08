@@ -17,13 +17,13 @@ from adjustText import adjust_text
 
 import sys
 sys.path.append('../..')
-from utils.data import cities
-from utils.config import read_config
+from utils.fitting.data import cities
+from utils.generic.config import read_config
 from main.seir.forecast import get_forecast, order_trials, top_k_trials, forecast_k
-from utils.enums import Columns
+from utils.generic.enums import Columns
 
 from main.ihme.fitting import single_cycle, create_output_folder
-from utils.enums import Columns
+from utils.generic.enums import Columns
 from viz.fit import plot_fit
 from viz.forecast import plot_forecast_agnostic as plot_forecast
 

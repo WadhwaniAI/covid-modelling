@@ -41,6 +41,8 @@ optim/
 # Exceptions
 !data/data/*.csv
 !data/data/mumbai/*.csv
+!docs/model_diagrams/*.pdf
+!docs/figures/*.png
 *output/
 **output/
 **/output

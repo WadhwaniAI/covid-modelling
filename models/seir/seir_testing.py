@@ -8,20 +8,20 @@ import datetime
 import copy
 
 from models.seir.seir import SEIR
-from utils.ode import ODE_Solver
+from utils.fitting.ode import ODE_Solver
 
 class SEIR_Testing(SEIR):
 
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
                  T_recov_fatal=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6,
                  q=0, theta_E=0, psi_E=1, theta_I=0, psi_I=1, lockdown_day=10, lockdown_removal_day=75,
-                 starting_date='2020-03-09', initialisation='intermediate', observed_values=None, 
+                 starting_date='2020-03-09', observed_values=None, 
                  E_hosp_ratio=0.5, I_hosp_ratio=0.5, ** kwargs):
         """
         This class implements SEIR + Hospitalisation + Severity Levels + Testing 
         The model further implements 
         - pre, post, and during lockdown behaviour 
-        - different initialisations : intermediate and starting 
+
 
         The state variables are : 
 
@@ -77,7 +77,6 @@ class SEIR_Testing(SEIR):
 
         Misc - 
         N: Total population
-        initialisation : method of initialisation ('intermediate'/'starting')
         E_hosp_ratio : Ratio for Exposed to hospitalised for initialisation
         I_hosp_ratio : Ratio for Infected to hospitalised for initialisation
         """

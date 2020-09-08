@@ -6,7 +6,7 @@ import pickle
 import datetime
 from collections import defaultdict
 
-from data.dataloader import Covid19IndiaLoader, RootnetLoader, AthenaLoader
+from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader
 
 
 def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
@@ -14,6 +14,8 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
         loader_key = 'tracker'
     if loader_class == AthenaLoader:
         loader_key = 'athena'
+    if loader_class == JHULoader:
+        loader_key = 'jhu'
     os.makedirs("../../misc/cache/", exist_ok=True)
     picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}.pkl".format(
         today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
@@ -35,8 +37,7 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
     return dataframes
 
 
-def get_data(state=None, district=None, use_dataframe='data_all', disable_tracker=False,
-             filename=None, data_format='new'):
+def get_data(data_source, dataloading_params):
     """Handshake between data module and training module. Returns a dataframe of cases for a particular district/state
        from multiple sources
 
@@ -64,19 +65,16 @@ def get_data(state=None, district=None, use_dataframe='data_all', disable_tracke
         (All columns are populated except using raw_data.json)
        
     """
-    if disable_tracker:
-        if filename != None:
-            df_result = get_custom_data_from_file(
-                filename, data_format=data_format)
-        else:
-            df_result = get_custom_data_from_db(state, district)
-    elif district != None:
-        df_result = get_district_time_series(state=state, district=district, use_dataframe=use_dataframe)
-    else:
-        df_result = get_state_time_series(state=state)
-    return df_result
+    if data_source == 'covid19india':
+        return get_data_from_tracker(**dataloading_params)
+    if data_source == 'athena':
+        return get_custom_data_from_db(**dataloading_params)
+    if data_source == 'jhu':
+        return get_data_from_jhu(**dataloading_params)
+    if data_source == 'filename':
+        return get_custom_data_from_file(**dataloading_params)
 
-def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
+def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
     dataframes = get_dataframes_cached(loader_class=AthenaLoader)
     df_result = copy.copy(dataframes['new_covid_case_summary'])
@@ -93,7 +91,7 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
     return df_result
     
 #TODO add support of adding 0s column for the ones which don't exist
-def get_custom_data_from_file(filename, data_format='new'):
+def get_custom_data_from_file(filename, data_format='new', **kwargs):
     if data_format == 'new':
         df_result = pd.read_csv(filename) 
         df_result = df_result.drop(['Ward/block name', 'Ward number (if applicable)', 'Mild cases (isolated)',
@@ -112,12 +110,19 @@ def get_custom_data_from_file(filename, data_format='new'):
     if data_format == 'old':
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
-        df_result.columns = [x if x != 'active' else 'active' for x in df_result.columns]
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
         
     return df_result
+
+
+def get_data_from_tracker(state='Maharashtra', district='Mumbai', use_dataframe='data_all', **kwargs):
+    if not district is None:
+        return get_data_from_tracker_district(state, district, use_dataframe)
+    else:
+        return get_data_from_tracker_state(state)
+
         
-def get_state_time_series(state='Delhi'):
+def get_data_from_tracker_state(state='Delhi', **kwargs):
     dataframes = get_dataframes_cached()
     df_states = copy.copy(dataframes['df_states_all'])
     df_state = df_states[df_states['state'] == state]
@@ -126,7 +131,7 @@ def get_state_time_series(state='Delhi'):
     df_state.reset_index(inplace=True, drop=True)
     return df_state
 
-def get_district_time_series(state='Karnataka', district='Bengaluru', use_dataframe='raw_data'):
+def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_dataframe='raw_data', **kwargs):
     dataframes = get_dataframes_cached()
 
     if use_dataframe == 'data_all':
@@ -134,6 +139,7 @@ def get_district_time_series(state='Karnataka', district='Bengaluru', use_datafr
         df_district = df_districts.loc[(df_districts['state'] == state) & (df_districts['district'] == district)]
         df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
         df_district = df_district.rename({'confirmed': 'total'}, axis='columns')
+        del df_district['migrated']
         df_district.reset_index(inplace=True, drop=True)
         return df_district
     
@@ -220,6 +226,69 @@ def get_district_time_series(state='Karnataka', district='Bengaluru', use_datafr
         out['state'] = state
         out.index.name = 'date'
         return out.reset_index()
+
+
+def get_data_from_jhu():
+    pass
+    #TODO implement JHU processing function
+
+def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, window_size=5,
+                    center=True, win_type=None, which_columns=None):
+    """Creates train val split on dataframe
+
+    # TODO : Add support for creating train val test split
+
+    Arguments:
+        df_district {pd.DataFrame} -- The observed dataframe
+
+    Keyword Arguments:
+        train_rollingmean {bool} -- If true, apply rolling mean on train (default: {False})
+        val_rollingmean {bool} -- If true, apply rolling mean on val (default: {False})
+        val_size {int} -- Size of val set (default: {5})
+        window_size {int} -- Size of rolling window. The rolling window is centered (default: {5})
+
+    Returns:
+        pd.DataFrame, pd.DataFrame, pd.DataFrame -- train dataset, val dataset, concatenation of rolling average dfs
+    """
+    print("splitting data ..")
+    df_true_fitting = copy.copy(df_district)
+    # Perform rolling average on all columns with numeric datatype
+    df_true_fitting = df_true_fitting.infer_objects()
+    if which_columns == None:
+        which_columns = df_true_fitting.select_dtypes(include='number').columns
+    for column in which_columns:
+        df_true_fitting[column] = df_true_fitting[column].rolling(
+            window=window_size, center=center, win_type=win_type).mean()
+
+    # Since the rolling average method is center, we need an offset variable where the ends of the series will
+    # use the true observations instead (as rolling averages for those offset days don't exist)
+    offset_window = window_size // 2
+
+    df_true_fitting.dropna(axis=0, how='any', subset=which_columns, inplace=True)
+    df_true_fitting.reset_index(inplace=True, drop=True)
+
+    if train_rollingmean:
+        if val_size == 0:
+            df_train = pd.concat(
+                [df_true_fitting, df_district.iloc[-(val_size+offset_window):, :]], ignore_index=True)
+            return df_train, None
+        else:
+            df_train = df_true_fitting.iloc[:-(val_size-offset_window), :]
+    else:
+        if val_size == 0:
+            return df_district, None
+        else:
+            df_train = df_district.iloc[:-val_size, :]
+
+    if val_rollingmean:
+        df_val = pd.concat([df_true_fitting.iloc[-(val_size-offset_window):, :],
+                            df_district.iloc[-offset_window:, :]], ignore_index=True)
+    else:
+        df_val = df_district.iloc[-val_size:, :]
+    df_val.reset_index(inplace=True, drop=True)
+    df_train = df_train.infer_objects()
+    df_val = df_val.infer_objects()
+    return df_train, df_val
 
 def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
     picklefn = "../../cache/{district}_ts_{src}_{today}.pkl".format(

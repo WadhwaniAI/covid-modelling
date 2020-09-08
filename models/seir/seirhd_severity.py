@@ -8,20 +8,20 @@ import datetime
 import copy
 
 from models.seir.seir import SEIR
-from utils.ode import ODE_Solver
+from utils.fitting.ode import ODE_Solver
 
 class SEIRHD_Severity(SEIR):
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, #Transmission
                  P_moderate=0.4, P_severe=0.2, P_fatal=0.02,  #Clinical Probabs
                  T_recov_severe=14, T_recov_mild=11, T_recov_moderate=11, T_recov_fatal=32, #Clinical Time
                  N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', #Misc
-                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, #Init
+                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, #Init
                  super_init=False, **kwargs): #Init
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
         The model further implements 
         - pre, post, and during lockdown behaviour 
-        - different initialisations : intermediate and starting 
+
 
         The state variables are : 
 
@@ -70,7 +70,6 @@ class SEIRHD_Severity(SEIR):
 
         Misc - 
         N: Total population
-        initialisation : method of initialisation ('intermediate'/'starting')
         """
         STATES = ['S', 'E', 'I', 'R_mild', 'R_moderate', 'R_severe', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]
@@ -89,28 +88,22 @@ class SEIRHD_Severity(SEIR):
         state_init_values = OrderedDict()
         for key in STATES:
             state_init_values[key] = 0
-        if initialisation == 'starting':
-            init_infected = max(observed_values['init_infected'], 1)
-            state_init_values['S'] = (self.N - init_infected)/self.N
-            state_init_values['I'] = init_infected/self.N
+        
+        state_init_values['R_mild'] = observed_values['asymptomatic']
+        state_init_values['R_moderate'] = observed_values['symptomatic']
+        state_init_values['R_severe'] = observed_values['critical']
+        state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['active']
+        
+        state_init_values['C'] = observed_values['recovered']
+        state_init_values['D'] = observed_values['deceased']
 
-        if initialisation == 'intermediate':
-            
-            state_init_values['R_mild'] = observed_values['stable_asymptomatic']
-            state_init_values['R_moderate'] = observed_values['stable_symptomatic']
-            state_init_values['R_severe'] = observed_values['critical']
-            state_init_values['R_fatal'] = p_params['P_fatal'] * observed_values['active']
-            
-            state_init_values['C'] = observed_values['recovered']
-            state_init_values['D'] = observed_values['deceased']
-
-            state_init_values['E'] = self.E_hosp_ratio * observed_values['active']
-            state_init_values['I'] = self.I_hosp_ratio * observed_values['active']
-            
-            nonSsum = sum(state_init_values.values())
-            state_init_values['S'] = (self.N - nonSsum)
-            for key in state_init_values.keys():
-                state_init_values[key] = state_init_values[key]/self.N
+        state_init_values['E'] = self.E_hosp_ratio * observed_values['active']
+        state_init_values['I'] = self.I_hosp_ratio * observed_values['active']
+        
+        nonSsum = sum(state_init_values.values())
+        state_init_values['S'] = (self.N - nonSsum)
+        for key in state_init_values.keys():
+            state_init_values[key] = state_init_values[key]/self.N
         
         self.state_init_values = state_init_values
 
@@ -162,8 +155,8 @@ class SEIRHD_Severity(SEIR):
 
         df_prediction['active'] = df_prediction['R_mild'] + \
             df_prediction['R_moderate'] + df_prediction['R_severe']
-        df_prediction['stable_asymptomatic'] = df_prediction['R_mild']
-        df_prediction['stable_symptomatic'] = df_prediction['R_moderate']
+        df_prediction['asymptomatic'] = df_prediction['R_mild']
+        df_prediction['symptomatic'] = df_prediction['R_moderate']
         df_prediction['critical'] = df_prediction['R_severe']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']

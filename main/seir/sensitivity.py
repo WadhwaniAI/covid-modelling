@@ -5,9 +5,9 @@ import copy
 from main.seir.optimiser import Optimiser
 
 
-def gridsearch_single_param(predictions_dict, which_fit='m1', var_name=None, param_range=np.linspace(1, 100, 201),
-                            df_train=None, train_period=None, comp_name='recovered', aux_comp='total',
-                            debug=False):
+def gridsearch_single_param(predictions_dict, config, which_fit='m1', var_name=None,
+                            param_range=np.linspace(1, 100, 201), df_train=None, train_period=None, 
+                            comp_name='recovered', aux_comp='total', debug=False):
     if var_name == None:
         var_name = 'T_recov_{}'.format(comp_name)
     variable_param_ranges = {
@@ -22,44 +22,38 @@ def gridsearch_single_param(predictions_dict, which_fit='m1', var_name=None, par
 
     model = run_params['model_class']
     if train_period == None:
-        train_period = run_params['train_period']
+        train_period = run_params['split']['train_period']
     loss_indices = [-train_period, None]
 
     if aux_comp == 'all':
-        which_compartments = ['recovered', 'deceased', 'active', 'total']
+        loss_compartments = ['recovered', 'deceased', 'active', 'total']
     elif aux_comp == None:
-        which_compartments = [comp_name]
+        loss_compartments = [comp_name]
     else:
-        which_compartments = [comp_name, aux_comp]
+        loss_compartments = [comp_name, aux_comp]
     try:
         for key in variable_param_ranges.keys():
             del default_params[key]
     except Exception as err:
         print('')
-    optimiser = Optimiser()
-    extra_params = optimiser.init_default_params(df_train, N=1e7, initialisation='intermediate', 
+    optimiser = predictions_dict[which_fit]['optimiser']
+    extra_params = optimiser.init_default_params(df_train, config['fitting']['default_params'], 
                                                  train_period=train_period)
     default_params = {**default_params, **extra_params}
-    total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days
     loss_array, params_dict = optimiser.gridsearch(df_train, default_params, variable_param_ranges, model=model, 
-                                                   method='mape', loss_indices=loss_indices, 
-                                                   which_compartments=which_compartments,
-                                                   total_days=total_days, debug=debug)
+                                                   loss_method='mape', loss_indices=loss_indices,
+                                                   loss_compartments=loss_compartments, debug=debug)
 
     return params_dict, loss_array
 
-def calculate_sensitivity_and_plot(predictions_dict, which_fit='m1', var_tuples=None):
-    if var_tuples == None:
-        var_tuples = [
-            ('lockdown_R0', np.linspace(1, 1.5, 101), 'total', None),
-            ('I_hosp_ratio', np.linspace(0, 1, 201), 'total', None),
-            ('E_hosp_ratio', np.linspace(0, 2, 201), 'total', None),
-            ('P_fatal', np.linspace(0, 1, 201), 'deceased', 'total'),
-            ('T_recov_severe', np.linspace(1, 100, 101), 'recovered', 'total'),
-            ('T_recov_fatal', np.linspace(1, 100, 101), 'deceased', 'total')
-        ]
-
+def calculate_sensitivity_and_plot(predictions_dict, config, which_fit='m1'):
     best_params = copy.copy(predictions_dict[which_fit]['best_params'])
+
+    config_sensitivity = copy.deepcopy(config['sensitivity'])
+    for key, value in config_sensitivity.items():
+        config_sensitivity[key][0] = np.linspace(value[0][0][0], value[0][0][1], value[0][1])
+
+    var_tuples = [[key]+value for key, value in config_sensitivity.items()]
 
     nrows = int(round(len(var_tuples)/2+0.01))
     fig, axs = plt.subplots(figsize=(18, 4*nrows), nrows=nrows, ncols=2)
@@ -67,7 +61,7 @@ def calculate_sensitivity_and_plot(predictions_dict, which_fit='m1', var_tuples=
     fig.tight_layout(pad=5.0)
     for i, ax in enumerate(axs.flat):
         var_name, param_range, comp_name, aux_comp = var_tuples[i]
-        params_dict, loss_array = gridsearch_single_param(predictions_dict, which_fit, var_name=var_name,
+        params_dict, loss_array = gridsearch_single_param(predictions_dict, config, which_fit, var_name=var_name,
                                                           param_range=param_range, comp_name=comp_name, 
                                                           aux_comp=aux_comp)
         ax.plot([x[list(x.keys())[0]] for x in params_dict], loss_array)
@@ -78,8 +72,7 @@ def calculate_sensitivity_and_plot(predictions_dict, which_fit='m1', var_tuples=
         best_params[var_name] = params_dict[np.argmin(loss_array)][var_name]
 
     optimiser = predictions_dict[which_fit]['optimiser']
-    df_prediction = optimiser.solve(best_params, predictions_dict[which_fit]['default_params'], 
-                                    predictions_dict[which_fit]['df_train'], 
+    df_prediction = optimiser.solve({**best_params, **predictions_dict[which_fit]['default_params']}, 
                                     end_date=predictions_dict[which_fit]['df_district'].iloc[-1, :]['date'],
                                     model=predictions_dict[which_fit]['run_params']['model_class'])
     return fig, best_params, df_prediction

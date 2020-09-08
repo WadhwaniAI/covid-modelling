@@ -9,10 +9,9 @@ import datetime
 import copy
 
 from main.seir.forecast import get_forecast, forecast_top_k_trials
-from utils.enums import Columns, SEIRParams
-from utils.enums.columns import *
+from utils.generic.enums import Columns, SEIRParams
+from utils.generic.enums.columns import *
 from viz.utils import axis_formatter
-
 
 
 def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame,
@@ -59,11 +58,6 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     legend_title_dict['best'] = 'Best M2'
     legend_title_dict['mean'] = 'Mean'
 
-    legend_title_dict['testing_12'] = 'Testing Becomes 1.2x'
-    legend_title_dict['testing_15'] = 'Testing Becomes 1.5x'
-    legend_title_dict['testing_18'] = 'Testing Becomes 1.8x'
-    legend_title_dict['testing_20'] = 'Testing Becomes 2.0x'
-
     linestyles_arr = ['-', '--', '-.', ':', '-x']
 
     if len(fits_to_plot) > 5:
@@ -99,7 +93,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
 
     return fig
 
-def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False, filename=None,
+def plot_forecast_agnostic(df_true, df_prediction, region, log_scale=False, filename=None,
                            model_name='M2', which_compartments=Columns.which_compartments()):
     fig, ax = plt.subplots(figsize=(12, 12))
     for col in Columns.which_compartments():
@@ -117,11 +111,10 @@ def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False,
     return fig
 
 
-def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=None, vline=None, log_scale=False,
+def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_scale=False,
                       which_compartments=[Columns.active], plot_individual_curves=True):
                 
-    if trials_processed is None:
-        trials_processed = forecast_top_k_trials(predictions_dict, k=k, train_fit=train_fit)
+    trials_processed = predictions_dict[train_fit]['trials_processed']
     top_k_losses = trials_processed['losses'][:k]
     top_k_params = trials_processed['params'][:k]
     predictions = trials_processed['predictions'][:k]
@@ -158,7 +151,8 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=N
         plots[compartment] = fig
     return plots
 
-def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, multipliers):
+
+def plot_r0_multipliers(region_dict, best_params_dict, predictions_mul_dict, multipliers, log_scale=False):
     df_true = region_dict['m2']['df_district']
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.plot(df_true['date'], df_true['active'],

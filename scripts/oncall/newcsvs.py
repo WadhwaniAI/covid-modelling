@@ -15,7 +15,7 @@ sys.path.append('../../')
 from main.seir.forecast import get_forecast, create_region_csv, get_all_trials
 from main.seir.forecast import create_decile_csv
 from main.seir.fitting import calculate_loss, train_val_split
-from utils.enums import Columns
+from utils.generic.enums import Columns
 from viz import plot_r0_multipliers
 from utils.create_report import trials_to_df
 # -----

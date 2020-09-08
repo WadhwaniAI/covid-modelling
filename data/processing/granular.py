@@ -10,7 +10,7 @@ The set of functions of processing data with more columns (Active split into mul
 """
 
 
-def get_data(filename=None, state='Maharashtra', district='Mumbai'):
+def get_data(data_source, dataloading_params):
     """Handshake between data module and training module. 
         Returns a dataframe of cases from either a filename of AthenaDB
 
@@ -24,10 +24,10 @@ def get_data(filename=None, state='Maharashtra', district='Mumbai'):
         pd.DataFrame -- dataframe of cases for a area with multiple columns (more than 4)
        
     """
-    if filename != None:
-        df_result = get_custom_data_from_file(filename, state=state, district=district)
-    else:
-        df_result = get_custom_data_from_db(state=state, district=district)
+    if data_source == 'filename':
+        df_result = get_custom_data_from_file(**dataloading_params)
+    if data_source == 'athena':
+        df_result = get_custom_data_from_db(**dataloading_params)
     
     return df_result
 
@@ -56,6 +56,7 @@ def get_custom_data_from_file(filename, state='Maharashtra', district='Mumbai'):
     df.columns = [x.replace('_occupied', '') for x in df.columns]
     df = df.rename({'city': 'district', 'total_cases': 'total', 'active_cases': 'active',
                     'icu_beds': 'icu', 'ventilator_beds': 'ventilator', 
+                    'stable_symptomatic': 'symptomatic', 'stable_asymptomatic': 'asymptomatic', 
                     'recoveries': 'recovered', 'deaths': 'deceased'}, axis='columns')
     # New column creation
     df['hq'] = df['active'] - df['total_beds']
@@ -74,8 +75,7 @@ def get_custom_data_from_file(filename, state='Maharashtra', district='Mumbai'):
     #Data checks
     beds_check = sum(df.loc[:, ['hq', 'non_o2_beds', 'o2_beds', 'icu']].sum(axis=1) == df['active'])
     facility_check = sum(df.loc[:, ['ccc2', 'dchc', 'dch']].sum(axis=1) == df['total_beds'])
-    severity_check = sum(df.loc[:, ['stable_asymptomatic', 'stable_symptomatic', 
-                                    'critical']].sum(axis=1) == df['active'])
+    severity_check = sum(df.loc[:, ['asymptomatic', 'symptomatic', 'critical']].sum(axis=1) == df['active'])
     return df
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
@@ -94,7 +94,8 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
 
     #Column renaming and pruning
     df = df.drop([x for x in df.columns if '_capacity' in x] + ['partition_0'], axis=1)
-    df = df.rename({'total_occupied': 'total_beds', 'o2_occupied': 'o2_beds'}, axis='columns')
+    df = df.rename({'total_occupied': 'total_beds', 'o2_occupied': 'o2_beds', 
+                    'stable_symptomatic': 'symptomatic', 'stable_asymptomatic': 'asymptomatic'}, axis='columns')
     df.columns = [x.replace('_occupied', '') for x in df.columns]
     # New column creation
     df['hq'] = df['active'] - df['total_beds']
@@ -109,4 +110,8 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
 
     col = df.pop('non_o2_beds')
     df.insert(int(np.where(df.columns == 'o2_beds')[0][0]), 'non_o2_beds', col)
+    date_difference = df['date'].diff()
+    date_difference.fillna(pd.Timedelta(days=2), inplace=True)
+    df = df[df['date'].diff() == pd.Timedelta(days=1)]
+    df.reset_index(inplace=True, drop=True)
     return df

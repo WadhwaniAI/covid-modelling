@@ -18,9 +18,9 @@ from main.seir.fitting import single_fitting_cycle, get_variable_param_ranges
 from main.seir.forecast import get_forecast, create_region_csv, write_csv
 from main.seir.forecast import order_trials, get_all_trials
 from viz import plot_forecast, plot_trials
-from utils.create_report import create_report, trials_to_df
-from utils.enums import Columns
-from utils.config import read_config
+from utils.generic.create_report import save_dict_and_create_report, trials_to_df
+from utils.generic.enums import Columns
+from utils.generic.config import read_config
 
 '''
 Please keep this script at par functionally with 
@@ -59,12 +59,12 @@ state, district = districts_dict[args.district.strip().lower()]
 
 predictions_dict['m1'] = single_fitting_cycle(
     dataframes, state, district, train_period=7, val_period=7, num_evals=config['max_evals'],
-    data_from_tracker=not config['disable_tracker'], initialisation='intermediate', model=SEIR_Testing, 
+    data_from_tracker=not config['disable_tracker'], model=SEIR_Testing, 
     smooth_jump=config['smooth_jump'], smoothing_method=config['smooth_method'], smoothing_length=config['smooth_ndays'],
     which_compartments=['active', 'total', 'deceased', 'recovered'])
 predictions_dict['m2'] = single_fitting_cycle(
     dataframes, state, district, train_period=7, val_period=0, num_evals=config['max_evals'],
-    data_from_tracker=not config['disable_tracker'], initialisation='intermediate', model=SEIR_Testing, 
+    data_from_tracker=not config['disable_tracker'], model=SEIR_Testing, 
     smooth_jump=config['smooth_jump'], smoothing_method=config['smooth_method'], smoothing_length=config['smooth_ndays'],
     which_compartments=['active', 'total', 'deceased', 'recovered'])
     

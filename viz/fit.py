@@ -7,7 +7,7 @@ import copy
 
 from functools import reduce
 
-from utils.enums.columns import *
+from utils.generic.enums.columns import *
 from viz.utils import axis_formatter
 
 def plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, district,

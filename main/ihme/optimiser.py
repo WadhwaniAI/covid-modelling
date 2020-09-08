@@ -1,5 +1,5 @@
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
-from utils.loss import Loss_Calculator
+from utils.fitting.loss import Loss_Calculator
 from copy import copy
 from models.ihme.model import IHME
 import numpy as np
@@ -11,7 +11,7 @@ from datetime import timedelta
 
 import sys
 sys.path.append('../..')
-from utils.util import HidePrints, train_test_split
+from utils.fitting.util import HidePrints, train_test_split
 
 class Optimiser():
     def __init__(self, model: IHME, data: pd.DataFrame, args=None):

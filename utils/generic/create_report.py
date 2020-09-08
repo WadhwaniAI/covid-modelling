@@ -7,6 +7,7 @@ from pprint import pformat
 import pandas as pd
 import numpy as np
 import pickle
+import yaml
 import copy
 import json
 
@@ -35,39 +36,20 @@ def _save_trials(m1_dict, m2_dict, ROOT_DIR):
     m2_dict['all_trials'].to_csv(os.path.join(ROOT_DIR, 'm2-trials.csv'))
 
 
-def _create_md_file(predictions_dict, ROOT_DIR):
+def _create_md_file(predictions_dict, config, ROOT_DIR):
     fitting_date = predictions_dict['fitting_date']
-    data_last_date = predictions_dict['data_last_date']
-    state = predictions_dict['state']
-    dist = predictions_dict['dist']
+    data_last_date = predictions_dict['m1']['data_last_date']
+    state = config['fitting']['data']['dataloading_params']['state']
+    dist = config['fitting']['data']['dataloading_params']['district']
     filename = os.path.join(ROOT_DIR, f'{state.title()}-{dist.title()}_report_{fitting_date}')
     mdFile = MdUtils(file_name=filename, title=f'{dist.title()} Fits [Based on data until {data_last_date}]')
     return mdFile, filename
 
 
-def _log_hyperparams(mdFile, predictions_dict):
+def _log_hyperparams(mdFile, predictions_dict, config):
     mdFile.new_paragraph("---")
-    mdFile.new_paragraph(f"State: {predictions_dict['state']}")
-    mdFile.new_paragraph(f"District: {predictions_dict['dist']}")
-    mdFile.new_paragraph(f"Data Source: {predictions_dict['datasource']}")
-    mdFile.new_paragraph(f"Data available till: {predictions_dict['data_last_date']}")
+    mdFile.new_paragraph(f"Data available till: {predictions_dict['m2']['data_last_date']}")
     mdFile.new_paragraph(f"Fitting Date: {predictions_dict['fitting_date']}")
-
-    mdFile.new_paragraph(f"M1 Run Params:")
-    del predictions_dict['m1']['run_params']['N']
-    del predictions_dict['m1']['run_params']['variable_param_ranges']
-    del predictions_dict['m1']['run_params']['model_class']
-    mdFile.insert_code(pformat(predictions_dict['m1']['run_params']))
-
-    mdFile.new_paragraph(f"M2 Run Params:")
-    del predictions_dict['m2']['run_params']['N']
-    del predictions_dict['m2']['run_params']['variable_param_ranges']
-    del predictions_dict['m2']['run_params']['model_class']
-    mdFile.insert_code(pformat(predictions_dict['m2']['run_params']))
-    mdFile.new_paragraph("---")
-    
-    mdFile.new_paragraph("Parameter fits were obtained via Bayesian optimization, searching uniformly on the following space of parameter ranges:")
-    mdFile.insert_code(pformat(predictions_dict['variable_param_ranges']))
 
 
 def _log_plots_util(mdFile, ROOT_DIR, plot_filename, figure, fig_text):
@@ -164,7 +146,8 @@ def _log_tables(mdFile, m2_dict):
     mdFile.new_paragraph(tbl)
 
 
-def save_dict_and_create_report(predictions_dict, forecast_dict=None, ROOT_DIR='../../misc/reports/'):
+def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/reports/', 
+                                config_filename='default.yaml', config_ROOT_DIR='../../configs/seir'):
     """Creates report (BOTH MD and DOCX) for an input of a dict of predictions for a particular district/region
     The DOCX file can directly be uploaded to Google Drive and shared with the people who have to review
 
@@ -182,11 +165,14 @@ def save_dict_and_create_report(predictions_dict, forecast_dict=None, ROOT_DIR='
     m2_dict = predictions_dict['m2']
 
     _dump_predictions_dict(predictions_dict, ROOT_DIR)
-    _dump_params(m1_dict, m2_dict, ROOT_DIR)
-    _save_trials(m1_dict, m2_dict, ROOT_DIR)
 
-    mdFile, filename = _create_md_file(predictions_dict, ROOT_DIR)
-    _log_hyperparams(mdFile, predictions_dict)
+    with open(f'{config_ROOT_DIR}/{config_filename}') as configfile:
+        config = yaml.load(configfile, Loader=yaml.SafeLoader)
+
+    os.system(f'cp {config_ROOT_DIR}/{config_filename} {ROOT_DIR}/{config_filename}')
+    
+    mdFile, filename = _create_md_file(predictions_dict, config, ROOT_DIR)
+    _log_hyperparams(mdFile, predictions_dict, config)
 
     if m1_dict['plots']['smoothing'] is not None:
         _log_smoothing(mdFile, ROOT_DIR, m1_dict)
