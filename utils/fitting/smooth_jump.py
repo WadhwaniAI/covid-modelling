@@ -78,6 +78,8 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
 
 
 def smooth_big_jump(df_district, smooth_jump_params):
+    if 'stratified_smoothing' in smooth_jump_params.keys():
+        del smooth_jump_params['stratified_smoothing']
     description = ""
     for date, params in smooth_jump_params.items():
         smooth_to_date, main_comp, aux_comp, aux_var_add, method = params
@@ -127,8 +129,8 @@ def smooth_big_jump_stratified(df_strat, df_not_strat, smooth_jump_params):
         else:
             length = (date - smooth_to_date).days
 
-        df_district, description = smooth_big_jump_helper(
-            df_district, main_comp, aux_comp, date, smoothing_length=length, method=method,
+        df_strat_smoothed, description = smooth_big_jump_helper(
+            df_strat_smoothed, main_comp, aux_comp, date, smoothing_length=length, method=method,
             description=description, aux_var_add=aux_var_add)
 
     return df_strat_smoothed, description
