@@ -69,7 +69,7 @@ class SEIR_Undetected(SEIR):
         psi: effective sensititivity (based on antigen and rtpcr sensitive and their overall proportion)
         initialisation : method of initialisation ('intermediate'/'starting')
         """
-        STATES = ['S', 'E', 'I_D', 'I_U','P_U','R_mild', 'R_severe', 'R_fatal', 'C', 'D']
+        STATES = ['S', 'E', 'I_D', 'I_U', 'P_U', 'R_mild', 'R_severe', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]
         input_args = copy.deepcopy(locals())
         del input_args['self']
@@ -108,14 +108,16 @@ class SEIR_Undetected(SEIR):
         dydt = np.zeros(y.shape)
 
         # Write differential equations
-        dydt[0] = - I * S / (self.T_trans)  # S
+        dydt[0] = - I * S / (self.T_trans)  # S  ## Check once (divide by N?)
         dydt[1] = I * S / (self.T_trans) - (E/ self.T_inc)  # E
-        dydt[2] = E / self.T_inc - I / self.T_inf  # I
-        dydt[3] = (1/self.T_inf)*(self.P_mild*I) - R_mild/self.T_recov_mild # R_mild
-        dydt[4] = (1/self.T_inf)*(self.P_severe*I) - R_severe/self.T_recov_severe #R_severe
-        dydt[5] = (1/self.T_inf)*(self.P_fatal*I) - R_fatal/self.T_recov_fatal # R_fatal
-        dydt[6] = R_mild/self.T_recov_mild + R_severe/self.T_recov_severe  # C
-        dydt[7] = R_fatal/self.T_recov_fatal # D
+        dydt[2] = (1 / self.T_inc)*(self.d*self.psi)*E - I_D / self.T_inf_D  # I_D
+        dydt[3] = (1 / self.T_inc)*(1 - self.d*self.psi)*E - I_U / self.T_inf_U  # I_D
+        dydt[4] = (1/self.T_inf_D)*(self.P_mild*I_D) - R_mild/self.T_recov_mild # R_mild
+        dydt[5] = (1/self.T_inf_D)*(self.P_severe*I_D) - R_severe/self.T_recov_severe #R_severe
+        dydt[6] = (1/self.T_inf_D)*(self.P_fatal*I_D) - R_fatal/self.T_recov_fatal # R_fatal
+        dydt[7] = (1/self.T_inf_D)*(self.P_fatal*I_D) - R_fatal/self.T_recov_fatal # R_fatal
+        dydt[8] = I_U / self.T_inf_U  # P_U
+        dydt[9] = R_fatal/self.T_recov_fatal # D
 
         return dydt
 
