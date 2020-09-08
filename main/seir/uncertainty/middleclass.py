@@ -26,11 +26,13 @@ class MCUncertainty(Uncertainty):
             date_of_sorting_trials (str): prediction date by which trials should be sorted + distributed
         """
         super().__init__(predictions_dict)
+        self.variable_param_ranges = variable_param_ranges
         self.date_of_sorting_trials = date_of_sorting_trials
         self.sort_trials_by_column = sort_trials_by_column
         for key in loss:
             setattr(self, key, loss[key])
-        self.beta = self.find_beta(num_evals=num_evals)
+        self.percentiles = percentiles
+        self.beta = self.find_beta(variable_param_ranges, num_evals)
         self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
         self.get_distribution()
 
@@ -91,7 +93,7 @@ class MCUncertainty(Uncertainty):
         self.distribution = df
         return self.distribution
 
-    def get_forecasts(self, ptile_dict=None, percentiles=None):
+    def get_forecasts(self, percentiles=None):
         """
         Get forecasts at certain percentiles
 
@@ -102,7 +104,9 @@ class MCUncertainty(Uncertainty):
         Returns:
             dict: deciles_forecast, {percentile: {df_prediction: pd.DataFrame, df_loss: pd.DataFrame, params: dict}}
         """  
-        if ptile_dict is None: 
+        if percentiles is None:
+            ptile_dict = self.get_ptiles_idx(percentiles=self.percentiles)
+        else:
             ptile_dict = self.get_ptiles_idx(percentiles=percentiles)
         
         deciles_forecast = {}
@@ -155,7 +159,7 @@ class MCUncertainty(Uncertainty):
         return lc.calc_loss(weighted_pred_df, df_val, method=self.loss_method, 
                             which_compartments=allcols, loss_weights=self.loss_weights)
 
-    def find_beta(self, num_evals=1000):
+    def find_beta(self, variable_param_ranges, num_evals=1000):
         """
         Runs a search over m1 trials to find best beta for a probability distro
 
@@ -164,13 +168,14 @@ class MCUncertainty(Uncertainty):
 
         Returns:
             float: optimal beta value
-        """    
-        searchspace = {
-            'beta': hp.uniform('beta', 0, 10)
-        }
+        """
+        for key in variable_param_ranges.keys():
+            variable_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
+                key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
+
         trials = Trials()
         best = fmin(self.avg_weighted_error,
-                    space=searchspace,
+                    space=variable_param_ranges,
                     algo=tpe.suggest,
                     max_evals=num_evals,
                     trials=trials)
