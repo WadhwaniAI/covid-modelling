@@ -56,6 +56,40 @@ def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train
 
     return df_prediction
 
+def create_decile_csv_new(predictions_dict: dict):
+    """Nayana's implementation of the CSV format that P&P consume for the presentations
+
+    Args:
+        predictions_dict (dict): Dict of all predictions
+
+    Returns:
+        pd.DataFrame: Dataframe in the format that Keshav wants
+    """
+    forecast_columns = [x for x in predictions_dict['m2']['forecasts']['best'].columns if not x[0].isupper()]
+    forecast_columns = [x for x in forecast_columns if x != 'date']
+    column_mapping = {k:k for k in forecast_columns}
+
+    df_percentiles_list = []
+    percentile_labels = []
+
+    for decile, df_prediction in predictions_dict['m2']['forecasts'].items():
+        if decile == 'best':
+            continue
+        percentile_labels.append(" ".join([str(decile), "Percentile"]))
+        percentiles = [decile] * len(forecast_columns)
+        percentile_columns = ["".join([col, str(decile)]) for col in column_mapping.values()]
+        index_arrays = [percentiles, percentile_columns, column_mapping.values()]
+        layered_index = pd.MultiIndex.from_arrays(index_arrays)
+        df = pd.DataFrame(columns=layered_index)
+        for column in forecast_columns:
+            df.loc[:, (decile, "".join([column_mapping[column], str(decile)]), column_mapping[column])] = df_prediction[column]
+        df_percentiles_list.append(df)
+    df_output = pd.concat(df_percentiles_list, keys=percentile_labels, axis=1)
+    df_output.insert(0, 'Date', df_prediction['date'])
+    
+    return df_output
+
+
 def create_decile_csv(predictions_dict: dict, region: str, regionType: str):
     print("compiling csv data ..")
     columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'predictionDate',
