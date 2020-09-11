@@ -33,7 +33,7 @@ def preprocess(timeseries, region, sub_region=None, area_names=None, trim_deceas
 
 
 def get_regional_data(sub_region, region, area_names, test_size, smooth_window, smooth_jump, start_date=None,
-                      data_length=0, data_source='covid19india'):
+                      data_length=0, data_source='covid19india', shorten_train=False):
     """
     Function to get regional data and shape it for IHME consumption
 
@@ -63,6 +63,13 @@ def get_regional_data(sub_region, region, area_names, test_size, smooth_window, 
         start_date = pd.to_datetime(start_date, dayfirst=False) if start_date is not None else df['date'].min()
         df[df_type] = get_subset(
             df[df_type], lower=start_date, upper=start_date+timedelta(data_length-1), col='date').reset_index(drop=True)
+
+    lendif = data_length - df['df_nora'].shape[0]
+    if lendif > 0:
+        if shorten_train:
+            pass
+        else:
+            test_size -= lendif
 
     df['train'], _, df['test'] = train_val_test_split(df['df'], val_size=0, test_size=test_size,
                                                       rolling_window=smooth_window, end='actual', dropna=False,
@@ -120,6 +127,81 @@ def create_output_folder(fname):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     return output_folder
+
+
+def forecast(model, train, test, forecast_days):
+    predictions = pd.DataFrame(columns=[model.date, model.ycol])
+    if len(test) == 0:
+        n_days = (train[model.date].max() - train[model.date].min() + timedelta(days=1 + forecast_days)).days
+        predictions.loc[:, model.ycol] = model.predict(train[model.date].min(),
+                                                       train[model.date].max() + timedelta(days=forecast_days))
+    else:
+        n_days = (test[model.date].max() - train[model.date].min() + timedelta(days=1 + forecast_days)).days
+        predictions.loc[:, model.ycol] = model.predict(train[model.date].min(),
+                                                       test[model.date].max() + timedelta(days=forecast_days))
+    predictions.loc[:, model.date] = pd.to_datetime(
+        pd.Series([timedelta(days=x) + train[model.date].min() for x in range(n_days)]))
+    return predictions
+
+
+def calc_loss(ycol, train, test, predictions, xform_func, dtp):
+    lc = Loss_Calculator()
+    train_pred = predictions[ycol][:len(train)]
+    train_model_ycol_numpy = train[ycol].to_numpy()
+    test_model_ycol_numpy, test_pred = None, None
+    trainerr = lc.evaluate(train_model_ycol_numpy, train_pred)
+    testerr = None
+    if len(test) != 0:
+        test_pred = predictions[ycol][len(train):len(train) + len(test)]
+        test_model_ycol_numpy = test[ycol].to_numpy()
+        testerr = lc.evaluate(test_model_ycol_numpy, test_pred)
+    if xform_func is not None:
+        xform_trainerr = lc.evaluate(xform_func(train_model_ycol_numpy, dtp),
+                                     xform_func(train_pred, dtp))
+        xform_trainerr_pointwise = lc.evaluate_pointwise(xform_func(train_model_ycol_numpy, dtp),
+                                                         xform_func(train_pred, dtp))
+        xform_testerr = None
+        xform_testerr_pointwise = None
+        if len(test) != 0:
+            xform_testerr = lc.evaluate(xform_func(test_model_ycol_numpy, dtp), xform_func(test_pred, dtp))
+            xform_testerr_pointwise = lc.evaluate_pointwise(xform_func(test_model_ycol_numpy, dtp),
+                                                            xform_func(test_pred, dtp))
+    else:
+        xform_trainerr, xform_testerr = None, None
+        xform_trainerr_pointwise, xform_testerr_pointwise = None, None
+
+    # CREATE POINTWISE LOSS DATAFRAME
+
+    df_trainerr_pointwise = lc.create_pointwise_loss_dataframe(train_model_ycol_numpy, train_pred)
+    df_xform_trainerr_pointwise = pd.DataFrame()
+    if xform_trainerr_pointwise is not None:
+        df_xform_trainerr_pointwise = lc.create_pointwise_loss_dataframe(
+            xform_func(train_model_ycol_numpy, dtp), xform_func(train_pred, dtp))
+    df_train_loss_pointwise = pd.concat([df_trainerr_pointwise, df_xform_trainerr_pointwise],
+                                        keys=['train_no_xform', 'train']).rename_axis(['split', 'loss_functions'])
+    df_train_loss_pointwise.columns = train['date'].tolist()
+
+    df_test_loss_pointwise = pd.DataFrame()
+    if len(test) != 0:
+        df_testerr_pointwise = lc.create_pointwise_loss_dataframe(test_model_ycol_numpy, test_pred)
+        df_xform_testerr_pointwise = pd.DataFrame()
+        if xform_testerr_pointwise is not None:
+            df_xform_testerr_pointwise = lc.create_pointwise_loss_dataframe(
+                xform_func(test_model_ycol_numpy, dtp), xform_func(test_pred, dtp))
+        df_test_loss_pointwise = pd.concat([df_testerr_pointwise, df_xform_testerr_pointwise],
+                                           keys=['val_no_xform', 'val']).rename_axis(['split', 'loss_functions'])
+        df_test_loss_pointwise.columns = test['date'].tolist()
+
+    loss_dict = {
+        "train": xform_trainerr,
+        "val": xform_testerr,
+        "train_no_xform": trainerr,
+        "val_no_xform": testerr
+    }
+
+    df_loss = pd.DataFrame.from_dict(loss_dict, orient='index').stack()
+    df_loss.name = 'loss'
+    return df_loss, df_train_loss_pointwise, df_test_loss_pointwise
 
 
 def run_cycle(dataframes, model_params, forecast_days=30,
