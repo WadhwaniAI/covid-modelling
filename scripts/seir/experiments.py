@@ -15,9 +15,8 @@ import pandas as pd
 sys.path.append('../../')
 
 from data.processing.processing import get_data_from_source, get_observed_dataframes
-from main.ihme_seir.model_runners import supported_models
 from main.ihme_seir.utils import get_seir_pointwise_loss_dict, get_seir_pointwise_loss, read_config, read_params_file, \
-    create_pointwise_loss_csv, create_output_folder, create_pointwise_loss_csv_new, get_model
+    create_pointwise_loss_csv, create_output_folder, create_pointwise_loss_csv_new, get_model, supported_models
 from main.seir.fitting import get_variable_param_ranges, run_cycle
 from utils.population import get_population
 from utils.loss import Loss_Calculator

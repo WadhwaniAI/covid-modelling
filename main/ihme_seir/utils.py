@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import yaml
 
-from main.ihme_seir.model_runners import supported_models
+from models.seir import SEIR_Testing, SIRD, SEIRHD, SIR
 from utils.util import update_dict
 
 
@@ -191,3 +191,11 @@ def get_model(val):
     for model in supported_models:
         if val == model['name'] or val == model['name_prefix']:
             return model['model']
+
+
+supported_models = [
+    {'model': SEIR_Testing, 'name': 'SEIR Testing', 'name_prefix': 'seirt'},
+    {'model': SIRD, 'name': 'SIRD', 'name_prefix': 'sird'},
+    {'model': SEIRHD, 'name': 'SEIRHD', 'name_prefix': 'seirhd'},
+    {'model': SIR, 'name': 'SIR', 'name_prefix': 'sir'}
+]

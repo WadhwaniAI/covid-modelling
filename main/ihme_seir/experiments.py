@@ -1,9 +1,9 @@
 from copy import deepcopy
 from datetime import timedelta
 
-from main.ihme_seir.model_runners import ihme_runner, seir_runner, log_experiment_local, \
+from main.ihme_seir.model_runners import ihme_runner, seir_runner, log_experiment_local
+from main.ihme_seir.utils import create_output_folder, get_variable_param_ranges_dict, read_region_config, \
     supported_models
-from main.ihme_seir.utils import create_output_folder, get_variable_param_ranges_dict, read_region_config
 from main.seir.fitting import get_regional_data, get_variable_param_ranges
 from utils.enums import Columns
 from utils.loss import Loss_Calculator

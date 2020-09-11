@@ -9,20 +9,13 @@ from data.processing.processing import get_observed_dataframes
 from main.ihme.fitting import single_cycle
 from main.ihme_seir.utils import read_params_file
 from main.seir.fitting import run_cycle
-from models.seir import SEIR_Testing, SIRD, SEIRHD, SIR
+from models.seir import SEIR_Testing
 from utils.data import get_supported_regions
 from utils.enums import Columns
 from utils.util import read_config
 from viz.fit import plot_fit
 from viz.forecast import plot_forecast_agnostic
 from viz.synthetic_data import plot_fit_uncertainty
-
-supported_models = [
-    {'model': SEIR_Testing, 'name': 'SEIR Testing', 'name_prefix': 'seirt'},
-    {'model': SIRD, 'name': 'SIRD', 'name_prefix': 'sird'},
-    {'model': SEIRHD, 'name': 'SEIRHD', 'name_prefix': 'seirhd'},
-    {'model': SIR, 'name': 'SIR', 'name_prefix': 'sir'}
-]
 
 
 def ihme_runner(sub_region, region, start_date, dataset_length, train_val_size, val_size, test_size, config_path,
