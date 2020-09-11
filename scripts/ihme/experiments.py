@@ -14,10 +14,10 @@ import pandas as pd
 
 sys.path.append('../../')
 
-from main.ihme.fitting import single_cycle
+from main.ihme.fitting import single_cycle, calc_loss, get_regional_data
 from main.ihme_seir.utils import get_ihme_pointwise_loss, get_ihme_loss_dict, read_config, read_params_file, \
-    create_pointwise_loss_csv, create_output_folder
-from utils.data import get_supported_regions
+    create_pointwise_loss_csv, create_output_folder, create_pointwise_loss_csv_new
+from utils.data import get_supported_regions, lograte_to_cumulative, rate_to_cumulative
 from utils.enums import Columns
 from utils.util import convert_date
 from viz import plot_fit
@@ -172,6 +172,71 @@ def outputs(path, start=0, end=0):
             create_pointwise_loss_csv(path, val_loss, test_period, model, compartment, start, end)
 
 
+def forecast(path, start=0, end=0):
+    # Create output folder
+    if not os.path.exists(f'{path}/consolidated'):
+        os.makedirs(f'{path}/consolidated')
+    # Get config
+    with open(f'{path}/{start}/config.json', 'r') as infile:
+        config = json.load(infile)
+    model_params = config['model_params']
+    config = config['base']
+    models = config['models']
+    compartments = config['compartments']
+    test_period = config['test_size']
+    train_period = config['train_size']
+    sub_region = config['sub_region']
+    region = config['region']
+    xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
+    start_date = datetime.strptime(config['start_date'], '%m-%d-%Y')
+
+    region_name = sub_region if sub_region is not None else region
+    region_dict = get_supported_regions()[region_name.lower()]
+    sub_region, region, area_names = region_dict['sub_region'], region_dict['region'], region_dict['area_names']
+
+    ycols = {col: '{log}{colname}_rate'.format(log='log_' if config['log'] else '', colname=col) for col in
+             compartments}
+    n_days = end - start + train_period + test_period - 1 #120
+
+    limit = sys.getrecursionlimit()
+    print(limit)
+    sys.setrecursionlimit(4000)
+
+    # Val losses
+    val_loss_dict = dict()
+    for model in models:
+        val_loss_dict[model] = dict()
+    for i in range(start, end + 1):
+        print(i)
+        dfs, _ = get_regional_data(sub_region, region, area_names, n_days-train_period, config['smooth'],
+                                   config['smooth_jump'],
+                                   start_date=(start_date + timedelta(i - start)).strftime('%m-%d-%Y'),
+                                   data_length=n_days, data_source=config['data_source'])
+
+        dfs['test_nora'].loc[:, 'day'] = range(train_period, train_period + dfs['test_nora'].shape[0])
+        # dfs['test'].index = range(1 + dfs['train'].index[-1], 1 + dfs['train'].index[-1] + len(dfs['test']))
+        dfs['test_nora'].index = range(train_period, train_period + dfs['test_nora'].shape[0])
+
+        for compartment in compartments:
+            for model in models:
+                picklefn = f'{path}/{i}/{model}.pkl'
+                with open(picklefn, 'rb') as pickle_file:
+                    model_output = pickle.load(pickle_file)
+                    print(model_output['df_train'])
+                    _, _, val_loss_dict[model][i] = calc_loss(ycols[compartment], model_output['df_train'],
+                                                              dfs['test_nora'], model_output['df_final_prediction'],
+                                                              xform_func, model_output['district_total_pop'])
+                val_loss_dict[model][i] = pd.concat([val_loss_dict[model][i]], keys=[compartment],
+                                                    names=['compartment'])
+    sys.setrecursionlimit(limit)
+
+    for model in models:
+        for compartment in compartments:
+            val_loss = get_ihme_pointwise_loss(val_loss_dict[model], compartment=compartment, split='val',
+                                               loss_fn='ape')
+            create_pointwise_loss_csv_new(path, val_loss, model, compartment, start, end, outfile='test_loss_full')
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--region_config", help="region config file name", required=True)
@@ -186,3 +251,5 @@ if __name__ == "__main__":
         run_experiments(args.region_config, args.output_folder, int(args.num))
     elif args.mode == 'output':
         outputs(args.output_folder, start=int(args.start), end=int(args.end))
+    elif args.mode == 'forecast':
+        forecast(args.output_folder, start=int(args.start), end=int(args.end))
