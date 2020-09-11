@@ -446,16 +446,16 @@ def train_val_test_split(data, val_size=5, test_size=0, rolling_window=5, end='s
     offset_window = rolling_window // 2
 
     if end == 'actual' and rolling_window > 1:
-        if not df_train.empty:
+        if not df_train.empty and train_rollingmean:
             df_train.iloc[:offset_window, :] = data_processed.iloc[:offset_window, :]
             end = -(val_size+test_size) if (val_size+test_size) != 0 else None
             df_train.iloc[-offset_window:, :] = data_processed.iloc[-(val_size+test_size+offset_window):end, :]
-        if not df_val.empty:
+        if not df_val.empty and val_rollingmean:
             df_val.iloc[:offset_window, :] = data_processed.iloc[
                                             -(val_size+test_size):-(val_size+test_size-offset_window), :]
             end = -test_size if test_size != 0 else None
             df_val.iloc[-offset_window:, :] = data_processed.iloc[-(test_size+offset_window):end, :]
-        if not df_test.empty:
+        if not df_test.empty and test_rollingmean:
             df_test.iloc[:offset_window, :] = data_processed.iloc[-test_size:-(test_size-offset_window), :]
             df_test.iloc[-offset_window:, :] = data_processed.iloc[-offset_window:, :]
 
