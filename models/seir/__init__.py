@@ -1,3 +1,4 @@
+from models.seir.seir_undetected import SEIR_Undetected
 from models.seir.seir_testing import SEIR_Testing
 from models.seir.seirhd import SEIRHD
 from models.seir.seirhd_t import SEIRHD_t
