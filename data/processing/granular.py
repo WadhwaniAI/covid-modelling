@@ -10,7 +10,7 @@ The set of functions of processing data with more columns (Active split into mul
 """
 
 
-def get_data(filename=None, state='Maharashtra', district='Mumbai'):
+def get_data(data_source, dataloading_params):
     """Handshake between data module and training module. 
         Returns a dataframe of cases from either a filename of AthenaDB
 
@@ -24,10 +24,10 @@ def get_data(filename=None, state='Maharashtra', district='Mumbai'):
         pd.DataFrame -- dataframe of cases for a area with multiple columns (more than 4)
        
     """
-    if filename != None:
-        df_result = get_custom_data_from_file(filename, state=state, district=district)
-    else:
-        df_result = get_custom_data_from_db(state=state, district=district)
+    if data_source == 'filename':
+        df_result = get_custom_data_from_file(**dataloading_params)
+    if data_source == 'athena':
+        df_result = get_custom_data_from_db(**dataloading_params)
     
     return df_result
 
