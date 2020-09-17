@@ -71,8 +71,7 @@ class SEIR(Model):
         for key in state_init_values.keys():
             state_init_values[key] = state_init_values[key]/self.N
         
-        self.state_init_values = state_init_values
-        
+        self.state_init_values = state_init_values        
     
     @abstractmethod
     def get_derivative(self, t, y):

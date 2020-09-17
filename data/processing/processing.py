@@ -73,6 +73,8 @@ def get_data(data_source, dataloading_params):
         return get_data_from_jhu(**dataloading_params)
     if data_source == 'filename':
         return get_custom_data_from_file(**dataloading_params)
+    if data_source == 'simulated':
+        return get_simulated_data_from_file(**dataloading_params)
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
@@ -91,6 +93,29 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_dat
     return df_result
     
 #TODO add support of adding 0s column for the ones which don't exist
+def get_simulated_data_from_file(filename, data_format='new', **kwargs):
+    if data_format == 'new':
+        df_result = pd.read_csv(filename) 
+        df_result = df_result.drop(['Ward/block name', 'Ward number (if applicable)', 'Mild cases (isolated)',
+                                    'Moderate cases (hospitalized)', 'Severe cases (In ICU)', 
+                                    'Critical cases (ventilated patients)'], axis=1)
+        df_result.columns = ['state', 'district', 'date', 'total', 'active', 'recovered', 'deceased']
+        df_result.drop(np.arange(3), inplace=True)
+        df_result['date'] = pd.to_datetime(df_result['date'], format='%m-%d-%Y')
+        df_result = df_result.dropna(subset=['state'], how='any')
+        df_result.reset_index(inplace=True, drop=True)
+        df_result.loc[:, ['total', 'active', 'recovered', 'deceased']] = df_result[[
+            'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
+        df_result = df_result[['date', 'state', 'district', 'total', 'active', 'recovered', 'deceased']]
+        df_result = df_result.dropna(subset=['date'], how='all')
+        
+    if data_format == 'old':
+        df_result = pd.read_csv(filename)
+        df_result['date'] = pd.to_datetime(df_result['date'])
+        df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
+        
+    return df_result
+
 def get_custom_data_from_file(filename, data_format='new', **kwargs):
     if data_format == 'new':
         df_result = pd.read_csv(filename) 

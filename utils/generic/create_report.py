@@ -197,3 +197,47 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
     pypandoc.convert_file("{}.md".format(filename), 'docx', outputfile="{}.docx".format(filename))
     pypandoc.convert_file("{}.docx".format(filename), 'pdf', outputfile="{}.pdf".format(filename))
     # TODO: pdf conversion has some issues with order of images, low priority
+
+
+def save_dict_and_create_report_simple(predictions_dict, config, ROOT_DIR='../../misc/reports/', 
+                                config_filename='default.yaml', config_ROOT_DIR='../../configs/seir'):
+    """Creates report (BOTH MD and DOCX) for an input of a dict of predictions for a particular district/region
+    The DOCX file can directly be uploaded to Google Drive and shared with the people who have to review
+
+    Arguments:
+        predictions_dict {dict} -- Dict of predictions for a particual district/region [NOT ALL Districts]
+
+    Keyword Arguments:
+        ROOT_DIR {str} -- the path where the plots and the report would be saved (default: {'../../misc/reports/'})
+    """
+
+    if not os.path.exists(ROOT_DIR):
+        os.makedirs(ROOT_DIR)
+
+    m1_dict = predictions_dict['m1']
+    m2_dict = predictions_dict['m2']
+
+    _dump_predictions_dict(predictions_dict, ROOT_DIR)
+
+    with open(f'{config_ROOT_DIR}/{config_filename}') as configfile:
+        config = yaml.load(configfile, Loader=yaml.SafeLoader)
+
+    os.system(f'cp {config_ROOT_DIR}/{config_filename} {ROOT_DIR}/{config_filename}')
+    
+    mdFile, filename = _create_md_file(predictions_dict, config, ROOT_DIR)
+    _log_hyperparams(mdFile, predictions_dict, config)
+
+    if m1_dict['plots']['smoothing'] is not None:
+        _log_smoothing(mdFile, ROOT_DIR, m1_dict)
+
+    mdFile.new_header(level=1, title=f'FITS')
+    _log_fits(mdFile, ROOT_DIR, m1_dict, which_fit='M1')
+    _log_fits(mdFile, ROOT_DIR, m2_dict, which_fit='M2')
+
+    # Create a table of contents
+    mdFile.new_table_of_contents(table_title='Contents', depth=2)
+    mdFile.create_md_file()
+
+    pypandoc.convert_file("{}.md".format(filename), 'docx', outputfile="{}.docx".format(filename))
+    # pypandoc.convert_file("{}.docx".format(filename), 'pdf', outputfile="{}.pdf".format(filename))
+    # TODO: pdf conversion has some issues with order of images, low priority
