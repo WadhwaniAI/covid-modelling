@@ -36,8 +36,6 @@ fitting:
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
-        lockdown_date: 2020-03-25
-        lockdown_removal_date: 2020-08-30
     fitting_method: bayes_opt
     fitting_method_params:
         num_evals: 500
