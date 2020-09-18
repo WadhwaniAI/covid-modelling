@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from datetime import datetime
@@ -15,6 +16,19 @@ class HidePrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout.close()
         sys.stdout = self._original_stdout
+
+class CustomEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, datetime):
+            return obj.strftime('%m-%d-%Y')
+        else:
+            return super(CustomEncoder, self).default(obj)
 
 def train_test_split(df, threshold, threshold_col='date'):
     return df[df[threshold_col] <= threshold], df[df[threshold_col] > threshold]
