@@ -16,7 +16,7 @@ sys.path.append('../../')
 
 from data.processing.processing import get_data_from_source, get_observed_dataframes
 from main.ihme_seir.utils import get_seir_pointwise_loss_dict, get_seir_pointwise_loss, read_config, read_params_file, \
-    create_pointwise_loss_csv_old, create_output_folder, create_pointwise_loss_csv, get_model, supported_models
+    create_output_folder, create_pointwise_loss_csv, get_model, supported_models
 from main.seir.fitting import get_variable_param_ranges, run_cycle
 from utils.population import get_population
 from utils.loss import Loss_Calculator
@@ -84,23 +84,23 @@ def run_experiments(config_path, output_folder, num):
         data = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source)
         data['daily_cases'] = data['total_infected'].diff()
         input_data = get_subset(
-            data, lower=start_date, upper=start_date + timedelta(data_length-1), col='date').reset_index(drop=True)
+            data, lower=start_date, upper=start_date + timedelta(data_length - 1), col='date').reset_index(drop=True)
 
         # Add synthetic data
         synth_data_added = get_subset(synth_data, lower=start_date + timedelta(train_period),
-                                      upper=start_date + timedelta(train_period+synth_addition-1), col='date')
+                                      upper=start_date + timedelta(train_period + synth_addition - 1), col='date')
 
         input_data = pd.concat([input_data.iloc[:train_period, :], synth_data_added,
-                                input_data.iloc[train_period+synth_addition:, :]], axis=0).reset_index(drop=True)
+                                input_data.iloc[train_period + synth_addition:, :]], axis=0).reset_index(drop=True)
 
         # Get train and val splits
-        observed_dataframes = get_observed_dataframes(input_data, val_period=val_period-synth_addition,
+        observed_dataframes = get_observed_dataframes(input_data, val_period=val_period - synth_addition,
                                                       test_period=test_period, which_columns=which_compartments)
 
         # Run SEIR model
         predictions_dict = run_cycle(region, sub_region, observed_dataframes, model=model, data_from_tracker=True,
                                      variable_param_ranges=variable_param_ranges,
-                                     train_period=train_period+synth_addition,
+                                     train_period=train_period + synth_addition,
                                      which_compartments=which_compartments, num_evals=num_evals, N=N,
                                      initialisation='intermediate')
 
@@ -188,7 +188,7 @@ def outputs(path, start=0, end=0):
                                                             end=end)
         for compartment in compartments:
             val_loss = get_seir_pointwise_loss(val_loss_dict[model], compartment=compartment, loss_fn='ape')
-            create_pointwise_loss_csv_old(path, val_loss, val_period - synth_addition, model, compartment, start, end)
+            create_pointwise_loss_csv(path, val_loss, val_period - synth_addition, model, compartment, start, end)
 
 
 def forecast(path, start=0, end=0):
@@ -203,16 +203,15 @@ def forecast(path, start=0, end=0):
     models = config['models']
     compartments = config['which_compartments']
     start_date = datetime.strptime(config['start_date'], '%m-%d-%Y')
-    shift = config['shift']
     train_period = config['train_period']
     test_period = config['val_period']
 
-    data = get_data_from_source(region=config['region'], sub_region=config['sub_region'], data_source=config['data_source'])
+    data = get_data_from_source(region=config['region'], sub_region=config['sub_region'],
+                                data_source=config['data_source'])
     data['daily_cases'] = data['total_infected'].diff()
 
-    last_date = start_date + timedelta(end-start + train_period + test_period - 1)
+    last_date = start_date + timedelta(end - start + train_period + test_period - 1)
 
-    # sys.setrecursionlimit()
     # Val losses
     val_loss_dict = dict()
     for model in models:
@@ -229,10 +228,10 @@ def forecast(path, start=0, end=0):
                                                               model=get_model(model))
 
                 train_data = get_subset(
-                    data, lower=start_date + timedelta(i), upper=start_date + timedelta(i+train_period-1),
+                    data, lower=start_date + timedelta(i), upper=start_date + timedelta(i + train_period - 1),
                     col='date').reset_index(drop=True)
                 val_data = get_subset(
-                    data, lower=start_date+timedelta(i+train_period), upper=last_date,
+                    data, lower=start_date + timedelta(i + train_period), upper=last_date,
                     col='date').reset_index(drop=True)
                 lc = Loss_Calculator()
 
@@ -261,7 +260,7 @@ def trials(path, start=0, end=0):
     val_loss_dict = dict()
     for model in models:
         val_loss_dict[model] = dict()
-    for i in range(start, end+1):
+    for i in range(start, end + 1):
         for model in models:
             picklefn = f'{path}/{i}/{model}.pkl'
             with open(picklefn, 'rb') as pickle_file:

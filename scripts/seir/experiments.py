@@ -16,7 +16,7 @@ sys.path.append('../../')
 
 from data.processing.processing import get_data_from_source, get_observed_dataframes
 from main.ihme_seir.utils import get_seir_pointwise_loss_dict, get_seir_pointwise_loss, read_config, read_params_file, \
-    create_pointwise_loss_csv_old, create_output_folder, create_pointwise_loss_csv, get_model, supported_models
+    create_output_folder, create_pointwise_loss_csv, get_model, supported_models
 from main.seir.fitting import get_variable_param_ranges, run_cycle
 from utils.population import get_population
 from utils.loss import Loss_Calculator
@@ -88,7 +88,7 @@ def run_experiments(config_path, output_folder, num):
         data = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source)
         data['daily_cases'] = data['total_infected'].diff()
         input_data = get_subset(
-            data, lower=start_date, upper=start_date + timedelta(data_length-1), col='date').reset_index(drop=True)
+            data, lower=start_date, upper=start_date + timedelta(data_length - 1), col='date').reset_index(drop=True)
 
         # Get train and val splits
         observed_dataframes = get_observed_dataframes(input_data, val_period=val_period, test_period=test_period,
@@ -196,10 +196,11 @@ def forecast(path, start=0, end=0):
     train_period = config['train_period']
     test_period = config['val_period']
 
-    data = get_data_from_source(region=config['region'], sub_region=config['sub_region'], data_source=config['data_source'])
+    data = get_data_from_source(region=config['region'], sub_region=config['sub_region'],
+                                data_source=config['data_source'])
     data['daily_cases'] = data['total_infected'].diff()
 
-    last_date = start_date + timedelta(end-start + train_period + test_period - 1)
+    last_date = start_date + timedelta(end - start + train_period + test_period - 1)
     # Val losses
     val_loss_dict = dict()
     for model in models:
@@ -216,10 +217,10 @@ def forecast(path, start=0, end=0):
                                                               model=get_model(model))
 
                 train_data = get_subset(
-                    data, lower=start_date + timedelta(i), upper=start_date + timedelta(i+train_period-1),
+                    data, lower=start_date + timedelta(i), upper=start_date + timedelta(i + train_period - 1),
                     col='date').reset_index(drop=True)
                 val_data = get_subset(
-                    data, lower=start_date+timedelta(i+train_period), upper=last_date,
+                    data, lower=start_date + timedelta(i + train_period), upper=last_date,
                     col='date').reset_index(drop=True)
                 lc = Loss_Calculator()
 
@@ -243,15 +244,12 @@ def trials(path, start=0, end=0):
 
     # Unpack parameters
     models = config['models']
-    start_date = datetime.strptime(config['start_date'], '%m-%d-%Y')
-    train_period = config['train_period']
-    test_period = config['val_period']
 
     # Val losses
     val_loss_dict = dict()
     for model in models:
         val_loss_dict[model] = dict()
-    for i in range(start, end+1):
+    for i in range(start, end + 1):
         for model in models:
             picklefn = f'{path}/{i}/{model}.pkl'
             with open(picklefn, 'rb') as pickle_file:

@@ -16,7 +16,7 @@ sys.path.append('../../')
 
 from main.ihme.fitting import single_cycle, calc_loss, get_regional_data
 from main.ihme_seir.utils import get_ihme_pointwise_loss, get_ihme_loss_dict, read_config, read_params_file, \
-    create_pointwise_loss_csv_old, create_output_folder, create_pointwise_loss_csv
+    create_output_folder, create_pointwise_loss_csv
 from utils.data import get_supported_regions, lograte_to_cumulative, rate_to_cumulative
 from utils.enums import Columns
 from utils.util import convert_date
@@ -41,7 +41,8 @@ def run_experiments(config_path, output_folder, num):
     data_length = train_val_period + test_period
     shift = base['shift']
     start_date = datetime.strptime(base['start_date'], '%m-%d-%Y') + timedelta(shift * num)
-    while (start_date + timedelta(train_val_period + test_period) > datetime.today()) and data_length > train_val_period:
+    while (start_date + timedelta(
+            train_val_period + test_period) > datetime.today()) and data_length > train_val_period:
         test_period -= 1
         data_length -= 1
     if data_length == train_val_period:
@@ -173,7 +174,7 @@ def outputs(path, start=0, end=0):
         for compartment in compartments:
             val_loss = get_ihme_pointwise_loss(val_loss_dict[model], compartment=compartment, split='val',
                                                loss_fn='ape')
-            create_pointwise_loss_csv_old(path, val_loss, test_period, model, compartment, start, end)
+            create_pointwise_loss_csv(path, val_loss, test_period, model, compartment, start, end)
 
 
 def forecast(path, start=0, end=0):
@@ -208,7 +209,7 @@ def forecast(path, start=0, end=0):
     for i in range(start, end + 1):
         print(i)
         n_days = end - i + train_period + test_period  # 120
-        dfs, _ = get_regional_data(sub_region, region, area_names, n_days-train_period, config['smooth'],
+        dfs, _ = get_regional_data(sub_region, region, area_names, n_days - train_period, config['smooth'],
                                    config['smooth_jump'],
                                    start_date=(start_date + timedelta(i - start)).strftime('%m-%d-%Y'),
                                    data_length=n_days, data_source=config['data_source'])
