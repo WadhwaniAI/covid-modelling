@@ -232,8 +232,22 @@ def get_data_from_jhu():
     pass
     #TODO implement JHU processing function
 
-def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5, window_size=5,
-                    center=True, win_type=None, which_columns=None):
+def implement_rolling(df, window_size, center, win_type, min_periods):
+    df_roll = df.infer_objects()
+    # Select numeric columns
+    which_columns = df_roll.select_dtypes(include='number').columns
+    for column in which_columns:
+        df_roll[column] = df_roll[column].rolling(window=window_size, center=center, win_type=win_type, 
+                                                  min_periods=min_periods).mean()
+        # For the days which become na after rolling, the following line 
+        # uses the true observations inplace of na, and the rolling average where it exists
+        df_roll[column] = df_roll[column].fillna(df[column])
+
+    return df_roll
+
+
+def train_val_split(df_district, val_period=5, window_size=5, center=True, win_type=None, min_periods=1, 
+                    split_after_rolling=False):
     """Creates train val split on dataframe
 
     # TODO : Add support for creating train val test split
@@ -242,52 +256,33 @@ def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
         df_district {pd.DataFrame} -- The observed dataframe
 
     Keyword Arguments:
-        train_rollingmean {bool} -- If true, apply rolling mean on train (default: {False})
-        val_rollingmean {bool} -- If true, apply rolling mean on val (default: {False})
-        val_size {int} -- Size of val set (default: {5})
+        val_period {int} -- Size of val set (default: {5})
         window_size {int} -- Size of rolling window. The rolling window is centered (default: {5})
 
     Returns:
         pd.DataFrame, pd.DataFrame, pd.DataFrame -- train dataset, val dataset, concatenation of rolling average dfs
     """
     print("splitting data ..")
-    df_true_fitting = copy.copy(df_district)
+    df_district_rolling = copy.copy(df_district)
     # Perform rolling average on all columns with numeric datatype
-    df_true_fitting = df_true_fitting.infer_objects()
-    if which_columns == None:
-        which_columns = df_true_fitting.select_dtypes(include='number').columns
-    for column in which_columns:
-        df_true_fitting[column] = df_true_fitting[column].rolling(
-            window=window_size, center=center, win_type=win_type).mean()
-
-    # Since the rolling average method is center, we need an offset variable where the ends of the series will
-    # use the true observations instead (as rolling averages for those offset days don't exist)
-    offset_window = window_size // 2
-
-    df_true_fitting.dropna(axis=0, how='any', subset=which_columns, inplace=True)
-    df_true_fitting.reset_index(inplace=True, drop=True)
-
-    if train_rollingmean:
-        if val_size == 0:
-            df_train = pd.concat(
-                [df_true_fitting, df_district.iloc[-(val_size+offset_window):, :]], ignore_index=True)
-            return df_train, None
-        else:
-            df_train = df_true_fitting.iloc[:-(val_size-offset_window), :]
+    if split_after_rolling:
+        df_district_rolling = implement_rolling(
+            df_district_rolling, window_size, center, win_type, min_periods)
+        df_train = df_district_rolling.iloc[:len(df_district_rolling) - val_period, :]
+        df_val = df_district_rolling.iloc[len(df_district_rolling) - val_period:, :]
+        
+        df_train = df_train.infer_objects()
+        df_val = df_val.infer_objects()
     else:
-        if val_size == 0:
-            return df_district, None
-        else:
-            df_train = df_district.iloc[:-val_size, :]
+        df_train = df_district_rolling.iloc[:len(df_district_rolling) - val_period, :]
+        df_val = df_district_rolling.iloc[len(df_district_rolling) - val_period:, :]
 
-    if val_rollingmean:
-        df_val = pd.concat([df_true_fitting.iloc[-(val_size-offset_window):, :],
-                            df_district.iloc[-offset_window:, :]], ignore_index=True)
-    else:
-        df_val = df_district.iloc[-val_size:, :]
-    df_val.reset_index(inplace=True, drop=True)
-    df_train = df_train.infer_objects()
-    df_val = df_val.infer_objects()
+        df_train = implement_rolling(df_train, window_size, center, win_type, min_periods)
+        df_val = implement_rolling(df_val, window_size, center, win_type, min_periods)
+        
+    if val_period == 0:
+        return df_train, None
+
     return df_train, df_val
 
 def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
