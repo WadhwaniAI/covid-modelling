@@ -3,9 +3,9 @@ region: California
 data_source: ny_times
 start_date: 02-25-2020
 params_from_csv: False
-params_csv: null
+params_csv: los_angeles_sir_synth_params_3.csv
 synth:
-  synth_data_path: null
+  synth_data_path: ../../outputs/ihme_seir/ihme_paper/Los Angeles/20200911_122351
   synth_model: log_erf
   synth_addition: 5
 params_sir:
