@@ -16,11 +16,12 @@ sys.path.append('../../')
 
 from data.processing.processing import get_data_from_source, get_observed_dataframes
 from main.ihme_seir.utils import get_seir_pointwise_loss_dict, get_seir_pointwise_loss, read_config, read_params_file, \
-    create_pointwise_loss_csv, create_output_folder, create_pointwise_loss_csv_new, get_model, supported_models
+    create_pointwise_loss_csv_old, create_output_folder, create_pointwise_loss_csv, get_model, supported_models
 from main.seir.fitting import get_variable_param_ranges, run_cycle
 from utils.population import get_population
 from utils.loss import Loss_Calculator
 from utils.util import get_subset
+from utils.util import CustomEncoder
 
 
 def run_experiments(config_path, output_folder, num):
@@ -187,7 +188,7 @@ def outputs(path, start=0, end=0):
                                                             end=end)
         for compartment in compartments:
             val_loss = get_seir_pointwise_loss(val_loss_dict[model], compartment=compartment, loss_fn='ape')
-            create_pointwise_loss_csv(path, val_loss, val_period-synth_addition, model, compartment, start, end)
+            create_pointwise_loss_csv_old(path, val_loss, val_period - synth_addition, model, compartment, start, end)
 
 
 def forecast(path, start=0, end=0):
@@ -242,7 +243,31 @@ def forecast(path, start=0, end=0):
     for model in models:
         for compartment in compartments:
             val_loss = get_seir_pointwise_loss(val_loss_dict[model], compartment=compartment, loss_fn='ape')
-            create_pointwise_loss_csv_new(path, val_loss, model, compartment, start, end, outfile='test_loss_full')
+            create_pointwise_loss_csv(path, val_loss, model, compartment, start, end, outfile='test_loss_full')
+
+
+def trials(path, start=0, end=0):
+    # Create output folder
+    if not os.path.exists(f'{path}/consolidated'):
+        os.makedirs(f'{path}/consolidated')
+    # Get config
+    with open(f'{path}/{start}/config.json', 'r') as infile:
+        config = json.load(infile)
+
+    # Unpack parameters
+    models = config['models']
+
+    # Val losses
+    val_loss_dict = dict()
+    for model in models:
+        val_loss_dict[model] = dict()
+    for i in range(start, end+1):
+        for model in models:
+            picklefn = f'{path}/{i}/{model}.pkl'
+            with open(picklefn, 'rb') as pickle_file:
+                model_output = pickle.load(pickle_file)
+            with open(f'{path}/{i}/trials.json', 'w') as outfile:
+                json.dump(model_output['trials'].__dict__['_trials'], outfile, cls=CustomEncoder)
 
 
 if __name__ == "__main__":
@@ -262,3 +287,5 @@ if __name__ == "__main__":
         outputs(args.output_folder, start=int(args.start), end=int(args.end))
     elif args.mode == 'forecast':
         forecast(args.output_folder, start=int(args.start), end=int(args.end))
+    elif args.mode == 'trials':
+        trials(args.output_folder, start=int(args.start), end=int(args.end))
