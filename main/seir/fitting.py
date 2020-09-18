@@ -70,16 +70,13 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
      
     rap = rolling_average_params
     if rolling_average:
-        df_train, df_val = train_val_split(df_district, train_rollingmean=True, val_rollingmean=True, 
-                                           val_size=val_period, window_size=rap['window_size'], center=rap['center'], 
-                                           win_type=rap['win_type'])
+        df_train, df_val = train_val_split(df_district, val_period=val_period, window_size=rap['window_size'], 
+                                           center=rap['center'], win_type=rap['win_type'], 
+                                           min_periods=rap['min_periods'])
     else:
-        df_train, df_val = train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
-                                           val_size=val_period, window_size=rap['window_size'], center=rap['center'],
-                                           win_type=rap['win_type'])
+        df_train, df_val = train_val_split(df_district, val_period=val_period, window_size=1)
 
-    df_train_nora, df_val_nora = train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, 
-                                                 val_size=val_period)
+    df_train_nora, df_val_nora = train_val_split(df_district, val_period=val_period, window_size=1)
 
     observed_dataframes = {}
     for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
