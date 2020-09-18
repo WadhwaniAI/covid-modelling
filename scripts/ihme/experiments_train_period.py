@@ -16,7 +16,7 @@ sys.path.append('../../')
 
 from main.ihme.fitting import single_cycle
 from main.ihme_seir.utils import get_ihme_pointwise_loss, get_ihme_loss_dict, read_config, read_params_file, \
-    create_pointwise_loss_csv, create_output_folder
+    create_pointwise_loss_csv_old, create_output_folder
 from utils.data import get_supported_regions
 from utils.enums import Columns
 from utils.util import convert_date, read_file
@@ -167,7 +167,7 @@ def outputs(path, start=0, end=0):
         for compartment in compartments:
             val_loss = get_ihme_pointwise_loss(val_loss_dict[model], compartment=compartment, split='val',
                                                loss_fn='ape')
-            create_pointwise_loss_csv(path, val_loss, test_period, model, compartment, start, end)
+            create_pointwise_loss_csv_old(path, val_loss, test_period, model, compartment, start, end)
 
 
 if __name__ == "__main__":

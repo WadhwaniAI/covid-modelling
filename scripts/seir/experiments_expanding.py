@@ -16,7 +16,7 @@ sys.path.append('../../')
 
 from data.processing.processing import get_data_from_source, get_observed_dataframes
 from main.ihme_seir.utils import get_seir_pointwise_loss_dict, get_seir_pointwise_loss, read_config, read_params_file, \
-    create_pointwise_loss_csv, create_output_folder, supported_models
+    create_pointwise_loss_csv_old, create_output_folder, supported_models
 from main.seir.fitting import get_variable_param_ranges, run_cycle
 from utils.population import get_population
 from utils.util import get_subset
@@ -167,7 +167,7 @@ def outputs(path, start=0, end=0):
                                                             end=end)
         for compartment in compartments:
             val_loss = get_seir_pointwise_loss(val_loss_dict[model], compartment=compartment, loss_fn='ape')
-            create_pointwise_loss_csv(path, val_loss, val_period, model, compartment, start, end)
+            create_pointwise_loss_csv_old(path, val_loss, val_period, model, compartment, start, end)
 
 
 if __name__ == "__main__":
