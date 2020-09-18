@@ -43,7 +43,7 @@ def run_experiments(config_path, output_folder, num):
     shift = config['shift']
     start_date = datetime.strptime(config['start_date'], '%m-%d-%Y') + timedelta(shift * num)
     while (start_date + timedelta(
-            train_period + val_period) > datetime.today()) and data_length > (train_period + val_period):
+            train_period + val_period) > datetime.today()) and data_length > train_period:
         val_period -= 1
         data_length -= 1
     if data_length == train_period:
