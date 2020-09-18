@@ -2,13 +2,13 @@
 
 CFG=config
 
-regions=(
-    new_york_city
-    italy
-    delhi
-)
-
-date=$(date '+%Y%m%d_%H%M%S')
+#regions=(
+#    new_york_city
+#    italy
+#    delhi
+#)
+#
+#date=$(date '+%Y%m%d_%H%M%S')
 
 #for i in ${regions[@]}; do
 #    config="--region_config $CFG/$i.yaml --output_folder $date"
