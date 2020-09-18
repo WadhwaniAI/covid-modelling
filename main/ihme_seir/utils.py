@@ -77,7 +77,7 @@ def get_ihme_pointwise_loss(loss_dict, compartment, split, loss_fn):
     return losses
 
 
-def create_pointwise_loss_csv(path, val_loss, val_period, model, compartment, start, end, outfile='test_loss'):
+def create_pointwise_loss_csv_old(path, val_loss, val_period, model, compartment, start, end, outfile='test_loss'):
     val_loss = pd.concat(val_loss).to_frame()
     run_num = [i for i in range(start, end + 1) for j in range(val_period)]
     lookahead = [j for i in range(start, end + 1) for j in range(1, val_period+1)]
@@ -86,7 +86,7 @@ def create_pointwise_loss_csv(path, val_loss, val_period, model, compartment, st
     val_loss.to_csv(f'{path}/consolidated/{model}_{compartment}_{outfile}.csv')
 
 
-def create_pointwise_loss_csv_new(path, val_loss, model, compartment, start, end, outfile='test_loss'):
+def create_pointwise_loss_csv(path, val_loss, model, compartment, start, end, outfile='test_loss'):
     for i in range(start, end+1):
         val_loss[i] = val_loss[i].to_frame()
         val_loss[i].insert(0, column='run', value=i)
