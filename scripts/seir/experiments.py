@@ -42,8 +42,13 @@ def run_experiments(config_path, output_folder, num):
     num_evals = config['num_evals']
     shift = config['shift']
     start_date = datetime.strptime(config['start_date'], '%m-%d-%Y') + timedelta(shift * num)
-    if start_date + timedelta(data_length) > datetime.today():
+    while (start_date + timedelta(
+            train_period + val_period) > datetime.today()) and data_length > (train_period + val_period):
+        val_period -= 1
+        data_length -= 1
+    if data_length == train_period:
         raise Exception('Insufficient data available')
+    config['val_period'] = val_period
     params_csv_path = config['params_csv']
     verbose = config['verbose']
     output_config.update(config)
@@ -172,7 +177,7 @@ def outputs(path, start=0, end=0):
                                                             end=end)
         for compartment in compartments:
             val_loss = get_seir_pointwise_loss(val_loss_dict[model], compartment=compartment, loss_fn='ape')
-            create_pointwise_loss_csv_old(path, val_loss, test_period, model, compartment, start, end)
+            create_pointwise_loss_csv(path, val_loss, test_period, model, compartment, start, end)
 
 
 def forecast(path, start=0, end=0):
