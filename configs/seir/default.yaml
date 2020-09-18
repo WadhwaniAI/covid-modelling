@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: athena
+        data_source: covid19india
         stratified_data: FALSE
         dataloading_params:
             state: Maharashtra
@@ -21,7 +21,8 @@ fitting:
             center: TRUE
             window_size: 7
             win_type: null
-            split_after_rolling: TRUE # NOT IMPLEMENTED
+            min_periods: 7
+            split_after_rolling: FALSE
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
@@ -39,7 +40,7 @@ fitting:
         lockdown_removal_date: 2020-08-30
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 1000
+        num_evals: 500
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
