@@ -16,7 +16,7 @@ sys.path.append('../../')
 
 from main.ihme.fitting import single_cycle, calc_loss, get_regional_data
 from main.ihme_seir.utils import get_ihme_pointwise_loss, get_ihme_loss_dict, read_config, read_params_file, \
-    create_pointwise_loss_csv, create_output_folder, create_pointwise_loss_csv_new
+    create_pointwise_loss_csv_old, create_output_folder, create_pointwise_loss_csv
 from utils.data import get_supported_regions, lograte_to_cumulative, rate_to_cumulative
 from utils.enums import Columns
 from utils.util import convert_date
@@ -41,9 +41,13 @@ def run_experiments(config_path, output_folder, num):
     data_length = train_val_period + test_period
     shift = base['shift']
     start_date = datetime.strptime(base['start_date'], '%m-%d-%Y') + timedelta(shift * num)
-    if start_date + timedelta(data_length) > datetime.today():
+    while (start_date + timedelta(train_val_period + test_period) > datetime.today()) and data_length > train_val_period:
+        test_period -= 1
+        data_length -= 1
+    if data_length == train_val_period:
         raise Exception('Insufficient data available')
     base['start_date'] = convert_date(start_date, to_str=True, format='%m-%d-%Y')
+    base['test_size'] = test_period
     params_csv_path = base['params_csv']
     verbose = base['verbose']
     base['data_length'] = train_val_period + test_period
@@ -169,7 +173,7 @@ def outputs(path, start=0, end=0):
         for compartment in compartments:
             val_loss = get_ihme_pointwise_loss(val_loss_dict[model], compartment=compartment, split='val',
                                                loss_fn='ape')
-            create_pointwise_loss_csv(path, val_loss, test_period, model, compartment, start, end)
+            create_pointwise_loss_csv_old(path, val_loss, test_period, model, compartment, start, end)
 
 
 def forecast(path, start=0, end=0):
@@ -196,11 +200,6 @@ def forecast(path, start=0, end=0):
 
     ycols = {col: '{log}{colname}_rate'.format(log='log_' if config['log'] else '', colname=col) for col in
              compartments}
-    n_days = end - start + train_period + test_period - 1 #120
-
-    limit = sys.getrecursionlimit()
-    print(limit)
-    sys.setrecursionlimit(4000)
 
     # Val losses
     val_loss_dict = dict()
@@ -208,6 +207,7 @@ def forecast(path, start=0, end=0):
         val_loss_dict[model] = dict()
     for i in range(start, end + 1):
         print(i)
+        n_days = end - i + train_period + test_period  # 120
         dfs, _ = get_regional_data(sub_region, region, area_names, n_days-train_period, config['smooth'],
                                    config['smooth_jump'],
                                    start_date=(start_date + timedelta(i - start)).strftime('%m-%d-%Y'),
@@ -222,19 +222,17 @@ def forecast(path, start=0, end=0):
                 picklefn = f'{path}/{i}/{model}.pkl'
                 with open(picklefn, 'rb') as pickle_file:
                     model_output = pickle.load(pickle_file)
-                    print(model_output['df_train'])
                     _, _, val_loss_dict[model][i] = calc_loss(ycols[compartment], model_output['df_train'],
                                                               dfs['test_nora'], model_output['df_final_prediction'],
                                                               xform_func, model_output['district_total_pop'])
                 val_loss_dict[model][i] = pd.concat([val_loss_dict[model][i]], keys=[compartment],
                                                     names=['compartment'])
-    sys.setrecursionlimit(limit)
 
     for model in models:
         for compartment in compartments:
             val_loss = get_ihme_pointwise_loss(val_loss_dict[model], compartment=compartment, split='val',
                                                loss_fn='ape')
-            create_pointwise_loss_csv_new(path, val_loss, model, compartment, start, end, outfile='test_loss_full')
+            create_pointwise_loss_csv(path, val_loss, model, compartment, start, end, outfile='test_loss_full')
 
 
 if __name__ == "__main__":
