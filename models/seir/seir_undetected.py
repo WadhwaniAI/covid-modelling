@@ -11,15 +11,11 @@ from models.seir.seir import SEIR
 from utils.fitting.ode import ODE_Solver
 
 class SEIR_Undetected(SEIR):
-    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf_D=3.3, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
-                 P_fatal=0.2, T_recov_severe=14, N=1e7, d=1.0, psi=1.00,
-                 lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', initialisation='intermediate', 
+    def __init__(self, lockdown_R0=2.2, T_inf_D=3.3, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
+                 P_fatal=0.2, T_recov_severe=14, N=1e7, d=1.0, psi=1.00, starting_date='2020-03-09', 
                  observed_values=None, E_hosp_ratio=0.5, I_D_hosp_ratio=0.5, I_U_hosp_ratio=0.5, **kwargs):
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
-        The model further implements 
-        - pre, post, and during lockdown behaviour 
-        - different initialisations : intermediate and starting 
 
         The state variables are : 
 
@@ -40,9 +36,7 @@ class SEIR_Undetected(SEIR):
         The parameters are : 
 
         R0 values - 
-        pre_lockdown_R0: R0 value pre-lockdown (float)
         lockdown_R0: R0 value during lockdown (float)
-        post_lockdown_R0: R0 value post-lockdown (float)
 
         Transmission parameters - 
         T_inc: The incubation time of the infection (float)
@@ -60,14 +54,11 @@ class SEIR_Undetected(SEIR):
 
         Lockdown parameters - 
         starting_date: Datetime value that corresponds to Day 0 of modelling (datetime/str)
-        lockdown_day: Number of days from the starting_date, after which lockdown is initiated (int)
-        lockdown_removal_day: Number of days from the starting_date, after which lockdown is removed (int)
 
         Misc - 
         N: Total population
         d: Current Detection Ratio
         psi: effective sensititivity (based on antigen and rtpcr sensitive and their overall proportion)
-        initialisation : method of initialisation ('intermediate'/'starting')
         """
         STATES = ['S', 'E', 'I_D', 'I_U', 'P_U', 'R_severe', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]
@@ -102,18 +93,6 @@ class SEIR_Undetected(SEIR):
         for i, _ in enumerate(y):
             y[i] = max(y[i], 0)
         S, E, I_D, I_U, P_U, R_severe, R_fatal, C, D = y
-
-        # # Modelling the behaviour post-lockdown
-        # if t >= self.lockdown_removal_day:
-        #     self.R0 = self.post_lockdown_R0
-        # # Modelling the behaviour lockdown
-        # elif t >= self.lockdown_day:
-        #     self.R0 = self.lockdown_R0
-        # # Modelling the behaviour pre-lockdown
-        # else:
-        #     self.R0 = self.pre_lockdown_R0
-
-        # self.T_trans = self.T_inf/self.R0
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
