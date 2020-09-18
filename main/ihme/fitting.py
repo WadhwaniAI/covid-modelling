@@ -33,7 +33,7 @@ def preprocess(timeseries, region, sub_region=None, area_names=None, trim_deceas
 
 
 def get_regional_data(sub_region, region, area_names, test_size, smooth_window, smooth_jump, start_date=None,
-                      data_length=0, data_source='covid19india', shorten_train=False):
+                      data_length=0, data_source='covid19india'):
     """
     Function to get regional data and shape it for IHME consumption
 
@@ -63,13 +63,6 @@ def get_regional_data(sub_region, region, area_names, test_size, smooth_window, 
         start_date = pd.to_datetime(start_date, dayfirst=False) if start_date is not None else df['date'].min()
         df[df_type] = get_subset(
             df[df_type], lower=start_date, upper=start_date+timedelta(data_length-1), col='date').reset_index(drop=True)
-
-    lendif = data_length - df['df_nora'].shape[0]
-    if lendif > 0:
-        if shorten_train:
-            pass
-        else:
-            test_size -= lendif
 
     df['train'], _, df['test'] = train_val_test_split(df['df'], val_size=0, test_size=test_size,
                                                       rolling_window=smooth_window, end='actual', dropna=False,
@@ -226,7 +219,7 @@ def run_cycle(dataframes, model_params, forecast_days=30,
         dict: results_dict
     """
     model = IHME(model_params)
-    train, test = dataframes['train'], dataframes['test']
+    train, test = dataframes['train'], dataframes['test_nora']
 
     n_days_optimize = kwargs.get("n_days_optimize", False)
 
