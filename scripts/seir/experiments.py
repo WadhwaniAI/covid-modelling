@@ -177,7 +177,7 @@ def outputs(path, start=0, end=0):
                                                             end=end)
         for compartment in compartments:
             val_loss = get_seir_pointwise_loss(val_loss_dict[model], compartment=compartment, loss_fn='ape')
-            create_pointwise_loss_csv(path, val_loss, test_period, model, compartment, start, end)
+            create_pointwise_loss_csv(path, val_loss, model, compartment, start, end)
 
 
 def forecast(path, start=0, end=0):

@@ -152,8 +152,6 @@ def outputs(path, start=0, end=0):
     compartments = config['which_compartments']
     start_date = datetime.strptime(config['start_date'], '%m-%d-%Y')
     shift = config['shift']
-    val_period = config['val_period']
-    synth_addition = config['synth']['synth_addition']
     dates = pd.date_range(start=start_date, periods=(end - start + 1), freq=f'{shift}D').tolist()
 
     # Model params
@@ -188,7 +186,7 @@ def outputs(path, start=0, end=0):
                                                             end=end)
         for compartment in compartments:
             val_loss = get_seir_pointwise_loss(val_loss_dict[model], compartment=compartment, loss_fn='ape')
-            create_pointwise_loss_csv(path, val_loss, val_period - synth_addition, model, compartment, start, end)
+            create_pointwise_loss_csv(path, val_loss, model, compartment, start, end)
 
 
 def forecast(path, start=0, end=0):
