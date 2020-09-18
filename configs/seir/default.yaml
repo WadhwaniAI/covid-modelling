@@ -46,7 +46,7 @@ fitting:
         end_date: null # NOT IMPLEMENTED
         train_period: 21
         val_period: 7
-        test_period: 0 # NOT IMPLEMENTED
+        test_period: 7
     #Optimisation related parameters
     loss:
         loss_method: mape

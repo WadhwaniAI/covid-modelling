@@ -245,9 +245,15 @@ def implement_rolling(df, window_size, center, win_type, min_periods):
 
     return df_roll
 
+def implement_split(df, val_period, test_period):
+    df_train = df.iloc[:len(df) - (val_period+test_period), :]
+    df_val = df.iloc[len(df) - (val_period+test_period):len(df) - test_period, :]
+    df_test = df.iloc[len(df) - test_period:, :]
 
-def train_val_split(df_district, val_period=5, window_size=5, center=True, win_type=None, min_periods=1, 
-                    split_after_rolling=False):
+    return df_train, df_val, df_test
+
+def train_val_split(df_district, val_period=5, test_period=5, window_size=5, center=True, win_type=None, 
+                    min_periods=1, split_after_rolling=False):
     """Creates train val split on dataframe
 
     # TODO : Add support for creating train val test split
@@ -268,22 +274,23 @@ def train_val_split(df_district, val_period=5, window_size=5, center=True, win_t
     if split_after_rolling:
         df_district_rolling = implement_rolling(
             df_district_rolling, window_size, center, win_type, min_periods)
-        df_train = df_district_rolling.iloc[:len(df_district_rolling) - val_period, :]
-        df_val = df_district_rolling.iloc[len(df_district_rolling) - val_period:, :]
+        df_train, df_val, df_test = implement_split(df_district_rolling, val_period, test_period)
         
-        df_train = df_train.infer_objects()
-        df_val = df_val.infer_objects()
     else:
-        df_train = df_district_rolling.iloc[:len(df_district_rolling) - val_period, :]
-        df_val = df_district_rolling.iloc[len(df_district_rolling) - val_period:, :]
+        df_train, df_val, df_test = implement_split(df_district_rolling, val_period, test_period)
 
         df_train = implement_rolling(df_train, window_size, center, win_type, min_periods)
         df_val = implement_rolling(df_val, window_size, center, win_type, min_periods)
+        df_test = implement_rolling(df_test, window_size, center, win_type, min_periods)
+
+    df_train = df_train.infer_objects()
+    df_val = df_val.infer_objects()
+    df_test = df_test.infer_objects()
         
     if val_period == 0:
-        return df_train, None
+        df_val = None
 
-    return df_train, df_val
+    return df_train, df_val, df_test
 
 def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
     picklefn = "../../cache/{district}_ts_{src}_{today}.pkl".format(
