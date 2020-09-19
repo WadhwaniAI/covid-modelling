@@ -43,17 +43,17 @@ def run_experiments(config_path, output_folder, num):
     shift = config['shift']
     start_date = datetime.strptime(config['start_date'], '%m-%d-%Y') + timedelta(shift * num)
     end_date = datetime.strptime(config['end_date'], '%m-%d-%Y')
-    while (start_date + timedelta(
-            train_period + val_period) > end_date + timedelta(1)) and data_length > train_period:
-        val_period -= 1
-        data_length -= 1
-    if data_length == train_period:
-        raise Exception('Insufficient data available')
-    config['val_period'] = val_period
     params_csv_path = config['params_csv']
     synth_data_path = config['synth']['synth_data_path']
     synth_model = config['synth']['synth_model']
     synth_addition = config['synth']['synth_addition']
+    while (start_date + timedelta(
+            train_period + val_period) > end_date + timedelta(1)) and data_length > (train_period+synth_addition):
+        val_period -= 1
+        data_length -= 1
+    if data_length == train_period+synth_addition:
+        raise Exception('Insufficient data available')
+    config['val_period'] = val_period
     verbose = config['verbose']
     output_config.update(config)
 
