@@ -11,11 +11,11 @@ regions=(
 )
 
 starts=(
-  91
-  138
-  121
-  134
-  73
+  0
+  0
+  0
+  0
+  0
 )
 
 ends=(
@@ -32,7 +32,7 @@ for i in ${regions[@]}; do
     config="--region_config $CFG/$i.yaml --output_folder $date"
     for j in `seq ${starts[count]} 1 ${ends[count]}`; do
     cat <<EOF
-python experiments.py $config --num $j
+python experiments_synth.py $config --num $j
 EOF
     done
     count=$((count+1))
