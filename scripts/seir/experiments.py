@@ -42,8 +42,9 @@ def run_experiments(config_path, output_folder, num):
     num_evals = config['num_evals']
     shift = config['shift']
     start_date = datetime.strptime(config['start_date'], '%m-%d-%Y') + timedelta(shift * num)
+    end_date = datetime.strptime(config['end_date'], '%m-%d-%Y')
     while (start_date + timedelta(
-            train_period + val_period) > datetime.today()) and data_length > train_period:
+            train_period + val_period) > end_date+timedelta(1)) and data_length > train_period:
         val_period -= 1
         data_length -= 1
     if data_length == train_period:
@@ -142,7 +143,6 @@ def outputs(path, start=0, end=0):
     compartments = config['which_compartments']
     start_date = datetime.strptime(config['start_date'], '%m-%d-%Y')
     shift = config['shift']
-    test_period = config['val_period']
     dates = pd.date_range(start=start_date, periods=(end - start + 1), freq=f'{shift}D').tolist()
 
     # Model params
