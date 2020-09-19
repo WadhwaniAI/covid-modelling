@@ -2,10 +2,11 @@ sub_region: null
 region: Italy
 data_source: jhu
 start_date: 02-19-2020
+end_date: 09-17-2020
 params_from_csv: False
 params_csv: italy_sir_synth_params.csv
 synth:
-  synth_data_path: ../../outputs/ihme_seir/ihme_paper/Italy/20200908_132551_3
+  synth_data_path: ../../outputs/ihme_seir/ihme_paper/Italy/20200908_123009
   synth_model: log_erf
   synth_addition: 5
 params_sir:

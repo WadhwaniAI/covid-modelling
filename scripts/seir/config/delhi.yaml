@@ -2,10 +2,11 @@ sub_region: null
 region: Delhi
 data_source: covid19india
 start_date: 03-29-2020
+end_date: 09-17-2020
 params_from_csv: False
 params_csv: delhi_sir_synth_params.csv
 synth:
-  synth_data_path: ../../outputs/ihme_seir/ihme_paper/Delhi/20200908_123009_3
+  synth_data_path: ../../outputs/ihme_seir/ihme_paper/Delhi/20200825_160303
   synth_model: log_erf
   synth_addition: 5
 params_sir:
