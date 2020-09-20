@@ -131,7 +131,7 @@ def get_state_time_series(state='Delhi'):
     dataframes = get_dataframes_cached()
     df_states = copy.copy(dataframes['df_states_all'])
     df_state = df_states[df_states['state'] == state]
-    df_state['date'] = pd.to_datetime(df_state['date'])
+    df_state.loc[:, 'date'] = pd.to_datetime(df_state['date'])
     df_state = df_state.rename(
         {'active': 'hospitalised', 'confirmed': 'total_infected'}, axis='columns')
     df_state.reset_index(inplace=True, drop=True)
@@ -369,7 +369,9 @@ def get_jhu_data(region, sub_region=None):
                      inplace=True)
     dataframe.drop(["Lat", "Long"], axis=1, inplace=True)
     df = dataframe[dataframe['Country/Region'] == region]
-    if sub_region is not None:
+    if sub_region is None:
+        df = df[pd.isna(df['Province/State'])]
+    else:
         df = df[df['Province/State'] == sub_region]
     df.reset_index(drop=True, inplace=True)
     return df
@@ -382,7 +384,7 @@ def get_ny_times_data(state, county=None):
     else:
         df = dataframes['states']
         df = df[df['state'] == state]
-    df['date'] = pd.to_datetime(df['date'])
+    df.loc[:, 'date'] = pd.to_datetime(df['date'])
     df.rename(columns={"cases": "total_infected", "deaths": "deceased"}, inplace=True)
     df.drop('fips', axis=1, inplace=True)
     df.reset_index(drop=True, inplace=True)
