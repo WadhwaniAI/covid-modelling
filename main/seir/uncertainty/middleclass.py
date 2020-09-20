@@ -16,7 +16,7 @@ from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 
 class MCUncertainty(Uncertainty):
-    def __init__(self, predictions_dict, num_evals, variable_param_ranges, date_of_sorting_trials, 
+    def __init__(self, predictions_dict, num_evals, variable_param_ranges, which_fit, date_of_sorting_trials, 
                  sort_trials_by_column, loss, percentiles):
         """
         Initializes uncertainty object, finds beta for distribution
@@ -27,6 +27,7 @@ class MCUncertainty(Uncertainty):
         """
         super().__init__(predictions_dict)
         self.variable_param_ranges = variable_param_ranges
+        self.which_fit = which_fit
         self.date_of_sorting_trials = date_of_sorting_trials
         self.sort_trials_by_column = sort_trials_by_column
         for key in loss:
@@ -59,7 +60,7 @@ class MCUncertainty(Uncertainty):
     def get_distribution(self):
         """
         Computes probability distribution based on given beta and date 
-        over the trials in predictions_dict['m2']['all_trials']
+        over the trials in predictions_dict[self.which_fit]['all_trials']
 
         Args:
 
@@ -75,10 +76,10 @@ class MCUncertainty(Uncertainty):
         """    
         
         df = pd.DataFrame(columns=['loss', 'weight', 'pdf', self.date_of_sorting_trials, 'cdf'])
-        df['loss'] = self.predictions_dict['m2']['trials_processed']['losses']
+        df['loss'] = self.predictions_dict[self.which_fit]['trials_processed']['losses']
         df['weight'] = np.exp(-self.beta*df['loss'])
         df['pdf'] = df['weight'] / df['weight'].sum()
-        df_trials = self.trials_to_df(self.predictions_dict['m2']['trials_processed'], 
+        df_trials = self.trials_to_df(self.predictions_dict[self.which_fit]['trials_processed'], 
                                       self.sort_trials_by_column)
         self.date_of_sorting_trials = datetime.datetime.combine(
             self.date_of_sorting_trials, datetime.time())
@@ -111,10 +112,11 @@ class MCUncertainty(Uncertainty):
         
         deciles_forecast = {}
         
-        predictions = self.predictions_dict['m2']['trials_processed']['predictions']
-        params = self.predictions_dict['m2']['trials_processed']['params']
-        df_district = self.predictions_dict['m2']['df_district']
-        df_train_nora = df_district.set_index('date').loc[self.predictions_dict['m2']['df_train']['date'],:].reset_index()
+        predictions = self.predictions_dict[self.which_fit]['trials_processed']['predictions']
+        params = self.predictions_dict[self.which_fit]['trials_processed']['params']
+        df_district = self.predictions_dict[self.which_fit]['df_district']
+        df_train_nora = df_district.set_index('date').loc[
+            self.predictions_dict[self.which_fit]['df_train']['date'], :].reset_index()
         
         for key in ptile_dict.keys():
             deciles_forecast[key] = {}
@@ -140,6 +142,8 @@ class MCUncertainty(Uncertainty):
         """    
         beta = hp['beta']
         losses = self.predictions_dict['m1']['trials_processed']['losses']
+        # This is done as rolling average on df_val has already been calculated, 
+        # while df_district has no rolling average
         df_val = self.predictions_dict['m1']['df_district'].set_index('date') \
             .loc[self.predictions_dict['m1']['df_val']['date'],:]
         beta_loss = np.exp(-beta*losses)
