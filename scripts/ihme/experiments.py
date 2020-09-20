@@ -208,10 +208,10 @@ def forecast(path, start=0, end=0):
         val_loss_dict[model] = dict()
     for i in range(start, end + 1):
         print(i)
-        n_days = end - i + train_period + test_period  # 120
+        n_days = end - i + train_period + test_period
         dfs, _ = get_regional_data(sub_region, region, area_names, n_days - train_period, config['smooth'],
                                    config['smooth_jump'],
-                                   start_date=(start_date + timedelta(i - start)).strftime('%m-%d-%Y'),
+                                   start_date=(start_date + train_period + timedelta(i - start)).strftime('%m-%d-%Y'),
                                    data_length=n_days, data_source=config['data_source'])
 
         dfs['test_nora'].loc[:, 'day'] = range(train_period, train_period + dfs['test_nora'].shape[0])
