@@ -12,7 +12,7 @@ from utils.fitting.ode import ODE_Solver
 
 class SEIR_Undetected(SEIR):
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf_D=3.3, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
-                 P_fatal=0.2, T_recov_severe=14, N=1e7, d=1.0, psi=1.00,
+                 P_fatal=0.2, T_recov_severe=14, N=1e7, d=1.0, psi=1.00, beta=0.2,
                  lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', initialisation='intermediate', 
                  observed_values=None, E_hosp_ratio=0.5, I_D_hosp_ratio=0.5, I_U_hosp_ratio=0.5, **kwargs):
         """
@@ -88,6 +88,7 @@ class SEIR_Undetected(SEIR):
         self.T_inf_U = T_inf_U
         self.I_D_hosp_ratio = I_D_hosp_ratio
         self.I_U_hosp_ratio = I_U_hosp_ratio
+        self.beta = beta
         
         self.state_init_values['I_D'] = self.I_D_hosp_ratio * observed_values['active'] / self.N
         self.state_init_values['I_U'] = self.I_U_hosp_ratio * observed_values['active'] / self.N

@@ -19,7 +19,7 @@ class SEIR(Model):
         # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
         if post_lockdown_R0 == None:
            post_lockdown_R0 = lockdown_R0
-
+        
         params = {
             # R0 values
             'pre_lockdown_R0': pre_lockdown_R0, # R0 value pre-lockdown

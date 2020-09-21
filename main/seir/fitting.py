@@ -39,7 +39,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         df_not_strat = get_data(data_source, dataloading_params)
         df_district = granular.get_data(data_source)
     else:
-        df_district = get_data(data_source, dataloading_params)
+        df_district = get_data(data_source, dataloading_params, **kwargs)
     
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
@@ -54,12 +54,19 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         smoothing_plot = plot_smoothing(orig_df_district, df_district, dataloading_params['state'], 
                                         dataloading_params['district'], which_compartments=loss_compartments, 
                                         description='Smoothing')
+    
     df_district['daily_cases'] = df_district['total'].diff()
-    df_district.dropna(axis=0, how='any', subset=['total', 'active', 'recovered', 'deceased', 'daily_cases'], 
+    # df_district.dropna(axis=0, how='any', subset=['total', 'active', 'recovered', 'deceased', 'daily_cases'], 
+    #                    inplace=True)
+    df_district.dropna(axis=0, how='any', subset=['total', 'active', 'recovered', 'deceased'], 
                        inplace=True)
     df_district.reset_index(drop=True, inplace=True)
+    smoothing = {
+            'smoothing_description': None,
+            'smoothing_plot': None,
+            'df_district_unsmoothed': None
+        }
 
-    smoothing = {}
     if smooth_jump:
         smoothing = {
             'smoothing_description': description,
@@ -190,7 +197,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
     if not observed_dataframes['df_val'] is None:
         print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
-        
+
     predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
             default_params, fitting_method, fitting_method_params, split, loss)
 
