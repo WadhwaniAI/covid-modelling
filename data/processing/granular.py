@@ -97,12 +97,12 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
 
     #Column renaming and pruning
     df = df.drop([x for x in df.columns if '_capacity' in x] + ['partition_0'], axis=1)
-    df = df.rename({'total beds occupied': 'total_beds', 'o2 beds occupied': 'o2_beds', 'icu beds occupied': 'icu_beds',
+    df = df.rename({'total beds occupied': 'total_beds', 'o2 beds occupied': 'o2_beds', 'icu beds occupied': 'icu',
                     'stable_symptomatic': 'symptomatic', 'stable_asymptomatic': 'asymptomatic'}, axis='columns')
     # df.columns = [x.replace('_occupied', '') for x in df.columns]
     # New column creation
     df['hq'] = df['active'] - df['total_beds']
-    df['non_o2_beds'] = df['total_beds'] - (df['o2_beds']+df['icu_beds'])
+    df['non_o2_beds'] = df['total_beds'] - (df['o2_beds']+df['icu'])
 
     # Rearranging columns
     col = df.pop('hq')
