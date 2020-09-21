@@ -11,17 +11,14 @@ from models.seir.seir import SEIR
 from utils.fitting.ode import ODE_Solver
 
 class SEIRHD_Severity(SEIR):
-    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, #Transmission
+    def __init__(self, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2, #Transmission
                  P_moderate=0.4, P_severe=0.2, P_fatal=0.02,  #Clinical Probabs
                  T_recov_severe=14, T_recov_mild=11, T_recov_moderate=11, T_recov_fatal=32, #Clinical Time
-                 N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', #Misc
+                 N=7e6, starting_date='2020-03-09', #Misc
                  observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, #Init
                  super_init=False, **kwargs): #Init
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
-        The model further implements 
-        - pre, post, and during lockdown behaviour 
-
 
         The state variables are : 
 
@@ -43,9 +40,7 @@ class SEIRHD_Severity(SEIR):
         The parameters are : 
 
         R0 values - 
-        pre_lockdown_R0: R0 value pre-lockdown (float)
         lockdown_R0: R0 value during lockdown (float)
-        post_lockdown_R0: R0 value post-lockdown (float)
 
         Transmission parameters - 
         T_inc: The incubation time of the infection (float)
@@ -65,8 +60,6 @@ class SEIRHD_Severity(SEIR):
 
         Lockdown parameters - 
         starting_date: Datetime value that corresponds to Day 0 of modelling (datetime/str)
-        lockdown_day: Number of days from the starting_date, after which lockdown is initiated (int)
-        lockdown_removal_day: Number of days from the starting_date, after which lockdown is removed (int)
 
         Misc - 
         N: Total population
@@ -117,17 +110,7 @@ class SEIRHD_Severity(SEIR):
             y[i] = max(y[i], 0)
         S, E, I, R_mild, R_moderate, R_severe, R_fatal, C, D = y
 
-        # Modelling the behaviour post-lockdown
-        if t >= self.lockdown_removal_day:
-            self.R0 = self.post_lockdown_R0
-        # Modelling the behaviour lockdown
-        elif t >= self.lockdown_day:
-            self.R0 = self.lockdown_R0
-        # Modelling the behaviour pre-lockdown
-        else:
-            self.R0 = self.pre_lockdown_R0
-
-        self.T_trans = self.T_inf/self.R0
+        self.T_trans = self.T_inf/self.lockdown_R0
 
         # Init derivative vector
         dydt = np.zeros(y.shape)

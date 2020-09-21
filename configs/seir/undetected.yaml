@@ -45,7 +45,7 @@ fitting:
         E_hosp_ratio: 2.0
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 1000
+        num_evals: 100
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
