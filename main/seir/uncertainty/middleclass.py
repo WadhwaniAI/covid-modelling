@@ -35,7 +35,8 @@ class MCUncertainty(Uncertainty):
         self.percentiles = percentiles
         self.beta = self.find_beta(variable_param_ranges, num_evals)
         self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
-        self.ensemble_mean_forecast = avg_weighted_error({'beta': self.beta}, return_ensemble_mean_forecast=False))
+        self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta}, return_dict=False,
+                                                              return_ensemble_mean_forecast=True)                                                      
         self.get_distribution()
 
     def trials_to_df(self, trials_processed, column=Columns.active):
@@ -131,7 +132,7 @@ class MCUncertainty(Uncertainty):
                 which_compartments=self.loss_compartments)
         return deciles_forecast
 
-    def avg_weighted_error(self, hp, return_dict=False, return_ensemble_mean_forecast=False)):
+    def avg_weighted_error(self, hp, return_dict=False, return_ensemble_mean_forecast=False):
         """
         Loss function to optimize beta
 
@@ -162,6 +163,7 @@ class MCUncertainty(Uncertainty):
         if return_dict:
             return lc.calc_loss_dict(weighted_pred_df_loss, df_val, method = self.loss_method)
         if return_ensemble_mean_forecast:
+            weighted_pred_df.reset_index(inplace=True)
             return weighted_pred_df
         return lc.calc_loss(weighted_pred_df_loss, df_val, method = self.loss_method,
                             which_compartments=allcols, loss_weights=self.loss_weights)
