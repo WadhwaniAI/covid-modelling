@@ -1,21 +1,11 @@
-import os
-import json
-import numpy as np
-import pandas as pd
-
-from collections import OrderedDict, defaultdict
-import datetime
 import copy
-import importlib
 from tabulate import tabulate
 
-from data.processing.processing import get_data, train_val_split
+from data.processing.processing import get_data, train_val_test_split
 from data.processing import granular
 
-import models.seir
 from main.seir.optimiser import Optimiser
 from utils.fitting.loss import Loss_Calculator
-from utils.generic.enums import Columns
 from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
 from viz import plot_smoothing, plot_fit
 
@@ -184,8 +174,8 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
     observed_dataframes, smoothing = data_setup(**params)
-    smoothing_plot = smoothing['smoothing_plot']
-    orig_df_district = smoothing['df_district_unsmoothed']
+    smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
+    orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
 
     print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
     if not observed_dataframes['df_val'] is None:
