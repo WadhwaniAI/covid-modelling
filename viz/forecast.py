@@ -24,6 +24,7 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
     df_temp.loc[:, which_compartments] = df_prediction.loc[:,
                                                            which_compartments]*(1 + 0.01*df_loss['val'])
     df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
+    df_prediction[which_compartments] = df_prediction[which_compartments].apply(pd.to_numeric, axis=1)
     return df_prediction
 
 
