@@ -248,19 +248,31 @@ def implement_rolling(df, window_size, center, win_type, min_periods):
 def implement_split(df, train_period, val_period, test_period, start_date, end_date):
     if start_date is not None and end_date is not None:
         raise ValueError('Both start_date and end_date cannot be specified. Please specify only 1')
-    if end_date is not None:
-        if isinstance(end_date, int):
-            if end_date > 0:
-                raise ValueError('Please enter a negative value for end_date if entering an integer')
-        if isinstance(end_date, datetime.date):
-            end_date = df.loc[df['date'].dt.date == end_date].index[0] - len(df)
-    else:
-        end_date = 0  
+    elif start_date is not None:
+        if isinstance(start_date, int):
+            if start_date < 0:
+                raise ValueError('Please enter a positive value for start_date if entering an integer')
+        if isinstance(start_date, datetime.date):
+            start_date = df.loc[df['date'].dt.date == start_date].index[0]
 
-    df_test = df.iloc[len(df) - test_period+end_date:end_date, :]
-    df_val = df.iloc[len(df) - (val_period+test_period) +
-                     end_date:len(df) - test_period+end_date, :]
-    df_train = df.iloc[:len(df) - (val_period+test_period)+end_date, :]
+        df_train = df.iloc[:start_date + train_period, :]
+        df_val = df.iloc[start_date + train_period:start_date + train_period + val_period, :]
+        df_test = df.iloc[start_date + train_period + val_period: \
+                          start_date + train_period + val_period + test_period, :]
+    else:    
+        if end_date is not None:
+            if isinstance(end_date, int):
+                if end_date > 0:
+                    raise ValueError('Please enter a negative value for end_date if entering an integer')
+            if isinstance(end_date, datetime.date):
+                end_date = df.loc[df['date'].dt.date == end_date].index[0] - len(df) + 1
+        else:
+            end_date = 0  
+
+        df_test = df.iloc[len(df) - test_period+end_date:end_date, :]
+        df_val = df.iloc[len(df) - (val_period+test_period) +
+                        end_date:len(df) - test_period+end_date, :]
+        df_train = df.iloc[:len(df) - (val_period+test_period)+end_date, :]
 
     return df_train, df_val, df_test
 
