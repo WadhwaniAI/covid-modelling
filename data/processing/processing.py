@@ -245,15 +245,27 @@ def implement_rolling(df, window_size, center, win_type, min_periods):
 
     return df_roll
 
-def implement_split(df, val_period, test_period):
-    df_train = df.iloc[:len(df) - (val_period+test_period), :]
-    df_val = df.iloc[len(df) - (val_period+test_period):len(df) - test_period, :]
-    df_test = df.iloc[len(df) - test_period:, :]
+def implement_split(df, train_period, val_period, test_period, start_date, end_date):
+    if start_date is not None and end_date is not None:
+        raise ValueError('Both start_date and end_date cannot be specified. Please specify only 1')
+    if end_date is not None:
+        if isinstance(end_date, int):
+            if end_date > 0:
+                raise ValueError('Please enter a negative value for end_date if entering an integer')
+        if isinstance(end_date, datetime.date):
+            end_date = df.loc[df['date'].dt.date == end_date].index[0] - len(df)
+    else:
+        end_date = 0  
+
+    df_test = df.iloc[len(df) - test_period+end_date:end_date, :]
+    df_val = df.iloc[len(df) - (val_period+test_period) +
+                     end_date:len(df) - test_period+end_date, :]
+    df_train = df.iloc[:len(df) - (val_period+test_period)+end_date, :]
 
     return df_train, df_val, df_test
 
-def train_val_test_split(df_district, val_period=5, test_period=5, window_size=5, center=True, win_type=None, 
-                         min_periods=1, split_after_rolling=False):
+def train_val_test_split(df_district, train_period=5, val_period=5, test_period=5, start_date=None, end_date=None,  
+                         window_size=5, center=True, win_type=None, min_periods=1, split_after_rolling=False):
     """Creates train val split on dataframe
 
     # TODO : Add support for creating train val test split
@@ -274,10 +286,12 @@ def train_val_test_split(df_district, val_period=5, test_period=5, window_size=5
     if split_after_rolling:
         df_district_rolling = implement_rolling(
             df_district_rolling, window_size, center, win_type, min_periods)
-        df_train, df_val, df_test = implement_split(df_district_rolling, val_period, test_period)
+        df_train, df_val, df_test = implement_split(df_district_rolling, train_period, val_period, 
+                                                    test_period, start_date, end_date)
         
     else:
-        df_train, df_val, df_test = implement_split(df_district_rolling, val_period, test_period)
+        df_train, df_val, df_test = implement_split(df_district_rolling, train_period, val_period,
+                                                    test_period, start_date, end_date)
 
         df_train = implement_rolling(df_train, window_size, center, win_type, min_periods)
         df_val = implement_rolling(df_val, window_size, center, win_type, min_periods)
