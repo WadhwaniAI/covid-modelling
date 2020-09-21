@@ -9,7 +9,7 @@ import copy
 import importlib
 from tabulate import tabulate
 
-from data.processing.processing import get_data, train_val_split
+from data.processing.processing import get_data, train_val_test_split
 from data.processing import granular
 
 import models.seir
