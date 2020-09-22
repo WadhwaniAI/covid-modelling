@@ -35,8 +35,8 @@ fitting:
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
-        start_date: null # NOT IMPLEMENTED
-        end_date: null # NOT IMPLEMENTED
+        start_date: null
+        end_date: null
         train_period: 21
         val_period: 7
         test_period: 7
