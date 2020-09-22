@@ -98,6 +98,9 @@ def _log_forecasts(mdFile, ROOT_DIR, m2_dict):
                     m2_dict['plots']['forecast_best_50'], 'Forecast using best fit, 50th decile params')
     _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-80.png',
                     m2_dict['plots']['forecast_best_80'], 'Forecast using best fit, 80th decile params')
+    _log_plots_util(mdFile, ROOT_DIR, 'forecast-ensemble-mean-50.png',
+                    m2_dict['plots']['forecast_ensemble_mean_50'], 'Forecast of ensemble fit, 50th decile')
+
     for column, figure in m2_dict['plots']['forecasts_topk'].items():
         _log_plots_util(mdFile, ROOT_DIR, f'forecast-topk-{column}.png',
                         figure, f'Forecast of top k trials for column {column}')

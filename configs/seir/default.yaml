@@ -42,11 +42,11 @@ fitting:
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
-        start_date: null # NOT IMPLEMENTED
-        end_date: null # NOT IMPLEMENTED
+        start_date: null
+        end_date: null
         train_period: 21
         val_period: 7
-        test_period: 7
+        test_period: 0
     #Optimisation related parameters
     loss:
         loss_method: mape
@@ -68,6 +68,7 @@ uncertainty:
     method: MCUncertainty
     uncertainty_params:
         num_evals: 100
+        which_fit: m1
         variable_param_ranges:
             beta: [[0, 10], uniform]
         date_of_sorting_trials: 2020-09-30
