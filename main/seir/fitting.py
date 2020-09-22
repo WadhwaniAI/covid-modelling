@@ -9,7 +9,7 @@ import copy
 import importlib
 from tabulate import tabulate
 
-from data.processing.processing import get_data, train_val_split
+from data.processing.processing import get_data, train_val_test_split
 from data.processing import granular
 
 import models.seir
@@ -20,7 +20,7 @@ from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratifie
 from viz import plot_smoothing, plot_fit
 
 
-def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, smooth_jump_params, val_period, 
+def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, smooth_jump_params, split,
                loss_compartments, rolling_average, rolling_average_params, **kwargs):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
@@ -70,16 +70,21 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
      
     rap = rolling_average_params
     if rolling_average:
-        df_train, df_val = train_val_split(df_district, train_rollingmean=True, val_rollingmean=True, 
-                                           val_size=val_period, window_size=rap['window_size'], center=rap['center'], 
-                                           win_type=rap['win_type'])
+        df_train, df_val, _ = train_val_test_split(
+            df_district, train_period=split['train_period'], val_period=split['val_period'],
+            test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
+            window_size=rap['window_size'], center=rap['center'], 
+            win_type=rap['win_type'], min_periods=rap['min_periods'])
     else:
-        df_train, df_val = train_val_split(df_district, train_rollingmean=False, val_rollingmean=False,
-                                           val_size=val_period, window_size=rap['window_size'], center=rap['center'],
-                                           win_type=rap['win_type'])
+        df_train, df_val, _ = train_val_test_split(
+            df_district, train_period=split['train_period'], val_period=split['val_period'],
+            test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
+            window_size=1)
 
-    df_train_nora, df_val_nora = train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, 
-                                                 val_size=val_period)
+    df_train_nora, df_val_nora, _ = train_val_test_split(
+        df_district, train_period=split['train_period'], val_period=split['val_period'],
+        test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
+        window_size=1)
 
     observed_dataframes = {}
     for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
@@ -181,7 +186,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
 
     # Get data
     params = {**data}
-    params['val_period'] = split['val_period']
+    params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
     observed_dataframes, smoothing = data_setup(**params)
     smoothing_plot = smoothing['smoothing_plot']

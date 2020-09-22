@@ -12,19 +12,12 @@ from utils.fitting.ode import ODE_Solver
 class SEIR(Model):
 
     @abstractmethod
-    def __init__(self, STATES, R_STATES, p_params, t_params, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None,
-                 T_inf=2.9, T_inc=5.2, N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 
-                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
-
-        # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
-        if post_lockdown_R0 == None:
-           post_lockdown_R0 = lockdown_R0
+    def __init__(self, STATES, R_STATES, p_params, t_params, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2, N=7e6, 
+                 starting_date='2020-03-09', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
 
         params = {
             # R0 values
-            'pre_lockdown_R0': pre_lockdown_R0, # R0 value pre-lockdown
             'lockdown_R0': lockdown_R0,  # R0 value during lockdown
-            'post_lockdown_R0': post_lockdown_R0,  # R0 value post-lockdown
 
             # Transmission parameters
             'T_inc': T_inc,  # The incubation time of the infection
@@ -32,8 +25,6 @@ class SEIR(Model):
 
             # Lockdown parameters
             'starting_date': starting_date,  # Datetime value that corresponds to Day 0 of modelling
-            'lockdown_day': lockdown_day, # Number of days from the starting_date, after which lockdown is initiated
-            'lockdown_removal_day': lockdown_removal_day, # Number of days from the starting_date, after which lockdown is removed
             'N': N,
 
             #Initialisation Params
