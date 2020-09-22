@@ -40,7 +40,8 @@ def run_experiments(config_path, output_folder, num):
     test_period = base['test_size']
     data_length = train_val_period + test_period
     shift = base['shift']
-    start_date = datetime.strptime(base['start_date'], '%m-%d-%Y') + timedelta(shift * num)
+    gap = 30 - train_val_period  # Assuming the maximum training period is 30
+    start_date = datetime.strptime(base['start_date'], '%m-%d-%Y') + timedelta(gap + shift * num)
     while (start_date + timedelta(
             train_val_period + test_period) > datetime.today()) and data_length > train_val_period:
         test_period -= 1
@@ -49,6 +50,7 @@ def run_experiments(config_path, output_folder, num):
         raise Exception('Insufficient data available')
     base['start_date'] = convert_date(start_date, to_str=True, format='%m-%d-%Y')
     base['test_size'] = test_period
+    base['val_size'] = 0.2 * train_val_period
     params_csv_path = base['params_csv']
     verbose = base['verbose']
     base['data_length'] = train_val_period + test_period
