@@ -19,7 +19,7 @@ fitting:
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
-        lockdown_R0: [[0.7, 1.2], uniform]
+        lockdown_R0: [[1.1, 1.7], uniform]
         T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
         T_recov: [[0, 40], uniform]
@@ -28,7 +28,7 @@ fitting:
         E_hosp_ratio: [[0, 2], uniform]
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
-        N: 1.0e+7
+        N: 1.4e+6
     fitting_method: bayes_opt
     fitting_method_params:
         num_evals: 1000
@@ -53,16 +53,16 @@ sensitivity:
     T_recov: [[[1, 100], 101], recovered, total]
     T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
-    forecast_days: 30
+    forecast_days: 45
     num_trials_to_plot: 10
     plot_topk_trials_for_columns: [total, active]
     plot_ptiles_for_columns: [total, active]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
-        num_evals: 100
+        num_evals: 150
         variable_param_ranges:
-            beta: [[0, 10], uniform]
+            beta: [[0, 15], uniform]
         date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:
