@@ -178,12 +178,8 @@ def plot_histogram(predictions_dict, fig, axs, which_fit='m1', plot_lines=False,
         fig.savefig(filename)
     return histograms
 
-def plot_all_histograms(predictions_dict):
-
-    params_array, losses_array = _order_trials_by_loss(predictions_dict['m1'])
-    params_dict = {param: [param_dict[param] for param_dict in params_array]
-                   for param in params_array[0].keys()}
-    weights = np.exp(-np.array(losses_array))
+def plot_all_histograms(predictions_dict, description):
+    params_array, _ = _order_trials_by_loss(predictions_dict['m1'])
 
     fig, axs = plt.subplots(nrows=len(params_array[0].keys())//2, ncols=2, 
                             figsize=(18, 6*(len(params_array[0].keys())//2)))
@@ -191,4 +187,36 @@ def plot_all_histograms(predictions_dict):
     for run in predictions_dict.keys():
         histograms[run] = plot_histogram(predictions_dict, fig, axs, which_fit=run)
 
+    fig.suptitle(f'Histogram plots for {description}')
     return fig, axs, histograms
+
+
+def plot_mean_variance(predictions_dict, description):
+    params_array, _ = _order_trials_by_loss(predictions_dict['m1'])
+    params = list(params_array[0].keys())
+    df_mean_var = pd.DataFrame(columns=list(predictions_dict.keys()),
+                               index=pd.MultiIndex.from_product([params,
+                                                                ['mean', 'std']]))
+
+    for run in predictions_dict.keys():
+        params_array, losses_array = _order_trials_by_loss(predictions_dict[run])
+        params_dict = {param: [param_dict[param] for param_dict in params_array]
+                       for param in params_array[0].keys()}
+        weights = np.exp(-np.array(losses_array))
+        for param in params_dict.keys():
+            mean = np.average(params_dict[param], weights=weights)
+            variance = np.average((params_dict[param] - mean)**2, weights=weights)
+            df_mean_var.loc[(param, 'mean'), run] = mean
+            df_mean_var.loc[(param, 'std'), run] = np.sqrt(variance)
+
+    cmap = plt.get_cmap('plasma')
+    fig, axs = plt.subplots(nrows=len(params)//2, ncols=2,
+                            figsize=(18, 6*(len(params)//2)))
+    for i, param in enumerate(params):
+        ax = axs.flat[i]
+        ax.bar(np.arange(len(predictions_dict)), df_mean_var.loc[(param, 'mean'), :],
+            yerr=df_mean_var.loc[(param, 'std'), :], tick_label=df_mean_var.columns, color=cmap(i/len(params)))
+        ax.set_title(f'Mean and variance values for parameter {param}')
+        ax.set_ylabel(param)
+    fig.suptitle(f'Mean Variance plots for {description}')
+    return fig, axs, df_mean_var
