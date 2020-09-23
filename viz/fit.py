@@ -8,6 +8,7 @@ import copy
 from functools import reduce
 
 from utils.generic.enums.columns import *
+from main.seir.forecast import _order_trials_by_loss
 from viz.utils import axis_formatter
 
 def plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, district,
@@ -100,7 +101,7 @@ def plot_fit_multiple_preds(predictions_dict, which_fit='m1'):
     df_true_plotting_rolling = pd.concat([df_train, df_val], ignore_index=True)
     df_true_plotting = predictions_dict[which_fit]['df_district']
     df_prediction = predictions_dict[which_fit]['df_prediction']
-    train_period = predictions_dict[which_fit]['run_params']['train_period']
+    train_period = predictions_dict[which_fit]['which_fit_params']['train_period']
 
     fig, ax = plt.subplots(figsize=(12, 12))
     for compartment in compartments['base']:
@@ -135,3 +136,59 @@ def plot_fit_multiple_preds(predictions_dict, which_fit='m1'):
 
     plt.tight_layout()
     return fig
+
+
+def plot_histogram(predictions_dict, fig, axs, which_fit='m1', plot_lines=False, weighted=True, savefig=False,
+                   filename=None, label=None):
+    params_array, losses_array = _order_trials_by_loss(predictions_dict[which_fit])
+    params_dict = {param: [param_dict[param] for param_dict in params_array]
+                   for param in params_array[0].keys()}
+    weights = np.exp(-np.array(losses_array))
+
+    label = which_fit if label is None else label
+
+    histograms = {}
+    for i, param in enumerate(params_dict.keys()):
+        histograms[param] = {}
+        ax = axs.flat[i]
+        if plot_lines:
+            bar_heights, endpoints = np.histogram(params_dict[param], density=True, bins=20, weights=weights)
+            centers = (endpoints[1:] + endpoints[:-1]) / 2
+            ax.plot(centers, bar_heights, label=which_fit)
+        else:
+            if weighted:
+                histogram = ax.hist(params_dict[param], density=True, histtype='bar', bins=20, 
+                                    weights=weights, label=which_fit, alpha=1)
+            else:
+                histogram = ax.hist(params_dict[param], density=True, histtype='bar', bins=20, 
+                                    label=which_fit, alpha=1)
+            bar_heights, endpoints = histogram[0], histogram[1]
+            centers = (endpoints[1:] + endpoints[:-1]) / 2
+        
+        ax.set_title(f'Histogram of parameter {param}')
+        ax.set_ylabel('Density')
+        ax.legend()
+            
+        histograms[param]['density'] = bar_heights
+        histograms[param]['endpoints'] = endpoints
+        histograms[param]['centers'] = centers
+        histograms[param]['probability'] = bar_heights*np.mean(np.diff(endpoints))
+        
+    if savefig:
+        fig.savefig(filename)
+    return histograms
+
+def plot_all_histograms(predictions_dict):
+
+    params_array, losses_array = _order_trials_by_loss(predictions_dict['m1'])
+    params_dict = {param: [param_dict[param] for param_dict in params_array]
+                   for param in params_array[0].keys()}
+    weights = np.exp(-np.array(losses_array))
+
+    fig, axs = plt.subplots(nrows=len(params_array[0].keys())//2, ncols=2, 
+                            figsize=(18, 6*(len(params_array[0].keys())//2)))
+    histograms = {}
+    for run in predictions_dict.keys():
+        histograms[run] = plot_histogram(predictions_dict, fig, axs, which_fit=run)
+
+    return fig, axs, histograms
