@@ -61,6 +61,7 @@ uncertainty:
     method: MCUncertainty
     uncertainty_params:
         num_evals: 100
+        which_fit: m1
         variable_param_ranges:
             beta: [[0, 10], uniform]
         date_of_sorting_trials: 2020-09-30
