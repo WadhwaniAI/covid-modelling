@@ -25,6 +25,23 @@ class Loss_Calculator():
         loss = np.mean(ape)
         return loss
 
+    def _calc_mape_delta(self, y_pred, y_true):
+        y_pred = np.array(y_pred)
+        y_true = np.array(y_true)
+        
+        y_pred_delta = y_pred[1:] - y_pred[:-1]
+        y_true_delta = y_true[1:] - y_true[:-1]
+        
+        y_pred_delta = y_pred_delta[y_true_delta != 0]
+        y_true_delta = y_true_delta[y_true_delta != 0]
+
+        
+        ape_delta = np.abs((y_true_delta - y_pred_delta + 0) / y_true_delta) *  100
+        loss = np.mean(ape_delta)
+        
+        return loss
+    
+    # calls the bit loss functions
     def calc_loss_dict(self, df_prediction, df_true, method='rmse'):
         if method == 'rmse':
             calculate = lambda x, y : self._calc_rmse(x, y)
@@ -32,7 +49,9 @@ class Loss_Calculator():
             calculate = lambda x, y : self._calc_rmse(x, y, log=True)
         if method == 'mape':
             calculate = lambda x, y : self._calc_mape(x, y)
-        
+        if method == 'mape_delta':
+            calculate = lambda x, y: self._calc_mape_delta(x, y)
+            
         losses = {}
         for compartment in self.columns:
             try:
