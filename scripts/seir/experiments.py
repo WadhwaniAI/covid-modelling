@@ -41,7 +41,8 @@ def run_experiments(config_path, output_folder, num):
     data_length = train_period + val_period + test_period
     num_evals = config['num_evals']
     shift = config['shift']
-    start_date = datetime.strptime(config['start_date'], '%m-%d-%Y') + timedelta(shift * num)
+    gap = 30 - train_period  # Assuming the maximum training period is 30
+    start_date = datetime.strptime(config['start_date'], '%m-%d-%Y') + timedelta(gap + shift * num)
     end_date = datetime.strptime(config['end_date'], '%m-%d-%Y')
     while (start_date + timedelta(
             train_period + val_period) > end_date+timedelta(1)) and data_length > train_period:
