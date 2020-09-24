@@ -41,7 +41,8 @@ def run_experiments(config_path, output_folder, num):
     data_length = train_period + val_period + test_period
     num_evals = config['num_evals']
     shift = config['shift']
-    start_date = datetime.strptime(config['start_date'], '%m-%d-%Y') + timedelta(shift * num)
+    gap = 30 - train_period  # Assuming the maximum training period is 30
+    start_date = datetime.strptime(config['start_date'], '%m-%d-%Y') + timedelta(gap + shift * num)
     end_date = datetime.strptime(config['end_date'], '%m-%d-%Y')
     params_csv_path = config['params_csv']
     synth_data_path = config['synth']['synth_data_path']
@@ -78,7 +79,7 @@ def run_experiments(config_path, output_folder, num):
 
         # Get variable param ranges from csv or config
         if config['params_from_csv']:
-            variable_param_ranges = read_params_file(params_csv_path, start_date)
+            variable_param_ranges = read_params_file(params_csv_path, start_date - timedelta(gap))
         else:
             variable_param_ranges = deepcopy(config[f'params_{name_prefix}'])
         if verbose:
