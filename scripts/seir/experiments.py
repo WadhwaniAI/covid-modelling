@@ -77,7 +77,7 @@ def run_experiments(config_path, output_folder, num):
 
         # Get variable param ranges from csv or config
         if config['params_from_csv']:
-            variable_param_ranges = read_params_file(params_csv_path, start_date)
+            variable_param_ranges = read_params_file(params_csv_path, start_date - timedelta(gap))
         else:
             variable_param_ranges = deepcopy(config[f'params_{name_prefix}'])
         if verbose:
