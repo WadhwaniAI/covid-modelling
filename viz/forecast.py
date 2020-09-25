@@ -55,8 +55,9 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     for key in deciles:
         legend_title_dict[key] = '{}th Decile'.format(int(key))
 
-    legend_title_dict['best'] = 'Best M2'
+    legend_title_dict['best'] = 'Best'
     legend_title_dict['mean'] = 'Mean'
+    legend_title_dict['ensemble_mean'] = 'Ensemble Mean'
 
     linestyles_arr = ['-', '--', '-.', ':', '-x']
 

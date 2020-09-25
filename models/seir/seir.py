@@ -12,9 +12,8 @@ from utils.fitting.ode import ODE_Solver
 class SEIR(Model):
 
     @abstractmethod
-    def __init__(self, STATES, R_STATES, p_params, t_params, lockdown_R0=2.2,
-                 T_inf=2.9, T_inc=5.2, N=7e6, starting_date='2020-03-09', 
-                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
+    def __init__(self, STATES, R_STATES, p_params, t_params, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2, N=7e6, 
+                 starting_date='2020-03-09', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
 
         params = {
             # R0 values

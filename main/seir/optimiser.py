@@ -143,8 +143,6 @@ class Optimiser():
 
         Keyword Arguments:
             N {float} -- Population of region (default: {1e7})
-            lockdown_date {str} -- The date on which lockdown is implemented (default: {'2020-03-25'})
-            lockdown_removal_date {str} -- The date on which lockdown is removed (default: {'2020-05-31'})
             train_period {int} -- The number of days for which the model is trained (default: {7})
             observed_values {pd.Series} -- This is a row of a pandas dataframe that corresponds to the observed values 
             on the initialisation date (to initialise the latent params) (default: {None})
@@ -152,17 +150,10 @@ class Optimiser():
         Returns:
             dict -- Dict of default params
         """
-
-        intervention_date = default_params['lockdown_date']
-        lockdown_removal_date = default_params['lockdown_removal_date']
-
         observed_values = df_train.iloc[-train_period, :]
         start_date = observed_values['date'].date()
 
         extra_params = {
-            'N' : default_params['N'],
-            'lockdown_day' : (intervention_date - start_date).days,
-            'lockdown_removal_day': (lockdown_removal_date - start_date).days,
             'starting_date' : start_date,
             'observed_values': observed_values
         }
