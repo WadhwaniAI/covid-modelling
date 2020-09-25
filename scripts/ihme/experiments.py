@@ -40,7 +40,10 @@ def run_experiments(config_path, output_folder, num):
     test_period = base['test_size']
     data_length = train_val_period + test_period
     shift = base['shift']
-    gap = 30 - train_val_period  # Assuming the maximum training period is 30
+    align = base['align']
+    gap = 0
+    if align:
+        gap = 30 - train_val_period  # Assuming the maximum training period is 30
     start_date = datetime.strptime(base['start_date'], '%m-%d-%Y') + timedelta(gap + shift * num)
     while (start_date + timedelta(
             train_val_period + test_period) > datetime.today()) and data_length > train_val_period:
@@ -81,7 +84,7 @@ def run_experiments(config_path, output_folder, num):
             config_model_params['pipeline_args']['n_draws'] = 0
 
         if config_base['params_from_csv']:
-            param_ranges = read_params_file(params_csv_path, start_date)
+            param_ranges = read_params_file(params_csv_path, start_date + timedelta(gap))
             config_model_params['priors']['fe_bounds'] = \
                 [param_ranges['alpha'], param_ranges['beta'], param_ranges['p']]
             config_model_params['priors']['fe_init'] = \
