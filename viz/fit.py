@@ -284,3 +284,29 @@ def plot_scatter(mean_var_dict, var_1, var_2, statistical_var='mean'):
     fig.subplots_adjust(top=0.96)
     
     return fig, axs
+
+
+def plot_heatmap_distribution_sigmas(mean_var_dict, stat_measure='mean', cmap='Reds'):
+    params = [x[0] for x in list(mean_var_dict.values())[0].loc[(slice(None), [stat_measure]), :].index]
+
+    columns = pd.MultiIndex.from_product(
+        [params, ['X_double_bar', 'X_bar_sigma', 'sigma_by_mu']])
+    df_comparison = pd.DataFrame(columns=columns, index=mean_var_dict.keys())
+
+    for key, df_loc in mean_var_dict.items():
+        X_double_bar = df_loc.loc[(slice(None), [stat_measure]), :].mean(axis=1).values
+        X_bar_sigma = df_loc.loc[(slice(None), [stat_measure]), :].std(axis=1).values
+
+        df_comparison.loc[key, (slice(None), ['X_double_bar'])] = X_double_bar
+        df_comparison.loc[key, (slice(None), ['X_bar_sigma'])] = X_bar_sigma
+        df_comparison.loc[key, (slice(None), ['sigma_by_mu'])] = X_bar_sigma/X_double_bar
+
+    df_sigma_mu = df_comparison.loc[:, (slice(None), ['sigma_by_mu'])]
+
+    fig, ax = plt.subplots(figsize=(10, 16))
+    sns.heatmap(df_sigma_mu.values.astype(float), annot=True, cmap=cmap, ax=ax,
+                xticklabels=[x[0] for x in df_sigma_mu.columns], 
+                yticklabels=[f'{x[0]}, {x[1]}' for x in df_sigma_mu.index])
+    ax.set_title(f'Heatmap of sigma/mu values for all the {stat_measure}s calculated across all the identical runs')
+
+    return fig, df_comparison
