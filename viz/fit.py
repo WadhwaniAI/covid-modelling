@@ -188,6 +188,7 @@ def plot_all_histograms(predictions_dict, description):
         histograms[run] = plot_histogram(predictions_dict, fig, axs, which_fit=run)
 
     fig.suptitle(f'Histogram plots for {description}')
+    fig.subplots_adjust(top=0.96)
     return fig, axs, histograms
 
 
@@ -219,4 +220,23 @@ def plot_mean_variance(predictions_dict, description):
         ax.set_title(f'Mean and variance values for parameter {param}')
         ax.set_ylabel(param)
     fig.suptitle(f'Mean Variance plots for {description}')
+    fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
+
+def plot_scatter(mean_var_dict, var_1, var_2, statistical_var='mean'):
+    fig, axs = plt.subplots(figsize=(12, 6*len(mean_var_dict)//2), 
+                            nrows=len(mean_var_dict)//2, ncols=2)
+
+    for i, (key, df_mean_var) in enumerate(mean_var_dict.items()):
+        ax = axs.flat[i]
+        var_1_means = list(df_mean_var.loc[(var_1, statistical_var), :])
+        var_2_means = list(df_mean_var.loc[(var_2, statistical_var), :])
+        ax.scatter(var_1_means, var_2_means)
+        ax.set_xlabel(var_1)
+        ax.set_ylabel(var_2)
+        ax.set_title(f'{key}')
+    
+    fig.suptitle(f'Scatter plot of {statistical_var} across runs for all locations - {var_1} vs {var_2}')
+    fig.subplots_adjust(top=0.96)
+    
+    return fig, axs
