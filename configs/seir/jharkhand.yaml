@@ -14,12 +14,12 @@ fitting:
             center: TRUE
             window_size: 7
             win_type: null
-            min_periods: 7
+            min_periods: 3
             split_after_rolling: FALSE
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
-        lockdown_R0: [[1.1, 1.7], uniform]
+        lockdown_R0: [[0.7, 1.7], uniform]
         T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
         T_recov: [[0, 40], uniform]
@@ -36,8 +36,8 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-09-23
-        train_period: 14
+        end_date: 2020-09-27
+        train_period: 10
         val_period: 3
         test_period: 0
     #Optimisation related parameters
@@ -65,7 +65,7 @@ uncertainty:
         which_fit: m2
         variable_param_ranges:
             beta: [[0, 15], uniform]
-        date_of_sorting_trials: 2020-10-13
+        date_of_sorting_trials: 2020-10-12
         sort_trials_by_column: total
         loss:
             loss_method: mape
