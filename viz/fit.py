@@ -140,12 +140,17 @@ def plot_fit_multiple_preds(predictions_dict, which_fit='m1'):
     return fig
 
 
-def plot_histogram(predictions_dict, fig, axs, which_fit='m1', plot_lines=False, weighted=True, savefig=False,
-                   filename=None, label=None):
+def plot_histogram(predictions_dict, fig, axs, weighting='exp', which_fit='m1', plot_lines=False, weighted=True, 
+                   savefig=False, filename=None, label=None):
     params_array, losses_array = _order_trials_by_loss(predictions_dict[which_fit])
     params_dict = {param: [param_dict[param] for param_dict in params_array]
                    for param in params_array[0].keys()}
-    weights = np.exp(-np.array(losses_array))
+    if weighting == 'exp':
+        weights = np.exp(-np.array(losses_array))
+    elif weighting == 'inverse':
+        weights = 1/np.array(losses_array)
+    else:
+        weights = np.ones(np.array(losses_array).shape)
 
     label = which_fit if label is None else label
 
@@ -180,21 +185,22 @@ def plot_histogram(predictions_dict, fig, axs, which_fit='m1', plot_lines=False,
         fig.savefig(filename)
     return histograms
 
-def plot_all_histograms(predictions_dict, description):
+def plot_all_histograms(predictions_dict, description, weighting='exp'):
     params_array, _ = _order_trials_by_loss(predictions_dict['m1'])
 
     fig, axs = plt.subplots(nrows=len(params_array[0].keys())//2, ncols=2, 
                             figsize=(18, 6*(len(params_array[0].keys())//2)))
     histograms = {}
     for run in predictions_dict.keys():
-        histograms[run] = plot_histogram(predictions_dict, fig, axs, which_fit=run)
+        histograms[run] = plot_histogram(predictions_dict, fig, axs, 
+                                         weighting=weighting, which_fit=run)
 
     fig.suptitle(f'Histogram plots for {description}')
     fig.subplots_adjust(top=0.96)
     return fig, axs, histograms
 
 
-def plot_mean_variance(predictions_dict, description):
+def plot_mean_variance(predictions_dict, description, weighting='exp'):
     params_array, _ = _order_trials_by_loss(predictions_dict['m1'])
     params = list(params_array[0].keys())
     df_mean_var = pd.DataFrame(columns=list(predictions_dict.keys()),
@@ -205,7 +211,12 @@ def plot_mean_variance(predictions_dict, description):
         params_array, losses_array = _order_trials_by_loss(predictions_dict[run])
         params_dict = {param: [param_dict[param] for param_dict in params_array]
                        for param in params_array[0].keys()}
-        weights = np.exp(-np.array(losses_array))
+        if weighting == 'exp':
+            weights = np.exp(-np.array(losses_array))
+        elif weighting == 'inverse':
+            weights = 1/np.array(losses_array)
+        else:
+            weights = np.ones(np.array(losses_array).shape)
         for param in params_dict.keys():
             mean = np.average(params_dict[param], weights=weights)
             variance = np.average((params_dict[param] - mean)**2, weights=weights)
