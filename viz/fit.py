@@ -1,11 +1,13 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.lines import Line2D
+import seaborn as sns
 import pandas as pd
 import numpy as np
 import copy
 
 from functools import reduce
+from scipy.stats import entropy
 
 from utils.generic.enums.columns import *
 from main.seir.forecast import _order_trials_by_loss
@@ -222,6 +224,37 @@ def plot_mean_variance(predictions_dict, description):
     fig.suptitle(f'Mean Variance plots for {description}')
     fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
+
+
+def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_axes=True):
+    params = histograms_dict['m1'].keys()
+    fig, axs = plt.subplots(nrows=len(params)//2, ncols=2,
+                            figsize=(18, 6*(len(params)//2)))
+    kl_dict_reg = {}
+    for i, param in enumerate(params):
+        kl_matrix = [[entropy(histograms_dict[run1][param]['probability'],
+                              histograms_dict[run2][param]['probability'])
+                        for run2 in histograms_dict.keys()] for run1 in histograms_dict.keys()]
+        kl_dict_reg[param] = kl_matrix
+
+    all_kls = [kl_dict_reg[key] for key in kl_dict_reg.keys()]
+    if shared_cmap_axes:
+        vmin, vmax = (np.min(all_kls), np.max(all_kls))
+    else:
+        vmin, vmax = (None, None)
+
+    for i, param in enumerate(params):
+        ax = axs.flat[i]
+        sns.heatmap(np.array(kl_dict_reg[param]), annot=True, xticklabels=histograms_dict.keys(), 
+                    yticklabels=histograms_dict.keys(), vmin=vmin, vmax=vmax, cmap='Reds', ax=ax)
+        ax.set_title(f'KL Divergence matrix of parameter {param}')
+    
+    fig.suptitle(f'KL divergence heatmaps plots for {description}')
+    fig.subplots_adjust(top=0.96)
+
+    return fig, axs, kl_dict_reg
+
+
 
 def plot_scatter(mean_var_dict, var_1, var_2, statistical_var='mean'):
     fig, axs = plt.subplots(figsize=(12, 6*len(mean_var_dict)//2), 
