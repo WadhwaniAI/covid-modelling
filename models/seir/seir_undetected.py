@@ -12,7 +12,7 @@ from utils.fitting.ode import ODE_Solver
 
 class SEIR_Undetected(SEIR):
     def __init__(self, lockdown_R0=2.2, T_inf_D=3.3, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
-                 P_fatal=0.2, T_recov_severe=14, N=1e7, d=1.0, psi=1.00, starting_date='2020-03-09', 
+                 P_fatal=0.2, T_recov_severe=14, N=1e7, d=1.0, psi=1.00, beta=0.1, starting_date='2020-03-09', 
                  observed_values=None, E_hosp_ratio=0.5, I_D_hosp_ratio=0.5, I_U_hosp_ratio=0.5, **kwargs):
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
@@ -80,6 +80,13 @@ class SEIR_Undetected(SEIR):
         self.I_D_hosp_ratio = I_D_hosp_ratio
         self.I_U_hosp_ratio = I_U_hosp_ratio
         self.beta = beta
+        # self.state_init_values['I_D'] = observed_values['i_d'] / self.N
+        # self.state_init_values['I_U'] = observed_values['i_u'] / self.N
+        # self.state_init_values['P_U'] = observed_values['p_i'] / self.N
+        # self.state_init_values['E'] = observed_values['e'] / self.N
+        # self.state_init_values['S'] = observed_values['s'] / self.N
+        # self.state_init_values['R_severe'] = observed_values['r_severe'] / self.N
+        # self.state_init_values['R_fatal'] = observed_values['r_fatal'] / self.N
         
         self.state_init_values['I_D'] = self.I_D_hosp_ratio * observed_values['active'] / self.N
         self.state_init_values['I_U'] = self.I_U_hosp_ratio * observed_values['active'] / self.N

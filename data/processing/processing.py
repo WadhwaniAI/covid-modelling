@@ -99,8 +99,8 @@ def get_simulated_data_from_file(filename, data_format='new', **kwargs):
         # df_result = df_result.drop(['Ward/block name', 'Ward number (if applicable)', 'Mild cases (isolated)',
         #                             'Moderate cases (hospitalized)', 'Severe cases (In ICU)', 
         #                             'Critical cases (ventilated patients)'], axis=1)
-        columns_to_keep = ['state', 'district', 'date', 'total', 'active', 'recovered', 'deceased']
-        df_result = df_result[columns_to_keep]
+        # columns_to_keep = ['state', 'district', 'date', 'total', 'active', 'recovered', 'deceased']
+        # df_result = df_result[columns_to_keep]
         # df_result.drop(np.arange(3), inplace=True) TODO: Check if this is necessary
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result = df_result.dropna(subset=['state'], how='any')
@@ -110,7 +110,7 @@ def get_simulated_data_from_file(filename, data_format='new', **kwargs):
         for col in df_result.columns:
             if col in ['active', 'total', 'recovered', 'deceased']:
                 df_result[col] = df_result[col].astype('int64')
-        df_result = df_result[['date', 'state', 'district', 'total', 'active', 'recovered', 'deceased']]
+        # df_result = df_result[['date', 'state', 'district', 'total', 'active', 'recovered', 'deceased']]
         df_result = df_result.dropna(subset=['date'], how='all')
 
     if data_format == 'old':

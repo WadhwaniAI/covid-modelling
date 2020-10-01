@@ -90,6 +90,8 @@ class Loss_Calculator():
             df_train['date']), ['date']+which_compartments]
         df_temp.reset_index(inplace=True, drop=True)
         df_train = df_train.loc[df_train['date'].isin(df_temp['date']), :]
+        df_temp = df_temp.sort_values('date')
+        df_train = df_train.sort_values('date')
         df_train.reset_index(inplace=True, drop=True)
         for compartment in df_loss.index:
             df_loss.loc[compartment, 'train'] = self._calc_mape(
