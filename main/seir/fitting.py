@@ -103,6 +103,8 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     Returns:
         dict -- Dict of all predictions
     """
+    # my code
+    # print(loss)
 
     df_district, df_train, df_val, df_train_nora, df_val_nora = [
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
@@ -114,6 +116,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     # Get/create searchspace of variable paramms
     loss_indices = [-(split['train_period']), None]
     loss['loss_indices'] = loss_indices
+    
     # Perform Bayesian Optimisation
     variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges, fitting_method)
     args = {'df_train': df_train, 'default_params': default_params, 'variable_param_ranges':variable_param_ranges, 

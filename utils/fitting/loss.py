@@ -25,26 +25,59 @@ class Loss_Calculator():
         loss = np.mean(ape)
         return loss
 
-    def calc_loss_dict(self, df_prediction, df_true, method='rmse'):
+    def _calc_wape(self, y_pred, y_true, temporal_weights):
+
+        y_pred = np.array(y_pred)[y_true != 0]
+        y_true = np.array(y_true)[y_true != 0]
+
+        temporal_weights = np.array(temporal_weights)
+
+        # my code
+        # print('my code to check calc wape')
+        # print(temporal_weights)
+        # print(y_true)
+        # print(y_pred)
+
+        ape = np.abs((y_true - y_pred + 0) * temporal_weights / y_true * temporal_weights) 
+        loss = np.mean(ape)
+        return loss
+
+    def calc_loss_dict(self, df_prediction, df_true, method='rmse', temporal_weights = None):
         if method == 'rmse':
             calculate = lambda x, y : self._calc_rmse(x, y)
         if method == 'rmse_log':
             calculate = lambda x, y : self._calc_rmse(x, y, log=True)
         if method == 'mape':
             calculate = lambda x, y : self._calc_mape(x, y)
-        
+        if method == 'wape' :
+            # my code
+            # print("I AM HERE IN THE CALC LOSS DICT FUNCTION")
+            calculate = lambda x, y : self._calc_wape(x, y, temporal_weights)
+
         losses = {}
         for compartment in self.columns:
+            # my code
+            # losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
+            
             try:
                 losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
             except Exception:
                 continue
+                
         return losses
 
     def calc_loss(self, df_prediction, df_true, method='rmse', 
-                  which_compartments=['active', 'recovered', 'total', 'deceased'], loss_weights=[1, 1, 1, 1]):
-        losses = self.calc_loss_dict(df_prediction, df_true, method)
+                  which_compartments=['active', 'recovered', 'total', 'deceased'], 
+                  loss_weights=[1, 1, 1, 1], loss_temporal_weights=None):
+        
+        # my code
+        # print('df_true', df_true)
+        # print('df_pred', df_prediction)
+        
+        losses = self.calc_loss_dict(df_prediction, df_true, method, temporal_weights=loss_temporal_weights)
         loss = 0
+        # my code
+        # print("LOSSES", losses)
         for i, compartment in enumerate(which_compartments):
             loss += loss_weights[i]*losses[compartment]
         return loss
