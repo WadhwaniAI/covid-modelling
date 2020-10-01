@@ -196,8 +196,8 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
     observed_dataframes, smoothing = data_setup(**params)
-    smoothing_plot = smoothing['smoothing_plot']
-    orig_df_district = smoothing['df_district_unsmoothed']
+    smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
+    orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
 
     print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
     if not observed_dataframes['df_val'] is None:
