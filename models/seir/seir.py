@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from models import Model
+from models.model import Model
 
 import pandas as pd
 import numpy as np
@@ -7,24 +7,17 @@ import numpy as np
 from collections import OrderedDict
 import datetime
 
-from utils.ode import ODE_Solver
+from utils.fitting.ode import ODE_Solver
 
 class SEIR(Model):
 
     @abstractmethod
-    def __init__(self, STATES, R_STATES, p_params, t_params, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None,
-                 T_inf=2.9, T_inc=5.2, N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 
-                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
-
-        # If no value of post_lockdown R0 is provided, the model assumes the lockdown R0 post-lockdown
-        if post_lockdown_R0 == None:
-           post_lockdown_R0 = lockdown_R0
+    def __init__(self, STATES, R_STATES, p_params, t_params, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2, N=7e6, 
+                 starting_date='2020-03-09', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
 
         params = {
             # R0 values
-            'pre_lockdown_R0': pre_lockdown_R0, # R0 value pre-lockdown
             'lockdown_R0': lockdown_R0,  # R0 value during lockdown
-            'post_lockdown_R0': post_lockdown_R0,  # R0 value post-lockdown
 
             # Transmission parameters
             'T_inc': T_inc,  # The incubation time of the infection
@@ -32,8 +25,6 @@ class SEIR(Model):
 
             # Lockdown parameters
             'starting_date': starting_date,  # Datetime value that corresponds to Day 0 of modelling
-            'lockdown_day': lockdown_day, # Number of days from the starting_date, after which lockdown is initiated
-            'lockdown_removal_day': lockdown_removal_day, # Number of days from the starting_date, after which lockdown is removed
             'N': N,
 
             #Initialisation Params
@@ -54,27 +45,22 @@ class SEIR(Model):
         state_init_values = OrderedDict()
         for key in STATES:
             state_init_values[key] = 0
-        if initialisation == 'starting':
-            init_infected = max(observed_values['init_infected'], 1)
-            state_init_values['S'] = (self.N - init_infected)/self.N
-            state_init_values['I'] = init_infected/self.N
 
-        if initialisation == 'intermediate':
-            for state in R_STATES:
-                statename = state.split('R_')[1]
-                P_keyname = [k for k in p_params.keys() if k.split('P_')[1] == statename][0]
-                state_init_values[state] = p_params[P_keyname] * observed_values['hospitalised']
-            
-            state_init_values['C'] = observed_values['recovered']
-            state_init_values['D'] = observed_values['deceased']
+        for state in R_STATES:
+            statename = state.split('R_')[1]
+            P_keyname = [k for k in p_params.keys() if k.split('P_')[1] == statename][0]
+            state_init_values[state] = p_params[P_keyname] * observed_values['active']
+        
+        state_init_values['C'] = observed_values['recovered']
+        state_init_values['D'] = observed_values['deceased']
 
-            state_init_values['E'] = self.E_hosp_ratio * observed_values['hospitalised']
-            state_init_values['I'] = self.I_hosp_ratio * observed_values['hospitalised']
-            
-            nonSsum = sum(state_init_values.values())
-            state_init_values['S'] = (self.N - nonSsum)
-            for key in state_init_values.keys():
-                state_init_values[key] = state_init_values[key]/self.N
+        state_init_values['E'] = self.E_hosp_ratio * observed_values['active']
+        state_init_values['I'] = self.I_hosp_ratio * observed_values['active']
+        
+        nonSsum = sum(state_init_values.values())
+        state_init_values['S'] = (self.N - nonSsum)
+        for key in state_init_values.keys():
+            state_init_values[key] = state_init_values[key]/self.N
         
         self.state_init_values = state_init_values
         

@@ -11,17 +11,17 @@ from curvefit.core import functions
 
 sys.path.append('../..')
 from models.ihme.model import IHME
-from utils.data import get_rates
+from utils.fitting.data import get_rates
 from data.processing import get_district_timeseries_cached
-from utils.util import train_test_split, rollingavg
+from utils.fitting.util import train_test_split, rollingavg
 
 
 from models.ihme.model import IHME
-from utils.data import lograte_to_cumulative, rate_to_cumulative
-from utils.loss import Loss_Calculator
-from utils.enums import Columns
+from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative
+from utils.fitting.loss import Loss_Calculator
+from utils.generic.enums import Columns
 from main.ihme.optimiser import Optimiser
-from utils.smooth_jump import smooth_big_jump
+from utils.fitting.smooth_jump import smooth_big_jump
 
 def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker,
             smooth_jump, smooth_jump_method, smooth_jump_days):

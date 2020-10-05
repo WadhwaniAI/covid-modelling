@@ -8,20 +8,17 @@ import datetime
 import copy
 
 from models.seir.seir import SEIR
-from utils.ode import ODE_Solver
+from utils.fitting.ode import ODE_Solver
 
 class SEIR_Movement_Testing(SEIR):
 
-    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
+    def __init__(self, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2,
                  T_recov_fatal=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6,
-                 q=0, theta_E=0, psi_E=1, theta_I=0, psi_I=1, lockdown_day=10, lockdown_removal_day=75,
-                 starting_date='2020-03-09', initialisation='intermediate', observed_values=None, 
+                 q=0, theta_E=0, psi_E=1, theta_I=0, psi_I=1, 
+                 starting_date='2020-03-09', observed_values=None, 
                  E_hosp_ratio=0.5, I_hosp_ratio=0.5, mu=0, ** kwargs):
         """
         This class implements SEIR + Hospitalisation + Severity Levels + Testing 
-        The model further implements 
-        - pre, post, and during lockdown behaviour 
-        - different initialisations : intermediate and starting 
 
         The state variables are : 
 
@@ -44,9 +41,7 @@ class SEIR_Movement_Testing(SEIR):
         The parameters are : 
 
         R0 values - 
-        pre_lockdown_R0: R0 value pre-lockdown (float)
         lockdown_R0: R0 value during lockdown (float)
-        post_lockdown_R0: R0 value post-lockdown (float)
 
         Movement params -
         mu, Percentage of people moving out of S, E, I buckets daily (float)
@@ -75,12 +70,9 @@ class SEIR_Movement_Testing(SEIR):
 
         Lockdown parameters - 
         starting_date: Datetime value that corresponds to Day 0 of modelling (datetime/str)
-        lockdown_day: Number of days from the starting_date, after which lockdown is initiated (int)
-        lockdown_removal_day: Number of days from the starting_date, after which lockdown is removed (int)
 
         Misc - 
         N: Total population
-        initialisation : method of initialisation ('intermediate'/'starting')
         E_hosp_ratio : Ratio for Exposed to hospitalised for initialisation
         I_hosp_ratio : Ratio for Infected to hospitalised for initialisation
         """
@@ -116,17 +108,7 @@ class SEIR_Movement_Testing(SEIR):
             y[i] = max(y[i], 0)
         S, E, I, D_E, D_I, R_mild, R_severe, R_fatal, C, D = y
 
-        # Modelling the behaviour post-lockdown
-        if t >= self.lockdown_removal_day:
-            self.R0 = self.post_lockdown_R0
-        # Modelling the behaviour lockdown
-        elif t >= self.lockdown_day:
-            self.R0 = self.lockdown_R0
-        # Modelling the behaviour pre-lockdown
-        else:
-            self.R0 = self.pre_lockdown_R0
-
-        self.T_trans = self.T_inf/self.R0
+        self.T_trans = self.T_inf/self.lockdown_R0
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
@@ -153,10 +135,10 @@ class SEIR_Movement_Testing(SEIR):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['hospitalised'] = df_prediction['R_mild'] + \
+        df_prediction['active'] = df_prediction['R_mild'] + \
             df_prediction['R_severe'] + df_prediction['R_fatal']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['total_infected'] = df_prediction['hospitalised'] + \
+        df_prediction['total'] = df_prediction['active'] + \
             df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction

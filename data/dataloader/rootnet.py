@@ -36,10 +36,10 @@ class RootnetLoader(BaseLoader):
         del df_state_time_series['confirmedCasesIndian']
         del df_state_time_series['confirmedCasesForeign']
         del df_state_time_series['totalConfirmed']
-        df_state_time_series['hospitalised'] = df_state_time_series['confirmedCases'] - \
+        df_state_time_series['active'] = df_state_time_series['confirmedCases'] - \
             df_state_time_series['deaths'] - df_state_time_series['discharged']
-        df_state_time_series.columns = ['deceased', 'recovered', 'state', 'date', 'total_infected', 'hospitalised']
-        df_state_time_series = df_state_time_series[['state', 'date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
+        df_state_time_series.columns = ['deceased', 'recovered', 'state', 'date', 'total', 'active']
+        df_state_time_series = df_state_time_series[['state', 'date', 'active', 'total', 'deceased', 'recovered']]
         dataframes['df_state_time_series'] = df_state_time_series
         
         data = requests.get('https://api.rootnet.in/covid19-in/hospitals/beds').json()

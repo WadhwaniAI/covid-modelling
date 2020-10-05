@@ -37,11 +37,16 @@ sftp-config.json
 **mcmc/
 *temp/
 **temp/
+*wandb/
+**wandb/
 cache/
+optim/
 
 # Exceptions
 !data/data/*.csv
 !data/data/mumbai/*.csv
+!docs/model_diagrams/*.pdf
+!docs/figures/*.png
 *output/
 **output/
 **/output

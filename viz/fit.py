@@ -7,38 +7,11 @@ import copy
 
 from functools import reduce
 
-from utils.enums.columns import *
-
-
-def axis_formatter(ax, legend_elements, custom_legend=False):
-    """Helper function for formatting axis
-
-    Arguments:
-        ax -- Matplotlib ax object
-    """
-    
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=5))
-    ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax.set_ylabel('No of People')
-    ax.set_xlabel('Time')
-    ax.tick_params('x', labelrotation=45)
-    if custom_legend:
-        legend_elements += [
-            Line2D([0], [0], ls='-', marker='o', color='black', label='Observed'),
-            Line2D([0], [0], ls = '-', color='black', label='Observed Roll Avg'), 
-            Line2D([0], [0], ls='-.', color='black', label='Predicted'),
-            Line2D([0], [0], ls=':', color='brown', label='Train starts'),
-            Line2D([0], [0], ls=':', color='black', label='Train starts')
-            ]
-        ax.legend(handles=legend_elements)
-    else:
-        ax.legend()
-    ax.grid()
-
+from utils.generic.enums.columns import *
+from viz.utils import axis_formatter
 
 def plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, district,
-             which_compartments=['hospitalised', 'total_infected'], description='', savepath=None):
+             which_compartments=['active', 'total'], description='', savepath=None):
     """Helper function for creating plots for the training pipeline
 
     Arguments:
@@ -52,7 +25,7 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, 
         district {str} -- Name of district
 
     Keyword Arguments:
-        which_compartments {list} -- Which buckets to plot (default: {['hospitalised', 'total_infected']})
+        which_compartments {list} -- Which buckets to plot (default: {['active', 'total']})
         description {str} -- Additional description for the plots (if any) (default: {''})
 
     Returns:
