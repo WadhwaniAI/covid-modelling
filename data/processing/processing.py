@@ -16,6 +16,10 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
         loader_key = 'athena'
     if loader_class == JHULoader:
         loader_key = 'jhu'
+    if loader_class == NYTLoader:
+        loader_key = 'nyt'
+    if loader_class == CovidTrackingLoader:
+        loader_key = 'us_tracker'
     os.makedirs("../../misc/cache/", exist_ok=True)
     picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}.pkl".format(
         today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
