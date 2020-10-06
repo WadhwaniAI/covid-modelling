@@ -6,7 +6,7 @@ import pickle
 import datetime
 from collections import defaultdict
 
-from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader
+from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoader, CovidTrackingLoader
 
 
 def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
