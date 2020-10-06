@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import copy
+import json
 import os
 import pickle
 import datetime
@@ -75,6 +76,10 @@ def get_data(data_source, dataloading_params):
         return get_custom_data_from_db(**dataloading_params)
     if data_source == 'jhu':
         return get_data_from_jhu(**dataloading_params)
+    if data_source == 'nyt':
+        return get_data_from_ny_times(**dataloading_params)
+    if data_source == 'covid_tracker':
+        return get_data_from_covid_tracking(**dataloading_params)
     if data_source == 'filename':
         return get_custom_data_from_file(**dataloading_params)
 
@@ -232,9 +237,45 @@ def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_
         return out.reset_index()
 
 
-def get_data_from_jhu():
-    pass
-    #TODO implement JHU processing function
+def get_data_from_jhu(region, sub_region=None):
+    dataframe = get_dataframes_cached(loader_class=JHULoader)
+    dataframe.rename(columns={"ConfirmedCases": "total", "Deaths": "deceased",
+                              "RecoveredCases": "recovered", "ActiveCases": "active", "Date": "date"},
+                     inplace=True)
+    dataframe.drop(["Lat", "Long"], axis=1, inplace=True)
+    df = dataframe[dataframe['Country/Region'] == region]
+    if sub_region is None:
+        df = df[pd.isna(df['Province/State'])]
+    else:
+        df = df[df['Province/State'] == sub_region]
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+
+def get_data_from_ny_times(state, county=None):
+    dataframes = get_dataframes_cached(loader_class=NYTLoader)
+    if county is not None:
+        df = dataframes['counties']
+        df = df[np.logical_and(df['state'] == state, df['county'] == county)]
+    else:
+        df = dataframes['states']
+        df = df[df['state'] == state]
+    df.loc[:, 'date'] = pd.to_datetime(df['date'])
+    df.rename(columns={"cases": "total", "deaths": "deceased"}, inplace=True)
+    df.drop('fips', axis=1, inplace=True)
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+
+def get_data_from_covid_tracking(state, county=None):
+    dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader)
+    df = dataframes['states']
+    with open('../../data/data/us_state_abbrev_map.json', 'r') as infile:
+        mapping = json.load(infile)
+    df = df[df['state'] == mapping[state]]
+    df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
+    return df
+
 
 def implement_rolling(df, window_size, center, win_type, min_periods):
     df_roll = df.infer_objects()
