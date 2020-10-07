@@ -4,7 +4,8 @@ fitting:
         data_source: jhu
         stratified_data: FALSE
         dataloading_params:
-            region: US
+            dataframe: us_states
+            region: Texas
             sub_region: null
         smooth_jump: FALSE
         smooth_jump_params:
