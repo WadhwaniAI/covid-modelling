@@ -5,6 +5,7 @@ import os
 import pickle
 import datetime
 from collections import defaultdict
+from models.seir import SEIRHD
 
 from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader
 
@@ -74,7 +75,8 @@ def get_data(data_source, dataloading_params, **kwargs):
     if data_source == 'filename':
         return get_custom_data_from_file(**dataloading_params)
     if data_source == 'simulated':
-        return get_simulated_data_from_file(kwargs['filename'],**dataloading_params)
+        # return get_simulated_data_from_file(kwargs['filename'],**dataloading_params)
+        return generate_simulated_data(**dataloading_params)
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
@@ -91,7 +93,47 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_dat
         if col in ['active', 'total', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
     return df_result
+
+def generate_simulated_data(**dataloading_params):
+    """generates simulated data using the input params in config
+
+    Keyword Arguments
+    -----------------
+        state {str} -- Name of state for which data to be loaded (in title case) (default: {None})
+        district {str} -- Name of district for which data to be loaded (in title case) (default: {None})
+        model {str} -- Name of model to use to generate the data (in title case)
+        starting_date {datetime} -- Starting date of the simulated data (in YYYY-MM-DD format)
+        total_days {int} -- Number of days for which simulated data has to be generated (default: 50)
+        initial_values {dict} -- Initial values for 'Active', 'Recovered' and 'Deceased' bucket
+        params {dict} -- Parameters to generate the simulated data
     
+    Returns
+    -------
+        pd.DataFrame -- dataframe of cases for a particular state, district with 5 columns : 
+            ['date', 'total', 'active', 'deceased', 'recovered']
+    """
+    model_params = dataloading_params['params']
+    model_params['starting_date'] = dataloading_params['starting_date']
+
+    initial_colums = ['active', 'recovered', 'deceased']
+    observed_values = {col : dataloading_params['initial_values'][col] for col in initial_colums}
+    observed_values['total'] = sum(observed_values.values())
+    for col in ['state', 'district']:
+        observed_values[col] =  dataloading_params[col]
+    observed_values['date'] =  dataloading_params['starting_date']
+    model_params['observed_values'] = pd.DataFrame.from_dict([observed_values]).iloc[0,:]
+    
+    solver = eval(dataloading_params['model'])(**model_params)
+    if (dataloading_params['total_days']):
+        df_result = solver.predict(total_days=dataloading_params['total_days'])
+    else:
+        df_result = solver.predict(total_days=50)
+        
+    for col in df_result.columns:
+        if col in ['active', 'total', 'recovered', 'deceased']:
+            df_result[col] = df_result[col].astype('int64')
+    return df_result[['date', 'active', 'total', 'recovered', 'deceased']]
+
 #TODO add support of adding 0s column for the ones which don't exist
 def get_simulated_data_from_file(filename, data_format='new', **kwargs):
     if data_format == 'new':
