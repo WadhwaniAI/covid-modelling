@@ -198,7 +198,7 @@ class Optimiser():
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
                                                  df_true=df_train, total_days=total_days, model=model,
                                                  loss_method=loss_method, loss_indices=loss_indices,
-                                                 loss_compartments=loss_compartments, debug=debug)
+                                                 loss_compartments=loss_compartments, debug=False)
         
         # If debugging is enabled the gridsearch is not parallelised
         if debug:
