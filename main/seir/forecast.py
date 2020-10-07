@@ -293,7 +293,7 @@ def set_r0_multiplier(params_dict, mul):
 
 
 def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
-                           multipliers=[0.9, 1, 1.1, 1.25], lockdown_removal_date='2020-06-01'):
+                           multipliers=[0.9, 1, 1.1, 1.25], lockdown_removal_date='2020-10-04'):
     """
     Function to predict what-if scenarios with different post-lockdown R0s
 
@@ -318,11 +318,14 @@ def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
         predictions_mul_dict[mul] = {}
         new_params = set_r0_multiplier(params_dict, mul)
         predictions_mul_dict[mul]['params'] = new_params
-        predictions_mul_dict[mul]['df_prediction'] = get_forecast(region_dict,
+        
+        # my code
+        print(mul)
+        
+        predictions_mul_dict[mul]['df_prediction'] = get_forecast(region_dict, 
             train_fit = "m2",
             model=model,
             best_params=new_params,
-            lockdown_removal_date=lockdown_removal_date,
             days=days)    
     return predictions_mul_dict
 

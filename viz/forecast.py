@@ -161,21 +161,26 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_sc
     return plots
 
 
-def plot_r0_multipliers(region_dict, best_params_dict, predictions_mul_dict, multipliers, log_scale=False):
+def plot_r0_multipliers(region_dict, best_params_dict, predictions_mul_dict, multipliers, 
+                        state, dist, log_scale=False):
     df_true = region_dict['m2']['df_district']
     fig, ax = plt.subplots(figsize=(12, 12))
+
     ax.plot(df_true['date'], df_true['active'],
         '-o', color='orange', label='Active Cases (Observed)')
+    
     for i, (mul, mul_dict) in enumerate(predictions_mul_dict.items()):
         df_prediction = mul_dict['df_prediction']
         true_r0 = mul_dict['params']['post_lockdown_R0']
-        sns.lineplot(x="date", y="hospitalised", data=df_prediction,
+        sns.lineplot(x="date", y="active", data=df_prediction,
                     ls='-', label=f'Active Cases ({mul} - R0 {true_r0})')
+        # plt.show()
         plt.text(
             x=df_prediction['date'].iloc[-1],
             y=df_prediction['active'].iloc[-1], s=true_r0
         )
+    
     axis_formatter(ax, log_scale=log_scale)
-    state, dist = region_dict['state'], region_dict['dist']
+    # state, dist = region_dict[config]['state'], region_dict['dist']
     fig.suptitle(f'Forecast - ({state} {dist})', fontsize=16)
     return fig

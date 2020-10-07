@@ -36,10 +36,10 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-08-30
-        train_period: 14
-        val_period: 10
-        test_period: 7
+        end_date: 2020-10-04
+        train_period: 10
+        val_period: 3
+        test_period: 0
     #Optimisation related parameters
     loss:
         loss_method: mape
@@ -64,10 +64,10 @@ uncertainty:
     uncertainty_params:
         num_evals: 150
         num_evals: 100
-        which_fit: m2
+        which_fit: m1
         variable_param_ranges:
             beta: [[0, 15], uniform]
-        date_of_sorting_trials: 2020-10-15
+        date_of_sorting_trials: 2020-10-25
         sort_trials_by_column: total
         loss:
             loss_method: mape
