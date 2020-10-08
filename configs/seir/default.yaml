@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: athena
+        data_source: covid19india
         stratified_data: FALSE
         dataloading_params:
             state: Maharashtra
