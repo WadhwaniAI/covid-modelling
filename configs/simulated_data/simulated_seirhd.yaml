@@ -1,0 +1,17 @@
+model: SEIRHD
+starting_date: 2020-08-07
+total_days: 50
+initial_values:
+    recovered: 95000
+    deceased: 7500
+    active: 20000
+params:
+    N: 1.0e+7
+    lockdown_R0: 0.6963 
+    T_inc: 5
+    T_inf: 3.3
+    T_recov: 21
+    T_recov_fatal: 25
+    P_fatal: 0.3
+    E_hosp_ratio: 2
+    I_hosp_ratio: 2
