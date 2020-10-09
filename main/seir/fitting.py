@@ -55,7 +55,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
                                         dataloading_params['district'], which_compartments=loss_compartments, 
                                         description='Smoothing')
     df_district['daily_cases'] = df_district['total'].diff()
-    df_district.dropna(axis=0, how='any', subset=['total', 'active', 'recovered', 'deceased', 'daily_cases'], 
+    df_district.dropna(axis=0, how='any', subset=['total'], 
                        inplace=True)
     df_district.reset_index(drop=True, inplace=True)
 
