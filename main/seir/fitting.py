@@ -199,6 +199,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     params['loss_compartments'] = loss['loss_compartments']
     observed_dataframes, smoothing = data_setup(**params)
     smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
+    smoothing_description = smoothing['smoothing_description'] if 'smoothing_description' in smoothing else None
     orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
 
     print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
@@ -208,9 +209,9 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
             default_params, fitting_method, fitting_method_params, split, loss)
 
-    if smoothing_plot != None:
-        predictions_dict['plots']['smoothing'] = smoothing_plot
-        predictions_dict['smoothing_description'] = smoothing['smoothing_description']
+    
+    predictions_dict['plots']['smoothing'] = smoothing_plot
+    predictions_dict['smoothing_description'] = smoothing_description
     predictions_dict['df_district_unsmoothed'] = orig_df_district
 
     # record parameters for reproducibility
