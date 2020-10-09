@@ -20,5 +20,6 @@ def read_config(filename='default.yaml'):
     config['uncertainty']['method'] = getattr(uncertainty_module, config['uncertainty']['method'])
     config['uncertainty']['uncertainty_params']['sort_trials_by_column'] = Columns.from_name(
         config['uncertainty']['uncertainty_params']['sort_trials_by_column'])
+    
         
     return config

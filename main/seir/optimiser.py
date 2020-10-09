@@ -71,7 +71,7 @@ class Optimiser():
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIRHD,
                                loss_compartments=['active', 'recovered', 'total', 'deceased'], 
                                loss_weights = [1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse', 
-                               loss_temporal_weights = None, debug=False):
+                               debug=False):
         """The function that computes solves the ODE for a given set of input params and computes loss on train set
 
         Arguments:
@@ -118,8 +118,7 @@ class Optimiser():
         df_true_slice.reset_index(inplace=True, drop=True)
         loss = self.loss_calculator.calc_loss(df_prediction_slice, df_true_slice, 
                                               which_compartments=loss_compartments, method=loss_method,
-                                              loss_weights=loss_weights, 
-                                              loss_temporal_weights=loss_temporal_weights)
+                                              loss_weights=loss_weights)
         return loss
 
     def _create_dict(self, param_names, values):
@@ -247,8 +246,7 @@ class Optimiser():
                                                  default_params=default_params, total_days=total_days,
                                                  loss_method=loss_method, loss_indices=loss_indices, 
                                                  loss_weights=loss_weights, df_true=df_train,
-                                                 loss_compartments=loss_compartments, 
-                                                 loss_temporal_weights=loss_temporal_weights)
+                                                 loss_compartments=loss_compartments)
 
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
         trials = Trials()

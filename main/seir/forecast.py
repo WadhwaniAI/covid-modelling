@@ -288,12 +288,12 @@ def set_r0_multiplier(params_dict, mul):
         dict: model parameters with a post_lockdown_R0
     """    
     new_params = params_dict.copy()
-    new_params['post_lockdown_R0']= params_dict['lockdown_R0']*mul
+    new_params['lockdown_R0']= params_dict['lockdown_R0']*mul
     return new_params
 
 
 def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
-                           multipliers=[0.9, 1, 1.1, 1.25], lockdown_removal_date='2020-10-04'):
+                           multipliers=[0.9, 1, 1.1, 1.25]):
     """
     Function to predict what-if scenarios with different post-lockdown R0s
 
@@ -302,8 +302,6 @@ def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
         params_dict (dict): model parameters
         multipliers (list, optional): list of multipliers to get post_lockdown_R0 from lockdown_R0. 
             Defaults to [0.9, 1, 1.1, 1.25].
-        lockdown_removal_date (str, optional): Date to change R0 value and simulate change. 
-            Defaults to '2020-06-01'.
 
     Returns:
         dict: {
@@ -318,9 +316,6 @@ def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
         predictions_mul_dict[mul] = {}
         new_params = set_r0_multiplier(params_dict, mul)
         predictions_mul_dict[mul]['params'] = new_params
-        
-        # my code
-        print(mul)
         
         predictions_mul_dict[mul]['df_prediction'] = get_forecast(region_dict, 
             train_fit = "m2",

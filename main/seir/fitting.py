@@ -113,7 +113,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     optimiser = Optimiser()
     # Get the fixed params
     default_params = optimiser.init_default_params(df_train, default_params, train_period=split['train_period'])
-    # Get/create searchspace of variable paramms
+    # Get/create searchspace of variable params
     loss_indices = [-(split['train_period']), None]
     loss['loss_indices'] = loss_indices
     
@@ -130,7 +130,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     
     lc = Loss_Calculator()
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'], 
-                                              which_compartments=loss['loss_compartments'])
+                                              which_compartments=loss['loss_compartments'], method=loss['loss_method'])
 
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
                         data['dataloading_params']['state'], data['dataloading_params']['district'], 
@@ -148,7 +148,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
 
 
 def single_fitting_cycle(data, model, variable_param_ranges, default_params, fitting_method, 
-                         fitting_method_params, split, loss):
+                         fitting_method_params, split, loss, data_smoothing):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
