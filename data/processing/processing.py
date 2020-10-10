@@ -20,7 +20,7 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
     if loader_class == NYTLoader:
         loader_key = 'nyt'
     if loader_class == CovidTrackingLoader:
-        loader_key = 'us_tracker'
+        loader_key = 'covid_tracking'
     os.makedirs("../../misc/cache/", exist_ok=True)
     picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}.pkl".format(
         today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
@@ -78,7 +78,7 @@ def get_data(data_source, dataloading_params):
         return get_data_from_jhu(**dataloading_params)
     if data_source == 'nyt':
         return get_data_from_ny_times(**dataloading_params)
-    if data_source == 'covid_tracker':
+    if data_source == 'covid_tracking':
         return get_data_from_covid_tracking(**dataloading_params)
     if data_source == 'filename':
         return get_custom_data_from_file(**dataloading_params)
@@ -297,13 +297,15 @@ def get_data_from_ny_times(state, county=None):
     return df
 
 
-def get_data_from_covid_tracking(state, county=None):
+def get_data_from_covid_tracking(state):
     dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader)
-    df = dataframes['states']
-    with open('../../data/data/us_state_abbrev_map.json', 'r') as infile:
-        mapping = json.load(infile)
-    df = df[df['state'] == mapping[state]]
-    df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
+    df_states = dataframes['df_states']
+    df_states = df_states.loc[:, ['date', 'state', 'state_name', 'positive', 
+                                  'active', 'recovered', 'death']]
+    df_states.rename(columns={"positive": "total",
+                              "death": "deceased"}, inplace=True)
+    df = df_states[df_states['state_name'] == state]
+    df.reset_index(drop=True, inplace=True)
     return df
 
 
