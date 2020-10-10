@@ -1,12 +1,10 @@
 fitting:
     # Geographical Location
     data:
-        data_source: jhu
+        data_source: covid_tracking
         stratified_data: FALSE
         dataloading_params:
-            dataframe: us_states
-            region: Texas
-            sub_region: null
+            state: Massachusetts
         smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
