@@ -60,7 +60,7 @@ class Optimiser():
         Returns:
             pd.DataFrame -- DataFrame of predictions
         """
-
+        
         solver = model(**params_dict)
         total_days = (end_date.date() - params_dict['starting_date']).days
         df_prediction = solver.predict(total_days=total_days)

@@ -55,7 +55,7 @@ def get_PI(pred_dfs, date, key, multiplier=1.96):
     high = mu + multiplier*sigma
     return mu, low, high
 
-def set_optimizer(data: pd.DataFrame, train_period: int):
+def set_optimizer(data: pd.DataFrame, train_period: int,default_params):
     """Summary
     
     Args:
@@ -65,8 +65,8 @@ def set_optimizer(data: pd.DataFrame, train_period: int):
     Returns:
         TYPE: Description
     """
-    optimiser = Optimiser(use_mcmc=False)
-    default_params = optimiser.init_default_params(data, initialisation='intermediate', train_period=train_period)
+    optimiser = Optimiser()
+    default_params = optimiser.init_default_params(data,default_params,train_period=train_period)
     return optimiser, default_params
 
 def predict(data: pd.DataFrame, mcmc_runs: list, predict_days: int, end_date: str = None) -> pd.DataFrame:

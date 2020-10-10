@@ -186,6 +186,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
 
     # Get data
     params = {**data}
+    
     params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
     observed_dataframes, smoothing = data_setup(**params)

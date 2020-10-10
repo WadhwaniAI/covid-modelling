@@ -46,7 +46,12 @@ class MCMC(object):
         self.cfg  = cfg
         self.df_district = df_district if df_district is not None else self._fetch_data()
         self._split_data()
-        self._optimiser, self._default_params = set_optimizer(self.df_train, self.fit_days)
+        self.n_chains = cfg['fitting']['fitting_method_params']['n_chains']
+        self.likelihood = cfg['fitting']['fitting_method_params']['algo']
+        self._default_params = cfg['fitting']['default_params']
+        self.prior_ranges = cfg['fitting']['variable_param_ranges']
+        self.iters = cfg['fitting']['fitting_method_params']['num_evals']
+        self._optimiser, self._default_params = set_optimizer(self.df_train, self.fit_days,self._default_params)
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
 
     def _fetch_data(self):
@@ -77,7 +82,6 @@ class MCMC(object):
         self.fit_end = N - self.test_days
 
         self.df_train = self.df_district.iloc[self.fit_start : self.fit_end, :]
-        self.df_train = self.df_train[-self.train_days:]
         print("Train set:\n", self.df_train)
         print("Val set:\n", self.df_val)
 
@@ -103,7 +107,7 @@ class MCMC(object):
         """
         theta = defaultdict()
         for key in self.prior_ranges:
-            theta[key] = np.random.uniform(self.prior_ranges[key][0], self.prior_ranges[key][1])
+            theta[key] = np.random.uniform(self.prior_ranges[key][0][0], self.prior_ranges[key][0][1])
             
         return theta
 
@@ -175,8 +179,10 @@ class MCMC(object):
             float: log-likelihood of the data.
         """
         ll = 0
-        df_prediction = self._optimiser.solve(theta, self._default_params, self.df_train)
+        params_dict = {**theta, **self._default_params}
+        df_prediction = self._optimiser.solve(params_dict,end_date = self.df_train[-1:]['date'].item())
         sigma = theta['sigma']
+
 
         for compartment in self.compartments:
             pred = np.array(df_prediction[compartment], dtype=np.int64)
@@ -240,6 +246,7 @@ class MCMC(object):
         
         for i in tqdm(range(self.iters)):
             theta_new = self._proposal(theta)
+            
             if self._accept(theta, theta_new):
                 theta = theta_new
             else:
@@ -317,6 +324,9 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
+        #self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
+        self.chains = []
+        for i, run in enumerate(range(self.n_chains)):
+            self.chains.append(self._metropolis())
         self._check_convergence()
         return self._get_trials()
