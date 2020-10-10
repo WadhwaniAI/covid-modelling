@@ -145,9 +145,11 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     elif 'region' in data['dataloading_params'].keys() and 'sub_region' in data['dataloading_params'].keys():
         location_description = (data['dataloading_params']['region'],
                                 data['dataloading_params']['sub_region'])
-    else:
+    elif 'state' in data['dataloading_params'].keys() and 'county' in data['dataloading_params'].keys():
         location_description = (data['dataloading_params']['state'],
                                 data['dataloading_params']['county'])
+    else:
+        location_description = (data['dataloading_params']['state'])
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
                         location_description=location_description,
                         which_compartments=loss['loss_compartments'])
