@@ -29,16 +29,27 @@ fitting:
         lockdown_R0: [[0.7, 1.2], uniform]
         T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
-        T_recov: [[0, 40], uniform]
-        T_recov_fatal: [[0, 40], uniform]
-        P_fatal: [[0, 0.1], uniform]
-        E_hosp_ratio: [[0, 2], uniform]
-        I_hosp_ratio: [[0, 1], uniform]
+        T_recov: [[1e-10, 40], uniform]
+        T_recov_fatal: [[1e-10, 40], uniform]
+        P_fatal: [[1e-10, 0.1], uniform]
+        E_hosp_ratio: [[1e-10, 2], uniform]
+        I_hosp_ratio: [[1e-10, 1], uniform]
+        sigma: [[1e-10, 1],uniform]
     default_params:
         N: 1.0e+7
     fitting_method: mcmc
 
     fitting_method_params:
+        proposal_sigmas:
+            lockdown_R0: 1
+            T_inc: 1
+            T_inf: 1
+            T_recov: 1
+            T_recov_fatal: 1
+            P_fatal: 1
+            E_hosp_ratio: 1
+            I_hosp_ratio: 1
+            sigma: 1
         num_evals: 10000
         algo: gaussian
         n_chains: 5

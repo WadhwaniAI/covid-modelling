@@ -51,8 +51,11 @@ class MCMC(object):
         self._default_params = cfg['fitting']['default_params']
         self.prior_ranges = cfg['fitting']['variable_param_ranges']
         self.iters = cfg['fitting']['fitting_method_params']['num_evals']
+        self.compartments = cfg['uncertainty']['uncertainty_params']['loss']['loss_compartments']
         self._optimiser, self._default_params = set_optimizer(self.df_train, self.fit_days,self._default_params)
+        self.proposal_sigmas = cfg['fitting']['fitting_method_params']['proposal_sigmas']
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
+        self.fit2new = False
 
     def _fetch_data(self):
         """
@@ -107,7 +110,7 @@ class MCMC(object):
         """
         theta = defaultdict()
         for key in self.prior_ranges:
-            theta[key] = np.random.uniform(self.prior_ranges[key][0][0], self.prior_ranges[key][0][1])
+            theta[key] = np.random.uniform(float(self.prior_ranges[key][0][0]), self.prior_ranges[key][0][1])
             
         return theta
 
@@ -124,18 +127,20 @@ class MCMC(object):
         theta_new = OrderedDict()
         
         for param in theta_old:
+
             old_value = theta_old[param]
-            new_value = -1
-            lower_bound = self.__dict__['prior_ranges'][param][0]
-            upper_bound = self.__dict__['prior_ranges'][param][1]
+            new_value = None
+            lower_bound = float(self.prior_ranges[param][0][0])
+            upper_bound = self.prior_ranges[param][0][1]
             #print(lower_bound, upper_bound)
-            while np.isnan(new_value):
+            while new_value == None:
                 #Gaussian proposal
-                new_value = np.random.normal(loc=np.exp(old_value), scale=np.exp(self.proposal_sigmas[param]))
+                new_value = np.random.normal(loc=np.exp(old_value), scale=np.exp((self.proposal_sigmas[param])))
                 if new_value < lower_bound or new_value > upper_bound: 
                     continue
                 new_value = np.log(new_value)
             theta_new[param] = new_value
+           
         return theta_new
 
     def _gaussian_log_likelihood(self, true, pred, sigma):
