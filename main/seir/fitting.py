@@ -76,8 +76,6 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
         window_size=1)
 
-    
-
     observed_dataframes = {}
     for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
         observed_dataframes[name] = eval(name)
