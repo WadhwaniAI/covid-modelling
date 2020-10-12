@@ -43,9 +43,11 @@ class MCMC(object):
         """
         self.timestamp = datetime.now()
         self.state = cfg['fitting']['data']['dataloading_params']['state']
+        self.district = cfg['fitting']['data']['dataloading_params']['district']
         self.cfg  = cfg
         self.df_district = df_district if df_district is not None else self._fetch_data()
         self._split_data()
+        self.loss_method = cfg['fitting']['loss']['loss_method']
         self.train_days = self.cfg['fitting']['split']['train_period']
         self.n_chains = cfg['fitting']['fitting_method_params']['n_chains']
         self.likelihood = cfg['fitting']['fitting_method_params']['algo']
@@ -135,18 +137,18 @@ class MCMC(object):
 
             old_value = theta_old[param]
             new_value = None
-            lower_bound = float(self.prior_ranges[param][0][0])
-            upper_bound = self.prior_ranges[param][0][1]
+            lower_bound = np.exp(float(self.prior_ranges[param][0][0]))
+            upper_bound = np.exp(self.prior_ranges[param][0][1])
             #print(lower_bound, upper_bound)
             while new_value == None:
                 #Gaussian proposal
 
                 new_value = np.random.normal(loc=np.exp(old_value), scale=np.exp((self.proposal_sigmas[param])))
-                if new_value < lower_bound or new_value > upper_bound: 
+                if new_value < lower_bound or new_value > upper_bound:
+                    new_value = None
                     continue
                 new_value = np.log(new_value)
             theta_new[param] = new_value
-           
         return theta_new
 
     def _gaussian_log_likelihood(self, true, pred, sigma):

@@ -11,8 +11,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from os.path import exists, join, splitext
 
-from mcmc import MCMC
-from mcmc_utils import predict, get_state
+from uncertainty.mcmc import MCMC
+from uncertainty.mcmc_utils import predict, get_state
 
 
 def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, out_dir: str = ''): 
