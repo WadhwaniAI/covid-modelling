@@ -25,7 +25,7 @@ def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, ou
         out_dir (str, optional): Description
     """
     data = pd.concat([mcmc.df_train, mcmc.df_val])
-    result = predict(data, mcmc.chains, data.shape[0], end_date)
+    result = predict(data, mcmc.chains, mcmc._default_params_old, data.shape[0], end_date)
 
     data.set_index("date", inplace=True)
 

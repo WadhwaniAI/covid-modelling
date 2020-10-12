@@ -69,7 +69,8 @@ def set_optimizer(data: pd.DataFrame, train_period: int,default_params):
     default_params = optimiser.init_default_params(data,default_params,train_period=train_period)
     return optimiser, default_params
 
-def predict(data: pd.DataFrame, mcmc_runs: list, predict_days: int, end_date: str = None) -> pd.DataFrame:
+def predict(data: pd.DataFrame, mcmc_runs: list, default_params: dict,
+      predict_days: int, end_date: str = None) -> pd.DataFrame:
     """Summary
     
     Args:
@@ -81,7 +82,7 @@ def predict(data: pd.DataFrame, mcmc_runs: list, predict_days: int, end_date: st
     Returns:
         pd.DataFrame: Description
     """
-    optimiser, default_params = set_optimizer(data, predict_days)
+    optimiser, default_params = set_optimizer(data, predict_days, default_params)
     
     combined_acc = list()
     for k, run in enumerate(mcmc_runs):
@@ -93,7 +94,9 @@ def predict(data: pd.DataFrame, mcmc_runs: list, predict_days: int, end_date: st
     
     pred_dfs = list()
     for i in tqdm(sample_indices):
-        pred_dfs.append(optimiser.solve(combined_acc[int(i)], default_params, data, end_date=end_date))
+        #import pdb; pdb.set_trace()
+        all_params = {**combined_acc[int(i)], **default_params}
+        pred_dfs.append(optimiser.solve(params_dict = all_params, end_date=end_date))
     for df in pred_dfs:
         df.set_index('date', inplace=True)
 

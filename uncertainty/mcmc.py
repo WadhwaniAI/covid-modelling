@@ -51,11 +51,11 @@ class MCMC(object):
         self.train_days = self.cfg['fitting']['split']['train_period']
         self.n_chains = cfg['fitting']['fitting_method_params']['n_chains']
         self.likelihood = cfg['fitting']['fitting_method_params']['algo']
-        self._default_params = cfg['fitting']['default_params']
+        self._default_params_old = cfg['fitting']['default_params']
         self.prior_ranges = cfg['fitting']['variable_param_ranges']
         self.iters = cfg['fitting']['fitting_method_params']['num_evals']
         self.compartments = cfg['uncertainty']['uncertainty_params']['loss']['loss_compartments']
-        self._optimiser, self._default_params = set_optimizer(self.df_train,self.train_days,self._default_params)
+        self._optimiser, self._default_params = set_optimizer(self.df_train,self.train_days,self._default_params_old)
         self.proposal_sigmas = cfg['fitting']['fitting_method_params']['proposal_sigmas']
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
         self.fit2new = False
@@ -194,7 +194,7 @@ class MCMC(object):
         ll = 0
         params_dict = {**theta, **self._default_params}
         df_prediction = self._optimiser.solve(params_dict,end_date = self.df_train[-1:]['date'].item())
-        sigma = theta['sigma']
+        sigma = 1#theta['sigma']
 
 
         for compartment in self.compartments:
