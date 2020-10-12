@@ -46,6 +46,8 @@ class AthenaLoader(BaseLoader):
                         region_name=AWS_CREDS['AWS_DEFAULT_REGION'],
                         work_group=AWS_CREDS['AWS_ATHENA_WORK_GROUP'],
                         schema_name=SCHEMA_NAME).cursor(PandasCursor)
+        
+        print('creating cursor...')
         return cursor
 
 

@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: covid19india
+        data_source: athena
         stratified_data: FALSE
         dataloading_params:
             state: Maharashtra
@@ -38,7 +38,7 @@ fitting:
         N: 1.0e+7
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 1000
+        num_evals: 100
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
@@ -60,10 +60,10 @@ sensitivity:
     T_recov: [[[1, 100], 101], recovered, total]
     T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
-    forecast_days: 30
-    num_trials_to_plot: 10
-    plot_topk_trials_for_columns: [total, active]
-    plot_ptiles_for_columns: [total, active]
+    forecast_days: 10
+    num_trials_to_plot: 1
+    plot_topk_trials_for_columns: [total, active, recovered, deceased]
+    plot_ptiles_for_columns: [total, active, recovered, deceased]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
@@ -71,7 +71,7 @@ uncertainty:
         which_fit: m1
         variable_param_ranges:
             beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2020-09-30
+        date_of_sorting_trials: 2020-10-15
         sort_trials_by_column: total
         loss:
             loss_method: mape
