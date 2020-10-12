@@ -46,13 +46,14 @@ class MCMC(object):
         self.cfg  = cfg
         self.df_district = df_district if df_district is not None else self._fetch_data()
         self._split_data()
+        self.train_days = self.cfg['fitting']['split']['train_period']
         self.n_chains = cfg['fitting']['fitting_method_params']['n_chains']
         self.likelihood = cfg['fitting']['fitting_method_params']['algo']
         self._default_params = cfg['fitting']['default_params']
         self.prior_ranges = cfg['fitting']['variable_param_ranges']
         self.iters = cfg['fitting']['fitting_method_params']['num_evals']
         self.compartments = cfg['uncertainty']['uncertainty_params']['loss']['loss_compartments']
-        self._optimiser, self._default_params = set_optimizer(self.df_train, self.fit_days,self._default_params)
+        self._optimiser, self._default_params = set_optimizer(self.df_train,self.train_days,self._default_params)
         self.proposal_sigmas = cfg['fitting']['fitting_method_params']['proposal_sigmas']
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
         self.fit2new = False
@@ -77,11 +78,15 @@ class MCMC(object):
         """
         self.test_days = self.cfg['fitting']['split']['val_period']
         self.train_days = self.cfg['fitting']['split']['train_period']
+        self.end_date = self.cfg['fitting']['split']['end_date']
+        N = len(self.df_district)
+        drop = (self.df_district[-1:]['date'].item().date() - self.end_date).days
+        self.df_district = self.df_district[:N-drop]
         N = len(self.df_district)
         self.df_val = self.df_district.iloc[N - self.test_days:, :]
         self.fit_days = N - self.test_days
 
-        self.fit_start = N - self.test_days - self.fit_days
+        self.fit_start = N - self.test_days - self.train_days
         self.fit_end = N - self.test_days
 
         self.df_train = self.df_district.iloc[self.fit_start : self.fit_end, :]
@@ -135,6 +140,7 @@ class MCMC(object):
             #print(lower_bound, upper_bound)
             while new_value == None:
                 #Gaussian proposal
+
                 new_value = np.random.normal(loc=np.exp(old_value), scale=np.exp((self.proposal_sigmas[param])))
                 if new_value < lower_bound or new_value > upper_bound: 
                     continue
