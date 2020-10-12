@@ -7,8 +7,15 @@ fitting:
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
-        smooth_jump: FALSE
-        smooth_jump_params: null
+        smooth_jump: TRUE
+        smooth_jump_params:
+            2020-05-28: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-14: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
             center: TRUE
