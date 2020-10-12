@@ -1,21 +1,11 @@
-import os
-import json
-import numpy as np
-import pandas as pd
-
-from collections import OrderedDict, defaultdict
-import datetime
 import copy
-import importlib
 from tabulate import tabulate
 
 from data.processing.processing import get_data, train_val_test_split
 from data.processing import granular
 
-import models.seir
 from main.seir.optimiser import Optimiser
 from utils.fitting.loss import Loss_Calculator
-from utils.generic.enums import Columns
 from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
 from viz import plot_smoothing, plot_fit
 
@@ -49,6 +39,9 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
             df_district, description = smooth_big_jump_stratified(
                 df_district, df_not_strat, smooth_jump_params)
         else:
+            # my code
+            print(df_district)
+            
             df_district, description = smooth_big_jump(df_district, smooth_jump_params)
 
         smoothing_plot = plot_smoothing(orig_df_district, df_district, dataloading_params['state'], 
@@ -113,6 +106,8 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     Returns:
         dict -- Dict of all predictions
     """
+    # my code
+    # print(loss)
 
     df_district, df_train, df_val, df_train_nora, df_val_nora = [
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
@@ -121,9 +116,10 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     optimiser = Optimiser()
     # Get the fixed params
     default_params = optimiser.init_default_params(df_train, default_params, train_period=split['train_period'])
-    # Get/create searchspace of variable paramms
+    # Get/create searchspace of variable params
     loss_indices = [-(split['train_period']), None]
     loss['loss_indices'] = loss_indices
+    
     # Perform Bayesian Optimisation
     variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges, fitting_method)
     args = {'df_train': df_train, 'default_params': default_params, 'variable_param_ranges':variable_param_ranges, 
@@ -137,7 +133,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     
     lc = Loss_Calculator()
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'], 
-                                              which_compartments=loss['loss_compartments'])
+                                              which_compartments=loss['loss_compartments'], method=loss['loss_method'])
 
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
                         data['dataloading_params']['state'], data['dataloading_params']['district'], 
@@ -155,7 +151,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
 
 
 def single_fitting_cycle(data, model, variable_param_ranges, default_params, fitting_method, 
-                         fitting_method_params, split, loss):
+                         fitting_method_params, split, loss, data_weights):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -189,8 +185,8 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
     observed_dataframes, smoothing = data_setup(**params)
-    smoothing_plot = smoothing['smoothing_plot']
-    orig_df_district = smoothing['df_district_unsmoothed']
+    smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
+    orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
 
     print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
     if not observed_dataframes['df_val'] is None:

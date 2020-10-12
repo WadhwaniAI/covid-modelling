@@ -11,6 +11,9 @@ class Loss_Calculator():
                       'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator']
 
     def _calc_rmse(self, y_pred, y_true, log=False):
+
+        y_pred = np.array(y_pred)
+        y_true = np.array(y_true)
         if log:
             y_true = np.log(y_true[y_true > 0])
             y_pred = np.log(y_pred[y_true > 0])
@@ -18,6 +21,9 @@ class Loss_Calculator():
         return loss
 
     def _calc_mape(self, y_pred, y_true):
+        y_pred = np.array(y_pred)
+        y_true = np.array(y_true)
+
         y_pred = y_pred[y_true != 0]
         y_true = y_true[y_true != 0]
 
@@ -25,24 +31,68 @@ class Loss_Calculator():
         loss = np.mean(ape)
         return loss
 
-    def calc_loss_dict(self, df_prediction, df_true, method='rmse'):
+    def _calc_wape(self, y_pred, y_true, case_count_weights):
+        
+        y_pred = np.array(y_pred)
+        y_true = np.array(y_true)
+
+        y_pred = y_pred[y_true != 0]
+        y_true = y_true[y_true != 0]
+
+        temporal_weights = np.array(temporal_weights)
+
+        ape = np.abs((y_true - y_pred + 0) * temporal_weights / y_true * temporal_weights) * 100.
+        loss = np.mean(ape)
+        return loss
+
+    
+    def _calc_mape_delta(self, y_pred, y_true):
+        y_pred = np.array(y_pred)
+        y_true = np.array(y_true)
+        
+        y_pred_delta = y_pred[1:] - y_pred[:-1]
+        y_true_delta = y_true[1:] - y_true[:-1]
+        
+        y_pred_delta = y_pred_delta[y_true_delta != 0]
+        y_true_delta = y_true_delta[y_true_delta != 0]
+
+        
+        ape_delta = np.abs((y_true_delta - y_pred_delta + 0) / y_true_delta) *  100
+        loss = np.mean(ape_delta)
+        
+        return loss
+    
+    # calls the bit loss functions
+    def calc_loss_dict(self, df_prediction, df_true, method='rmse', temporal_weights=None):
         if method == 'rmse':
             calculate = lambda x, y : self._calc_rmse(x, y)
         if method == 'rmse_log':
             calculate = lambda x, y : self._calc_rmse(x, y, log=True)
         if method == 'mape':
             calculate = lambda x, y : self._calc_mape(x, y)
-        
+        if method == 'wape' :
+            # my code
+            # print("I AM HERE IN THE CALC LOSS DICT FUNCTION")
+            calculate = lambda x, y : self._calc_wape(x, y, temporal_weights)
+        if method == 'mape_delta':
+            calculate = lambda x, y: self._calc_mape_delta(x, y)
+            
         losses = {}
         for compartment in self.columns:
+            # my code
+            # losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
+            
             try:
                 losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
             except Exception:
                 continue
+                
         return losses
 
-    def calc_loss(self, df_prediction, df_true, method='rmse', 
-                  which_compartments=['active', 'recovered', 'total', 'deceased'], loss_weights=[1, 1, 1, 1]):
+    def calc_loss(self, df_prediction, df_true, df_data_weights_prediction=None, method='rmse', 
+                  which_compartments=['active', 'recovered', 'total', 'deceased'], 
+                  loss_weights=[1, 1, 1, 1]):
+        
         losses = self.calc_loss_dict(df_prediction, df_true, method)
         loss = 0
         for i, compartment in enumerate(which_compartments):
@@ -69,7 +119,7 @@ class Loss_Calculator():
         return err
 
     def create_loss_dataframe_region(self, df_train, df_val, df_prediction, train_period, 
-                       which_compartments=['active', 'total']):
+                       which_compartments=['active', 'total'], method='mape'):
         """Helper function for calculating loss in training pipeline
 
         Arguments:
@@ -84,27 +134,41 @@ class Loss_Calculator():
         Returns:
             pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
         """
+
+        # setting indices' names and column names for the loss dataframe
         df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
 
         df_temp = df_prediction.loc[df_prediction['date'].isin(
             df_train['date']), ['date']+which_compartments]
+
+        # setting indices from 0 again
         df_temp.reset_index(inplace=True, drop=True)
+
         df_train = df_train.loc[df_train['date'].isin(df_temp['date']), :]
+        
+        # setting indices from 0 again
         df_train.reset_index(inplace=True, drop=True)
+        
+        # CARD loop
+        losses = self.calc_loss_dict(df_temp, df_train, method=method)
         for compartment in df_loss.index:
-            df_loss.loc[compartment, 'train'] = self._calc_mape(
-                np.array(df_temp[compartment]), np.array(df_train[compartment]))
+            df_loss.loc[compartment, 'train'] = losses[compartment] 
 
         if isinstance(df_val, pd.DataFrame):
             df_temp = df_prediction.loc[df_prediction['date'].isin(
                 df_val['date']), ['date']+which_compartments]
+        
             df_temp.reset_index(inplace=True, drop=True)
+        
             df_val.reset_index(inplace=True, drop=True)
+
+            losses = self.calc_loss_dict(df_temp, df_val, method=method)
             for compartment in df_loss.index:
-                df_loss.loc[compartment, 'val'] = self._calc_mape(
-                    np.array(df_temp[compartment]), np.array(df_val[compartment]))
+                df_loss.loc[compartment, 'val'] = losses[compartment]
+
         else:
             del df_loss['val']
+        
         return df_loss
 
     def create_loss_dataframe_master(self, predictions_dict, train_fit='m1'):

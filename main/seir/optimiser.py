@@ -211,7 +211,7 @@ class Optimiser():
         return loss_array, list_of_param_dicts
 
     def bayes_opt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
-                  loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
+                  loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1], loss_temporal_weights = None,
                   prior='uniform', algo=tpe, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
