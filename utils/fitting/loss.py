@@ -41,13 +41,7 @@ class Loss_Calculator():
 
         temporal_weights = np.array(temporal_weights)
 
-        # my code
-        # print('my code to check calc wape')
-        # print(temporal_weights)
-        # print(y_true)
-        # print(y_pred)
-
-        ape = np.abs((y_true - y_pred + 0) * temporal_weights / y_true * temporal_weights) 
+        ape = np.abs((y_true - y_pred + 0) * temporal_weights / y_true * temporal_weights) * 100.
         loss = np.mean(ape)
         return loss
 
@@ -69,7 +63,7 @@ class Loss_Calculator():
         return loss
     
     # calls the bit loss functions
-    def calc_loss_dict(self, df_prediction, df_true, method='rmse'):
+    def calc_loss_dict(self, df_prediction, df_true, method='rmse', temporal_weights=None):
         if method == 'rmse':
             calculate = lambda x, y : self._calc_rmse(x, y)
         if method == 'rmse_log':
@@ -79,7 +73,7 @@ class Loss_Calculator():
         if method == 'wape' :
             # my code
             # print("I AM HERE IN THE CALC LOSS DICT FUNCTION")
-            calculate = lambda x, y : self._calc_wape(x, y)
+            calculate = lambda x, y : self._calc_wape(x, y, temporal_weights)
         if method == 'mape_delta':
             calculate = lambda x, y: self._calc_mape_delta(x, y)
             
@@ -95,7 +89,7 @@ class Loss_Calculator():
                 
         return losses
 
-    def calc_loss(self, df_prediction, df_true, method='rmse', 
+    def calc_loss(self, df_prediction, df_true, df_data_weights_prediction=None, method='rmse', 
                   which_compartments=['active', 'recovered', 'total', 'deceased'], 
                   loss_weights=[1, 1, 1, 1]):
         

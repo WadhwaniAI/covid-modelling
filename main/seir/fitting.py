@@ -76,6 +76,8 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
         window_size=1)
 
+    
+
     observed_dataframes = {}
     for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
         observed_dataframes[name] = eval(name)
@@ -148,7 +150,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
 
 
 def single_fitting_cycle(data, model, variable_param_ranges, default_params, fitting_method, 
-                         fitting_method_params, split, loss, data_smoothing):
+                         fitting_method_params, split, loss, data_weights):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:

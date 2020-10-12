@@ -45,11 +45,16 @@ fitting:
         loss_method: mape_delta
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
-    data_smoothing:
-        total: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-        active: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-        recovered: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-        deceased: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    # Variable data smoothing
+    data_weights:
+        if_weights: TRUE
+        start_date: 2020-09-10
+        end_date: 2020-09-22
+        weights:
+            total: [0.5, 0.5, 0.25, 0.25, 0.2, 0.2, 1, 1, 1, 1, 1, 1.5, 1.5]
+            active: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            recovered: [0.5, 0.5, 0.25, 0.25, 0.2, 0.2, 1, 1, 1, 1, 1, 1.5, 1.5]
+            deceased: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 sensitivity:
     lockdown_R0: [[[0.5, 1.5], 101], total, null]
     I_hosp_ratio: [[[0, 1], 201], total, null]
