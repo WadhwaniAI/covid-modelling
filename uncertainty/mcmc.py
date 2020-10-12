@@ -312,8 +312,8 @@ class MCMC(object):
 
         n_samples = 1000
         sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
-
-        total_days = len(self.df_train['date'])
+        #Total day is 1 less than training_period
+        total_days = len(self.df_train['date'])-1
         loss_indices = [-self.fit_days, None]
 
         losses = list()

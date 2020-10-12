@@ -41,11 +41,11 @@ fitting:
 
     fitting_method_params:
         proposal_sigmas:
-            lockdown_R0: 1
-            T_inc: 1
-            T_inf: 1
-            T_recov: 1
-            T_recov_fatal: 1
+            lockdown_R0: 2
+            T_inc: 3
+            T_inf: 3
+            T_recov: 5
+            T_recov_fatal: 5
             P_fatal: 1
             E_hosp_ratio: 1
             I_hosp_ratio: 1
