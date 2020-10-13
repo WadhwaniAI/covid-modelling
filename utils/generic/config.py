@@ -26,6 +26,28 @@ def read_config(filename='default.yaml', preprocess=True):
     
     if not preprocess:
         return config
+    else:
+        return process_config(config)
+
+def process_config(config):
+    """Helper function for processing config file read from yaml file
+
+    Args:
+        config (dict): Unprocessed config dict
+
+    Returns:
+        dict: Processed config dict
+    """
+    dl_config = config['fitting']['data']['dataloading_params']
+    if 'state' in dl_config.keys() and 'district' in dl_config.keys():
+        location_description = (dl_config['state'], dl_config['district'])
+    elif 'region' in dl_config.keys() and 'sub_region' in dl_config.keys():
+        location_description = (dl_config['region'], dl_config['sub_region'])
+    elif 'state' in dl_config.keys() and 'county' in dl_config.keys():
+        location_description = (dl_config['state'], dl_config['county'])
+    else:
+        location_description = (dl_config['state'])
+    dl_config['location_description'] = location_description
     
     config['fitting']['model'] = getattr(models.seir, config['fitting']['model'])
 
