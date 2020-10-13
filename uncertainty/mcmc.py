@@ -1,41 +1,101 @@
 import pprint
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
-import multiprocessing as mp
-from datetime import datetime
-from scipy.stats import poisson
-from joblib import delayed, Parallel
 from collections import defaultdict, OrderedDict
+from datetime import datetime
+
+import numpy as np
+from joblib import delayed, Parallel
+from scipy.stats import poisson
+from tqdm import tqdm
 
 from data.processing import get_district_time_series
-from data.dataloader import get_covid19india_api_data
-from mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, avg_sum_multiple_chains, get_state
-
+from uncertainty.mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
+    avg_sum_multiple_chains, get_state, get_formatted_trials
+import pdb
 
 class MCMC(object):
-    def __init__(self, cfg, **ignored):
+
+    """
+    MCMC class to perform metropolis-hastings. Supports gaussian and poisson likelihoods.
+    
+    Attributes:
+        chains (list): List of chains where each chain contains a list of accepted and rejected parameters.
+        df_district (pd.DataFrame): dataframe containing district data.
+        df_train (pd.DataFrame): dataframe containing district data to train on.
+        df_val (pd.DataFrame): dataframe containing district data to evaluate performance on.
+        dist_log_likelihood (func): pointer to the log-likelihood function to use.
+        fit_days (int): no. of days to evaluate performance on.
+        fit_end (int): no. of days to fit the model on.
+        fit_start (int): dataframe index to fit start day.
+        R_hat (dict): dictionary containing the convergence metrics for each parameter.
+        state (str): state that the district belongs to.
+        timestamp (datetime.datetime): date and time when the model is run.
+    """
+    
+    def __init__(self, cfg, df_district=None, **ignored):
+        """
+        Constructor. Fetches the data, initializes the optimizer and sets up the
+        likelihood function.
+        
+        Args:
+            cfg (dict): dictonary containing all the config parameters.
+            df_district (pd.DataFrame, optional): dataframe containing district data.
+            **ignored: flag to ignore extra parameters.
+        """
         self.timestamp = datetime.now()
         self.state = get_state(cfg["district"])
         self.__dict__.update(cfg)
 
-        self._fetch_data()
+        self.df_district = df_district if df_district is not None else self._fetch_data()
         self._split_data()
-        self._optimiser, self._default_params = set_optimizer(self.df_train)
+        self._optimiser, self._default_params = set_optimizer(self.df_train, self.fit_days)
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
 
     def _fetch_data(self):
-        dataframes = get_covid19india_api_data()
-        self.df_district = get_district_time_series(dataframes, state=self.state, district=self.district, use_dataframe = 'districts_daily')
+        """
+        Fetches district data from either tracker or athena database.
+        
+        Returns:
+            pd.DataFrame: dataframe containing district data.
+        """
+        return get_district_time_series(state=self.state, district=self.district, use_dataframe='data_all')
 
     def _split_data(self):
-        self.df_train = self.df_district.iloc[:-self.test_days, :]
-        self.df_val = self.df_district.iloc[-self.test_days:, :]
+        """
+        Splits self.df_district into train and val set as per number of test days specified
+        in the config.
+        """
+        N = len(self.df_district)
+        self.df_val = self.df_district.iloc[N - self.test_days:, :]
+        if self.fit_days is None:
+            self.fit_days = N - self.test_days
+
+        self.fit_start = N - self.test_days - self.fit_days
+        self.fit_end = N - self.test_days
+
+        self.df_train = self.df_district.iloc[self.fit_start : self.fit_end, :]
+        print("Train set:\n", self.df_train)
+        print("Val set:\n", self.df_val)
 
     def _get_new_cases_array(self, cases):
+        """
+        Computes and returns new cases per day from array of total cases per day.
+        
+        Args:
+            cases (np.ndarray): array containing total number of cases per day.
+        
+        Returns:
+            np.ndarray: array containing new case counts per day.
+        """
         return np.array(cases[1:]) - np.array(cases[:-1])
 
     def _param_init(self):
+        """
+        Samples the first value for each param from a uniform prior distribution with ranges
+        mentioned in the config.
+        
+        Returns:
+            dict: dictionary containing initial param-value pairs.
+        """
         theta = defaultdict()
         for key in self.prior_ranges:
             theta[key] = np.random.uniform(self.prior_ranges[key][0], self.prior_ranges[key][1])
@@ -43,35 +103,219 @@ class MCMC(object):
         return theta
 
     def _proposal(self, theta_old):
+        """
+        Proposes a new set of parameter values given the previous set.
+        
+        Args:
+            theta_old (dict): dictionary of old param-value pairs.
+        
+        Returns:
+            OrderedDict: dictionary of newly proposed param-value pairs.
+        """
         theta_new = OrderedDict()
         
         for param in theta_old:
             old_value = theta_old[param]
             new_value = -1
-            while np.isnan(new_value) or new_value <=0:
+            lower_bound = self.__dict__['prior_ranges'][param][0]
+            upper_bound = self.__dict__['prior_ranges'][param][1]
+            #print(lower_bound, upper_bound)
+            while np.isnan(new_value):
+                #Gaussian proposal
                 new_value = np.random.normal(loc=np.exp(old_value), scale=np.exp(self.proposal_sigmas[param]))
+                if new_value < lower_bound or new_value > upper_bound: 
+                    continue
                 new_value = np.log(new_value)
             theta_new[param] = new_value
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         return theta_new
 
     def _gaussian_log_likelihood(self, true, pred, sigma):
+        """
+        Calculates the log-likelihood of the data as per a gaussian distribution.
+        
+        Args:
+            true (np.ndarray): array containing actual numbers.
+            pred (np.ndarray): array containing estimated numbers.
+            sigma (float): standard deviation of the gaussian distribution to use.
+        
+        Returns:
+            float: gaussian log-likelihood of the data.
+        """
         N = len(true)
         ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (np.sum(((true - pred) ** 2) / (2 * sigma ** 2)))
         return ll
 
-    def _poisson_log_likelihood(self, true, pred, sigma):
-        ll = np.log(poisson.pmf(k = pred, mu = sigma, loc=true))
+    def _poisson_log_likelihood(self, true, pred, *ignored):
+        """
+        Calculates the log-likelihood of the data as per a poisson distribution.
+        
+        Args:
+            true (np.ndarray): array containing actual numbers.
+            pred (np.ndarray): array containing estimated numbers.
+        
+        Returns:
+            float: poisson log-likelihood of the data.
+        """
+        ll = np.log(poisson.pmf(k = pred, mu = true.mean()))
         return np.sum(ll)
 
     def _log_likelihood(self, theta):
+        """
+        Computes and returns the data log-likelihood as per either a gaussian or poisson distribution.
+        
+        Args:
+            theta (OrderedDict): parameter-value pairs.
+        
+        Returns:
+            float: log-likelihood of the data.
+        """
         ll = 0
         df_prediction = self._optimiser.solve(theta, self._default_params, self.df_train)
         sigma = theta['sigma']
 
         for compartment in self.compartments:
-            pred = np.array(df_prediction[compartment].iloc[-self.fit_days:], dtype=np.int64)
-            true = np.array(self.df_train[compartment].iloc[-self.fit_days:], dtype=np.int64)
+            pred = np.array(df_prediction[compartment], dtype=np.int64)
+            true = np.array(self.df_train[compartment], dtype=np.int64)
             if self.fit2new:
                 pred = self._get_new_cases_array(pred.copy())
                 true = self._get_new_cases_array(true.copy())
@@ -81,6 +325,15 @@ class MCMC(object):
         return ll
 
     def _log_prior(self, theta):
+        """
+        Computes and returns the log-prior as per non-negative constraint on the parameters.
+        
+        Args:
+            theta (OrderedDict): parameter-value pairs.
+        
+        Returns:
+            float: log-prior of the parameters.
+        """
         if (np.array([*theta.values()]) < 0).any():
             prior = 0
         else:
@@ -89,6 +342,17 @@ class MCMC(object):
         return np.log(prior)
 
     def _accept(self, theta_old, theta_new):    
+        """
+        Decides, using the likelihood function, whether a newly proposed set of param values should 
+        be accepted and added to the MCMC chain.
+        
+        Args:
+            theta_old (OrderedDict): previous parameter-value pairs.
+            theta_new (OrderedDict): new proposed parameter-value pairs.
+        
+        Returns:
+            bool: whether or not to accept the new parameter set.
+        """
         x_new = self._log_likelihood(theta_new)
         x_old = self._log_likelihood(theta_old)
         
@@ -99,6 +363,12 @@ class MCMC(object):
             return (x < np.exp(x_new - x_old))
 
     def _metropolis(self):
+        """
+        Implementation of the metropolis loop.
+        
+        Returns:
+            tuple: tuple containing a list of accepted and a list of rejected parameter values.
+        """
         theta = self._param_init()
         accepted = [theta]
         rejected = list()
@@ -114,6 +384,10 @@ class MCMC(object):
         return accepted, rejected
 
     def _check_convergence(self):
+        """
+        Computes the Gelman-Rubin convergence statistics for each parameter and stores them in
+        self.R_hat.
+        """
         accepted_chains = [chain[0] for chain in self.chains]
         burn_in = int(len(accepted_chains[0]) / 2)
         sampled_chains = [chain[:burn_in] for chain in accepted_chains]
@@ -140,7 +414,44 @@ class MCMC(object):
         pp.pprint(R_hat)
         self.R_hat = R_hat
 
-    def run(self):
-        self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for run in range(self.n_chains))
-        self._check_convergence()
+    def _get_trials(self):
+        """Summary
+        
+        Returns:
+            TYPE: Description
+        """
+        combined_acc = list()
+        for k, run in enumerate(self.chains):
+            burn_in = int(len(run) / 2)
+            combined_acc += run[0][burn_in:]
 
+        n_samples = 1000
+        sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
+
+        total_days = len(self.df_train['date'])
+        loss_indices = [-self.fit_days, None]
+
+        losses = list()
+        params = list()
+        for i in tqdm(sample_indices):
+            params.append(combined_acc[int(i)])
+            losses.append(self._optimiser.solve_and_compute_loss(combined_acc[int(i)], self._default_params,
+                                                                 self.df_train, total_days,
+                                                                 loss_indices=loss_indices,
+                                                                 loss_method=self.loss_method))
+
+        least_loss_index = np.argmin(losses)
+        best_params = params[int(least_loss_index)]
+        trials = get_formatted_trials(params, losses)
+        return best_params, trials
+
+    def run(self):
+        """
+        Runs all the metropolis-hastings chains in parallel.
+        
+        Returns:
+            list: Description
+        """
+        self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
+        self._check_convergence()
+        return self._get_trials()

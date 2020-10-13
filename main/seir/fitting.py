@@ -2,315 +2,209 @@ import os
 import json
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import seaborn as sns
-from hyperopt import hp, tpe, fmin, Trials
-from tqdm import tqdm
 
 from collections import OrderedDict, defaultdict
-import itertools
-from functools import partial
-from datetime import datetime
-from joblib import Parallel, delayed
+import datetime
 import copy
+import importlib
+from tabulate import tabulate
 
-from data.dataloader import get_jhu_data, get_covid19india_api_data
-from data.processing import get_data, get_district_time_series
+from data.processing.processing import get_data, train_val_test_split
+from data.processing import granular
 
-from models.seir.seir_testing import SEIR_Testing
+import models.seir
 from main.seir.optimiser import Optimiser
-from main.seir.losses import Loss_Calculator
+from utils.fitting.loss import Loss_Calculator
+from utils.generic.enums import Columns
+from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
+from viz import plot_smoothing, plot_fit
 
 
-now = str(datetime.now())
+def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, smooth_jump_params, split,
+               loss_compartments, rolling_average, rolling_average_params, **kwargs):
+    """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
-def train_val_split(df_district, train_rollingmean=False, val_rollingmean=False, val_size=5,
-                    which_columns=['hospitalised', 'total_infected', 'deceased', 'recovered']):
-    print("splitting data ..")
-    df_true_fitting = copy.copy(df_district)
-    for column in which_columns:
-        df_true_fitting[column] = df_true_fitting[column].rolling(
-            5, center=True).mean()
+    Arguments:
+        dataframes {dict(pd.Dataframe)} -- dict of dataframes from get_covid19india_api_data() 
+        state {str} -- State name in title case
+        district {str} -- District name in title case
+        data_from_tracker {bool} -- Whether data is from tracker or not
+        data_format {str} -- If using filename, what is the filename format
+        filename {str} -- Name of the filename to read file from
 
-    df_true_fitting = df_true_fitting[np.logical_not(
-        df_true_fitting['total_infected'].isna())]
-    df_true_fitting.reset_index(inplace=True, drop=True)
-
-    if train_rollingmean:
-        if val_size == 0:
-            df_train = pd.concat(
-                [df_true_fitting, df_district.iloc[-(val_size+2):, :]], ignore_index=True)
-            return df_train, None, df_true_fitting
-        else:
-            df_train = df_true_fitting.iloc[:-(val_size-2), :]
+    Returns:
+        pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
+    """
+    if stratified_data:
+        df_not_strat = get_data(data_source, dataloading_params)
+        df_district = granular.get_data(data_source, dataloading_params)
     else:
-        if val_size == 0:
-            return df_district, None, df_true_fitting
-        else:
-            df_train = df_district.iloc[:-val_size, :]
-
-    if val_rollingmean:
-        df_val = pd.concat([df_true_fitting.iloc[-(val_size-2):, :],
-                            df_district.iloc[-2:, :]], ignore_index=True)
-    else:
-        df_val = df_district.iloc[-val_size:, :]
-    df_val.reset_index(inplace=True, drop=True)
-    return df_train, df_val, df_true_fitting
-
-
-def get_predictions_mcmc(params, default_params, df_train, initialisation, train_period):
-    if train_on_val:
-        df_prediction = optimiser.solve(params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'], 
-                                        initialisation=initialisation, loss_indices=[-train_period, None])
-    else:
-        df_prediction = optimiser.solve(params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'],
-                                        initialisation=initialisation, loss_indices=[-train_period, None])
-    return df_prediction
-
-
-def single_fitting_cycle(dataframes, state, district, train_period=7, val_period=7, train_on_val=False,
-                         data_from_tracker=True, filename=None, pre_lockdown=False, N=1e7, 
-                         which_compartments=['hospitalised', 'total_infected'], initialisation='starting',
-                         use_mcmc = False):
-
-    print('fitting to data with "train_on_val" set to {} ..'.format(train_on_val))
-
-    if data_from_tracker:
-        df_district = get_data(dataframes, state=state, district=district, use_dataframe='districts_daily')
-    else:
-        df_district = get_data(dataframes, state, district, disable_tracker=True, filename=filename)
+        df_district = get_data(data_source, dataloading_params)
     
-    df_district_raw_data = get_data(dataframes, state=state, district=district, use_dataframe='raw_data')
-    df_district_raw_data = df_district_raw_data[df_district_raw_data['date'] <= '2020-03-25']
+    smoothing_plot = None
+    orig_df_district = copy.copy(df_district)
 
-    if district is None:
-        district = ''
-
-    # Get train val split
-    if pre_lockdown:
-        df_train, df_val, df_true_fitting = train_val_split(
-            df_district_raw_data, train_rollingmean=False, val_rollingmean=False, val_size=0)
-    else:
-        if train_on_val:
-            df_train, df_val, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=True, val_rollingmean=True, val_size=0)
-            df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
+    if smooth_jump:
+        if stratified_data:
+            df_district, description = smooth_big_jump_stratified(
+                df_district, df_not_strat, smooth_jump_params)
         else:
-            df_train, df_val, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=True, val_rollingmean=True, val_size=val_period)
-            df_train_nora, df_val_nora, df_true_fitting = train_val_split(
-                df_district, train_rollingmean=False, val_rollingmean=False, val_size=val_period)
+            df_district, description = smooth_big_jump(df_district, smooth_jump_params)
 
-    print('train\n', df_train.tail())
-    print('val\n', df_val)
+        smoothing_plot = plot_smoothing(orig_df_district, df_district, dataloading_params['state'], 
+                                        dataloading_params['district'], which_compartments=loss_compartments, 
+                                        description='Smoothing')
+    df_district['daily_cases'] = df_district['total'].diff()
+    df_district.dropna(axis=0, how='any', subset=['total', 'active', 'recovered', 'deceased', 'daily_cases'], 
+                       inplace=True)
+    df_district.reset_index(drop=True, inplace=True)
+
+    smoothing = {}
+    if smooth_jump:
+        smoothing = {
+            'smoothing_description': description,
+            'smoothing_plot': smoothing_plot,
+            'df_district_unsmoothed': orig_df_district
+        }
+        print(smoothing['smoothing_description'])
+     
+    rap = rolling_average_params
+    if rolling_average:
+        df_train, df_val, _ = train_val_test_split(
+            df_district, train_period=split['train_period'], val_period=split['val_period'],
+            test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
+            window_size=rap['window_size'], center=rap['center'], 
+            win_type=rap['win_type'], min_periods=rap['min_periods'])
+    else:
+        df_train, df_val, _ = train_val_test_split(
+            df_district, train_period=split['train_period'], val_period=split['val_period'],
+            test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
+            window_size=1)
+
+    df_train_nora, df_val_nora, _ = train_val_test_split(
+        df_district, train_period=split['train_period'], val_period=split['val_period'],
+        test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
+        window_size=1)
+
+    observed_dataframes = {}
+    for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
+        observed_dataframes[name] = eval(name)
+    return observed_dataframes, smoothing
+
+
+def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_params, fitting_method,
+              fitting_method_params, split, loss):
+    """Helper function for single_fitting_cycle where the fitting actually takes place
+
+    Arguments:
+        state {str} -- state name in title case
+        district {str} -- district name in title case
+        observed_dataframes {dict(pd.DataFrame)} -- Dict of all observed dataframes
+
+    Keyword Arguments:
+        model {class} -- The epi model class we're using to perform optimisation (default: {SEIRHD})
+        data_from_tracker {bool} -- If true, data is from covid19india API (default: {True})
+        train_period {int} -- Length of training period (default: {7})
+        loss_compartments {list} -- Whci compartments to apply loss over 
+        (default: {['active', 'total', 'recovered', 'deceased']})
+        num_evals {int} -- Number of evaluations for hyperopt (default: {1500})
+        N {float} -- Population of area (default: {1e7})
+
+    Returns:
+        dict -- Dict of all predictions
+    """
+
+    df_district, df_train, df_val, df_train_nora, df_val_nora = [
+        observed_dataframes.get(k) for k in observed_dataframes.keys()]
 
     # Initialise Optimiser
     optimiser = Optimiser()
     # Get the fixed params
-    if initialisation == 'starting':
-        init_infected = max(df_district_raw_data.iloc[0, :]['total_infected'], 1)
-        start_date = df_district_raw_data.iloc[0, :]['date']
-        default_params = optimiser.init_default_params(df_train, N=N, init_infected=init_infected, 
-                                                       start_date=start_date)
-    if initialisation == 'intermediate':
-        start_date = df_train.iloc[-train_period, :]['date']
-        default_params = optimiser.init_default_params(df_train, N=N, init_infected=0, 
-                                                       start_date=start_date)
-
-    if use_mcmc:
-        #TODO implement which compartments
-        SEIR_Test_obj = SEIR_Test_pymc3()
-        num_patients = SEIR_Test_obj.__dict__['vanilla_params']['N']
-        init_vals = list(SEIR_Test_obj.__dict__['state_init_values'].values())
-        num_states = 11
-        num_params = 7
-        num_steps = 40
-        num_train_steps = 7
-
-        burn_in = 10
-        mcmc_steps = 20
-
-        observed = df_train['total_infected'][-num_train_steps:]
-        num_train = len(df_train)
-        with pm.Model() as model:
-            R0 = pm.Uniform("R0", lower = 1, upper = 3)#(1.6, 3)
-            T_inc = pm.Uniform("T_inc", lower = 1, upper = 5)#(3, 4)
-            T_inf = pm.Uniform("T_inf", lower = 1, upper = 4)#(3, 4)
-            T_recov_severe = pm.Uniform("T_recov_severe ", lower = 9, upper = 20)
-            P_severe = pm.Uniform("P_severe", lower = 0.3, upper = 0.99)
-            P_fatal = pm.Uniform("P_fatal", lower = 1e-6, upper = 0.3)
-            intervention_amount = pm.Uniform("intervention_amount", lower = 0.3, upper = 1)
-            
-            ode_solution = sir_model(y0=init_vals , theta=[R0, T_inc, T_inf, T_recov_severe, P_severe,
-                                                           P_fatal, intervention_amount])
-            # The ode_solution has a shape of (n_times, n_states)
-            
-            predictions = ode_solution[num_train-num_train_steps-1:num_train-1]
-            hospitalised = predictions[:,6] + predictions[:,7] + predictions[:,8]
-            recovered = predictions[:,9]
-            deceased = predictions[:,10]
-            total_infected = hospitalised + recovered + deceased
-            total_infected = total_infected * num_patients 
-            #sigma = pm.HalfNormal('sigma',
-            #                      sigma=observed.std(),
-            #                      shape=num_params)
-            Y = pm.Normal('Y', mu = total_infected, observed=observed)
-            
-            prior = pm.sample_prior_predictive()
-            trace = pm.sample(mcmc_steps, tune=burn_in , target_accept=0.9, cores=4)
-            posterior_predictive = pm.sample_posterior_predictive(trace)
-            total_df_predictions = pd.DataFrame() 
-            for predictions in trace:
-                df_prediction = get_predictions_mcmc(params, default_params, df_train, initialisation, train_period)
-                total_df_predictions = pd.concat([total_df_prediction, prediction], axis = 1)
-
-        df_prediction  = total_df_predictions.mean(axis = 1)
-        df_upper =  df_prediction  + 1.96*total_df_predictions.std(axis = 1)
-        df_lower =  df_prediction  - 1.96*total_df_predictions.std(axis = 1)
-        df_loss = calculate_loss(df_train_nora, df_val_nora, df_prediction, train_period,
-                                 train_on_val, which_compartments=which_compartments)
-
-        
-        ax = create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
-                          which_compartments=which_compartments)
-
-        results_dict = {}
-        for name in ['best_params', 'default_params', 'optimiser', 'df_prediction', 'df_district', 'df_train', \
-            'df_val', 'df_loss', 'ax']:
-            results_dict[name] = eval(name)
-    else:
-        # Create searchspace of variable params
-        variable_param_ranges = {
-            'R0': hp.uniform('R0', 1.6, 5),
-            'T_inc': hp.uniform('T_inc', 4, 5),
-            'T_inf': hp.uniform('T_inf', 3, 4),
-            'T_recov_severe': hp.uniform('T_recov_severe', 9, 20),
-            'P_severe': hp.uniform('P_severe', 0.3, 0.9),
-            'P_fatal': hp.uniform('P_fatal', 0, 0.3),
-            'intervention_amount': hp.uniform('intervention_amount', 0, 1)
-        }
-        if initialisation == 'intermediate':
-            extra_params = {
-                'E_hosp_ratio': hp.uniform('E_hosp_ratio', 0, 2),
-                'I_hosp_ratio': hp.uniform('I_hosp_ratio', 0, 1),
-            }
-            variable_param_ranges.update(extra_params)
+    default_params = optimiser.init_default_params(df_train, default_params, train_period=split['train_period'])
+    # Get/create searchspace of variable paramms
+    loss_indices = [-(split['train_period']), None]
+    loss['loss_indices'] = loss_indices
+    # Perform Bayesian Optimisation
+    variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges, fitting_method)
+    args = {'df_train': df_train, 'default_params': default_params, 'variable_param_ranges':variable_param_ranges, 
+            'model':model, 'fitting_method': fitting_method, **fitting_method_params, **split, **loss}
+    best_params, trials = getattr(optimiser, fitting_method)(**args)
+    print('best parameters\n', best_params)
 
 
-        # Perform Bayesian Optimisation
-        total_days = (df_train.iloc[-1, :]['date'] - default_params['starting_date']).days + 1
-        best_params, trials = optimiser.bayes_opt(df_train, default_params, variable_param_ranges, method='mape', 
-                                                  num_evals=1500, loss_indices=[-train_period, None],
-                                                  total_days=total_days, which_compartments=which_compartments, 
-                                                  initialisation=initialisation)
+    df_prediction = optimiser.solve({**best_params, **default_params}, 
+                                    end_date=df_district.iloc[-1, :]['date'], 
+                                    model=model)
+    lc = Loss_Calculator()
+    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'], 
+                                              which_compartments=loss['loss_compartments'])
 
-        print('best parameters\n', best_params)
+    fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
+                        data['dataloading_params']['state'], data['dataloading_params']['district'], 
+                        which_compartments=loss['loss_compartments'])
 
-        if train_on_val:
-            df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_train.iloc[-1, :]['date'], 
-                                            initialisation=initialisation, loss_indices=[-train_period, None])
-        else:
-            df_prediction = optimiser.solve(best_params, default_params, df_train, end_date=df_val.iloc[-1, :]['date'],
-                                            initialisation=initialisation, loss_indices=[-train_period, None])
-        
-        df_loss = calculate_loss(df_train_nora, df_val_nora, df_prediction, train_period,
-                                 train_on_val, which_compartments=which_compartments)
-
-        
-        ax = create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district,
-                          which_compartments=which_compartments)
-
-        results_dict = {}
-        for name in ['best_params', 'default_params', 'optimiser', 'df_prediction', 'df_district', 'df_train', \
-            'df_val', 'df_loss', 'ax']:
-            results_dict[name] = eval(name)
+    results_dict = {}
+    results_dict['plots'] = {}
+    results_dict['plots']['fit'] = fit_plot
+    data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
+    for name in ['best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
+                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'trials', 'data_last_date']:
+        results_dict[name] = eval(name)
 
     return results_dict
 
 
-def calculate_loss(df_train, df_val, df_prediction, train_period,
-                   train_on_val, which_compartments=['hospitalised', 'total_infected']):
-    loss_calculator = Loss_Calculator()
-    df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
+def single_fitting_cycle(data, model, variable_param_ranges, default_params, fitting_method, 
+                         fitting_method_params, split, loss):
+    """Main function which user runs for running an entire fitting cycle for a particular district
 
-    df_temp = df_prediction.loc[df_prediction['date'].isin(df_train['date']), [
-        'date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
-    df_temp.reset_index(inplace=True, drop=True)
-    df_train.reset_index(inplace=True, drop=True)
-    for compartment in df_loss.index:
-        df_loss.loc[compartment, 'train'] = loss_calculator._calc_mape(
-            np.array(df_train[compartment].iloc[-train_period:]), np.array(df_temp[compartment].iloc[-train_period:]))
+    Arguments:
+        dataframes {dict(pd.DataFrame)} -- Dict of dataframes returned by the get_covid19india_api_data function
+        state {str} -- State Name
+        district {str} -- District Name (in title case)
 
-    if isinstance(df_val, pd.DataFrame):
-        df_temp = df_prediction.loc[df_prediction['date'].isin(df_val['date']), [
-            'date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
-        df_temp.reset_index(inplace=True, drop=True)
-        df_val.reset_index(inplace=True, drop=True)
-        for compartment in df_loss.index:
-            df_loss.loc[compartment, 'val'] = loss_calculator._calc_mape(
-                np.array(df_val[compartment]), np.array(df_temp[compartment]))
-    else:
-        del df_loss['val']
-    return df_loss
+    Keyword Arguments:
+        model_class {class} -- The epi model class to be used for modelling (default: {SEIRHD})
+        train_period {int} -- The training period (default: {7})
+        val_period {int} -- The validation period (default: {7})
+        num_evals {int} -- Number of evaluations of Bayesian Optimsation (default: {1500})
+        data_from_tracker {bool} -- If False, data from tracker is not used (default: {True})
+        filename {str} -- If None, Athena database is used. Otherwise, data in filename is read (default: {None})
+        data_format {str} -- The format type of the filename user is providing ('old'/'new') (default: {'new'})
+        N {float} -- The population of the geographical region (default: {1e7})
+        loss_compartments {list} -- Which compartments to fit on (default: {['active', 'total']})
 
-def create_plots(df_prediction, df_train, df_val, df_train_nora, df_val_nora, train_period, state, district, 
-                 which_compartments=['hospitalised', 'total_infected'], description=''):
-    # Create plots
-    fig, ax = plt.subplots(figsize=(12, 12))
-    if isinstance(df_val, pd.DataFrame):
-        df_true_plotting_rolling = pd.concat([df_train, df_val], ignore_index=True)
-        df_true_plotting = pd.concat([df_train_nora, df_val_nora], ignore_index=True)
-    else:
-        df_true_plotting_rolling = df_train
-        df_true_plotting = df_train_nora
+    Returns:
+        dict -- dict of everything related to prediction
+    """
+    # record parameters for reproducability
+    run_params = locals()
+    run_params['model'] = model.__name__
+    run_params['model_class'] = model
     
-    df_predicted_plotting = df_prediction.loc[df_prediction['date'].isin(
-        df_true_plotting['date']), ['date', 'hospitalised', 'total_infected', 'deceased', 'recovered']]
-    # import pdb; pdb.set_trace()
-    if 'total_infected' in which_compartments:
-        ax.plot(df_true_plotting['date'], df_true_plotting['total_infected'],
-                '-o', color='C0', label='Confirmed Cases (Observed)')
-        ax.plot(df_true_plotting_rolling['date'], df_true_plotting_rolling['total_infected'],
-                '-', color='C0', label='Confirmed Cases (Obs RA)')
-        ax.plot(df_predicted_plotting['date'], df_predicted_plotting['total_infected'],
-                '-.', color='C0', label='Confirmed Cases (Predicted)')
-    if 'hospitalised' in which_compartments:
-        ax.plot(df_true_plotting['date'], df_true_plotting['hospitalised'],
-                '-o', color='orange', label='Active Cases (Observed)')
-        ax.plot(df_true_plotting_rolling['date'], df_true_plotting_rolling['hospitalised'],
-                '-', color='orange', label='Active Cases (Obs RA)')
-        ax.plot(df_predicted_plotting['date'], df_predicted_plotting['hospitalised'],
-                '-.', color='orange', label='Active Cases (Predicted)')
-    if 'recovered' in which_compartments:
-        ax.plot(df_true_plotting['date'], df_true_plotting['recovered'],
-                '-o', color='green', label='Recovered Cases (Observed)')
-        ax.plot(df_true_plotting_rolling['date'], df_true_plotting_rolling['recovered'],
-                '-', color='green', label='Recovered Cases (Obs RA)')
-        ax.plot(df_predicted_plotting['date'], df_predicted_plotting['recovered'],
-                '-.', color='green', label='Recovered Cases (Predicted)')
-    if 'deceased' in which_compartments:
-        ax.plot(df_true_plotting['date'], df_true_plotting['deceased'],
-                '-o', color='red', label='Deceased Cases (Observed)')
-        ax.plot(df_true_plotting_rolling['date'], df_true_plotting_rolling['deceased'],
-                '-', color='red', label='Deceased Cases (Obs RA)')
-        ax.plot(df_predicted_plotting['date'], df_predicted_plotting['deceased'],
-                '-.', color='red', label='Deceased Cases (Predicted)')
-    
-    ax.plot([df_train.iloc[-train_period, :]['date'], df_train.iloc[-train_period, :]['date']],
-            [min(df_train['deceased']), max(df_train['total_infected'])], '--', color='brown', label='Train starts')
-    if isinstance(df_val, pd.DataFrame):
-        ax.plot([df_val.iloc[0, :]['date'], df_val.iloc[0, :]['date']],
-                [min(df_val['deceased']), max(df_val['total_infected'])], '--', color='black', label='Val starts')
+    print('Performing {} fit ..'.format('m2' if split['val_period'] == 0 else 'm1'))
 
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=5))
-    ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.ylabel('No of People')
-    plt.xlabel('Time')
-    plt.legend()
-    plt.title('{} - ({} {})'.format(description, state, district))
-    plt.grid()
+    # Get data
+    params = {**data}
+    params['split'] = split
+    params['loss_compartments'] = loss['loss_compartments']
+    observed_dataframes, smoothing = data_setup(**params)
+    smoothing_plot = smoothing['smoothing_plot']
+    orig_df_district = smoothing['df_district_unsmoothed']
 
-    return ax
+    print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
+    if not observed_dataframes['df_val'] is None:
+        print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
+        
+    predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
+            default_params, fitting_method, fitting_method_params, split, loss)
+
+    if smoothing_plot != None:
+        predictions_dict['plots']['smoothing'] = smoothing_plot
+        predictions_dict['smoothing_description'] = smoothing['smoothing_description']
+    predictions_dict['df_district_unsmoothed'] = orig_df_district
+
+    # record parameters for reproducibility
+    predictions_dict['run_params'] = run_params
+
+    return predictions_dict

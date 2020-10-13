@@ -1,0 +1,38 @@
+{
+	"district": "Pune",
+	"end_date": null,
+	"likelihood": "gaussian",
+	"n_chains": 5,
+	"iters": 20000,
+	"compartments": ["total_infected"
+					],
+	"fit2new": true,
+	"fit_days":10,
+	"test_days": 5,
+
+	"prior_ranges":{
+		"R0": [1.6, 5],
+		"T_inc": [4, 5],
+		"T_inf": [3, 4],
+		"T_recov_severe": [9, 20],
+		"P_severe": [0.3, 0.99],
+		"P_fatal": [1e-10, 0.3],
+		"intervention_amount": [1e-10, 1],
+		"E_hosp_ratio": [1e-10, 1],
+		"I_hosp_ratio": [1e-10, 1],
+		"sigma": [0, 1]
+	},
+
+	"proposal_sigmas":{
+		"R0": 3,
+		"T_inc": 10,
+		"T_inf": 10,
+		"T_recov_severe": 100,
+		"P_severe":2.5,
+		"P_fatal": 2.5,
+		"intervention_amount": 2.5,
+		"E_hosp_ratio": 2.5,
+		"I_hosp_ratio": 2.5,
+		"sigma": 2.5
+	}
+}
