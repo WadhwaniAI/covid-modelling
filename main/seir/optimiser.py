@@ -48,6 +48,9 @@ class Optimiser():
                 formatted_param_ranges[key] = np.linspace(variable_param_ranges[key][0][0],
                                                           variable_param_ranges[key][0][1], 
                                                           variable_param_ranges[key][1])
+        else:
+            formatted_param_ranges = variable_param_ranges
+
 
         return formatted_param_ranges
 
@@ -295,16 +298,15 @@ class Optimiser():
         Returns:
             dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
         """
-        
-        import pdb; pdb.set_trace() 
+    
         total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
         mcmc_fit = MCMC(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
                  algo, num_evals, proposal_sigmas, loss_method, loss_compartments, loss_indices)
         mcmc_fit.run()
+        
         sig = mcmc_fit.timestamp.strftime("%d-%b-%Y (%H:%M:%S)")
         exp_name = 'uncer'
         out_dir = join('plots', '{}_{}'.format(sig, exp_name))
         os.makedirs(out_dir, exist_ok=True)
         plot_chains(mcmc_fit, out_dir)
-        print("here")
-        pdb.set_trace() 
+        return mcmc_fit.chains[0][0][-1], mcmc_fit.chains[0][0]

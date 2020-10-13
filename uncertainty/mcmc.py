@@ -43,6 +43,8 @@ class MCMC(object):
             **ignored: flag to ignore extra parameters.
         """
         self.timestamp = datetime.now()
+        self.district = 'Mumbai'
+        self.state = 'Maharashtra'
         #self.state = cfg['fitting']['data']['dataloading_params']['state']
         #self.district = cfg['fitting']['data']['dataloading_params']['district']
         #self.cfg  = cfg
@@ -153,7 +155,7 @@ class MCMC(object):
         theta = defaultdict()
         for key in self.prior_ranges:
             theta[key] = np.random.uniform(float(self.prior_ranges[key][0][0]), self.prior_ranges[key][0][1])
-            
+            print(theta[key])
         return theta
 
     def _proposal(self, theta_old):
