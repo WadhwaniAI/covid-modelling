@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 from models.seir import *
 
 from data.dataloader.base import BaseLoader
@@ -38,4 +39,5 @@ class SimulatedDataLoader(BaseLoader):
             df_result = solver.predict(total_days=config['total_days'])
         else:
             df_result = solver.predict()
+        df_result.to_csv(os.path.join('../../data/data/simulated_data/', config['output_file_name']))
         return df_result

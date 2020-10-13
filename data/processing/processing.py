@@ -130,7 +130,7 @@ def get_simulated_data_from_file(filename, data_format='new', **kwargs):
         # df_result = df_result[columns_to_keep]
         # df_result.drop(np.arange(3), inplace=True) TODO: Check if this is necessary
         df_result['date'] = pd.to_datetime(df_result['date'])
-        df_result = df_result.dropna(subset=['state'], how='any')
+        # df_result = df_result.dropna(subset=['state'], how='any')
         df_result.reset_index(inplace=True, drop=True)
         df_result.loc[:, ['total', 'active', 'recovered', 'deceased']] = df_result[[
             'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
