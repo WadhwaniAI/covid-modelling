@@ -27,13 +27,16 @@ class SimulatedDataLoader(BaseLoader):
                 ['date', 'total', 'active', 'deceased', 'recovered']
             dict -- parameter values used to create the simulated data
         """
+        # np.random.seed(0)
+        ideal_params = {}
         if (not config['fix_params']):
             for param in config['params']:
                 if param == 'N':
                     continue
                 config['params'][param] = getattr(np.random, config['params'][param][1])(config['params'][param][0][0], config['params'][param][0][1])
-                print (param, config['params'][param])
+                ideal_params[param] = config['params'][param]
 
+        print (ideal_params)
         model_params = config['params']
         model_params['starting_date'] = config['starting_date']
 
@@ -49,4 +52,4 @@ class SimulatedDataLoader(BaseLoader):
         else:
             df_result = solver.predict()
         df_result.to_csv(os.path.join('../../data/data/simulated_data/', config['output_file_name']))
-        return df_result, config['params']
+        return df_result, ideal_params

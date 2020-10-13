@@ -35,7 +35,10 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     Returns:
         pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
     """
-    if stratified_data:
+    ideal_params = {}
+    if (data_source == 'simulated'):
+        df_district, ideal_params = get_data(data_source, dataloading_params, **kwargs)
+    elif stratified_data:
         df_not_strat = get_data(data_source, dataloading_params)
         df_district = granular.get_data(data_source, dataloading_params)
     else:
@@ -96,7 +99,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     observed_dataframes = {}
     for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
         observed_dataframes[name] = eval(name)
-    return observed_dataframes, smoothing
+    return observed_dataframes, smoothing, ideal_params
 
 
 def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_params, fitting_method,
@@ -195,7 +198,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     params = {**data}
     params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
-    observed_dataframes, smoothing = data_setup(**params)
+    observed_dataframes, smoothing, ideal_params = data_setup(**params)
     smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
     orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
 
@@ -213,5 +216,6 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
 
     # record parameters for reproducibility
     predictions_dict['run_params'] = run_params
-
+    predictions_dict['ideal_params'] = ideal_params
+    
     return predictions_dict
