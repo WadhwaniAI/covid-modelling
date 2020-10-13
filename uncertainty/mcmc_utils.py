@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from main.seir.optimiser import Optimiser
+#from main.seir.optimiser import Optimiser
 
 
 def get_state(district):
@@ -55,7 +55,7 @@ def get_PI(pred_dfs, date, key, multiplier=1.96):
     high = mu + multiplier*sigma
     return mu, low, high
 
-def set_optimizer(data: pd.DataFrame, train_period: int,default_params):
+def set_optimizer(data: pd.DataFrame, train_period: int,default_params, optimiser):
     """Summary
     
     Args:
@@ -65,11 +65,11 @@ def set_optimizer(data: pd.DataFrame, train_period: int,default_params):
     Returns:
         TYPE: Description
     """
-    optimiser = Optimiser()
+    #optimiser = Optimiser()
     default_params = optimiser.init_default_params(data,default_params,train_period=train_period)
     return optimiser, default_params
 
-def predict(data: pd.DataFrame, mcmc_runs: list, default_params: dict,
+def predict(data: pd.DataFrame, mcmc_runs: list, default_params: dict, optimiser: object,
       predict_days: int, end_date: str = None) -> pd.DataFrame:
     """Summary
     
@@ -82,7 +82,7 @@ def predict(data: pd.DataFrame, mcmc_runs: list, default_params: dict,
     Returns:
         pd.DataFrame: Description
     """
-    optimiser, default_params = set_optimizer(data, predict_days, default_params)
+    #optimiser, default_params = set_optimizer(data, predict_days, default_params)
     
     combined_acc = list()
     for k, run in enumerate(mcmc_runs):

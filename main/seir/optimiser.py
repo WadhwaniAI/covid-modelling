@@ -6,12 +6,17 @@ from tqdm.notebook import tqdm
 from collections import OrderedDict
 import itertools
 import importlib
+import os
+
 from functools import partial, reduce
 import datetime
 from joblib import Parallel, delayed
+from os.path import exists, join, splitext
 
 from models.seir import SEIRHD
 from utils.fitting.loss import Loss_Calculator
+from uncertainty.mcmc import MCMC
+from uncertainty.uncertainty import plot_chains
 
 class Optimiser():
     """Class which implements all optimisation related activites (training, evaluation, etc)
@@ -257,3 +262,49 @@ class Optimiser():
                     trials=trials)
         
         return best, trials
+
+
+    def mcmc_opt(self, df_train, default_params, variable_param_ranges, proposal_sigmas,
+                model=SEIRHD, num_evals=10000, n_chains = 10,
+                loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
+                prior='uniform', algo = 'gaussian', **kwargs):
+        """Implements Bayesian Optimisation using hyperopt library
+
+        Arguments:
+            df_train {pd.DataFrame} -- The training dataset
+            default_params {str} -- Dict of default (static) params
+            variable_param_ranges {dict} -- The ranges for the variable params (the searchspace)
+
+        An example of variable_param_ranges : 
+        variable_param_ranges = {
+            'lockdown_R0' : hp.uniform('R0', 0, 2),
+            'T_inc' : hp.uniform('T_inc', 4, 5),
+            'T_inf' : hp.uniform('T_inf', 3, 4),
+            'T_recov_severe' : hp.uniform('T_recov_severe', 5, 60),
+            'P_severe' : hp.uniform('P_severe', 0.3, 0.99)
+        }
+
+        Keyword Arguments:
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
+            total_days {int} -- total days to simulate for (deprecated) (default: {None})
+            method {str} -- Loss Method (default: {'rmse'})
+            num_evals {int} -- Number of hyperopt evaluations (default: {3500})
+            loss_indices {list} -- The indices of the train set to apply the losses on (default: {[-20, -10]})
+            which_compartments {list} -- Which compartments to apply loss on (default: {['total']})
+
+        Returns:
+            dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
+        """
+        
+        import pdb; pdb.set_trace() 
+        total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
+        mcmc_fit = MCMC(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
+                 algo, num_evals, proposal_sigmas, loss_method, loss_compartments, loss_indices)
+        mcmc_fit.run()
+        sig = mcmc_fit.timestamp.strftime("%d-%b-%Y (%H:%M:%S)")
+        exp_name = 'uncer'
+        out_dir = join('plots', '{}_{}'.format(sig, exp_name))
+        os.makedirs(out_dir, exist_ok=True)
+        plot_chains(mcmc_fit, out_dir)
+        print("here")
+        pdb.set_trace() 
