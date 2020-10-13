@@ -1,7 +1,7 @@
 import pandas as pd
 from utils.fitting.loss import Loss_Calculator
 
-def loss_parameter_recovery(param_true, param_pred, loss_function = 'rsme'):
+def loss_parameter_recovery(param_true, param_pred, loss_function = 'rmse_log'):
     df = pd.DataFrame([param_true, param_pred])
     
     loss = Loss_Calculator()

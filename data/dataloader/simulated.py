@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+import copy
 from models.seir import *
 
 from data.dataloader.base import BaseLoader
@@ -37,6 +38,8 @@ class SimulatedDataLoader(BaseLoader):
                 ideal_params[param] = config['params'][param]
 
         print (ideal_params)
+        ideal_params = copy.deepcopy(config['params'])
+        del ideal_params['N']
         model_params = config['params']
         model_params['starting_date'] = config['starting_date']
 
@@ -52,4 +55,5 @@ class SimulatedDataLoader(BaseLoader):
         else:
             df_result = solver.predict()
         df_result.to_csv(os.path.join('../../data/data/simulated_data/', config['output_file_name']))
+        pd.Series((ideal_params)).to_csv(os.path.join('../../data/data/simulated_data/', 'params_'+config['output_file_name']))
         return df_result, ideal_params
