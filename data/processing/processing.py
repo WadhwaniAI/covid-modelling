@@ -237,7 +237,7 @@ def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_
         return out.reset_index()
 
 
-def get_data_from_jhu(dataframe, region, sub_region=None):
+def get_data_from_jhu(dataframe, region, sub_region=None, **kwargs):
     dataframes = get_dataframes_cached(loader_class=JHULoader)
     df = dataframes[f'df_{dataframe}']
     if dataframe == 'global':
@@ -282,7 +282,7 @@ def get_data_from_jhu(dataframe, region, sub_region=None):
     return df
 
 
-def get_data_from_ny_times(state, county=None):
+def get_data_from_ny_times(state, county=None, **kwargs):
     dataframes = get_dataframes_cached(loader_class=NYTLoader)
     if county is not None:
         df = dataframes['counties']
@@ -297,7 +297,7 @@ def get_data_from_ny_times(state, county=None):
     return df
 
 
-def get_data_from_covid_tracking(state):
+def get_data_from_covid_tracking(state, **kwargs):
     dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader)
     df_states = dataframes['df_states']
     df_states = df_states.loc[:, ['date', 'state', 'state_name', 'positive', 
