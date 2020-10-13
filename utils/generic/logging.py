@@ -6,6 +6,15 @@ import numpy as np
 import pandas as pd
 
 def create_dataframes_for_logging(m2_dict):
+    """Function for creating dataframes of top k trials params, deciles params and deciles losses
+    Takes as input the dict of m2 fits, and returns 3 pd.DataFrames
+
+    Args:
+        m2_dict (dict): predictions_dict['m2'] as returned by generated_report.ipynb
+
+    Returns:
+        pd.DataFrame, pd.DataFrame, pd.DataFrame: dataframes as described above
+    """
     trials_processed = copy.deepcopy(m2_dict['trials_processed'])
     trials_processed['losses'] = np.around(trials_processed['losses'], 2)
     trials_processed['params'] = [{key: np.around(value, 2) for key, value in params_dict.items()}
@@ -35,6 +44,12 @@ def create_dataframes_for_logging(m2_dict):
 
 
 def log_wandb(predictions_dict):
+    """Function for logging stuff to W&B. Logs config param during intialisation, 
+       matplotlib plots, and pandas dataframes
+
+    Args:
+        predictions_dict (dict): Dict of all predictions generated in generate_report.ipynb
+    """
     # Logging all input data dataframes
     dataframes_to_log = ['df_train', 'df_val', 'df_district', 'df_district_unsmoothed']
     for run in ['m1', 'm2']:
