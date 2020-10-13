@@ -31,7 +31,8 @@ class MCMC(object):
         timestamp (datetime.datetime): date and time when the model is run.
     """
     
-    def __init__(self, cfg, df_district=None, **ignored):
+    def __init__(self, optimiser, df_train, default_params, variable_param_ranges, n_chains, total_days,
+ algo, num_evals, proposal_sigmas, loss_method, loss_compartments, loss_indices, **ignored):
         """
         Constructor. Fetches the data, initializes the optimizer and sets up the
         likelihood function.
@@ -42,23 +43,57 @@ class MCMC(object):
             **ignored: flag to ignore extra parameters.
         """
         self.timestamp = datetime.now()
-        self.state = cfg['fitting']['data']['dataloading_params']['state']
-        self.district = cfg['fitting']['data']['dataloading_params']['district']
-        self.cfg  = cfg
-        self.df_district = df_district if df_district is not None else self._fetch_data()
-        self._split_data()
-        self.loss_method = cfg['fitting']['loss']['loss_method']
-        self.train_days = self.cfg['fitting']['split']['train_period']
-        self.n_chains = cfg['fitting']['fitting_method_params']['n_chains']
-        self.likelihood = cfg['fitting']['fitting_method_params']['algo']
-        self._default_params_old = cfg['fitting']['default_params']
-        self.prior_ranges = cfg['fitting']['variable_param_ranges']
-        self.iters = cfg['fitting']['fitting_method_params']['num_evals']
-        self.compartments = cfg['uncertainty']['uncertainty_params']['loss']['loss_compartments']
-        self._optimiser, self._default_params = set_optimizer(self.df_train,self.train_days,self._default_params_old)
-        self.proposal_sigmas = cfg['fitting']['fitting_method_params']['proposal_sigmas']
+        #self.state = cfg['fitting']['data']['dataloading_params']['state']
+        #self.district = cfg['fitting']['data']['dataloading_params']['district']
+        #self.cfg  = cfg
+        #self.df_district = df_district if df_district is not None else self._fetch_data()
+        self.loss_indices = loss_indices
+        self.df_train  = df_train[loss_indices[0]:loss_indices[1]]
+        self.loss_method = loss_method
+        #self.train_days = self.cfg['fitting']['split']['train_period']
+        self.n_chains =  n_chains
+        self.total_days = total_days
+        self.likelihood = algo
+        self._default_params = default_params
+        self.prior_ranges = variable_param_ranges
+        self.iters = num_evals
+        self.compartments = loss_compartments
+        self._optimiser = optimiser
+        #self._optimiser, self._default_params = set_optimizer(self.df_train, df_train.size(), 
+        #                                    self._default_params_old, optimiser)
+        self.proposal_sigmas = proposal_sigmas
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
         self.fit2new = False
+
+    # def __init__(self, cfg, df_district=None, **ignored):
+    #     """
+    #     Constructor. Fetches the data, initializes the optimizer and sets up the
+    #     likelihood function.
+        
+    #     Args:
+    #         cfg (dict): dictonary containing all the config parameters.
+    #         df_district (pd.DataFrame, optional): dataframe containing district data.
+    #         **ignored: flag to ignore extra parameters.
+    #     """
+    #     self.timestamp = datetime.now()
+    #     self.state = cfg['fitting']['data']['dataloading_params']['state']
+    #     self.district = cfg['fitting']['data']['dataloading_params']['district']
+    #     self.cfg  = cfg
+    #     self.df_district = df_district if df_district is not None else self._fetch_data()
+    #     self._split_data()
+    #     self.loss_method = cfg['fitting']['loss']['loss_method']
+    #     self.train_days = self.cfg['fitting']['split']['train_period']
+    #     self.n_chains = cfg['fitting']['fitting_method_params']['n_chains']
+    #     self.likelihood = cfg['fitting']['fitting_method_params']['algo']
+    #     self._default_params_old = cfg['fitting']['default_params']
+    #     self.prior_ranges = cfg['fitting']['variable_param_ranges']
+    #     self.iters = cfg['fitting']['fitting_method_params']['num_evals']
+    #     self.compartments = cfg['uncertainty']['uncertainty_params']['loss']['loss_compartments']
+    #     self._optimiser, self._default_params = set_optimizer(self.df_train,self.train_days,self._default_params_old)
+    #     self.proposal_sigmas = cfg['fitting']['fitting_method_params']['proposal_sigmas']
+    #     self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
+    #     self.fit2new = False
+
 
     def _fetch_data(self):
         """
@@ -313,16 +348,17 @@ class MCMC(object):
         n_samples = 1000
         sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
         #Total day is 1 less than training_period
-        total_days = len(self.df_train['date'])-1
-        loss_indices = [-self.fit_days, None]
+        
+        #total_days = len(self.df_train['date'])-1
+        #loss_indices = [-self.fit_days, None]
 
         losses = list()
         params = list()
         for i in tqdm(sample_indices):
             params.append(combined_acc[int(i)])
             losses.append(self._optimiser.solve_and_compute_loss(combined_acc[int(i)], self._default_params,
-                                                                 self.df_train, total_days,
-                                                                 loss_indices=loss_indices,
+                                                                 self.df_train, self.total_days,
+                                                                 loss_indices=self.loss_indices,
                                                                  loss_method=self.loss_method))
 
         least_loss_index = np.argmin(losses)

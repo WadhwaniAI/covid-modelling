@@ -37,7 +37,7 @@ fitting:
         sigma: [[1e-10, 1],uniform]
     default_params:
         N: 1.0e+7
-    fitting_method: mcmc
+    fitting_method: mcmc_opt
 
     fitting_method_params:
         proposal_sigmas:
@@ -50,7 +50,7 @@ fitting:
             E_hosp_ratio: 1
             I_hosp_ratio: 1
             sigma: 1
-        num_evals: 1000
+        num_evals: 100
         algo: gaussian
         n_chains: 1
     #Choose Fitting Periods and num evaluations
