@@ -228,8 +228,8 @@ def plot_all_histograms(predictions_dict, description, weighting='exp', beta=1):
     """
     params_array, _ = _order_trials_by_loss(predictions_dict['m1'])
 
-    fig, axs = plt.subplots(nrows=len(params_array[0].keys())//2, ncols=2, 
-                            figsize=(18, 6*(len(params_array[0].keys())//2)))
+    fig, axs = plt.subplots(nrows=round(len(params_array[0].keys())/2), ncols=2, 
+                            figsize=(18, 6*round(len(params_array[0].keys())/2)))
     histograms = {}
     for run in predictions_dict.keys():
         histograms[run] = plot_histogram(predictions_dict[run], fig, axs, 
@@ -285,8 +285,8 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
             df_mean_var.loc[(param, 'std'), run] = np.sqrt(variance)
 
     cmap = plt.get_cmap('plasma')
-    fig, axs = plt.subplots(nrows=len(params)//2, ncols=2,
-                            figsize=(18, 6*(len(params)//2)))
+    fig, axs = plt.subplots(nrows=round(len(params)/2), ncols=2,
+                            figsize=(18, 6*(len(params)/2)))
     for i, param in enumerate(params):
         ax = axs.flat[i]
         ax.bar(np.arange(len(predictions_dict)), df_mean_var.loc[(param, 'mean'), :],
@@ -320,8 +320,8 @@ def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_ax
         a dict of KL divergence matrices for all parameters
     """
     params = histograms_dict['m1'].keys()
-    fig, axs = plt.subplots(nrows=len(params)//2, ncols=2,
-                            figsize=(18, 6*(len(params)//2)))
+    fig, axs = plt.subplots(nrows=round(len(params)/2), ncols=2,
+                            figsize=(18, 6*round((len(params)/2))))
     kl_dict_reg = {}
     for i, param in enumerate(params):
         kl_matrix = [[entropy(histograms_dict[run1][param]['probability'],
@@ -382,7 +382,7 @@ def plot_scatter(mean_var_dict, var_1, var_2, stat_measure='mean'):
     return fig, axs
 
 
-def plot_heatmap_distribution_sigmas(mean_var_dict, stat_measure='mean', cmap='Reds'):
+def plot_heatmap_distribution_sigmas(mean_var_dict, stat_measure='mean', cmap='Reds', figsize=(10, 16)):
     """Plots a heatmap of sigma/mu where sigma/mu will be defined as follows : 
     Suppose there are Q locations for which we are doing distribution analyis,
     Each time we run the config N times, and there are P parameters.
@@ -420,7 +420,7 @@ def plot_heatmap_distribution_sigmas(mean_var_dict, stat_measure='mean', cmap='R
 
     df_sigma_mu = df_comparison.loc[:, (slice(None), ['sigma_by_mu'])]
 
-    fig, ax = plt.subplots(figsize=(10, 16))
+    fig, ax = plt.subplots(figsize=figsize)
     sns.heatmap(df_sigma_mu.values.astype(float), annot=True, cmap=cmap, ax=ax,
                 xticklabels=[x[0] for x in df_sigma_mu.columns], 
                 yticklabels=[f'{x[0]}, {x[1]}' for x in df_sigma_mu.index])
