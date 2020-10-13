@@ -112,7 +112,7 @@ def generate_simulated_data(**dataloading_params):
     with open(os.path.join("../../configs/simulated_data/", dataloading_params['config_file'])) as configfile:
         config = yaml.load(configfile, Loader=yaml.SafeLoader)
 
-    df_result = SimulatedDataLoader.generate_simulated_data(**config)
+    df_result, params = SimulatedDataLoader.generate_simulated_data(**config)
         
     for col in df_result.columns:
         if col in ['active', 'total', 'recovered', 'deceased']:
