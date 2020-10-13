@@ -54,7 +54,7 @@ class MCMC(object):
         self._default_params_old = cfg['fitting']['default_params']
         self.prior_ranges = cfg['fitting']['variable_param_ranges']
         self.iters = cfg['fitting']['fitting_method_params']['num_evals']
-        self.compartments = cfg['uncertainty']['uncertainty_params']['loss']['loss_compartments']
+        self.compartments = cfg['fitting']['loss']['loss_compartments']
         self._optimiser, self._default_params = set_optimizer(self.df_train,self.train_days,self._default_params_old)
         self.proposal_sigmas = cfg['fitting']['fitting_method_params']['proposal_sigmas']
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))

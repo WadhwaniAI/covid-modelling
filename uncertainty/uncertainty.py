@@ -37,9 +37,9 @@ def visualize_forecasts(mcmc: MCMC, compartments: list, end_date: str = None, ou
     pred = result[result.index >= train_start_date]
     
     color = {
-            "total_infected": 'c',
+            "total": 'c',
             "recovered": 'g',
-            "hospitalised": 'b',
+            "active": 'b',
             "deceased": 'r'
     }
 
