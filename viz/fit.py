@@ -13,7 +13,7 @@ from utils.generic.enums.columns import *
 from main.seir.forecast import _order_trials_by_loss
 from viz.utils import axis_formatter
 
-def plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, district,
+def plot_fit(df_prediction, df_train, df_val, df_district, train_period, location_description,
              which_compartments=['active', 'total'], description='', savepath=None):
     """Helper function for creating plots for the training pipeline
 
@@ -24,8 +24,7 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, 
         df_train_nora {pd.DataFrame} -- The train dataset (with no rolling average)
         df_val_nora {pd.DataFrame} -- The val dataset (with no rolling average)
         train_period {int} -- Length of train period
-        state {str} -- Name of state
-        district {str} -- Name of district
+        location_description {str} -- Information about location
 
     Keyword Arguments:
         which_compartments {list} -- Which buckets to plot (default: {['active', 'total']})
@@ -56,7 +55,7 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, state, 
 
     n_rows = np.sum(list(plot_ledger.values()))
     fig, axs = plt.subplots(nrows=n_rows, figsize=(12, 10*n_rows))
-    fig.suptitle('{} {}, {}'.format(description, district, state))
+    fig.suptitle('{} {}'.format(description, location_description))
     i = 0
     for key in plot_ledger.keys():
         if not plot_ledger[key]:
