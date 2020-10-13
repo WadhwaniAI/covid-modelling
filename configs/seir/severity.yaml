@@ -25,7 +25,8 @@ fitting:
             center: TRUE
             window_size: 7
             win_type: null
-            split_after_rolling: TRUE # NOT IMPLEMENTED
+            min_periods: 7
+            split_after_rolling: FALSE
     #Choose Model and Ranges
     model: SEIRHD_Severity
     variable_param_ranges:  
@@ -35,6 +36,7 @@ fitting:
         T_recov_mild: [[20, 30], uniform]
         T_recov_moderate: [[20, 30], uniform]
         T_recov_severe: [[0, 40], uniform]
+        T_recov_fatal: [[20, 40], uniform]
         P_moderate: [[0, 0.5], uniform]
         P_severe: [[0, 0.1], uniform]
         P_fatal: [[0, 0.1], uniform]
@@ -50,11 +52,11 @@ fitting:
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
-        start_date: null # NOT IMPLEMENTED
-        end_date: null # NOT IMPLEMENTED
+        start_date: null
+        end_date: 2020-08-31
         train_period: 21
         val_period: 7
-        test_period: 0 # NOT IMPLEMENTED
+        test_period: 0
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased, asymptomatic, symptomatic, critical]

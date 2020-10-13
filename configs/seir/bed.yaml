@@ -26,7 +26,8 @@ fitting:
             center: TRUE
             window_size: 7
             win_type: null
-            split_after_rolling: TRUE # NOT IMPLEMENTED
+            min_periods: 7
+            split_after_rolling: FALSE
     #Choose Model and Ranges
     model: SEIRHD_Bed
     variable_param_ranges:
@@ -56,11 +57,11 @@ fitting:
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
-        start_date: null # NOT IMPLEMENTED
-        end_date: null # NOT IMPLEMENTED
-        train_period: 14
+        start_date: null
+        end_date: 2020-08-31
+        train_period: 21
         val_period: 7
-        test_period: 0 # NOT IMPLEMENTED
+        test_period: 0
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased, hq, icu, non_o2_beds, o2_beds, ventilator]
