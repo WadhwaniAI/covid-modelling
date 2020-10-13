@@ -274,6 +274,39 @@ def trials(path, start=0, end=0):
                 json.dump(model_output['trials'].__dict__['_trials'], outfile, cls=CustomEncoder)
 
 
+def predictions(path, start=0, end=0):
+    # Create output folder
+    if not os.path.exists(f'{path}/consolidated'):
+        os.makedirs(f'{path}/consolidated')
+    # Get config
+    with open(f'{path}/{start}/config.json', 'r') as infile:
+        config = json.load(infile)
+
+    # Unpack parameters
+    models = config['models']
+    train_period = config['train_period']
+    synth_addition = config['synth']['synth_addition']
+
+    pred_dict = dict()
+    for model in models:
+        pred_dict[model] = dict()
+    for i in range(start, end + 1):
+        for model in models:
+            picklefn = f'{path}/{i}/{model}.pkl'
+            with open(picklefn, 'rb') as pickle_file:
+                model_output = pickle.load(pickle_file)
+            pred_dict[model][i] = model_output['df_prediction'][['date', 'total_infected']]
+            pred_dict[model][i].insert(0, 'run', i)
+            pred_dict[model][i].insert(1, 'train_start_date', model_output['df_prediction']['date'].iloc[0])
+            split = ['train'] * train_period + ['train_synthetic'] * synth_addition \
+                    + ['forecast'] * (len(model_output['df_prediction'])-(train_period+synth_addition))
+            pred_dict[model][i].insert(2, 'split', split)
+    for model in models:
+        pred_df = pd.concat(pred_dict[model].values()).reset_index(drop=True)
+        pred_df.insert(0, 'model', f'{model}_synth')
+        pred_df.to_csv(os.path.join(path, 'consolidated', f'{model}_predictions.csv'), index=False)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--region_config", help="region config file path", required=True)
@@ -293,3 +326,5 @@ if __name__ == "__main__":
         forecast(args.output_folder, start=int(args.start), end=int(args.end))
     elif args.mode == 'trials':
         trials(args.output_folder, start=int(args.start), end=int(args.end))
+    elif args.mode == 'predictions':
+        predictions(args.output_folder, start=int(args.start), end=int(args.end))
