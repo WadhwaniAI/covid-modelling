@@ -46,7 +46,7 @@ class Optimiser():
                 formatted_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
                     key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
 
-        if fitting_method == 'gridsearch':
+        elif fitting_method == 'gridsearch':
             for key in variable_param_ranges.keys():
                 formatted_param_ranges[key] = np.linspace(variable_param_ranges[key][0][0],
                                                           variable_param_ranges[key][0][1], 
@@ -305,10 +305,5 @@ class Optimiser():
         mcmc_fit = MCMC(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
                  algo, num_evals, proposal_sigmas, loss_method, loss_compartments, loss_indices)
         mcmc_fit.run()
-        
-        sig = mcmc_fit.timestamp.strftime("%d-%b-%Y (%H:%M:%S)")
-        exp_name = 'uncer'
-        out_dir = join('plots', '{}_{}'.format(sig, exp_name))
-        os.makedirs(out_dir, exist_ok=True)
-        plot_chains(mcmc_fit, out_dir)
+
         return mcmc_fit._get_trials()
