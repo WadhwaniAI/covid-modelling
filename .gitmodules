@@ -2,6 +2,3 @@
 	path = lib/covid19-india
 	url = https://github.com/dsindiavscovid/covid19-india.git
 	branch = hetero_ensemble_generalised
-[submodule "lib/covid19-forecast-hub"]
-	path = lib/covid19-forecast-hub
-	url = git@github.com:reichlab/covid19-forecast-hub.git
