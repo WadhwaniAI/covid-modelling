@@ -17,6 +17,9 @@ from models.seir import SEIRHD
 from utils.fitting.loss import Loss_Calculator
 from uncertainty.mcmc import MCMC
 from uncertainty.uncertainty import plot_chains
+from uncertainty.mcmc_utils import predict
+from datetime import date
+from datetime import datetime
 
 class Optimiser():
     """Class which implements all optimisation related activites (training, evaluation, etc)
@@ -267,8 +270,7 @@ class Optimiser():
         return best, trials
 
 
-    def mcmc_opt(self, df_train, default_params, variable_param_ranges, proposal_sigmas,
-                model=SEIRHD, num_evals=10000, n_chains = 10,
+    def mcmc_opt(self, df_train, default_params, variable_param_ranges, proposal_sigmas,end_date,model=SEIRHD, num_evals=10000, n_chains = 10,
                 loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
                 prior='uniform', algo = 'gaussian', **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
@@ -298,7 +300,7 @@ class Optimiser():
         Returns:
             dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
         """
-    
+        end_date = datetime.combine(end_date, datetime.min.time())
         total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
         mcmc_fit = MCMC(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
                  algo, num_evals, proposal_sigmas, loss_method, loss_compartments, loss_indices)
@@ -309,4 +311,4 @@ class Optimiser():
         out_dir = join('plots', '{}_{}'.format(sig, exp_name))
         os.makedirs(out_dir, exist_ok=True)
         plot_chains(mcmc_fit, out_dir)
-        return mcmc_fit.chains[0][0][-1], mcmc_fit.chains[0][0]
+        return mcmc_fit._get_trials()

@@ -34,7 +34,7 @@ fitting:
         P_fatal: [[1e-10, 0.1], uniform]
         E_hosp_ratio: [[1e-10, 2], uniform]
         I_hosp_ratio: [[1e-10, 1], uniform]
-        sigma: [[1e-10, 1],uniform]
+        sigma: [[1, 3],uniform]
     default_params:
         N: 1.0e+7
     fitting_method: mcmc_opt
@@ -50,13 +50,13 @@ fitting:
             E_hosp_ratio: 1
             I_hosp_ratio: 1
             sigma: 1
-        num_evals: 100
+        num_evals: 5000
         algo: gaussian
-        n_chains: 1
+        n_chains: 5
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-08-31
+        end_date: 2020-10-13
         train_period: 21
         val_period: 7
         test_period: 0
@@ -78,13 +78,13 @@ forecast:
     plot_topk_trials_for_columns: [total, active]
     plot_ptiles_for_columns: [total, active]
 uncertainty:
-    method: MCUncertainty
+    method: MCMCUncertainty
     uncertainty_params:
         num_evals: 100
         which_fit: m1
         variable_param_ranges:
             beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2020-09-30
+        date_of_sorting_trials: 2020-10-13
         sort_trials_by_column: total
         loss:
             loss_method: mape

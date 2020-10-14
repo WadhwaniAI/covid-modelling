@@ -231,7 +231,7 @@ class MCMC(object):
         ll = 0
         params_dict = {**theta, **self._default_params}
         df_prediction = self._optimiser.solve(params_dict,end_date = self.df_train[-1:]['date'].item())
-        sigma = 1#theta['sigma']
+        sigma = theta['sigma']
 
 
         for compartment in self.compartments:
