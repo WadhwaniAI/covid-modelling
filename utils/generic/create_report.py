@@ -86,9 +86,10 @@ def _log_fits(mdFile, ROOT_DIR, fit_dict, which_fit='M1'):
 
 
 def _log_uncertainty_fit(mdFile, fit_dict):
-    mdFile.new_paragraph(f"beta - {fit_dict['beta']}")
-    mdFile.new_paragraph(f"beta loss")
-    mdFile.insert_code(pformat(fit_dict['beta_loss']))
+    return
+    # mdFile.new_paragraph(f"beta - {fit_dict['beta']}")
+    # mdFile.new_paragraph(f"beta loss")
+    # mdFile.insert_code(pformat(fit_dict['beta_loss']))
 
 
 def _log_forecasts(mdFile, ROOT_DIR, m2_dict):
@@ -98,8 +99,8 @@ def _log_forecasts(mdFile, ROOT_DIR, m2_dict):
                     m2_dict['plots']['forecast_best_50'], 'Forecast using best fit, 50th decile params')
     _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-80.png',
                     m2_dict['plots']['forecast_best_80'], 'Forecast using best fit, 80th decile params')
-    _log_plots_util(mdFile, ROOT_DIR, 'forecast-ensemble-mean-50.png',
-                    m2_dict['plots']['forecast_ensemble_mean_50'], 'Forecast of ensemble fit, 50th decile')
+    # _log_plots_util(mdFile, ROOT_DIR, 'forecast-ensemble-mean-50.png',
+    #                 m2_dict['plots']['forecast_ensemble_mean_50'], 'Forecast of ensemble fit, 50th decile')
 
     for column, figure in m2_dict['plots']['forecasts_topk'].items():
         _log_plots_util(mdFile, ROOT_DIR, f'forecast-topk-{column}.png',
@@ -198,5 +199,5 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
     mdFile.create_md_file()
 
     pypandoc.convert_file("{}.md".format(filename), 'docx', outputfile="{}.docx".format(filename))
-    pypandoc.convert_file("{}.docx".format(filename), 'pdf', outputfile="{}.pdf".format(filename))
+    # pypandoc.convert_file("{}.docx".format(filename), 'pdf', outputfile="{}.pdf".format(filename))
     # TODO: pdf conversion has some issues with order of images, low priority

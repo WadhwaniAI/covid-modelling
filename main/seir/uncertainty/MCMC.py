@@ -36,8 +36,7 @@ class MCMCUncertainty(Uncertainty):
         # self.beta = self.find_beta(variable_param_ranges, num_evals)
         # self.beta = np.zeros_like(self.beta)
         # self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
-        #self.ensemble_mean_forecast = self.avg_weighted_error(return_dict=False,
-                                                             #return_ensemble_mean_forecast=True)                                                      
+        #self.ensemble_mean_forecast = self.avg_weighted_error(return_dict=False,return_ensemble_mean_forecast=True)                                                      
         self.get_distribution()
 
     def trials_to_df(self, trials_processed, column=Columns.active):
@@ -80,7 +79,7 @@ class MCMCUncertainty(Uncertainty):
         
         df = pd.DataFrame(columns=['loss', 'weight', 'pdf', self.date_of_sorting_trials, 'cdf'])
         df['loss'] = self.predictions_dict[self.which_fit]['trials_processed']['losses']
-        df['pdf'] = 1/len(df['loss'])
+        df['pdf'] = 1/len(df)
         df_trials = self.trials_to_df(self.predictions_dict[self.which_fit]['trials_processed'], 
                                       self.sort_trials_by_column)
         self.date_of_sorting_trials = datetime.datetime.combine(
