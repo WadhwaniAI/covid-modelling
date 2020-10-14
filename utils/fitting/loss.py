@@ -12,8 +12,8 @@ class Loss_Calculator():
 
     def _calc_rmse(self, y_pred, y_true, log=False):
         if log:
-            y_true = np.log(y_true[y_true > 0])
             y_pred = np.log(y_pred[y_true > 0])
+            y_true = np.log(y_true[y_true > 0])
         loss = np.sqrt(np.mean((y_true - y_pred)**2))
         return loss
 
