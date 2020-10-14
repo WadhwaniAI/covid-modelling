@@ -25,13 +25,11 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
         dataframes = loader.load_data()
     else:
         try:
-            GOTOEXCEPT
-            print('TRUE')
+            print('pulling from cache')
             with open(picklefn, 'rb') as pickle_file:
                 dataframes = pickle.load(pickle_file)
             print(f'loading from {picklefn}')
         except:
-            print('FALSE')
             print("pulling from source")
             loader = loader_class()
             dataframes = loader.load_data()

@@ -4,8 +4,8 @@ fitting:
         data_source: covid19india
         stratified_data: FALSE
         dataloading_params:
-            state: Maharashtra
-            district: Mumbai
+            state: Jharkhand
+            district: Ranchi
             use_dataframe: data_all
         smooth_jump: FALSE
         smooth_jump_params: null

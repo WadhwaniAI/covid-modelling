@@ -34,13 +34,11 @@ class AthenaLoader(BaseLoader):
         lines = [line.replace('=', '="') + '"' if '="' not in line else line for line in lines]
         variables = [line.split('=') for line in lines]
 
-        print("HELLO")
         # Create variables using the processed variable names from the RC file
         AWS_CREDS = {}
         for key, var in variables:
             exec("{} = {}".format(key, var), AWS_CREDS)
 
-        print(AWS_CREDS)
         # Create connection
         cursor = connect(aws_access_key_id=AWS_CREDS['AWS_ACCESS_KEY_ID'],
                         aws_secret_access_key=AWS_CREDS['AWS_SECRET_ACCESS_KEY'],
