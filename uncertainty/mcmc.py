@@ -2,6 +2,7 @@ import pprint
 from collections import defaultdict, OrderedDict
 from datetime import datetime
 
+import multiprocessing as mp
 import numpy as np
 from joblib import delayed, Parallel
 from scipy.stats import poisson
@@ -376,8 +377,9 @@ class MCMC(object):
             list: Description
         """
         #self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
-        self.chains = []
-        for i, run in enumerate(range(self.n_chains)):
-            self.chains.append(self._metropolis())
+        #self.chains = []
+        #for i, run in enumerate(range(self.n_chains)):
+        #    self.chains.append(self._metropolis())
+        self.chains= Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for run in range(self.n_chains))
         self._check_convergence()
         return self._get_trials()
