@@ -28,7 +28,6 @@ class SimulatedDataLoader(BaseLoader):
                 ['date', 'total', 'active', 'deceased', 'recovered']
             dict -- parameter values used to create the simulated data
         """
-        # np.random.seed(0)
         ideal_params = {}
         if (not config['fix_params']):
             for param in config['params']:
@@ -40,6 +39,7 @@ class SimulatedDataLoader(BaseLoader):
         ideal_params = copy.deepcopy(config['params'])
         del ideal_params['N']
         print (ideal_params)
+
         model_params = config['params']
         model_params['starting_date'] = config['starting_date']
 
@@ -54,6 +54,10 @@ class SimulatedDataLoader(BaseLoader):
             df_result = solver.predict(total_days=config['total_days'])
         else:
             df_result = solver.predict()
-        df_result.to_csv(os.path.join('../../data/data/simulated_data/', config['output_file_name']))
-        pd.Series((ideal_params)).to_csv(os.path.join('../../data/data/simulated_data/', 'params_'+config['output_file_name']))
+
+        save_dir = '../../data/data/simulated_data/'    
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        df_result.to_csv(os.path.join(save_dir, config['output_file_name']))
+        pd.Series((ideal_params)).to_csv(os.path.join(save_dir, 'params_'+config['output_file_name']))
         return df_result, ideal_params
