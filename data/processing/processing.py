@@ -67,18 +67,19 @@ def get_data(data_source, dataloading_params, **kwargs):
        
     """
     if data_source == 'covid19india':
-        return get_data_from_tracker(**dataloading_params)
+        return {"data_frame": get_data_from_tracker(**dataloading_params)}
     if data_source == 'athena':
-        return get_custom_data_from_db(**dataloading_params)
+        return {"data_frame": get_custom_data_from_db(**dataloading_params)}
     if data_source == 'jhu':
-        return get_data_from_jhu(**dataloading_params)
+        return {"data_frame": get_data_from_jhu(**dataloading_params)}
     if data_source == 'filename':
-        return get_custom_data_from_file(**dataloading_params)
+        return {"data_frame": get_custom_data_from_file(**dataloading_params)}
     if data_source == 'simulated':
         if (dataloading_params['generate']):
-            return generate_simulated_data(**dataloading_params)
+            data_frame, ideal_params = generate_simulated_data(**dataloading_params)
+            return {"data_frame": data_frame, "ideal_params": ideal_params}
         else:
-            return get_simulated_data_from_file(**dataloading_params)
+            return {"data_frame": get_simulated_data_from_file(**dataloading_params)}
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
@@ -117,6 +118,7 @@ def generate_simulated_data(**dataloading_params):
     for col in df_result.columns:
         if col in ['active', 'total', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')    
+    # return df_result[['date', 'active', 'total', 'recovered', 'deceased']], params
     return df_result[['date', 'active', 'total', 'recovered', 'deceased']], params
 
 #TODO add support of adding 0s column for the ones which don't exist
@@ -145,7 +147,7 @@ def get_simulated_data_from_file(filename, data_format='new', **kwargs):
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
         
-    return df_result, {}
+    return df_result
 
 def get_custom_data_from_file(filename, data_format='new', **kwargs):
     if data_format == 'new':
