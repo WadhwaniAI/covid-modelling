@@ -1,14 +1,14 @@
 fitting:
     # Geographical Location
     data:
-        data_source: simulated
+        data_source: athena
         stratified_data: FALSE
         dataloading_params:
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
             generate: True
-            config_file: seirhd_fixed.yaml
+            config_file: simulated_seirhd.yaml
             filename: ../../data/data/simulated_data/simulated_data_1.csv
         smooth_jump: FALSE
         smooth_jump_params:
@@ -29,14 +29,14 @@ fitting:
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
-        lockdown_R0: [[0.6, 1.2], uniform]
-        T_inc: [[4, 6], uniform]
+        lockdown_R0: [[0.7, 1.2], uniform]
+        T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
         T_recov: [[0, 40], uniform]
         T_recov_fatal: [[0, 40], uniform]
-        P_fatal: [[0, 0.5], uniform]
+        P_fatal: [[0, 0.1], uniform]
         E_hosp_ratio: [[0, 2], uniform]
-        I_hosp_ratio: [[0, 2], uniform]
+        I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
     fitting_method: bayes_opt

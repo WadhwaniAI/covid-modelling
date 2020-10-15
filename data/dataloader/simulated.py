@@ -10,7 +10,7 @@ class SimulatedDataLoader(BaseLoader):
     def __init__(self):
         super().__init__()
     
-    def generate_simulated_data(**config):
+    def load_data(self, **config):
         """generates simulated data using the input params in config
 
         Keyword Arguments
@@ -38,7 +38,7 @@ class SimulatedDataLoader(BaseLoader):
 
         ideal_params = copy.deepcopy(config['params'])
         del ideal_params['N']
-        print (ideal_params)
+        print ("parameters used to generate data:", ideal_params)
 
         model_params = config['params']
         model_params['starting_date'] = config['starting_date']
