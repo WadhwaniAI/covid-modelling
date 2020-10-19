@@ -1,6 +1,11 @@
+import json
+import numbers
+
 import wandb
 import copy
 import matplotlib as mpl
+import mlflow
+import os
 
 import numpy as np
 import pandas as pd
@@ -94,3 +99,37 @@ def log_wandb(predictions_dict):
 
     for key, value in predictions_dict['m2']['plots']['forecasts_ptiles'].items():
         wandb.log({f"{'forecasts'}/forecasts_ptiles_{key}": [wandb.Image(value)]})
+
+
+def log_mlflow(experiment_name='covid-modelling-default', run_name=None, params=None, metrics=None, artifact_dir=None,
+               tags=None):
+    """
+
+    Args:
+        experiment_name ():
+        run_name ():
+        params ():
+        metrics ():
+        artifact_dir ():
+        tags ():
+
+    Returns:
+
+    """
+    mlflow.set_experiment(experiment_name)
+    with open('../misc/mlflow/credentials.json', 'r') as infile:
+        mlflow_config = json.load(infile)
+    mlflow.set_tracking_uri(mlflow_config['tracking_url'])
+    os.environ['MLFLOW_TRACKING_USERNAME'] = mlflow_config['username']
+    os.environ['MLFLOW_TRACKING_PASSWORD'] = mlflow_config['password']
+
+    with mlflow.start_run(run_name=run_name):
+        mlflow.log_params(params)
+        for metric, value in metrics.items():
+            if isinstance(value, numbers.Number):
+                mlflow.log_metric(key=metric, value=value)
+        for path in artifact_dir:
+            if path is not None and os.path.isfile(path):
+                mlflow.log_artifacts(path)
+        if tags is not None:
+            mlflow.set_tags(tags)
