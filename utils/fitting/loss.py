@@ -63,17 +63,17 @@ class Loss_Calculator():
         return loss
     
     # calls the bit loss functions
-    def calc_loss_dict(self, df_prediction, df_true, method='rmse', temporal_weights=None):
+    def calc_loss_dict(self, df_prediction, df_true, df_data_weights, method='rmse'):
         if method == 'rmse':
             calculate = lambda x, y : self._calc_rmse(x, y)
         if method == 'rmse_log':
             calculate = lambda x, y : self._calc_rmse(x, y, log=True)
-        if method == 'mape':
-            calculate = lambda x, y : self._calc_mape(x, y)
-        if method == 'wape' :
+        # if method == 'mape':
+        #     calculate = lambda x, y : self._calc_mape(x, y)
+        if method == 'mape' :
             # my code
             # print("I AM HERE IN THE CALC LOSS DICT FUNCTION")
-            calculate = lambda x, y : self._calc_wape(x, y, temporal_weights)
+            calculate = lambda x, y, temporal_weights : self._calc_wape(x, y, temporal_weights)
         if method == 'mape_delta':
             calculate = lambda x, y: self._calc_mape_delta(x, y)
             
@@ -83,17 +83,17 @@ class Loss_Calculator():
             # losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
             
             try:
-                losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
+                losses[compartment] = calculate(df_prediction[compartment], df_true[compartment], df_data_weights['compartment'])
             except Exception:
                 continue
                 
         return losses
 
-    def calc_loss(self, df_prediction, df_true, df_data_weights_prediction=None, method='rmse', 
+    def calc_loss(self, df_prediction, df_true, df_data_weights=None, method='rmse', 
                   which_compartments=['active', 'recovered', 'total', 'deceased'], 
                   loss_weights=[1, 1, 1, 1]):
         
-        losses = self.calc_loss_dict(df_prediction, df_true, method)
+        losses = self.calc_loss_dict(df_prediction, df_true, df_data_weights, method)
         loss = 0
         for i, compartment in enumerate(which_compartments):
             loss += loss_weights[i]*losses[compartment]

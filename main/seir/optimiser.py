@@ -68,10 +68,10 @@ class Optimiser():
 
 
     # TODO add cross validation support
-    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIRHD,
-                               loss_compartments=['active', 'recovered', 'total', 'deceased'], 
-                               loss_weights = [1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse', 
-                               debug=False):
+    def solve_and_compute_loss(self, variable_params, default_params, df_true, df_data_weights,  total_days, 
+                                model=SEIRHD, loss_compartments=['active', 'recovered', 'total', 'deceased'], 
+                                loss_weights = [1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse', 
+                                debug=False):
         """The function that computes solves the ODE for a given set of input params and computes loss on train set
 
         Arguments:
@@ -108,15 +108,17 @@ class Optimiser():
         if loss_indices == None:
             df_prediction_slice = df_prediction
             df_true_slice = df_true
+            df_data_weights_slice = df_data_weights 
         else:
             df_prediction_slice = df_prediction.iloc[loss_indices[0]:loss_indices[1], :]
             df_true_slice = df_true.iloc[loss_indices[0]:loss_indices[1], :]
+            df_data_weights_slice = df_data_weights.iloc[loss_indices[0]:loss_indices[1], :]
 
         if debug:
             import pdb; pdb.set_trace()
         df_prediction_slice.reset_index(inplace=True, drop=True)
         df_true_slice.reset_index(inplace=True, drop=True)
-        loss = self.loss_calculator.calc_loss(df_prediction_slice, df_true_slice, 
+        loss = self.loss_calculator.calc_loss(df_prediction_slice, df_true_slice, df_data_weights_slice,
                                               which_compartments=loss_compartments, method=loss_method,
                                               loss_weights=loss_weights)
         return loss
@@ -134,7 +136,7 @@ class Optimiser():
         params_dict = {param_names[i]: values[i] for i in range(len(values))}
         return params_dict
 
-    def init_default_params(self, df_train, default_params, train_period=7):
+    def init_default_params(self, df_train, df_data_weights_train, default_params, train_period=7):
         """Function for creating all default params for the optimisation (hyperopt/gridsearch)
 
         Arguments:
@@ -151,10 +153,12 @@ class Optimiser():
         """
         observed_values = df_train.iloc[-train_period, :]
         start_date = observed_values['date'].date()
+        data_weights = df_data_weights_train.iloc[]
 
         extra_params = {
             'starting_date' : start_date,
             'observed_values': observed_values
+            'data_weights': data_weights
         }
 
         return {**default_params, **extra_params}
@@ -245,8 +249,8 @@ class Optimiser():
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
                                                  default_params=default_params, total_days=total_days,
                                                  loss_method=loss_method, loss_indices=loss_indices, 
-                                                 loss_weights=loss_weights, df_true=df_train,
-                                                 loss_compartments=loss_compartments)
+                                                 loss_weights=loss_weights, df_data_weights=df_data_weights,
+                                                 df_true=df_train, loss_compartments=loss_compartments)
 
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
         trials = Trials()

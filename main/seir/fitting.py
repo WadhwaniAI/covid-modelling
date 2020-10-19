@@ -7,6 +7,7 @@ from data.processing import granular
 from main.seir.optimiser import Optimiser
 from utils.fitting.loss import Loss_Calculator
 from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
+from utils.fitting.data_weights import Data_Weights
 from viz import plot_smoothing, plot_fit
 
 
@@ -62,6 +63,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         print(smoothing['smoothing_description'])
      
     rap = rolling_average_params
+    
     if rolling_average:
         df_train, df_val, _ = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
@@ -85,7 +87,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     return observed_dataframes, smoothing
 
 
-def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_params, fitting_method,
+def run_cycle(observed_dataframes, weights_dataframes, data, model, variable_param_ranges, default_params, fitting_method,
               fitting_method_params, split, loss):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
@@ -111,11 +113,14 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
 
     df_district, df_train, df_val, df_train_nora, df_val_nora = [
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
+    
+    df_data_weights_train, df_data_weights_val = [
+        weights_dataframes.get(k) for k in weights_dataframes.keys()]
 
     # Initialise Optimiser
     optimiser = Optimiser()
     # Get the fixed params
-    default_params = optimiser.init_default_params(df_train, default_params, train_period=split['train_period'])
+    default_params = optimiser.init_default_params(df_train, df_data_weights_train, default_params, train_period=split['train_period'])
     # Get/create searchspace of variable params
     loss_indices = [-(split['train_period']), None]
     loss['loss_indices'] = loss_indices
@@ -184,15 +189,34 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     params = {**data}
     params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
+    
+    # df_district, df_train, df_val made here
     observed_dataframes, smoothing = data_setup(**params)
+
+    # df_data_weights made here
+    if data_weights['if_weights'] == True:
+        df_data_weights = Data_Weights.make_weights_df(0, observed_dataframes['df_district'],
+                                                        data_weights['start_date'],
+                                                        data_weights['end_date'],
+                                                        data_weights['weights']
+                                                        )
+    else:
+        df_data_weights = Data_Weights.make_weights_df(0, observed_dataframes['df_district'],
+                                                        None,
+                                                        None,
+                                                        data_weights['weights']
+                                                        )
+
+    weights_dataframes = Data_Weights.implement_split(0, df_data_weights, split)      
+
     smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
     orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
 
     print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
     if not observed_dataframes['df_val'] is None:
         print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
-        
-    predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
+    
+    predictions_dict = run_cycle(observed_dataframes, weights_dataframes, data, model, variable_param_ranges, 
             default_params, fitting_method, fitting_method_params, split, loss)
 
     if smoothing_plot != None:
