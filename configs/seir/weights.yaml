@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: covid19india
+        data_source: athena
         stratified_data: FALSE
         dataloading_params:
             state: Jharkhand
@@ -9,6 +9,7 @@ fitting:
             use_dataframe: data_all
         smooth_jump: FALSE
         smooth_jump_params: null
+            # 2020-09-28: [2020-09-27, recovered, active, FALSE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
             center: TRUE
@@ -19,7 +20,7 @@ fitting:
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
-        lockdown_R0: [[0.7, 1.8], uniform]
+        lockdown_R0: [[0.7, 1.5], uniform]
         T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
         T_recov: [[0, 40], uniform]
@@ -28,26 +29,26 @@ fitting:
         E_hosp_ratio: [[0, 2], uniform]
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
-        N: 1.4e+6
+        N: 3.3e+6
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 200
+        num_evals: 20
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-10-04
-        train_period: 30
-        val_period: 10
-        test_period: 10
+        end_date: null
+        train_period: 11
+        val_period: 3
+        test_period: 7
     #Optimisation related parameters
     loss:
-        loss_method: mape_delta
+        loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
     # Variable data smoothing
     data_weights:
-        if_weights: TRUE
+        if_weights: FALSE
         start_date: 2020-09-10
         end_date: 2020-09-22
         weights:
@@ -70,19 +71,18 @@ forecast:
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
-        num_evals: 150
         num_evals: 100
         which_fit: m1
         variable_param_ranges:
-            beta: [[0, 15], uniform]
-        date_of_sorting_trials: 2020-10-25
+            beta: [[0, 10], uniform]
+        date_of_sorting_trials: 2020-11-15
         sort_trials_by_column: total
         loss:
-            loss_method: mape_delta
+            loss_method: mape
             loss_compartments: [total, active, recovered, deceased]
             loss_weights: [0.25, 0.25, 0.25, 0.25]
         percentiles: [2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 97.5]
 what_ifs:
     percentile: 80
-    multipliers: [0.9, 1.2]
+    multipliers: [0.9, 1, 1.05, 1.1, 1.2]
 
