@@ -33,10 +33,9 @@ class MCMCUncertainty(Uncertainty):
         for key in loss:
             setattr(self, key, loss[key])
         self.percentiles = percentiles
-        # self.beta = self.find_beta(variable_param_ranges, num_evals)
-        # self.beta = np.zeros_like(self.beta)
+        self.beta = 0
         # self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
-        #self.ensemble_mean_forecast = self.avg_weighted_error(return_dict=False,return_ensemble_mean_forecast=True)                                                      
+        self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta},return_dict=False,return_ensemble_mean_forecast=True)                                                      
         self.get_distribution()
 
     def trials_to_df(self, trials_processed, column=Columns.active):
@@ -131,7 +130,7 @@ class MCMCUncertainty(Uncertainty):
                 which_compartments=self.loss_compartments)
         return deciles_forecast
 
-    def avg_weighted_error(self, return_dict=False, return_ensemble_mean_forecast=False):
+    def avg_weighted_error(self,hp, return_dict=False, return_ensemble_mean_forecast=False):
         """
         Loss function to optimize beta
 
@@ -146,7 +145,7 @@ class MCMCUncertainty(Uncertainty):
         # while df_district has no rolling average
         df_val = self.predictions_dict['m1']['df_district'].set_index('date') \
             .loc[self.predictions_dict['m1']['df_val']['date'],:]
-        # beta_loss = np.exp(-beta*losses)
+        beta_loss = np.exp(-self.beta*losses)
 
         predictions = self.predictions_dict['m1']['trials_processed']['predictions']
         allcols = self.loss_compartments

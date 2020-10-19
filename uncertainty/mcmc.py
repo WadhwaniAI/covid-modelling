@@ -187,6 +187,35 @@ class MCMC(object):
                 new_value = np.log(new_value)
             theta_new[param] = new_value
         return theta_new
+    def exp_proposal(self, theta_old):
+        """
+        Proposes a new set of parameter values given the previous set.
+        
+        Args:
+            theta_old (dict): dictionary of old param-value pairs.
+        
+        Returns:
+            OrderedDict: dictionary of newly proposed param-value pairs.
+        """
+        theta_new = OrderedDict()
+        
+        for param in theta_old:
+
+            old_value = theta_old[param]
+            new_value = None
+            lower_bound = (float(self.prior_ranges[param][0][0]))
+            upper_bound = (self.prior_ranges[param][0][1])
+            #print(lower_bound, upper_bound)
+            while new_value == None:
+                #Gaussian proposal
+                new_value = np.random.normal(loc = old_value, scale = self.proposal_sigmas[param])
+                # new_value = np.random.normal(loc=np.exp(old_value), scale=np.exp((self.proposal_sigmas[param])))
+                if new_value < lower_bound or new_value > upper_bound:
+                    new_value = None
+                    continue
+                # new_value = np.log(new_value)
+            theta_new[param] = new_value
+        return theta_new
 
     def _gaussian_log_likelihood(self, true, pred, sigma):
         """
@@ -293,16 +322,18 @@ class MCMC(object):
         theta = self._param_init()
         accepted = [theta]
         rejected = list()
-        
+        A = 0
         for i in tqdm(range(self.iters)):
-            theta_new = self._proposal(theta)
+
+            theta_new = self.exp_proposal(theta)
             
             if self._accept(theta, theta_new):
                 theta = theta_new
+                A += 1
             else:
                 rejected.append(theta_new)
             accepted.append(theta)
-        
+        print("The acceptance ratio is --------> ",A / self.iters )
         return accepted, rejected
 
     def _check_convergence(self):
@@ -375,9 +406,9 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
-        # self.chains = []
-        # for i, run in enumerate(range(self.n_chains)):
-        #     self.chains.append(self._metropolis())
+        # self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
+        self.chains = []
+        for i, run in enumerate(range(self.n_chains)):
+            self.chains.append(self._metropolis())
         self._check_convergence()
         return self._get_trials()
