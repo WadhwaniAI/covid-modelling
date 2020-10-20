@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import seaborn as sns
 from pandas.plotting import register_matplotlib_converters
+from matplotlib.lines import Line2D
 
 
 def axis_formatter(ax, legend_elements=None, custom_legend=False, log_scale=False):
