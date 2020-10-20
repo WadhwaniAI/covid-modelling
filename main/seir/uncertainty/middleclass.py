@@ -156,7 +156,8 @@ class MCUncertainty(Uncertainty):
         beta_loss = np.exp(-beta*losses)
 
         predictions = self.predictions_dict['m1']['trials_processed']['predictions']
-        allcols = self.loss_compartments
+        loss_cols = self.loss_compartments
+        allcols = ['total', 'active', 'recovered', 'deceased']
         predictions_stacked = np.array([df.loc[:, allcols].to_numpy() for df in predictions])
         predictions_stacked_weighted_by_beta = beta_loss[:, None, None] * predictions_stacked / beta_loss.sum()
         weighted_pred = np.sum(predictions_stacked_weighted_by_beta, axis=0)
@@ -171,7 +172,7 @@ class MCUncertainty(Uncertainty):
             weighted_pred_df.reset_index(inplace=True)
             return weighted_pred_df
         return lc.calc_loss(weighted_pred_df_loss, df_val, method=self.loss_method,
-                            which_compartments=allcols, loss_weights=self.loss_weights)
+                            which_compartments=loss_cols, loss_weights=self.loss_weights)
 
     def find_beta(self, fitting_method, fitting_method_params, variable_param_ranges):
         """
@@ -206,6 +207,8 @@ class MCUncertainty(Uncertainty):
             min_loss, best_beta = (np.min(loss_values), 
                                    formatted_searchspace['beta'][np.argmin(loss_values)])
             dict_of_trials = dict(zip(formatted_searchspace['beta'], loss_values))
+            print(f'Best beta - {best_beta}')
+            print(f'Min Loss - {min_loss}')
             return best_beta, dict_of_trials
 
     def get_ptiles_idx(self, percentiles=None):
