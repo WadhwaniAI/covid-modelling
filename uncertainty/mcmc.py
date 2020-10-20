@@ -187,7 +187,7 @@ class MCMC(object):
                 new_value = np.log(new_value)
             theta_new[param] = new_value
         return theta_new
-    def exp_proposal(self, theta_old):
+    def Gauss_proposal(self, theta_old):
         """
         Proposes a new set of parameter values given the previous set.
         
@@ -334,6 +334,7 @@ class MCMC(object):
                 rejected.append(theta_new)
             accepted.append(theta)
         print("The acceptance ratio is --------> ",A / self.iters )
+        #Confirm whether this is the correct implementation of acceptance ratio
         return accepted, rejected
 
     def _check_convergence(self):

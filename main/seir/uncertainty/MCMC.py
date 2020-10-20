@@ -34,7 +34,7 @@ class MCMCUncertainty(Uncertainty):
             setattr(self, key, loss[key])
         self.percentiles = percentiles
         self.beta = 0
-        # self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
+        self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
         self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta},return_dict=False,return_ensemble_mean_forecast=True)                                                      
         self.get_distribution()
 
