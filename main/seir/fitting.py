@@ -56,9 +56,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
                                         description='Smoothing')
     
     df_district['daily_cases'] = df_district['total'].diff()
-    # df_district.dropna(axis=0, how='any', subset=['total', 'active', 'recovered', 'deceased', 'daily_cases'], 
-    #                    inplace=True)
-    df_district.dropna(axis=0, how='any', subset=['total', 'active', 'recovered', 'deceased'], 
+    df_district.dropna(axis=0, how='any', subset=['total'], 
                        inplace=True)
     df_district.reset_index(drop=True, inplace=True)
     smoothing = {
@@ -152,8 +150,19 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'], 
                                               which_compartments=loss['loss_compartments'])
 
+    if 'state' in data['dataloading_params'].keys() and 'district' in data['dataloading_params'].keys():
+        location_description = (data['dataloading_params']['state'],
+                                data['dataloading_params']['district'])
+    elif 'region' in data['dataloading_params'].keys() and 'sub_region' in data['dataloading_params'].keys():
+        location_description = (data['dataloading_params']['region'],
+                                data['dataloading_params']['sub_region'])
+    elif 'state' in data['dataloading_params'].keys() and 'county' in data['dataloading_params'].keys():
+        location_description = (data['dataloading_params']['state'],
+                                data['dataloading_params']['county'])
+    else:
+        location_description = (data['dataloading_params']['state'])
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
-                        data['dataloading_params']['state'], data['dataloading_params']['district'], 
+                        location_description=location_description,
                         which_compartments=loss['loss_compartments'])
 
     results_dict = {}
@@ -203,6 +212,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     params['loss_compartments'] = loss['loss_compartments']
     observed_dataframes, smoothing = data_setup(**params)
     smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
+    smoothing_description = smoothing['smoothing_description'] if 'smoothing_description' in smoothing else None
     orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
 
     print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
@@ -212,9 +222,9 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
             default_params, fitting_method, fitting_method_params, split, loss)
 
-    if smoothing_plot != None:
-        predictions_dict['plots']['smoothing'] = smoothing_plot
-        predictions_dict['smoothing_description'] = smoothing['smoothing_description']
+    
+    predictions_dict['plots']['smoothing'] = smoothing_plot
+    predictions_dict['smoothing_description'] = smoothing_description
     predictions_dict['df_district_unsmoothed'] = orig_df_district
 
     # record parameters for reproducibility

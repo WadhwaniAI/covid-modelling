@@ -1,12 +1,13 @@
 import pandas as pd
 import numpy as np
 import copy
+import json
 import os
 import pickle
 import datetime
 from collections import defaultdict
 
-from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader
+from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoader, CovidTrackingLoader
 
 
 def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
@@ -16,6 +17,10 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
         loader_key = 'athena'
     if loader_class == JHULoader:
         loader_key = 'jhu'
+    if loader_class == NYTLoader:
+        loader_key = 'nyt'
+    if loader_class == CovidTrackingLoader:
+        loader_key = 'covid_tracking'
     os.makedirs("../../misc/cache/", exist_ok=True)
     picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}.pkl".format(
         today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
@@ -71,6 +76,10 @@ def get_data(data_source, dataloading_params, **kwargs):
         return get_custom_data_from_db(**dataloading_params)
     if data_source == 'jhu':
         return get_data_from_jhu(**dataloading_params)
+    if data_source == 'nyt':
+        return get_data_from_ny_times(**dataloading_params)
+    if data_source == 'covid_tracking':
+        return get_data_from_covid_tracking(**dataloading_params)
     if data_source == 'filename':
         return get_custom_data_from_file(**dataloading_params)
     if data_source == 'simulated':
@@ -257,9 +266,77 @@ def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_
         return out.reset_index()
 
 
-def get_data_from_jhu():
-    pass
-    #TODO implement JHU processing function
+def get_data_from_jhu(dataframe, region, sub_region=None):
+    dataframes = get_dataframes_cached(loader_class=JHULoader)
+    df = dataframes[f'df_{dataframe}']
+    if dataframe == 'global':
+        df.rename(columns= {"ConfirmedCases": "total", "Deaths": "deceased",
+                            "RecoveredCases": "recovered", "ActiveCases": "active", 
+                            "Date": "date"}, inplace=True)
+        df.drop(["Lat", "Long"], axis=1, inplace=True)
+        df = df[df['Country/Region'] == region]
+        if sub_region is None:
+            df = df[pd.isna(df['Province/State'])]
+        else:
+            df = df[df['Province/State'] == sub_region]
+
+    elif dataframe == 'us_states':
+        drop_columns = ['Last_Update', 'Lat', 'Long_', 'FIPS', 'Incident_Rate', 
+                        'People_Hospitalized', 'Mortality_Rate', 'UID', 'ISO3', 
+                        'Testing_Rate', 'Hospitalization_Rate']
+        df.drop(drop_columns, axis=1, inplace=True)
+        df.rename(columns={"Confirmed": "total", "Deaths": "deceased",
+                           "Recovered": "recovered", "Active": "active", 
+                           "People_Tested": "tested", "Date": "date"}, inplace=True)
+        df = df[['date', 'Province_State', 'Country_Region', 'total', 'active', 
+                 'recovered', 'deceased', 'tested']]
+        df = df[df['Province_State'] == region]    
+
+    elif dataframe == 'us_counties':
+        drop_columns = ['UID', 'iso2', 'iso3', 'code3', 'FIPS', 
+                        'Lat', 'Long_']
+        df.drop(drop_columns, axis=1, inplace=True)
+        df.rename(columns={"ConfirmedCases": "total", "Deaths": "deceased",
+                           "Date": "date"}, inplace=True)
+        df = df[['date', 'Admin2', 'Province_State', 'Country_Region', 'Combined_Key', 
+                 'Population', 'total', 'deceased']]
+        if sub_region is None:
+            raise ValueError('Please provide a county name ie, the sub_region key')
+        df = df[(df['Province_State'] == region) & (df['Admin2'] == sub_region)]
+        
+    else:
+        raise ValueError('Unknown dataframe type given as input to user')
+
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+
+def get_data_from_ny_times(state, county=None):
+    dataframes = get_dataframes_cached(loader_class=NYTLoader)
+    if county is not None:
+        df = dataframes['counties']
+        df = df[np.logical_and(df['state'] == state, df['county'] == county)]
+    else:
+        df = dataframes['states']
+        df = df[df['state'] == state]
+    df.loc[:, 'date'] = pd.to_datetime(df['date'])
+    df.rename(columns={"cases": "total", "deaths": "deceased"}, inplace=True)
+    df.drop('fips', axis=1, inplace=True)
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+
+def get_data_from_covid_tracking(state):
+    dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader)
+    df_states = dataframes['df_states']
+    df_states = df_states.loc[:, ['date', 'state', 'state_name', 'positive', 
+                                  'active', 'recovered', 'death']]
+    df_states.rename(columns={"positive": "total",
+                              "death": "deceased"}, inplace=True)
+    df = df_states[df_states['state_name'] == state]
+    df.reset_index(drop=True, inplace=True)
+    return df
+
 
 def implement_rolling(df, window_size, center, win_type, min_periods):
     df_roll = df.infer_objects()
