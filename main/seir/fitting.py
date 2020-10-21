@@ -75,7 +75,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         }
         print(smoothing['smoothing_description'])
      
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     rap = rolling_average_params
     if rolling_average:
         df_train, df_val, _ = train_val_test_split(
@@ -129,7 +129,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     # Initialise Optimiser
     optimiser = Optimiser()
     # Get the fixed params
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     default_params = optimiser.init_default_params(df_train, df_val, default_params, train_period=split['train_period'])
     # import pdb; pdb.set_trace()
     # Get/create searchspace of variable paramms
@@ -143,7 +143,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     best_params, trials = getattr(optimiser, fitting_method)(**args)
     print('best parameters\n', best_params)
 
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     df_prediction = optimiser.solve({**best_params, **default_params}, 
                                     end_date=df_district.iloc[-1, :]['date'], 
                                     model=model)

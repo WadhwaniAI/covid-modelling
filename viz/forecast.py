@@ -133,9 +133,14 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_sc
         if plot_individual_curves == True:
             for i, df_prediction in enumerate(predictions):
                 loss_value = np.around(top_k_losses[i], 2)
-                r0 = np.around(top_k_params[i]['lockdown_R0'], 2)
-                sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
+                if 'lockdown_R0' in top_k_params[i]:
+                    r0 = np.around(top_k_params[i]['lockdown_R0'], 2)
+                    sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
                             ls='-', label=f'{compartment.label} R0:{r0} Loss:{loss_value}')
+                else:
+                    beta = np.around(top_k_params[i]['beta'], 2)
+                    sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
+                            ls='-', label=f'{compartment.label} Beta:{beta} Loss:{loss_value}')
                 texts.append(plt.text(
                     x=df_prediction[Columns.date.name].iloc[-1], 
                     y=df_prediction[compartment.name].iloc[-1], s=loss_value))
