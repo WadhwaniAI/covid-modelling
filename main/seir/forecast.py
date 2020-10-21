@@ -21,7 +21,7 @@ from main.seir.optimiser import Optimiser
 from utils.generic.enums import Columns, SEIRParams
 
 def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train_fit='m2', model=SEIRHD,
-                 best_params=None, verbose=True, lockdown_removal_date=None):
+                 best_params=None, tests_done=10000, verbose=True, lockdown_removal_date=None):
     """Returns the forecasts for a given set of params of a particular geographical area
 
     Arguments:
@@ -44,6 +44,18 @@ def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train
         best_params = predictions_dict[train_fit]['best_params']
 
     default_params = copy.copy(predictions_dict[train_fit]['default_params'])
+    # import pdb; pdb.set_trace()
+    ###
+    tmp = default_params['daily_testing']
+    last_date = tmp.index[-1]
+    new_dates = []
+    while last_date < simulate_till:
+        last_date = last_date + pd.Timedelta(days=1)
+        new_dates.append(last_date)
+    new_testing = pd.Series(data=tests_done, index=new_dates)
+    default_params['daily_testing'] = default_params['daily_testing'].append(new_testing)
+    ###
+    # import pdb; pdb.set_trace()
     if lockdown_removal_date is not None:
         train_period = predictions_dict[train_fit]['run_params']['train_period']
         start_date = predictions_dict[train_fit]['df_train'].iloc[-train_period, :]['date']
@@ -192,7 +204,7 @@ def _get_top_k_trials(m_dict: dict, k=10):
     params_array, losses_array = _order_trials_by_loss(m_dict)
     return params_array[:k], losses_array[:k]
 
-def forecast_top_k_trials(predictions_dict: dict, model=SEIRHD, k=10, train_fit='m2', forecast_days=37):
+def forecast_top_k_trials(predictions_dict: dict, model=SEIRHD, k=10, train_fit='m2', forecast_days=37,tests_done=10000):
     """Creates forecasts for the top k Bayesian Opt trials (ordered by loss) for a specified number of days
 
     Args:
@@ -211,11 +223,11 @@ def forecast_top_k_trials(predictions_dict: dict, model=SEIRHD, k=10, train_fit=
     print("getting forecasts ..")
     for i, params_dict in tqdm(enumerate(top_k_params)):
         predictions.append(get_forecast(predictions_dict, best_params=params_dict, model=model, 
-                                        train_fit=train_fit, simulate_till=simulate_till, verbose=False))
+                                        train_fit=train_fit, simulate_till=simulate_till, tests_done=tests_done, verbose=False))
     return predictions, top_k_losses, top_k_params
 
 
-def forecast_all_trials(predictions_dict, model=SEIRHD, train_fit='m2', forecast_days=37):
+def forecast_all_trials(predictions_dict, model=SEIRHD, train_fit='m2', forecast_days=37, tests_done=10000):
     """Forecasts all trials in a particular train_fit, in predictions dict
 
     Args:
@@ -231,7 +243,8 @@ def forecast_all_trials(predictions_dict, model=SEIRHD, train_fit='m2', forecast
         k=len(predictions_dict[train_fit]['trials']), 
         model=model,
         train_fit=train_fit,
-        forecast_days=forecast_days
+        forecast_days=forecast_days,
+        tests_done=tests_done
     )
     return_dict = {
         'predictions': predictions, 

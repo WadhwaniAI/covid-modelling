@@ -6,7 +6,7 @@ from main.seir.optimiser import Optimiser
 
 
 def gridsearch_single_param(predictions_dict, config, which_fit='m1', var_name=None,
-                            param_range=np.linspace(1, 100, 201), df_train=None, train_period=None, 
+                            param_range=np.linspace(1, 100, 201), df_train=None, df_val=None, train_period=None, 
                             comp_name='recovered', aux_comp='total', debug=False):
     if var_name == None:
         var_name = 'T_recov_{}'.format(comp_name)
@@ -16,6 +16,9 @@ def gridsearch_single_param(predictions_dict, config, which_fit='m1', var_name=N
 
     if not isinstance(df_train, pd.DataFrame):
         df_train = copy.copy(predictions_dict[which_fit]['df_train'])
+    
+    if not isinstance(df_val, pd.DataFrame):
+        df_val = copy.copy(predictions_dict[which_fit]['df_val'])
 
     default_params = copy.copy(predictions_dict[which_fit]['best_params'])
     run_params = copy.copy(predictions_dict[which_fit]['run_params'])
@@ -37,7 +40,7 @@ def gridsearch_single_param(predictions_dict, config, which_fit='m1', var_name=N
     except Exception as err:
         print('')
     optimiser = predictions_dict[which_fit]['optimiser']
-    extra_params = optimiser.init_default_params(df_train, config['fitting']['default_params'], 
+    extra_params = optimiser.init_default_params(df_train, df_val, config['fitting']['default_params'], 
                                                  train_period=train_period)
     default_params = {**default_params, **extra_params}
     loss_array, params_dict = optimiser.gridsearch(df_train, default_params, variable_param_ranges, model=model, 

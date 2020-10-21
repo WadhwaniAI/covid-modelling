@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
+import math
 
 from collections import OrderedDict
 import datetime
@@ -10,7 +11,7 @@ import copy
 from models.seir.seir import SEIR
 from utils.fitting.ode import ODE_Solver
 
-class SEIR_Undetected(SEIR):
+class SEIR_Undetected_Testing(SEIR):
     def __init__(self, lockdown_R0=2.2, T_inf_D=3.3, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
                  P_fatal=0.2, T_recov_severe=14, N=1e7, d=1.0, psi=1.00, beta=0.1, starting_date='2020-03-09', 
                  observed_values=None, E_hosp_ratio=0.5, I_D_hosp_ratio=0.5, I_U_hosp_ratio=0.5, **kwargs):
@@ -75,6 +76,7 @@ class SEIR_Undetected(SEIR):
         del input_args['kwargs']
         super().__init__(**input_args)
 
+        # import pdb; pdb.set_trace()
         self.d = d
         self.psi = psi
         self.T_inf_D = T_inf_D
@@ -106,12 +108,14 @@ class SEIR_Undetected(SEIR):
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
+        tests_done = self.daily_tests[self.starting_date + pd.Timedelta(days=max(1,math.ceil(t)))]
+        # print(t,tests_done)
 
         # Write differential equations
         dydt[0] = - (I_D + I_U) * S * self.beta  # S
         dydt[1] = (I_D + I_U) * S * self.beta - (E/ self.T_inc)  # E
-        dydt[2] = (1 / self.T_inc)*(self.d*self.psi)*E - I_D / self.T_inf_D  # I_D
-        dydt[3] = (1 / self.T_inc)*(1 - self.d*self.psi)*E - I_U / self.T_inf_U  # I_U
+        dydt[2] = (1 / self.T_inc)*(1000*tests_done*self.d*self.psi)*E - I_D / self.T_inf_D  # I_D
+        dydt[3] = (1 / self.T_inc)*(1 - 1000*tests_done*self.d*self.psi)*E - I_U / self.T_inf_U  # I_U
         dydt[4] = I_U / self.T_inf_U  # P_U
         dydt[5] = (1/self.T_inf_D)*(self.P_severe*I_D) - R_severe/self.T_recov_severe #R_severe
         dydt[6] = (1/self.T_inf_D)*(self.P_fatal*I_D) - R_fatal/self.T_recov_fatal # R_fatal

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import copy
 from hyperopt import hp, tpe, fmin, Trials
 from tqdm.notebook import tqdm
 
@@ -100,8 +101,12 @@ class Optimiser():
         if sum(P_values) > 1:
             return 1e10
 
+        # import pdb; pdb.set_trace()
         solver = model(**params_dict)
+        # import pdb; pdb.set_trace()
         df_prediction = solver.predict(total_days=total_days)
+        # print(df_prediction)
+        # import pdb; pdb.set_trace()
 
         # Choose which indices to calculate loss on
         # TODO Add slicing capabilities on the basis of date
@@ -134,7 +139,7 @@ class Optimiser():
         params_dict = {param_names[i]: values[i] for i in range(len(values))}
         return params_dict
 
-    def init_default_params(self, df_train, default_params, train_period=7):
+    def init_default_params(self,df_train, df_val, default_params, train_period=7):
         """Function for creating all default params for the optimisation (hyperopt/gridsearch)
 
         Arguments:
@@ -151,10 +156,24 @@ class Optimiser():
         """
         observed_values = df_train.iloc[-train_period, :]
         start_date = observed_values['date'].date()
+        daily_testing = pd.DataFrame()
+        
+        # can move this to utils
+        # import pdb; pdb.set_trace()
+        try:
+            daily_testing = df_train.set_index('date')[-train_period:]['tested']
+            daily_testing = daily_testing.append(df_val.set_index('date')['tested'])
+            tmp = copy.deepcopy(daily_testing[:-1])
+            tmp.index = daily_testing[1:].index
+            daily_testing[1:] -= tmp
+        except Exception as e:
+            pass
+        #####
 
         extra_params = {
             'starting_date' : start_date,
-            'observed_values': observed_values
+            'observed_values': observed_values,
+            'daily_testing' : daily_testing
         }
 
         return {**default_params, **extra_params}

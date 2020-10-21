@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: simulated
+        data_source: covid19india
         filename: ../../data/data/simulated.csv
         stratified_data: FALSE
         dataloading_params:
@@ -10,14 +10,15 @@ fitting:
             use_dataframe: data_all
         smooth_jump: FALSE
         smooth_jump_params: None
-        rolling_average: FALSE
+        rolling_average: TRUE
         rolling_average_params:
-            center: TRUE
+            center: FALSE
             window_size: 7
             win_type: null
+            min_periods: 7
             split_after_rolling: TRUE # NOT IMPLEMENTED
     #Choose Model and Ranges
-    model: SEIR_Undetected
+    model: SEIR_Undetected_Testing
     variable_param_ranges:
         # lockdown_R0: [[0.7, 1.2], uniform]
         T_inc: [[4, 6], uniform]
@@ -25,17 +26,15 @@ fitting:
         T_inf_U: [[3, 7], uniform]
         T_recov_severe: [[10, 30], uniform]
         T_recov_fatal: [[15, 40], uniform]
-        d: [[0,0.1], uniform]
         beta: [[0,0.3], uniform]
+        d: [[0,1], uniform]
+        P_fatal: [[0, 0.1], uniform]
         I_D_hosp_ratio: [[0,3.0], uniform]
         I_U_hosp_ratio: [[0,5.0], uniform]
         E_hosp_ratio: [[0,3.0], uniform]
     default_params:
         N: 1.0e+7
         psi: 1.0
-        lockdown_date: 2020-03-25
-        lockdown_removal_date: 2020-08-30
-        P_fatal: 0.3
     fitting_method: bayes_opt
     fitting_method_params:
         num_evals: 1000
@@ -43,10 +42,11 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null # NOT IMPLEMENTED
-        end_date: null # NOT IMPLEMENTED
+        end_date: null
         train_period: 21
-        val_period: 14
+        val_period: 7
         test_period: 0 # NOT IMPLEMENTED
+        split_after_rolling: TRUE
     #Optimisation related parameters
     loss:
         loss_method: mape

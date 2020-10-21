@@ -75,11 +75,13 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         }
         print(smoothing['smoothing_description'])
      
+    import pdb; pdb.set_trace()
     rap = rolling_average_params
     if rolling_average:
         df_train, df_val, _ = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
             test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
+            split_after_rolling=split['split_after_rolling'],
             window_size=rap['window_size'], center=rap['center'], 
             win_type=rap['win_type'], min_periods=rap['min_periods'])
     else:
@@ -127,7 +129,9 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     # Initialise Optimiser
     optimiser = Optimiser()
     # Get the fixed params
-    default_params = optimiser.init_default_params(df_train, default_params, train_period=split['train_period'])
+    import pdb; pdb.set_trace()
+    default_params = optimiser.init_default_params(df_train, df_val, default_params, train_period=split['train_period'])
+    # import pdb; pdb.set_trace()
     # Get/create searchspace of variable paramms
     loss_indices = [-(split['train_period']), None]
     loss['loss_indices'] = loss_indices
@@ -135,9 +139,11 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges, fitting_method)
     args = {'df_train': df_train, 'default_params': default_params, 'variable_param_ranges':variable_param_ranges, 
             'model':model, 'fitting_method': fitting_method, **fitting_method_params, **split, **loss}
+            
     best_params, trials = getattr(optimiser, fitting_method)(**args)
     print('best parameters\n', best_params)
 
+    import pdb; pdb.set_trace()
     df_prediction = optimiser.solve({**best_params, **default_params}, 
                                     end_date=df_district.iloc[-1, :]['date'], 
                                     model=model)

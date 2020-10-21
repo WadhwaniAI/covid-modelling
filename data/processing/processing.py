@@ -114,7 +114,7 @@ def get_simulated_data_from_file(filename, data_format='new', **kwargs):
         df_result = df_result.dropna(subset=['date'], how='all')
 
     if data_format == 'old':
-        df_result = pd.read_csv(filename) 
+        df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
         
