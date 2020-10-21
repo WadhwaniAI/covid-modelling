@@ -32,9 +32,9 @@ class SimulatedDataLoader(BaseLoader):
                 if param == 'N':
                     continue
                 config['params'][param] = getattr(np.random, config['params'][param][1])(config['params'][param][0][0], config['params'][param][0][1])
-        ideal_params = copy.deepcopy(config['params'])
-        del ideal_params['N']
-        print ("parameters used to generate data:", ideal_params)
+        actual_params = copy.deepcopy(config['params'])
+        del actual_params['N']
+        print ("parameters used to generate data:", actual_params)
 
         model_params = config['params']
         model_params['starting_date'] = config['starting_date']
@@ -55,6 +55,5 @@ class SimulatedDataLoader(BaseLoader):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         df_result.to_csv(os.path.join(save_dir, config['output_file_name']))
-        # pd.Series((ideal_params)).to_csv(os.path.join(save_dir, 'params_'+config['output_file_name']))
-        pd.DataFrame([ideal_params]).to_csv(os.path.join(save_dir, 'params_'+config['output_file_name']), index=False)
-        return df_result, ideal_params 
+        pd.DataFrame([actual_params]).to_csv(os.path.join(save_dir, 'params_'+config['output_file_name']), index=False)
+        return {"data_frame": df_result, "actual_params": actual_params} 
