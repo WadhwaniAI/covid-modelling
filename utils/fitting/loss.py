@@ -71,16 +71,12 @@ class Loss_Calculator():
         # if method == 'mape':
         #     calculate = lambda x, y : self._calc_mape(x, y)
         if method == 'mape' :
-            # my code
-            # print("I AM HERE IN THE CALC LOSS DICT FUNCTION")
             calculate = lambda x, y, temporal_weights : self._calc_wape(x, y, temporal_weights)
         if method == 'mape_delta':
             calculate = lambda x, y: self._calc_mape_delta(x, y)
             
         losses = {}
         for compartment in self.columns:
-            # my code
-            # losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
             
             try:
                 losses[compartment] = calculate(df_prediction[compartment], df_true[compartment], df_data_weights[compartment])
@@ -92,19 +88,8 @@ class Loss_Calculator():
     def calc_loss(self, df_prediction, df_true, df_data_weights=None, method='rmse', 
                   which_compartments=['active', 'recovered', 'total', 'deceased'], 
                   loss_weights=[1, 1, 1, 1]):
-        '''
-        print('##############################################################')
-        print(df_data_weights)
-        print(df_prediction)
-        print(df_true)
-        print('##############################################################')
-        '''
+
         losses = self.calc_loss_dict(df_prediction, df_true, df_data_weights, method)
-        '''
-        print('##############################################################')
-        print(losses)
-        print('##############################################################')
-        '''
         
         loss = 0
         for i, compartment in enumerate(which_compartments):
