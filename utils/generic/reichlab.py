@@ -8,6 +8,12 @@ import os
 import copy
 import re
 
+"""
+Helper functions for processing different reichlab submissions, processing reichlab ground truth,
+Comparing reichlab models with gt, processing and formatting our (Wadhwani AI) submission, 
+comparing that with gt as well
+"""
+
 def get_list_of_models(date_of_submission, comp, reichlab_path='..', read_from_github=False):
     if read_from_github:
         reichlab_path = 'https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master'
@@ -128,47 +134,67 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
     return df_comb, df_mape, df_rank
 
 
-def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key_dict):
+def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key_dict, 
+                           use_as_point_forecast='ensemble_mean'):
     df_wiai_submission = pd.DataFrame(columns=df_all_submissions.columns)
     target_end_dates = pd.unique(df_all_submissions['target_end_date'])
 
+    # Loop across all locations
     for loc in predictions_dict.keys():
         df_loc_submission = pd.DataFrame(columns=df_all_submissions.columns)
 
+        # Loop across all percentiles
         for percentile in predictions_dict[loc]['m2']['forecasts'].keys():
             if isinstance(percentile, str):
-                if percentile == 'best':
+                # Skipping all point forecasts that are not what the user specified
+                if not percentile == use_as_point_forecast:
                     continue
-            df_forecast = predictions_dict[loc]['m2']['forecasts'][percentile].resample(
-                'W-Sat', label='right', origin='start', on='date').max()
-            df_forecast = df_forecast[df_forecast.index.isin(target_end_dates)]
-            df_forecast.drop(['date'], axis=1, inplace=True, errors='ignore')
-            df_forecast.reset_index(inplace=True)
+            # Loop across cumulative and deceased
+            for mode in ['cum', 'inc']:
+                df_forecast = copy.deepcopy(predictions_dict[loc]['m2']['forecasts'][percentile])
 
-            df_subm_d = copy.copy(df_forecast.loc[:, ['date', 'deceased']])
-            df_subm_d['target'] = pd.Series(
-                list(map(lambda x: f'{x+1} wk ahead cum death', np.arange(len(df_subm_d)))))
-            df_subm_t = copy.copy(df_forecast.loc[:, ['date', 'total']])
-            df_subm_t['target'] = pd.Series(
-                list(map(lambda x: f'{x+1} wk ahead cum case', np.arange(len(df_subm_t)))))
-            df_subm_d.rename({'date': 'target_end_date',
-                              'deceased': 'value'}, axis=1, inplace=True)
-            df_subm_t.rename({'date': 'target_end_date',
-                              'total': 'value'}, axis=1, inplace=True)
+                # Take diff for the forecasts (by default forecasts are cumulative)
+                if mode == 'inc':
+                    num_cols = df_forecast.select_dtypes(
+                        include=['int64', 'float64']).columns
+                    df_forecast.loc[:, num_cols] = df_forecast.loc[:, num_cols].diff()
+                    df_forecast.dropna(axis=0, how='any', inplace=True)
 
-            df_subm = pd.concat([df_subm_d, df_subm_t], ignore_index=True)
-            if isinstance(percentile, str):
-                df_subm['type'] = 'point'
-                df_subm['quantile'] = np.nan
-            else:
-                df_subm['type'] = 'quantile'
-                df_subm['quantile'] = percentile/100
-            df_subm['location'] = loc_name_to_key_dict[loc]
-            df_subm['model'] = 'Wadhwani_AI'
-            df_subm['forecast_date'] = datetime.combine(date.today(), 
-                                                        datetime.min.time())
-            df_loc_submission = pd.concat([df_loc_submission, df_subm], 
-                                          ignore_index=True)
+                # Aggregate the forecasts by a week (def of week : Sun-Sat)
+                df_forecast = df_forecast.resample(
+                    'W-Sat', label='right', origin='start', on='date').max()
+                # Only keep those forecasts that correspond to the forecasts others submitted
+                df_forecast = df_forecast[df_forecast.index.isin(target_end_dates)]
+                df_forecast.drop(['date'], axis=1, inplace=True, errors='ignore')
+                df_forecast.reset_index(inplace=True)
+
+                # Create forecasts for both deceased and total cases
+                df_subm_d = copy.copy(df_forecast.loc[:, ['date', 'deceased']])
+                df_subm_d['target'] = pd.Series(
+                    list(map(lambda x: f'{x+1} wk ahead {mode} death', np.arange(len(df_subm_d)))))
+                df_subm_t = copy.copy(df_forecast.loc[:, ['date', 'total']])
+                df_subm_t['target'] = pd.Series(
+                    list(map(lambda x: f'{x+1} wk ahead {mode} case', np.arange(len(df_subm_t)))))
+                # Rename Columns
+                df_subm_d.rename({'date': 'target_end_date',
+                                'deceased': 'value'}, axis=1, inplace=True)
+                df_subm_t.rename({'date': 'target_end_date',
+                                'total': 'value'}, axis=1, inplace=True)
+
+                # Create the type quantile  columns for all forecasts
+                df_subm = pd.concat([df_subm_d, df_subm_t], ignore_index=True)
+                if isinstance(percentile, str):
+                    df_subm['type'] = 'point'
+                    df_subm['quantile'] = np.nan
+                else:
+                    df_subm['type'] = 'quantile'
+                    df_subm['quantile'] = percentile/100
+                df_subm['location'] = loc_name_to_key_dict[loc]
+                df_subm['model'] = 'Wadhwani_AI'
+                df_subm['forecast_date'] = datetime.combine(date.today(), 
+                                                            datetime.min.time())
+                df_loc_submission = pd.concat([df_loc_submission, df_subm], 
+                                            ignore_index=True)
         df_wiai_submission = pd.concat([df_wiai_submission, df_loc_submission],
                                         ignore_index=True)
         print(f'{loc} done')
