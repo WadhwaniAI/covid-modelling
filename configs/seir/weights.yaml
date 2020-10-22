@@ -39,7 +39,7 @@ fitting:
         start_date: null
         end_date: null
         train_period: 15
-        val_period: 3
+        val_period: 5
         test_period: 0
     #Optimisation related parameters
     loss:
@@ -49,13 +49,13 @@ fitting:
     # Variable data smoothing
     data_weights:
         if_weights: TRUE
-        start_date: 2020-09-10
-        end_date: 2020-09-22
+        start_date: 2020-10-07
+        end_date: 2020-10-19
         weights:
             total: [0.5, 0.5, 0.25, 0.25, 0.2, 0.2, 1, 1, 1, 1, 1, 1.5, 1.5]
-            active: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-            recovered: [0.5, 0.5, 0.25, 0.25, 0.2, 0.2, 1, 1, 1, 1, 1, 1.5, 1.5]
-            deceased: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            active: [1.5, 1.5, 1.25, 1.25, 1.2, 1.2, 2, 2, 2, 2, 2, 2.5, 2.5]
+            recovered: [2.5, 2.5, 2.25, 2.25, 2.2, 2.2, 3, 3, 3, 3, 3, 3.5, 3.5]
+            deceased: [3.5, 3.5, 3.25, 3.25, 3.2, 3.2, 4, 4, 4, 4, 4, 4.5, 4.5]
 sensitivity:
     lockdown_R0: [[[0.5, 1.5], 101], total, null]
     I_hosp_ratio: [[[0, 1], 201], total, null]
