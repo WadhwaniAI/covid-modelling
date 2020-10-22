@@ -116,10 +116,15 @@ class MCUncertainty(Uncertainty):
         
         predictions = self.predictions_dict[self.which_fit]['trials_processed']['predictions']
         params = self.predictions_dict[self.which_fit]['trials_processed']['params']
+        
         df_district = self.predictions_dict[self.which_fit]['df_district']
+        df_data_weights_district = self.predictions_dict[self.which_fit]['df_data_weights_district']
+        
         df_train_nora = df_district.set_index('date').loc[
             self.predictions_dict[self.which_fit]['df_train']['date'], :].reset_index()
-        
+        df_data_weights_train = df_data_weights_district.set_index('date').loc[
+            self.predictions_dict[self.which_fit]['df_data_weights_train']['date'], :].reset_index()
+
         for key in ptile_dict.keys():
             deciles_forecast[key] = {}
             df_predictions = predictions[ptile_dict[key]]
@@ -128,7 +133,7 @@ class MCUncertainty(Uncertainty):
             deciles_forecast[key]['df_prediction'] = df_predictions
             deciles_forecast[key]['params'] =  params[ptile_dict[key]]
             deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
-                df_train_nora, None, df_predictions, train_period=7,
+                df_train_nora, None, df_predictions, df_data_weights_train, None, train_period=7,
                 which_compartments=self.loss_compartments)
         return deciles_forecast
 
@@ -183,13 +188,7 @@ class MCUncertainty(Uncertainty):
         Returns:
             float: optimal beta value
         """
-
         for key in variable_param_ranges.keys():
-            print(variable_param_ranges[key][1])
-            print(variable_param_ranges[key][0][0])
-            print(variable_param_ranges[key][0][1])
-            
-            
             variable_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
                 key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
 
