@@ -58,7 +58,7 @@ def run_single_config_end_to_end(config, wandb_config, run_name):
     predictions_dict['m2']['plots']['forecast_best'] = plot_forecast(
         predictions_dict,
         config['fitting']['data']['dataloading_params']['location_description'], 
-        error_bars=True
+        error_bars=False
     )
 
     predictions_dict['m1']['trials_processed'] = forecast_all_trials(
@@ -151,7 +151,7 @@ def perform_batch_runs(base_config_filename='us.yaml', username='sansiddh', outp
         print(f'Starting fitting, forecasting cycle for {state}, #{i+1}/{len(what_to_vary)}')
         try:
             predictions_dict[state] = run_single_config_end_to_end(
-                config, wandb_config, f'{state}-2')
+                config, wandb_config, f'{state}')
         except Exception as e:
             print(e)
         print(f'Finished cycle for {state}, #{i+1}/{len(what_to_vary)}')
