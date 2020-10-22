@@ -50,8 +50,8 @@ fitting:
     #Optimisation related parameters
     loss:
         loss_method: mape
-        loss_compartments: [total, active, recovered, deceased]
-        loss_weights: [0.25, 0.25, 0.25, 0.25]
+        loss_compartments: [deceased]
+        loss_weights: [1]
 sensitivity:
     lockdown_R0: [[[0.5, 1.5], 101], total, null]
     I_hosp_ratio: [[[0, 1], 201], total, null]
@@ -62,8 +62,8 @@ sensitivity:
 forecast:
     forecast_days: 45
     num_trials_to_plot: 10
-    plot_topk_trials_for_columns: [total, active]
-    plot_ptiles_for_columns: [total, active]
+    plot_topk_trials_for_columns: [deceased]
+    plot_ptiles_for_columns: [deceased]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
@@ -73,10 +73,10 @@ uncertainty:
             parallelise: FALSE
         variable_param_ranges:
             beta: [[0, 10], 101]
-        date_of_sorting_trials: 2020-09-30
+        date_of_sorting_trials: 2020-10-19
         sort_trials_by_column: total
         loss:
             loss_method: mape
-            loss_compartments: [total, active, recovered, deceased]
-            loss_weights: [0.25, 0.25, 0.25, 0.25]
+            loss_compartments: [deceased]
+            loss_weights: [1]
         percentiles: [1, 2.5, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 97.5, 99]
