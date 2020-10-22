@@ -114,6 +114,13 @@ class Optimiser():
             df_true_slice = df_true.iloc[loss_indices[0]:loss_indices[1], :]
             df_data_weights_slice = df_data_weights.iloc[loss_indices[0]:loss_indices[1], :]
 
+        '''
+        print('##############################################################')
+        print(df_true_slice)
+        print(df_data_weights_slice)
+        print('##############################################################')
+        '''
+
         if debug:
             import pdb; pdb.set_trace()
         df_prediction_slice.reset_index(inplace=True, drop=True)
@@ -153,17 +160,17 @@ class Optimiser():
         """
         observed_values = df_train.iloc[-train_period, :]
         start_date = observed_values['date'].date()
-        data_weights = df_data_weights_train.iloc[]
+        data_weights = df_data_weights_train.iloc[-train_period, :]
 
         extra_params = {
             'starting_date' : start_date,
-            'observed_values': observed_values
+            'observed_values': observed_values,
             'data_weights': data_weights
         }
 
         return {**default_params, **extra_params}
 
-    def gridsearch(self, df_train, default_params, variable_param_ranges, model=SEIRHD, loss_method='rmse',
+    def gridsearch(self, df_train, df_data_weights_train, default_params, variable_param_ranges, model=SEIRHD, loss_method='rmse',
                    loss_indices=[-20, -10], loss_compartments=['total'], debug=False):
         """Implements gridsearch based optimisation
 
@@ -200,7 +207,7 @@ class Optimiser():
             variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
 
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
-                                                 df_true=df_train, total_days=total_days, model=model,
+                                                 df_true=df_train, df_data_weights=df_train, total_days=total_days, model=model,
                                                  loss_method=loss_method, loss_indices=loss_indices,
                                                  loss_compartments=loss_compartments, debug=debug)
         
@@ -214,9 +221,8 @@ class Optimiser():
                     
         return loss_array, list_of_param_dicts
 
-    def bayes_opt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
-                  loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1], loss_temporal_weights = None,
-                  prior='uniform', algo=tpe, **kwargs):
+    def bayes_opt(self, df_train, df_data_weights_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
+                  loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],                prior='uniform', algo=tpe, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -245,11 +251,18 @@ class Optimiser():
             dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
         """
         total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
-        
+
+        '''
+        print('##############################################################')
+        print(df_train)
+        print(df_data_weights_train)
+        print('##############################################################')
+        '''
+
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
                                                  default_params=default_params, total_days=total_days,
                                                  loss_method=loss_method, loss_indices=loss_indices, 
-                                                 loss_weights=loss_weights, df_data_weights=df_data_weights,
+                                                 loss_weights=loss_weights, df_data_weights=df_data_weights_train,
                                                  df_true=df_train, loss_compartments=loss_compartments)
 
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')

@@ -148,6 +148,10 @@ class MCUncertainty(Uncertainty):
         # while df_district has no rolling average
         df_val = self.predictions_dict['m1']['df_district'].set_index('date') \
             .loc[self.predictions_dict['m1']['df_val']['date'],:]
+        
+        df_data_weights_val = self.predictions_dict['m1']['df_data_weights_district'].set_index('date') \
+            .loc[self.predictions_dict['m1']['df_data_weights_val']['date'],:]
+        
         beta_loss = np.exp(-beta*losses)
 
         predictions = self.predictions_dict['m1']['trials_processed']['predictions']
@@ -159,13 +163,14 @@ class MCUncertainty(Uncertainty):
         weighted_pred_df['date'] = predictions[0]['date']
         weighted_pred_df.set_index('date', inplace=True)
         weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
+        
         lc = Loss_Calculator()
         if return_dict:
-            return lc.calc_loss_dict(weighted_pred_df_loss, df_val, method = self.loss_method)
+            return lc.calc_loss_dict(weighted_pred_df_loss, df_val, df_data_weights_val, method = self.loss_method)
         if return_ensemble_mean_forecast:
             weighted_pred_df.reset_index(inplace=True)
             return weighted_pred_df
-        return lc.calc_loss(weighted_pred_df_loss, df_val, method = self.loss_method,
+        return lc.calc_loss(weighted_pred_df_loss, df_val, df_data_weights_val, method = self.loss_method,
                             which_compartments=allcols, loss_weights=self.loss_weights)
 
     def find_beta(self, variable_param_ranges, num_evals=1000):
@@ -178,7 +183,13 @@ class MCUncertainty(Uncertainty):
         Returns:
             float: optimal beta value
         """
+
         for key in variable_param_ranges.keys():
+            print(variable_param_ranges[key][1])
+            print(variable_param_ranges[key][0][0])
+            print(variable_param_ranges[key][0][1])
+            
+            
             variable_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
                 key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
 
