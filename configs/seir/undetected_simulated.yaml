@@ -19,11 +19,11 @@ fitting:
             2020-06-15: [null, deceased, total, TRUE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
-            center: FALSE
+            center: TRUE
             window_size: 7
             win_type: null
-            min_periods: 7
-            split_after_rolling: TRUE # NOT IMPLEMENTED
+            min_periods: 1
+            split_after_rolling: FALSE # NOT IMPLEMENTED
     #Choose Model and Ranges
     model: SEIR_Undetected_Testing
     variable_param_ranges:
