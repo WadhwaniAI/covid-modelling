@@ -19,7 +19,7 @@ class Loss_Calculator():
             y_pred = np.log(y_pred[y_true > 0])
         loss = np.sqrt(np.mean((y_true - y_pred)**2))
         return loss
-
+    '''
     def _calc_mape(self, y_pred, y_true):
         y_pred = np.array(y_pred)
         y_true = np.array(y_true)
@@ -30,8 +30,8 @@ class Loss_Calculator():
         ape = np.abs((y_true - y_pred + 0) / y_true) *  100
         loss = np.mean(ape)
         return loss
-
-    def _calc_wape(self, y_pred, y_true, temporal_weights):
+    '''
+    def _calc_mape(self, y_pred, y_true, temporal_weights):
         
         y_pred = np.array(y_pred)
         y_true = np.array(y_true)
@@ -71,9 +71,9 @@ class Loss_Calculator():
         # if method == 'mape':
         #     calculate = lambda x, y : self._calc_mape(x, y)
         if method == 'mape' :
-            calculate = lambda x, y, temporal_weights : self._calc_wape(x, y, temporal_weights)
+            calculate = lambda x, y, temporal_weights : self._calc_mape(x, y, temporal_weights)
         if method == 'mape_delta':
-            calculate = lambda x, y: self._calc_mape_delta(x, y)
+            calculate = lambda x, y, temporal_weights : self._calc_mape_delta(x, y, temporal_weights)
             
         losses = {}
         for compartment in self.columns:
