@@ -108,23 +108,12 @@ def run_cycle(observed_dataframes, weights_dataframes, data, model, variable_par
     Returns:
         dict -- Dict of all predictions
     """
-    # my code
-    # print(loss)
 
     df_district, df_train, df_val, df_train_nora, df_val_nora = [
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
-    print('URGENTURGENT')
-    print(weights_dataframes)
+
     df_data_weights_train, df_data_weights_val, df_data_weights_test, df_data_weights_district = [
         weights_dataframes.get(k) for k in weights_dataframes.keys()]
-
-    '''
-    print('##############################################################')
-    print(weights_dataframes)
-    print(df_train)
-    print(df_data_weights_train)
-    print('##############################################################')
-    '''
 
     # Initialise Optimiser
     optimiser = Optimiser()

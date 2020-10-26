@@ -114,13 +114,6 @@ class Optimiser():
             df_true_slice = df_true.iloc[loss_indices[0]:loss_indices[1], :]
             df_data_weights_slice = df_data_weights.iloc[loss_indices[0]:loss_indices[1], :]
 
-        '''
-        print('##############################################################')
-        print(df_true_slice)
-        print(df_data_weights_slice)
-        print('##############################################################')
-        '''
-
         if debug:
             import pdb; pdb.set_trace()
         df_prediction_slice.reset_index(inplace=True, drop=True)
@@ -251,13 +244,6 @@ class Optimiser():
             dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
         """
         total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
-
-        '''
-        print('##############################################################')
-        print(df_train)
-        print(df_data_weights_train)
-        print('##############################################################')
-        '''
 
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
                                                  default_params=default_params, total_days=total_days,
