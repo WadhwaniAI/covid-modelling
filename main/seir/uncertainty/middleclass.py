@@ -2,22 +2,26 @@
 import os
 import sys
 import json
+import itertools
 import datetime
 import copy
 import numpy as np
 import pandas as pd
 from functools import partial
 from hyperopt import fmin, tpe, hp, Trials
+from tqdm import tqdm
+from joblib import Parallel, delayed
 
 sys.path.append('../../../')
 from main.seir.forecast import get_forecast
+from main.seir.optimiser import Optimiser
 from .uncertainty_base import Uncertainty
 from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 
 class MCUncertainty(Uncertainty):
-    def __init__(self, predictions_dict, num_evals, variable_param_ranges, which_fit, date_of_sorting_trials, 
-                 sort_trials_by_column, loss, percentiles):
+    def __init__(self, predictions_dict, variable_param_ranges, fitting_method, fitting_method_params, which_fit,
+                 date_of_sorting_trials, sort_trials_by_column, loss, percentiles):
         """
         Initializes uncertainty object, finds beta for distribution
 
@@ -33,7 +37,8 @@ class MCUncertainty(Uncertainty):
         for key in loss:
             setattr(self, key, loss[key])
         self.percentiles = percentiles
-        self.beta = self.find_beta(variable_param_ranges, num_evals)
+        self.beta, self.dict_of_trials = self.find_beta(
+            fitting_method, fitting_method_params, variable_param_ranges)
         self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
         self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta}, return_dict=False,
                                                               return_ensemble_mean_forecast=True)                                                      
@@ -132,17 +137,17 @@ class MCUncertainty(Uncertainty):
                 which_compartments=self.loss_compartments)
         return deciles_forecast
 
-    def avg_weighted_error(self, hp, return_dict=False, return_ensemble_mean_forecast=False):
+    def avg_weighted_error(self, params, return_dict=False, return_ensemble_mean_forecast=False):
         """
         Loss function to optimize beta
 
         Args:
-            hp (dict): {'beta': float}
+            params (dict): {'beta': float}
 
         Returns:
             float: average relative error calculated over trials and a val set
         """    
-        beta = hp['beta']
+        beta = params['beta']
         losses = self.predictions_dict['m1']['trials_processed']['losses']
         # This is done as rolling average on df_val has already been calculated, 
         # while df_district has no rolling average
@@ -151,7 +156,8 @@ class MCUncertainty(Uncertainty):
         beta_loss = np.exp(-beta*losses)
 
         predictions = self.predictions_dict['m1']['trials_processed']['predictions']
-        allcols = self.loss_compartments
+        loss_cols = self.loss_compartments
+        allcols = ['total', 'active', 'recovered', 'deceased']
         predictions_stacked = np.array([df.loc[:, allcols].to_numpy() for df in predictions])
         predictions_stacked_weighted_by_beta = beta_loss[:, None, None] * predictions_stacked / beta_loss.sum()
         weighted_pred = np.sum(predictions_stacked_weighted_by_beta, axis=0)
@@ -161,14 +167,14 @@ class MCUncertainty(Uncertainty):
         weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
         lc = Loss_Calculator()
         if return_dict:
-            return lc.calc_loss_dict(weighted_pred_df_loss, df_val, method = self.loss_method)
+            return lc.calc_loss_dict(weighted_pred_df_loss, df_val, method=self.loss_method)
         if return_ensemble_mean_forecast:
             weighted_pred_df.reset_index(inplace=True)
             return weighted_pred_df
-        return lc.calc_loss(weighted_pred_df_loss, df_val, method = self.loss_method,
-                            which_compartments=allcols, loss_weights=self.loss_weights)
+        return lc.calc_loss(weighted_pred_df_loss, df_val, method=self.loss_method,
+                            which_compartments=loss_cols, loss_weights=self.loss_weights)
 
-    def find_beta(self, variable_param_ranges, num_evals=1000):
+    def find_beta(self, fitting_method, fitting_method_params, variable_param_ranges):
         """
         Runs a search over m1 trials to find best beta for a probability distro
 
@@ -178,19 +184,32 @@ class MCUncertainty(Uncertainty):
         Returns:
             float: optimal beta value
         """
-        for key in variable_param_ranges.keys():
-            variable_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
-                key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
+        op = Optimiser()
+        formatted_searchspace = op.format_variable_param_ranges(
+            variable_param_ranges, fitting_method)
 
-        trials = Trials()
-        best = fmin(self.avg_weighted_error,
-                    space=variable_param_ranges,
-                    algo=tpe.suggest,
-                    max_evals=num_evals,
-                    trials=trials)
+        if fitting_method == 'bayes_opt':
+            trials = Trials()
+            best = fmin(self.avg_weighted_error,
+                        space=formatted_searchspace,
+                        algo=tpe.suggest,
+                        max_evals=fitting_method_params['num_evals'],
+                        trials=trials)
 
-        self.beta = best['beta']
-        return self.beta
+            return best['beta'], trials
+        elif fitting_method == 'gridsearch':
+            if fitting_method_params['parallelise']:
+                loss_values = Parallel(n_jobs=40)(delayed(self.avg_weighted_error)(
+                    {'beta': beta_value}) for beta_value in tqdm(formatted_searchspace['beta']))
+            else:
+                loss_values = [self.avg_weighted_error({'beta': beta_value})
+                               for beta_value in tqdm(formatted_searchspace['beta'])]
+            min_loss, best_beta = (np.min(loss_values), 
+                                   formatted_searchspace['beta'][np.argmin(loss_values)])
+            dict_of_trials = dict(zip(formatted_searchspace['beta'], loss_values))
+            print(f'Best beta - {best_beta}')
+            print(f'Min Loss - {min_loss}')
+            return best_beta, dict_of_trials
 
     def get_ptiles_idx(self, percentiles=None):
         """

@@ -14,7 +14,6 @@ from joblib import Parallel, delayed
 import copy
 
 from data.processing.whatifs import scale_up_acc_to_testing
-from main.seir.fitting import *
 from models.seir import SEIRHD
 from main.seir.optimiser import Optimiser
 
