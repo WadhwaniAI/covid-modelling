@@ -51,9 +51,18 @@ class SimulatedDataLoader(BaseLoader):
         
         solver = eval(config['model'])(**model_params)
         if (config['total_days']):
-            df_result = solver.predict(total_days=config['total_days'])
+            df_result = solver.predict(total_days=config['total_days']-1)
         else:
             df_result = solver.predict()
+        
+        import pdb; pdb.set_trace()
+        if(config['include_tests']):
+            tests_done = eval(config['tests_done'])
+            try:
+                df_result['tested'] = tests_done
+            except:
+                print("Mismatch in length of total days and tests done array")
+                raise
 
         save_dir = '../../data/data/simulated_data/'    
         if not os.path.exists(save_dir):
