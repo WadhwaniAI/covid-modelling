@@ -65,6 +65,8 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
 
             df_prediction = df[['date', which_forecast]]
             df_prediction.columns = [x[1] for x in df_prediction.columns]
+            numeric_cols = ['total', 'active', 'recovered', 'deceased']
+            df_prediction.loc[:, numeric_cols] = df_prediction.loc[:, numeric_cols].apply(pd.to_numeric)
         else:
             raise ValueError('Please give legal fname_format : old_output or new_deciles')
     elif preds_source == 'pickle':
