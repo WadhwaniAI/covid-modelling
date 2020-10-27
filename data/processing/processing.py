@@ -125,9 +125,9 @@ def generate_simulated_data(**dataloading_params):
     df_result, params = loader.load_data(**config)
         
     for col in df_result.columns:
-        if col in ['active', 'total', 'recovered', 'deceased']:
+        if col in ['active', 'total', 'recovered', 'deceased','tested']:
             df_result[col] = df_result[col].astype('int64')    
-    return {"data_frame": df_result[['date', 'active', 'total', 'recovered', 'deceased']], 'actual_params': params}
+    return {"data_frame": df_result, 'actual_params': params}
 
 #TODO add support of adding 0s column for the ones which don't exist
 def get_simulated_data_from_file(filename, data_format='new', **kwargs):

@@ -48,6 +48,16 @@ class SimulatedDataLoader(BaseLoader):
         observed_values['total'] = sum(observed_values.values())
         observed_values['date'] =  config['starting_date']
         model_params['observed_values'] = pd.DataFrame.from_dict([observed_values]).iloc[0,:]
+        import pdb; pdb.set_trace()
+        
+        if(config['include_tests']):
+            simulation_dates = [config['starting_date']+pd.Timedelta(days=i) for i in range(config['total_days'])]
+            tests_done = eval(config['tests_done'])
+            try:
+                model_params['daily_testing'] = pd.DataFrame(data=tests_done,index=simulation_dates)
+            except:
+                print("Mismatch in length of total days and tests done array")
+                raise
         
         solver = eval(config['model'])(**model_params)
         if (config['total_days']):
@@ -57,7 +67,6 @@ class SimulatedDataLoader(BaseLoader):
         
         import pdb; pdb.set_trace()
         if(config['include_tests']):
-            tests_done = eval(config['tests_done'])
             try:
                 df_result['tested'] = tests_done
             except:

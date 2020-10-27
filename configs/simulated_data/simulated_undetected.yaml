@@ -5,9 +5,12 @@ initial_values:
     recovered: 95000
     deceased: 7500
     active: 20000
+include_tests: True
+tests_done: ‘[10000 for i in range(50)]’
+fix_params: True
 params:
     N: 1.0e+7
-    beta: 0.211 
+    beta: 0.211
     T_inc: 5
     T_inf_D: 3.3
     T_inf_U: 5.5
@@ -19,3 +22,4 @@ params:
     I_D_hosp_ratio: 2
     I_U_hosp_ratio: 3
     psi: 1
+output_file_name: undetected.csv
