@@ -1,5 +1,5 @@
 model: SEIRHD
-starting_date: 2020-07-12
+starting_date: 2020-09-16
 total_days: 50
 initial_values:
     recovered: 95000
