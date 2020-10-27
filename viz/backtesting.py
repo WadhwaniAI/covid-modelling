@@ -95,9 +95,9 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
 
 
     if separate_compartments:
-        fig, axs = plt.subplots(figsize=(18, 12), nrows=2, ncols=2)
+        fig, axs = plt.subplots(figsize=(21, 12), nrows=2, ncols=2)
     else:
-        fig, ax = plt.subplots(figsize=(12, 12))
+        fig, ax = plt.subplots(figsize=(14, 12))
 
     for i, compartment in enumerate(compartments['base']):
         if separate_compartments:
@@ -124,8 +124,8 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
 
     fig.suptitle(
         f'Predictions of {which_forecast} vs Ground Truth (Unseen Data)')
-    plt.tight_layout()
-
+    fig.subplots_adjust(top=0.96)
+    return fig, df_true.iloc[train_period:, :], df_prediction.iloc[train_period-1:, :]
 
 def plot_backtest(results, data, dist, which_compartments=Columns.which_compartments(), 
                   scoring='mape', dtp=None, axis_name='No. People', savepath=None):
