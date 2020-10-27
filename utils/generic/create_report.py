@@ -39,8 +39,8 @@ def _save_trials(m1_dict, m2_dict, ROOT_DIR):
 def _create_md_file(predictions_dict, config, ROOT_DIR):
     fitting_date = predictions_dict['fitting_date']
     data_last_date = predictions_dict['m1']['data_last_date']
-    state = config['fitting']['data']['dataloading_params']['region']
-    dist = config['fitting']['data']['dataloading_params']['sub_region']
+    state = config['fitting']['data']['dataloading_params']['state']
+    dist = config['fitting']['data']['dataloading_params']['district']
     dist = '' if dist is None else dist
     filename = os.path.join(ROOT_DIR, f'{state.title()}-{dist.title()}_report_{fitting_date}')
     mdFile = MdUtils(file_name=filename, title=f'{dist.title()} Fits [Based on data until {data_last_date}]')
