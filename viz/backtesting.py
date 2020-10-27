@@ -17,38 +17,77 @@ from data.processing.processing import get_data
 from utils.generic.enums.columns import *
 
 
-def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_format='1', filename=None, 
-                       predictions_dict=None, which_forecast=80, truncate_pretrain_data=False, 
+def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_format='old_output', filename=None, 
+                       predictions_dict=None, which_forecast=80, truncate_plotting_range=False,
                        separate_compartments=False):
     
     # Getting gt data
     dataloading_params = {'state': 'Maharashtra', 'district': 'Mumbai'}
     df_true = get_data(gt_data_source, dataloading_params)
     if preds_source == 'filename':
+        df = pd.read_csv(filename)
         if fname_format == 'old_output':
-            pass
+            cols_to_delete = [x for x in df.columns if ('max' in x) or ('min' in x)]
+            df = df.drop(cols_to_delete, axis=1)
+            df = df.drop(['current_active', 'current_icu', 'current_ventilator',
+                          'icu_mean', 'hospitalized_mean'], axis=1)
+            df.rename({'current_hospitalized': 'current_active'}, axis=1, inplace=True)
+            df.columns = [x if 'current' not in x else x.replace(
+                'current', 'true') for x in df.columns]
+            df.columns = [x if 'mean' not in x else 'pred_' +
+                          x.replace('_mean', '') for x in df.columns]
+
+
+            df_prediction = df[df['which_forecast'] == str(float(which_forecast))]
+            predicted_cols = [x for x in df_prediction.columns if 'pred_' in x]
+            true_cols = [x for x in df_prediction.columns if 'true_' in x]
+            df_prediction = df_prediction.dropna(subset=predicted_cols, how='any', axis=0)
+            df_prediction = df_prediction.drop(true_cols, axis=1)
+            df_prediction = df_prediction.rename({'predictionDate': 'date'}, axis=1)
+            df_prediction['date'] = pd.to_datetime(df_prediction['date'], format='%Y-%m-%d')
+            df_prediction.columns = [x.replace('pred_', '') for x in df_prediction.columns]
+
+
         elif fname_format == 'new_deciles':
-            pass
+            multi_index = list(zip(df.loc[[0, 2], :].to_numpy().tolist()[0], 
+                                   df.loc[[0, 2], :].to_numpy().tolist()[1]))
+            multi_index[0] = ('date', 'date')
+            for i, (percentile, column) in enumerate(multi_index):
+                if column == 'total cases':
+                    multi_index[i] = (percentile, 'total')
+                if percentile != 'date':
+                    multi_index[i] = (float(percentile), multi_index[i][1])
+            df.columns = pd.MultiIndex.from_tuples(multi_index)
+            df.drop([0, 1, 2], axis=0, inplace=True)
+            df.reset_index(inplace=True, drop=True)
+            df.loc[:, ('date', 'date')] = pd.to_datetime(df['date']['date'], 
+                                                         format='%d/%m/%y')
+
+            df_prediction = df[['date', which_forecast]]
+            df_prediction.columns = [x[1] for x in df_prediction.columns]
         else:
             raise ValueError('Please give legal fname_format : old_output or new_deciles')
     elif preds_source == 'pickle':
         if predictions_dict is None:
             raise ValueError('Please give a predictions_dict input, current input is None')
-        
+
         df_prediction = copy.copy(
             predictions_dict['m2']['forecasts'][which_forecast])
         df_train = copy.copy(predictions_dict['m2']['df_train'])
         train_period = predictions_dict['m2']['run_params']['split']['train_period']
-        if truncate_pretrain_data:
-            df_prediction = df_prediction.loc[(df_prediction['date'] > df_train.iloc[-train_period, :]['date']) &
-                                            (df_prediction['date'] <= df_true.iloc[-1, :]['date'])]
-            df_true = df_true.loc[df_true['date'] >
-                                df_train.iloc[-train_period, :]['date']]
-            df_prediction.reset_index(inplace=True, drop=True)
-            df_true.reset_index(inplace=True, drop=True)
-
     else:
         raise ValueError('Please give legal preds_source : either filename or pickle')
+
+    if truncate_plotting_range:
+        df_prediction = df_prediction.loc[(
+            df_prediction['date'] <= df_true.iloc[-1, :]['date'])]
+        df_true = df_true.loc[df_true['date']
+                              >= df_prediction.iloc[0, :]['date']]
+        df_true = df_true.loc[df_true['date']
+                              <= df_prediction.iloc[-1, :]['date']]
+        df_prediction.reset_index(inplace=True, drop=True)
+        df_true.reset_index(inplace=True, drop=True)
+
 
     if separate_compartments:
         fig, axs = plt.subplots(figsize=(18, 12), nrows=2, ncols=2)
@@ -70,10 +109,10 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
     else:
         iterable_axes = [ax]
     for i, ax in enumerate(iterable_axes):
-        ax.axvline(x=df_train.iloc[-train_period, :]['date'],
-                   ls=':', color='brown', label='Train starts')
-        ax.axvline(x=df_train.iloc[-1, :]['date'], ls=':',
-                   color='black', label='Last data point seen by model')
+        # ax.axvline(x=df_train.iloc[-train_period, :]['date'],
+        #            ls=':', color='brown', label='Train starts')
+        # ax.axvline(x=df_train.iloc[-1, :]['date'], ls=':',
+        #            color='black', label='Last data point seen by model')
         axis_formatter(ax, None, custom_legend=False)
 
     fig.suptitle(
