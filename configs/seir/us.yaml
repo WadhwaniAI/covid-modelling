@@ -5,17 +5,11 @@ fitting:
         stratified_data: FALSE
         dataloading_params:
             dataframe: us_states
-            region: Colorado
+            region: Wyoming
             sub_region: null
         smooth_jump: FALSE
         smooth_jump_params:
-            2020-05-28: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-14: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
-            2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
-            2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
+            2020-09-15: [2020-08-22, deceased, active, FALSE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
             center: TRUE
@@ -43,7 +37,7 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-09-19
+        end_date: 2020-09-26
         train_period: 21
         val_period: 4
         test_period: 0
