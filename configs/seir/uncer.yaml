@@ -7,7 +7,7 @@ fitting:
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
-        smooth_jump: TRUE
+        smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
@@ -41,16 +41,16 @@ fitting:
 
     fitting_method_params:
         proposal_sigmas:
-            lockdown_R0: 2
-            T_inc: 3
-            T_inf: 3
-            T_recov: 5
-            T_recov_fatal: 5
-            P_fatal: 1
-            E_hosp_ratio: 1
-            I_hosp_ratio: 1
-            sigma: 1
-        num_evals: 100
+            lockdown_R0: 0.02
+            T_inc: 0.1
+            T_inf: 0.05
+            T_recov: .5
+            T_recov_fatal: 2.5
+            P_fatal: 0.005
+            E_hosp_ratio: .05
+            I_hosp_ratio: .05
+            sigma: .02
+        num_evals: 1000
         algo: gaussian
         n_chains: 2
     #Choose Fitting Periods and num evaluations

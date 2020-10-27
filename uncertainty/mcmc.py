@@ -7,7 +7,7 @@ import numpy as np
 from joblib import delayed, Parallel
 from scipy.stats import poisson
 from tqdm import tqdm
-
+import copy
 from data.processing.processing import get_data
 from uncertainty.mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
     avg_sum_multiple_chains, get_state, get_formatted_trials
@@ -157,6 +157,7 @@ class MCMC(object):
         for key in self.prior_ranges:
             theta[key] = np.random.uniform(float(self.prior_ranges[key][0][0]), self.prior_ranges[key][0][1])
             print(theta[key])
+        self.oldLL = self._log_likelihood(theta)
         return theta
 
     def _proposal(self, theta_old):
@@ -199,7 +200,7 @@ class MCMC(object):
             OrderedDict: dictionary of newly proposed param-value pairs.
         """
         theta_new = OrderedDict()
-        
+        multiplier = 2
         for param in theta_old:
 
             old_value = theta_old[param]
@@ -209,7 +210,7 @@ class MCMC(object):
             #print(lower_bound, upper_bound)
             while new_value == None:
                 #Gaussian proposal
-                new_value = np.random.normal(loc = old_value, scale = self.proposal_sigmas[param])
+                new_value = np.random.normal(loc = old_value, scale = multiplier*self.proposal_sigmas[param])
                 # new_value = np.random.normal(loc=np.exp(old_value), scale=np.exp((self.proposal_sigmas[param])))
                 if new_value < lower_bound or new_value > upper_bound:
                     new_value = None
@@ -231,7 +232,7 @@ class MCMC(object):
             float: gaussian log-likelihood of the data.
         """
         N = len(true)
-        ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (np.sum(((true - pred) ** 2) / (2 * sigma ** 2)))
+        ll = - (np.sum((((true - pred)/N) ** 2) / (2 * sigma ** 2)))
         return ll
 
     def _poisson_log_likelihood(self, true, pred, *ignored):
@@ -261,7 +262,7 @@ class MCMC(object):
         ll = 0
         params_dict = {**theta, **self._default_params}
         df_prediction = self._optimiser.solve(params_dict,end_date = self.df_train[-1:]['date'].item())
-        sigma = theta['sigma']
+        sigma = 400
 
 
         for compartment in self.compartments:
@@ -305,13 +306,22 @@ class MCMC(object):
             bool: whether or not to accept the new parameter set.
         """
         x_new = self._log_likelihood(theta_new)
-        x_old = self._log_likelihood(theta_old)
+        x_old = self.oldLL
         
         if (x_new) > (x_old):
+            self.optimized+=1
             return True
         else:
             x = np.random.uniform(0, 1)
-            return (x < np.exp(x_new - x_old))
+            LLdiff = x_new - x_old
+            alpha = np.exp(x_new - x_old)
+            # print("THe log-likelihood difference is ",LLdiff)
+            # print("The exploring probability is",alpha)
+            accept_bool = x < np.exp(x_new - x_old)
+            # print("Did we choose this sample",accept_bool)
+            if accept_bool :
+                self.explored+=1
+            return accept_bool
 
     def _metropolis(self):
         """
@@ -324,17 +334,24 @@ class MCMC(object):
         accepted = [theta]
         rejected = list()
         A = 0
+        self.explored =0
+        self.optimized = 0
         for i in tqdm(range(self.iters)):
 
-            theta_new = self.exp_proposal(theta)
+            theta_new = self.Gauss_proposal(theta)
             
             if self._accept(theta, theta_new):
+                self.oldLL = self._log_likelihood(theta_new)
                 theta = theta_new
                 A += 1
             else:
                 rejected.append(theta_new)
+            # if i == 20:
+            #     import pdb; pdb.set_trace()
             accepted.append(theta)
         print("The acceptance ratio is --------> ",A / self.iters )
+        print("The explored steps are --------> ",self.explored )
+        print("The optimized steps are --------> ",self.optimized )
         #Confirm whether this is the correct implementation of acceptance ratio
         return accepted, rejected
 
