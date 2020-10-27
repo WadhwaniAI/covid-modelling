@@ -73,6 +73,7 @@ class SEIR_Undetected_Testing(SEIR):
         input_args['t_params'] = t_params
         input_args['I_hosp_ratio'] = I_D_hosp_ratio + I_U_hosp_ratio
         self.daily_tests = input_args['kwargs']['daily_testing'] / N 
+        print (self.daily_tests)
         del input_args['kwargs']
         super().__init__(**input_args)
 
@@ -107,6 +108,7 @@ class SEIR_Undetected_Testing(SEIR):
         S, E, I_D, I_U, P_U, R_severe, R_fatal, C, D = y
 
         # Init derivative vector
+        
         dydt = np.zeros(y.shape)
         try:
             tests_done = self.daily_tests[self.starting_date + pd.Timedelta(days=max(1,math.ceil(t)))]

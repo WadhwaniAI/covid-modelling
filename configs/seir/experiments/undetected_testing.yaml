@@ -4,8 +4,8 @@ fitting:
         data_source: simulated
         stratified_data: FALSE
         dataloading_params:
-            state: Delhi
-            district: Delhi
+            state: Maharashtra
+            district: Mumbai
             use_dataframe: data_all
             generate: TRUE
             config_file: undetected_testing_fixed.yaml

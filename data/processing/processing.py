@@ -125,7 +125,7 @@ def generate_simulated_data(**dataloading_params):
     df_result, params = loader.load_data(**config)
         
     for col in df_result.columns:
-        if col in ['active', 'total', 'recovered', 'deceased']:
+        if col in ['active', 'total', 'recovered', 'deceased','tested']:
             df_result[col] = df_result[col].astype('int64')    
     return {"data_frame": df_result, 'actual_params': params}
 
