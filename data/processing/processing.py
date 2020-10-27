@@ -6,8 +6,9 @@ import os
 import pickle
 import datetime
 from collections import defaultdict
+import yaml
 
-from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoader, CovidTrackingLoader
+from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoader, CovidTrackingLoader, SimulatedDataLoader
 
 
 def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
@@ -71,17 +72,23 @@ def get_data(data_source, dataloading_params):
        
     """
     if data_source == 'covid19india':
-        return get_data_from_tracker(**dataloading_params)
+        return {"data_frame": get_data_from_tracker(**dataloading_params)}
     if data_source == 'athena':
-        return get_custom_data_from_db(**dataloading_params)
+        return {"data_frame": get_custom_data_from_db(**dataloading_params)}
     if data_source == 'jhu':
-        return get_data_from_jhu(**dataloading_params)
+        return {"data_frame": get_data_from_jhu(**dataloading_params)}
     if data_source == 'nyt':
-        return get_data_from_ny_times(**dataloading_params)
+        return {"data_frame": get_data_from_ny_times(**dataloading_params)}
     if data_source == 'covid_tracking':
-        return get_data_from_covid_tracking(**dataloading_params)
+        return {"data_frame": get_data_from_covid_tracking(**dataloading_params)}
     if data_source == 'filename':
-        return get_custom_data_from_file(**dataloading_params)
+        return {"data_frame": get_custom_data_from_file(**dataloading_params)}
+    if data_source == 'simulated':
+        if (dataloading_params['generate']):
+            data_frame, ideal_params = generate_simulated_data(**dataloading_params)
+        else:
+            data_frame, ideal_params = get_simulated_data_from_file(**dataloading_params)
+        return {"data_frame": data_frame, "ideal_params": ideal_params}
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
@@ -98,7 +105,44 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_dat
         if col in ['active', 'total', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
     return df_result
+
+def generate_simulated_data(**dataloading_params):
+    """generates simulated data using the input params in config file
+    Keyword Arguments
+    -----------------
+        configfile {str} -- Name of config file (located at '../../configs/simulated_data/') required to generste the simulated data
     
+    Returns
+    -------
+        pd.DataFrame -- dataframe of cases for a particular state, district with 5 columns : 
+            ['date', 'total', 'active', 'deceased', 'recovered']
+    """
+
+    with open(os.path.join("../../configs/simulated_data/", dataloading_params['config_file'])) as configfile:
+        config = yaml.load(configfile, Loader=yaml.SafeLoader)
+
+    loader = SimulatedDataLoader()
+    df_result, params = loader.load_data(**config)
+
+    for col in df_result.columns:
+        if col in ['active', 'total', 'recovered', 'deceased']:
+            df_result[col] = df_result[col].astype('int64')    
+    return df_result[['date', 'active', 'total', 'recovered', 'deceased']], params
+
+#TODO add support of adding 0s column for the ones which don't exist
+def get_simulated_data_from_file(filename, params_filename=None, **kwargs):
+    params = {}
+    if params_filename:
+        params = pd.read_csv(params_filename).iloc[0,:].to_dict()
+    df_result = pd.read_csv(filename) 
+    df_result['date'] = pd.to_datetime(df_result['date'])
+    df_result.loc[:, ['total', 'active', 'recovered', 'deceased']] = df_result[[
+        'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
+    for col in df_result.columns:
+        if col in ['active', 'total', 'recovered', 'deceased']:
+            df_result[col] = df_result[col].astype('int64')
+    return df_result[['date', 'active', 'total', 'recovered', 'deceased']], params
+
 #TODO add support of adding 0s column for the ones which don't exist
 def get_custom_data_from_file(filename, data_format='new', **kwargs):
     if data_format == 'new':
