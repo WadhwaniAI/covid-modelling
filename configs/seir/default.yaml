@@ -7,7 +7,7 @@ fitting:
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
-        smooth_jump: TRUE
+        smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
@@ -44,7 +44,7 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-08-31
+        end_date: 2020-10-26
         train_period: 21
         val_period: 7
         test_period: 0
@@ -72,7 +72,7 @@ uncertainty:
         which_fit: m1
         variable_param_ranges:
             beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2020-09-30
+        date_of_sorting_trials: 2020-10-26
         sort_trials_by_column: total
         loss:
             loss_method: mape
