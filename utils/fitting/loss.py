@@ -7,10 +7,20 @@ class Loss_Calculator():
 
     def __init__(self):
       self.columns = ['active', 'recovered', 'deceased', 'total', 
-                      'asymptomatic', 'symptomatic', 'critical', 'ccc2', 'dchc', 'dch',
+                      'asymptomatic', 'symptomatic', 'critical',
                       'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator']
 
     def _calc_rmse(self, y_pred, y_true, log=False):
+        """Calculate RMSE Loss
+
+        Args:
+            y_pred (np.array): predicted array
+            y_true (np.array): true array
+            log (bool, optional): If true, computes log rmse. Defaults to False.
+
+        Returns:
+            float: RMSE loss
+        """
         if log:
             y_true = np.log(y_true[y_true > 0])
             y_pred = np.log(y_pred[y_true > 0])
@@ -18,6 +28,15 @@ class Loss_Calculator():
         return loss
 
     def _calc_mape(self, y_pred, y_true):
+        """Calculate MAPE loss
+
+        Args:
+            y_pred (np.array): predicted array
+            y_true (np.array): GT array
+
+        Returns:
+            float: MAPE loss
+        """
         y_pred = y_pred[y_true != 0]
         y_true = y_true[y_true != 0]
 
@@ -26,6 +45,16 @@ class Loss_Calculator():
         return loss
 
     def calc_loss_dict(self, df_prediction, df_true, method='rmse'):
+        """Caclculates dict of losses for each compartment using the method specified
+
+        Args:
+            df_prediction (pd.DataFrame): prediction dataframe
+            df_true (pd.DataFrame): gt dataframe
+            method (str, optional): Loss method. Defaults to 'rmse'.
+
+        Returns:
+            dict: dict of loss values {compartment : loss_value}
+        """
         if method == 'rmse':
             calculate = lambda x, y : self._calc_rmse(x, y)
         if method == 'rmse_log':
@@ -43,6 +72,19 @@ class Loss_Calculator():
 
     def calc_loss(self, df_prediction, df_true, method='rmse', 
                   which_compartments=['active', 'recovered', 'total', 'deceased'], loss_weights=[1, 1, 1, 1]):
+        """Calculates loss using specified method, averaged across specified compartments using specified weights
+
+        Args:
+            df_prediction (pd.DataFrame): prediction dataframe
+            df_true (pd.DataFrame): gt dataframe
+            method (str, optional): loss method. Defaults to 'rmse'.
+            which_compartments (list, optional): Compartments to calculate loss on.
+            Defaults to ['active', 'recovered', 'total', 'deceased'].
+            loss_weights (list, optional): Weights for corresponding compartments. Defaults to [1, 1, 1, 1].
+
+        Returns:
+            float: loss value
+        """
         losses = self.calc_loss_dict(df_prediction, df_true, method)
         loss = 0
         for i, compartment in enumerate(which_compartments):
@@ -69,7 +111,7 @@ class Loss_Calculator():
         return err
 
     def create_loss_dataframe_region(self, df_train, df_val, df_prediction, train_period, 
-                       which_compartments=['active', 'total']):
+                                     which_compartments=['active', 'total']):
         """Helper function for calculating loss in training pipeline
 
         Arguments:
