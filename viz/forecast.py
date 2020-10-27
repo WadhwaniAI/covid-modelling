@@ -68,9 +68,6 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     predictions = []
     for i, forecast in enumerate(fits_to_plot):
         predictions.append(predictions_dict['m2']['forecasts'][fits_to_plot[i]])
-        
-    # For exploration    
-    print(predictions)
     
     # Extracting the true data for the district
     df_true = predictions_dict['m1']['df_district']
@@ -81,9 +78,6 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
                                                        which_compartments)
 
     fig, ax = plt.subplots(figsize=(12, 12))
-
-    # For exploration
-    # print(compartments)
     
     for compartment in compartments['base']:
         if compartment.name in which_compartments:
