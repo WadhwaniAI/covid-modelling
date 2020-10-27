@@ -10,27 +10,18 @@ class Loss_Calculator():
                       'asymptomatic', 'symptomatic', 'critical', 'ccc2', 'dchc', 'dch',
                       'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator']
 
-    def _calc_rmse(self, y_pred, y_true, log=False):
+
+    def _calc_rmse(self, y_pred, y_true, temporal_weights, log=False):
 
         y_pred = np.array(y_pred)
         y_true = np.array(y_true)
         if log:
             y_true = np.log(y_true[y_true > 0])
             y_pred = np.log(y_pred[y_true > 0])
-        loss = np.sqrt(np.mean((y_true - y_pred)**2))
+        se = (y_true - y_pred)**2 * temporal_weights / np.sum(temporal_weights)
+        loss = np.sqrt(np.mean(se))
         return loss
-    '''
-    def _calc_mape(self, y_pred, y_true):
-        y_pred = np.array(y_pred)
-        y_true = np.array(y_true)
 
-        y_pred = y_pred[y_true != 0]
-        y_true = y_true[y_true != 0]
-
-        ape = np.abs((y_true - y_pred + 0) / y_true) *  100
-        loss = np.mean(ape)
-        return loss
-    '''
     def _calc_mape(self, y_pred, y_true, temporal_weights):
         
         y_pred = np.array(y_pred)
@@ -45,8 +36,8 @@ class Loss_Calculator():
         loss = np.mean(ape)
         return loss
 
-    
-    def _calc_mape_delta(self, y_pred, y_true):
+    def _calc_mape_delta(self, y_pred, y_true, temporal_weights):
+
         y_pred = np.array(y_pred)
         y_true = np.array(y_true)
         
@@ -55,21 +46,18 @@ class Loss_Calculator():
         
         y_pred_delta = y_pred_delta[y_true_delta != 0]
         y_true_delta = y_true_delta[y_true_delta != 0]
-
         
-        ape_delta = np.abs((y_true_delta - y_pred_delta + 0) / y_true_delta) *  100
+        ape_delta = np.abs((y_true_delta - y_pred_delta + 0) * temporal_weights[1:] / y_true_delta * temporal_weights[1:]) *  100.
         loss = np.mean(ape_delta)
-        
+
         return loss
-    
+
     # calls the bit loss functions
     def calc_loss_dict(self, df_prediction, df_true, df_data_weights, method='rmse'):
         if method == 'rmse':
-            calculate = lambda x, y : self._calc_rmse(x, y)
+            calculate = lambda x, y, temporal_weights : self._calc_rmse(x, y, temporal_weights)
         if method == 'rmse_log':
-            calculate = lambda x, y : self._calc_rmse(x, y, log=True)
-        # if method == 'mape':
-        #     calculate = lambda x, y : self._calc_mape(x, y)
+            calculate = lambda x, y, temporal_weights : self._calc_rmse(x, y, temporal_weights, log=True)
         if method == 'mape' :
             calculate = lambda x, y, temporal_weights : self._calc_mape(x, y, temporal_weights)
         if method == 'mape_delta':
@@ -77,7 +65,7 @@ class Loss_Calculator():
             
         losses = {}
         for compartment in self.columns:
-            
+
             try:
                 losses[compartment] = calculate(df_prediction[compartment], df_true[compartment], df_data_weights[compartment])
             except Exception:
