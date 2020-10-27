@@ -108,6 +108,19 @@ class Loss_Calculator():
         return df_loss
 
     def backtesting_loss_week_by_week(self, df_prediction, df_true, method='mape', round_precision=2):
+        """Implements backtesting loss (comparing unseen gt with predictions)
+        Calculates the backtesting loss for each compartment, week by week into the future, 
+        using the specified method
+
+        Args:
+            df_prediction (pd.DataFrame): the prediction df
+            df_true (pd.DataFrame): the gt df
+            method (str, optional): The loss method. Defaults to 'mape'.
+            round_precision (int, optional): Precision to which we want to round the dataframe. Defaults to 2.
+
+        Returns:
+            pd.DataFrame: The loss dataframe by compartment (row), week (column)
+        """
         forecast_errors_dict = {}
         week_indices = np.concatenate((np.arange(0, len(df_true), 7), [len(df_true)]))
         for i in range(len(week_indices)-1):
