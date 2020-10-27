@@ -1,13 +1,11 @@
 fitting:
     # Geographical Location
     data:
-        data_source: covid19india
+        data_source: covid_tracking
         stratified_data: FALSE
         dataloading_params:
-            state: Maharashtra
-            district: Mumbai
-            use_dataframe: data_all
-        smooth_jump: TRUE
+            state: Massachusetts
+        smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
@@ -26,14 +24,14 @@ fitting:
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
-        lockdown_R0: [[0.7, 1.2], uniform]
+        lockdown_R0: [[0.7, 1.5], uniform]
         T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
-        T_recov: [[0, 40], uniform]
+        T_recov: [[20, 300], uniform]
         T_recov_fatal: [[0, 40], uniform]
         P_fatal: [[0, 0.1], uniform]
         E_hosp_ratio: [[0, 2], uniform]
-        I_hosp_ratio: [[0, 1], uniform]
+        I_hosp_ratio: [[0.1, 0.15], uniform]
     default_params:
         N: 1.0e+7
     fitting_method: bayes_opt
@@ -43,9 +41,9 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-08-31
+        end_date: 2020-09-26
         train_period: 21
-        val_period: 7
+        val_period: 3
         test_period: 0
     #Optimisation related parameters
     loss:

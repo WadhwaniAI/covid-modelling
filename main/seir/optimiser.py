@@ -32,19 +32,19 @@ class Optimiser():
             dict -- dict of ranges of variable params
         """
 
-        # TODO add support for different prior for each variable
+        formatted_param_ranges = {}
         if fitting_method == 'bayes_opt':
             for key in variable_param_ranges.keys():
-                variable_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
+                formatted_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
                     key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
 
         if fitting_method == 'gridsearch':
             for key in variable_param_ranges.keys():
-                variable_param_ranges[key] = np.linspace(variable_param_ranges[key][0][0], 
-                                                         variable_param_ranges[key][0][1], 
-                                                         variable_param_ranges[key][1])
+                formatted_param_ranges[key] = np.linspace(variable_param_ranges[key][0][0],
+                                                          variable_param_ranges[key][0][1], 
+                                                          variable_param_ranges[key][1])
 
-        return variable_param_ranges
+        return formatted_param_ranges
 
     def solve(self, params_dict :dict, model=SEIRHD, end_date=None):
         """This function solves the ODE for an input of params (but does not compute loss)
@@ -202,7 +202,7 @@ class Optimiser():
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
                                                  df_true=df_train, df_data_weights=df_train, total_days=total_days, model=model,
                                                  loss_method=loss_method, loss_indices=loss_indices,
-                                                 loss_compartments=loss_compartments, debug=debug)
+                                                 loss_compartments=loss_compartments, debug=False)
         
         # If debugging is enabled the gridsearch is not parallelised
         if debug:
