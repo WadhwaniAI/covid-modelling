@@ -24,6 +24,9 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
     # Getting gt data
     dataloading_params = {'state': 'Maharashtra', 'district': 'Mumbai'}
     df_true = get_data(gt_data_source, dataloading_params)
+
+    # Setting train_period to None
+    train_period = None
     if preds_source == 'filename':
         df = pd.read_csv(filename)
         if fname_format == 'old_output':
@@ -84,7 +87,7 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
         df_prediction = df_prediction.loc[(
             df_prediction['date'] <= df_true.iloc[-1, :]['date'])]
         df_true = df_true.loc[df_true['date']
-                              >= df_prediction.iloc[0, :]['date']]
+                              >= (df_prediction.iloc[0, :]['date'] - timedelta(days=1))]
         df_true = df_true.loc[df_true['date']
                               <= df_prediction.iloc[-1, :]['date']]
         df_prediction.reset_index(inplace=True, drop=True)
@@ -110,11 +113,13 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
         iterable_axes = axs.flat
     else:
         iterable_axes = [ax]
+    if train_period is None:
+        train_period = 21
     for i, ax in enumerate(iterable_axes):
-        # ax.axvline(x=df_train.iloc[-train_period, :]['date'],
-        #            ls=':', color='brown', label='Train starts')
-        # ax.axvline(x=df_train.iloc[-1, :]['date'], ls=':',
-        #            color='black', label='Last data point seen by model')
+        ax.axvline(x=df_true.iloc[0, :]['date'],
+                   ls=':', color='brown', label='Train starts')
+        ax.axvline(x=df_true.iloc[train_period-1, :]['date'], ls=':',
+                   color='black', label='Last data point seen by model')
         axis_formatter(ax, None, custom_legend=False)
 
     fig.suptitle(
