@@ -107,6 +107,34 @@ class Loss_Calculator():
             del df_loss['val']
         return df_loss
 
+    def backtesting_loss_week_by_week(self, df_prediction, df_true, method='mape', round_precision=2):
+        forecast_errors_dict = {}
+        week_indices = np.concatenate((np.arange(0, len(df_true), 7), [len(df_true)]))
+        for i in range(len(week_indices)-1):
+            df_prediction_slice = df_prediction.iloc[week_indices[i]:week_indices[i+1]-1, :]
+            df_true_slice = df_true.iloc[week_indices[i]:week_indices[i+1]-1, :]
+
+            df_prediction_slice.reset_index(drop=True, inplace=True)
+            df_true_slice.reset_index(drop=True, inplace=True)
+            ld = self.calc_loss_dict(df_prediction_slice, df_true_slice, method=method)
+
+            ld = {key: round(value, round_precision) for key, value in ld.items()}
+            if i+1 == len(week_indices)-1:
+                days = week_indices[i+1] - week_indices[i]
+                forecast_errors_dict[f'week {i+1} ({days}days)'] = ld
+            else:
+                forecast_errors_dict[f'week {i+1}'] = ld
+
+        df_prediction.reset_index(drop=True, inplace=True)
+        df_true.reset_index(drop=True, inplace=True)
+        ld = self.calc_loss_dict(df_prediction, df_true, method=method)
+
+        ld = {key: round(value, round_precision) for key, value in ld.items()}
+        forecast_errors_dict['total'] = ld
+
+        df = pd.DataFrame.from_dict(forecast_errors_dict)
+        return df
+
     def create_loss_dataframe_master(self, predictions_dict, train_fit='m1'):
         starting_key = list(predictions_dict.keys())[0]
         loss_columns = pd.MultiIndex.from_product([predictions_dict[starting_key][train_fit]['df_loss'].columns, 
