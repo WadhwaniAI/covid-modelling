@@ -19,7 +19,7 @@ fitting:
             2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
             2020-06-15: [null, deceased, total, TRUE, weighted-mag]
-        rolling_average: TRUE
+        rolling_average: FALSE
         rolling_average_params:
             center: TRUE
             window_size: 7
@@ -37,7 +37,7 @@ fitting:
         T_recov_fatal: [[15, 40], uniform]
         beta: [[0,0.3], uniform]
         d: [[0,1], uniform]
-        P_fatal: [[0, 0.1], uniform]
+        P_fatal: [[0, 0.5], uniform]
         I_D_hosp_ratio: [[0,3.0], uniform]
         I_U_hosp_ratio: [[0,5.0], uniform]
         E_hosp_ratio: [[0,3.0], uniform]
