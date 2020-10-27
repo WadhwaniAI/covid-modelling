@@ -9,7 +9,7 @@ fitting:
             use_dataframe: data_all
             generate: TRUE
             config_file: undetected_testing_fixed.yaml
-            filename: ../../data/data/simulated_data/undetected_testing.csv
+            filename: ../../data/data/simulated_data/undetected.csv
         smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
@@ -35,11 +35,11 @@ fitting:
         T_inf_U: [[3, 7], uniform]
         T_recov_severe: [[10, 30], uniform]
         T_recov_fatal: [[15, 40], uniform]
-        beta: [[0,0.3], uniform]
+        beta: [[0,0.5], uniform]
         d: [[0,1], uniform]
         P_fatal: [[0, 0.5], uniform]
         I_D_hosp_ratio: [[0,3.0], uniform]
-        I_U_hosp_ratio: [[0,5.0], uniform]
+        I_U_hosp_ratio: [[0,4.0], uniform]
         E_hosp_ratio: [[0,3.0], uniform]
     default_params:
         N: 1.0e+7

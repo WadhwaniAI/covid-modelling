@@ -67,6 +67,8 @@ class SimulatedDataLoader(BaseLoader):
         
         # import pdb; pdb.set_trace()
         if(config['include_tests']):
+            for i in range(1,len(tests_done)):
+                tests_done[i] = tests_done[i-1] + tests_done[i]
             try:
                 df_result['tested'] = tests_done
             except:

@@ -7,7 +7,7 @@ fitting:
             state: Delhi
             district: Delhi
             use_dataframe: data_all
-            generate: FALSE
+            generate: TRUE
             config_file: undetected_fixed.yaml
             filename: ../../data/data/simulated_data/undetected.csv
         smooth_jump: FALSE
@@ -35,12 +35,12 @@ fitting:
         T_inf_U: [[3, 7], uniform]
         T_recov_severe: [[10, 30], uniform]
         T_recov_fatal: [[15, 40], uniform]
+        beta: [[0,0.5], uniform]
         d: [[0,1], uniform]
-        beta: [[0,0.3], uniform]
+        P_fatal: [[0, 0.5], uniform]
         I_D_hosp_ratio: [[0,3.0], uniform]
         I_U_hosp_ratio: [[0,4.0], uniform]
         E_hosp_ratio: [[0,3.0], uniform]
-        P_fatal: [[0,0.5], uniform]
     default_params:
         N: 1.0e+7
         psi: 1.0
