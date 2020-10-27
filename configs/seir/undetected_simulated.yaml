@@ -1,14 +1,16 @@
 fitting:
     # Geographical Location
     data:
-        data_source: covid19india
-        filename: ../../data/data/simulated.csv
+        data_source: simulated
         stratified_data: FALSE
         dataloading_params:
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
-        smooth_jump: TRUE
+            generate: False
+            config_file: None #simulated_seirhd.yaml
+            filename: ../../data/data/simulated.csv
+        smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]

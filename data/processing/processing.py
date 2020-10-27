@@ -6,8 +6,9 @@ import os
 import pickle
 import datetime
 from collections import defaultdict
+import yaml
 
-from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoader, CovidTrackingLoader
+from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoader, CovidTrackingLoader, SimulatedDataLoader
 
 
 def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
@@ -83,7 +84,10 @@ def get_data(data_source, dataloading_params, **kwargs):
     if data_source == 'filename':
         return get_custom_data_from_file(**dataloading_params)
     if data_source == 'simulated':
-        return get_simulated_data_from_file(kwargs['filename'],**dataloading_params)
+        if (dataloading_params['generate']):
+            return generate_simulated_data(**dataloading_params)
+        else:
+            return get_simulated_data_from_file(**dataloading_params)
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
@@ -99,8 +103,32 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_dat
     for col in df_result.columns:
         if col in ['active', 'total', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
-    return df_result
+    return {"data_frame": df_result}
+
+def generate_simulated_data(**dataloading_params):
+    """generates simulated data using the input params in config file
+
+    Keyword Arguments
+    -----------------
+        configfile {str} -- Name of config file (located at '../../configs/simulated_data/') required to generste the simulated data
     
+    Returns
+    -------
+        pd.DataFrame -- dataframe of cases for a particular state, district with 5 columns : 
+            ['date', 'total', 'active', 'deceased', 'recovered']
+    """
+    
+    with open(os.path.join("../../configs/simulated_data/", dataloading_params['config_file'])) as configfile:
+        config = yaml.load(configfile, Loader=yaml.SafeLoader)
+
+    loader = SimulatedDataLoader()
+    df_result, params = loader.load_data(**config)
+        
+    for col in df_result.columns:
+        if col in ['active', 'total', 'recovered', 'deceased']:
+            df_result[col] = df_result[col].astype('int64')    
+    return {"data_frame": df_result[['date', 'active', 'total', 'recovered', 'deceased']], 'actual_params': params}
+
 #TODO add support of adding 0s column for the ones which don't exist
 def get_simulated_data_from_file(filename, data_format='new', **kwargs):
     if data_format == 'new':
@@ -112,7 +140,7 @@ def get_simulated_data_from_file(filename, data_format='new', **kwargs):
         # df_result = df_result[columns_to_keep]
         # df_result.drop(np.arange(3), inplace=True) TODO: Check if this is necessary
         df_result['date'] = pd.to_datetime(df_result['date'])
-        df_result = df_result.dropna(subset=['state'], how='any')
+        # df_result = df_result.dropna(subset=['state'], how='any')
         df_result.reset_index(inplace=True, drop=True)
         df_result.loc[:, ['total', 'active', 'recovered', 'deceased']] = df_result[[
             'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
@@ -127,7 +155,7 @@ def get_simulated_data_from_file(filename, data_format='new', **kwargs):
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
         
-    return df_result
+    return {"data_frame": df_result}
 
 def get_custom_data_from_file(filename, data_format='new', **kwargs):
     if data_format == 'new':
@@ -150,14 +178,14 @@ def get_custom_data_from_file(filename, data_format='new', **kwargs):
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
         
-    return df_result
+    return {"data_frame": df_result}
 
 
 def get_data_from_tracker(state='Maharashtra', district='Mumbai', use_dataframe='data_all', **kwargs):
     if not district is None:
-        return get_data_from_tracker_district(state, district, use_dataframe)
+        return {"data_frame": get_data_from_tracker_district(state, district, use_dataframe)}
     else:
-        return get_data_from_tracker_state(state)
+        return {"data_frame": get_data_from_tracker_state(state)}
 
         
 def get_data_from_tracker_state(state='Delhi', **kwargs):
