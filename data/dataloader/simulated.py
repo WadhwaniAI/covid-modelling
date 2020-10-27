@@ -48,16 +48,17 @@ class SimulatedDataLoader(BaseLoader):
         observed_values['total'] = sum(observed_values.values())
         observed_values['date'] =  config['starting_date']
         model_params['observed_values'] = pd.DataFrame.from_dict([observed_values]).iloc[0,:]
+        if (config['include_tests']):
+            tests_done = eval(config['tests_done'])
+            model_params['daily_testing'] = tests_done
         
         solver = eval(config['model'])(**model_params)
         if (config['total_days']):
             df_result = solver.predict(total_days=config['total_days']-1)
         else:
             df_result = solver.predict()
-        
-        import pdb; pdb.set_trace()
-        if(config['include_tests']):
-            tests_done = eval(config['tests_done'])
+
+        if (config['include_tests']):
             try:
                 df_result['tested'] = tests_done
             except:

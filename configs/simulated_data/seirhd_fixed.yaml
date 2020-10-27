@@ -18,4 +18,4 @@ params:
     P_fatal: 0.08
     E_hosp_ratio: 0.34
     I_hosp_ratio: 0.94
-output_file_name: simulated_data_1.csv
+output_file_name: seirhd.csv

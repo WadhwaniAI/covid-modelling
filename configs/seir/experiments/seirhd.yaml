@@ -9,7 +9,7 @@ fitting:
             use_dataframe: data_all
             generate: TRUE
             config_file: seirhd_fixed.yaml
-            filename: ../../data/data/simulated.csv
+            filename: ../../data/data/simulated_data/seirhd.csv
         smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
@@ -27,7 +27,7 @@ fitting:
             min_periods: 1
             split_after_rolling: FALSE
     #Choose Model and Ranges
-    model: SEIR_Undetected_Testing
+    model: SEIRHD
     variable_param_ranges:
         lockdown_R0: [[0.7, 1.2], uniform]
         T_inc: [[4, 5], uniform]
@@ -54,7 +54,7 @@ fitting:
     #Optimisation related parameters
     loss:
         loss_method: mape
-        loss_compartments: [total]
+        loss_compartments: [total, active, recovered, deceased]
         loss_weights: [1.0] #[0.25, 0.25, 0.25, 0.25]
 sensitivity:
     lockdown_R0: [[[0.5, 1.5], 101], total, null]

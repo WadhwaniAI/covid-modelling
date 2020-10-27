@@ -108,8 +108,10 @@ class SEIR_Undetected_Testing(SEIR):
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
-        tests_done = self.daily_tests[self.starting_date + pd.Timedelta(days=max(1,math.ceil(t)))]
-        # print(t,tests_done)
+        try:
+            tests_done = self.daily_tests[self.starting_date + pd.Timedelta(days=max(1,math.ceil(t)))]
+        except:
+            tests_done = self.daily_tests[-1]
 
         # Write differential equations
         dydt[0] = - (I_D + I_U) * S * self.beta  # S
