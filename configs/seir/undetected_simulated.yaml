@@ -7,8 +7,8 @@ fitting:
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
-            generate: False
-            config_file: None #simulated_seirhd.yaml
+            generate: TRUE
+            config_file: simulated_seirhd.yaml
             filename: ../../data/data/simulated.csv
         smooth_jump: FALSE
         smooth_jump_params:

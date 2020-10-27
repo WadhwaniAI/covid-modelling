@@ -94,7 +94,6 @@ class Optimiser():
             float -- The loss value
         """
         params_dict = {**variable_params, **default_params}
-        
         # Returning a very high loss value for the cases where the sampled values of probabilities are > 1
         P_keys = [k for k in params_dict.keys() if k[:2] == 'P_']
         P_values = [params_dict[k] for k in params_dict.keys() if k[:2] == 'P_']

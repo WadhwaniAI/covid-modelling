@@ -1,12 +1,15 @@
 fitting:
     # Geographical Location
     data:
-        data_source: covid19india
+        data_source: simulated
         stratified_data: FALSE
         dataloading_params:
-            state: Delhi
-            district: Delhi
+            state: Maharashtra
+            district: Mumbai
             use_dataframe: data_all
+            generate: TRUE
+            config_file: seirhd_fixed.yaml
+            filename: ../../data/data/simulated.csv
         smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
@@ -24,7 +27,7 @@ fitting:
             min_periods: 1
             split_after_rolling: FALSE
     #Choose Model and Ranges
-    model: SEIRHD
+    model: SEIR_Undetected_Testing
     variable_param_ranges:
         lockdown_R0: [[0.7, 1.2], uniform]
         T_inc: [[4, 5], uniform]
@@ -43,7 +46,7 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null # NOT IMPLEMENTED
-        end_date: 2020-06-25
+        end_date: null
         train_period: 21
         val_period: 7
         test_period: 0 # NOT IMPLEMENTED
@@ -52,7 +55,7 @@ fitting:
     loss:
         loss_method: mape
         loss_compartments: [total]
-        loss_weights: [0.25, 0.25, 0.25, 0.25]
+        loss_weights: [1.0] #[0.25, 0.25, 0.25, 0.25]
 sensitivity:
     lockdown_R0: [[[0.5, 1.5], 101], total, null]
     I_hosp_ratio: [[[0, 1], 201], total, null]
