@@ -73,7 +73,6 @@ class SEIR_Undetected_Testing(SEIR):
         input_args['t_params'] = t_params
         input_args['I_hosp_ratio'] = I_D_hosp_ratio + I_U_hosp_ratio
         self.daily_tests = input_args['kwargs']['daily_testing'] / N 
-        print (self.daily_tests)
         del input_args['kwargs']
         super().__init__(**input_args)
 

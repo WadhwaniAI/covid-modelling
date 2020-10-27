@@ -54,7 +54,7 @@ class SimulatedDataLoader(BaseLoader):
             simulation_dates = [config['starting_date']+pd.Timedelta(days=i) for i in range(config['total_days'])]
             tests_done = eval(config['tests_done'])
             try:
-                model_params['daily_testing'] = pd.DataFrame(data=tests_done,index=simulation_dates)
+                model_params['daily_testing'] = pd.Series(data=tests_done,index=simulation_dates)
             except:
                 print("Mismatch in length of total days and tests done array")
                 raise
