@@ -90,9 +90,11 @@ matplotlib==3.2.1
 mccabe==0.6.1
 mdutils==1.2.1
 mistune==0.8.4
+mkl-service==2.3.0
 mlflow==1.10.0
 mpld3==0.3
 msrest==0.6.18
+multiprocess==0.70.9
 nbconvert==5.6.1
 nbformat==5.0.4
 netCDF4==1.5.3
@@ -104,9 +106,10 @@ nvidia-ml-py3==7.352.0
 oauthlib==3.1.0
 openpyexcel==2.5.14
 packaging==20.4
-pandas==1.0.3
+pandas==1.1.3
 pandocfilters==1.4.2
 parso==0.6.2
+pathos==0.2.5
 pathtools==0.1.2
 patsy==0.5.1
 pexpect==4.8.0
@@ -114,6 +117,8 @@ pickleshare==0.7.5
 Pillow==7.1.1
 plotly==4.6.0
 plotly-express==0.4.1
+pox==0.2.7
+ppft==1.6.6.1
 prometheus-client==0.7.1
 prometheus-flask-exporter==0.15.4
 promise==2.3
@@ -184,7 +189,7 @@ txt2tags==3.7
 urllib3==1.25.8
 vine==1.3.0
 Wand==0.5.9
-wandb==0.9.4
+wandb==0.10.7
 watchdog==0.10.3
 wcwidth==0.1.9
 webencodings==0.5.1
