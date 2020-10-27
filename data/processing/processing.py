@@ -25,7 +25,6 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
         dataframes = loader.load_data()
     else:
         try:
-            print('pulling from cache')
             with open(picklefn, 'rb') as pickle_file:
                 dataframes = pickle.load(pickle_file)
             print(f'loading from {picklefn}')
@@ -78,11 +77,10 @@ def get_data(data_source, dataloading_params):
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
     dataframes = get_dataframes_cached(loader_class=AthenaLoader)
-    df_result = copy.copy(dataframes['case_summaries'])
-    df_result.rename(columns={'city': 'district', 'deaths': 'deceased', 'total cases': 'total',
-                              'active cases': 'active', 'recovered cases': 'recovered'}, inplace=True)
+    df_result = copy.copy(dataframes['new_covid_case_summary'])
+    df_result['state'] = 'maharashtra'
     df_result = df_result[np.logical_and(
-        df_result['state'] == state, df_result['district'] == district)]
+        df_result['state'] == state.lower(), df_result['district'] == district.lower())]
     df_result = df_result.loc[:, :'deceased']
     df_result.dropna(axis=0, how='any', inplace=True)
     df_result.loc[:, 'date'] = pd.to_datetime(df_result['date'])

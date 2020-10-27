@@ -23,7 +23,7 @@ class AthenaLoader(BaseLoader):
         """
         if pyathena_rc_path == None:
             pyathena_rc_path = '../../misc/pyathena/pyathena.rc'
-        SCHEMA_NAME = 'city_data'
+        SCHEMA_NAME = 'wiai-covid-data'
 
         # Open Pyathena RC file and get list of all connection variables in a processable format
         with open(pyathena_rc_path) as f:
@@ -46,6 +46,8 @@ class AthenaLoader(BaseLoader):
                         region_name=AWS_CREDS['AWS_DEFAULT_REGION'],
                         work_group=AWS_CREDS['AWS_ATHENA_WORK_GROUP'],
                         schema_name=SCHEMA_NAME).cursor(PandasCursor)
+        
+        print('creating cursor...')
         return cursor
 
 
@@ -67,13 +69,14 @@ class AthenaLoader(BaseLoader):
         """
         if pyathena_rc_path == None:
             pyathena_rc_path = '../../misc/pyathena/pyathena.rc'
+
         # Create connection
         cursor = self.create_connection(pyathena_rc_path)
 
         # Run SQL SELECT queries to get all the tables in the database as pandas dataframes
         dataframes = {}
         tables_list = cursor.execute('Show tables').as_pandas().to_numpy().reshape(-1, )
-        tables_list = ['bed_summaries', 'case_summaries', 'testing_summary']
+        tables_list = ['covid_case_summary', 'new_covid_case_summary', 'testing_summary']
         for table in tables_list:
             dataframes[table] = cursor.execute(
                 'SELECT * FROM {}'.format(table)).as_pandas()

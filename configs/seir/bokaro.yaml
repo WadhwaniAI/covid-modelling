@@ -1,11 +1,11 @@
 fitting:
     # Geographical Location
     data:
-        data_source: covid19india
+        data_source: athena
         stratified_data: FALSE
         dataloading_params:
-            state: Jharkhand
-            district: East Singhbhum
+            state: Maharashtra
+            district: Mumbai
             use_dataframe: data_all
         smooth_jump: FALSE
         smooth_jump_params: null

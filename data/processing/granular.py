@@ -81,15 +81,12 @@ def get_custom_data_from_file(filename, state='Maharashtra', district='Mumbai'):
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
     print('fetching from athenadb...')
     dataframes = get_dataframes_cached(loader_class=AthenaLoader)
-    df = copy.copy(dataframes['case_summaries'])
-    df_bed = copy.copy(dataframes['bed_summaries'])
+    df = copy.copy(dataframes['new_covid_case_summary'])
+    df['state'] = 'maharashtra'
     df.dropna(axis=0, how='any', inplace=True)
-    df = df.merge(df_bed, on=['state', 'city', 'date', 'partition_0'], how='outer')
-    df.rename(columns={'city': 'district', 'deaths': 'deceased', 'total cases': 'total',
-                       'active cases': 'active', 'recovered cases': 'recovered'}, inplace=True)
     df.replace(',', '', regex=True, inplace=True)
-    df = df[np.logical_and(df['state'] == state, df['district'] == district)]
-    df.loc[:, 'total':'ventilator beds occupied'] = df.loc[:, 'total':'ventilator beds occupied'] #.apply(pd.to_numeric)
+    df = df[np.logical_and(df['state'] == state.lower(), df['district'] == district.lower())]
+    df.loc[:, 'total':'ventilator_occupied'] = df.loc[:, 'total':'ventilator_occupied'].apply(pd.to_numeric)
     df['date'] = pd.to_datetime(df['date'])
     df = df.infer_objects()
     df = df[(df.select_dtypes(include='int64') > 0).sum(axis=1) == len(df.select_dtypes(include='int64').columns)]
@@ -97,9 +94,9 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
 
     #Column renaming and pruning
     df = df.drop([x for x in df.columns if '_capacity' in x] + ['partition_0'], axis=1)
-    df = df.rename({'total beds occupied': 'total_beds', 'o2 beds occupied': 'o2_beds', 'icu beds occupied': 'icu',
+    df = df.rename({'total_occupied': 'total_beds', 'o2_occupied': 'o2_beds', 
                     'stable_symptomatic': 'symptomatic', 'stable_asymptomatic': 'asymptomatic'}, axis='columns')
-    # df.columns = [x.replace('_occupied', '') for x in df.columns]
+    df.columns = [x.replace('_occupied', '') for x in df.columns]
     # New column creation
     df['hq'] = df['active'] - df['total_beds']
     df['non_o2_beds'] = df['total_beds'] - (df['o2_beds']+df['icu'])
