@@ -13,9 +13,11 @@ import json
 
 def _dump_predictions_dict(predictions_dict, ROOT_DIR):
     filepath = os.path.join(ROOT_DIR, 'predictions_dict.pkl')
-    with open(filepath, 'wb+') as dump:
-        pickle.dump(predictions_dict, dump)
-
+    try:
+        with open(filepath, 'wb+') as dump:
+            pickle.dump(predictions_dict, dump)
+    except: 
+        pass
 
 def _dump_params(m1_dict, m2_dict, ROOT_DIR):
     filepath = os.path.join(ROOT_DIR, 'params.json')
@@ -255,7 +257,7 @@ def save_dict_and_create_report_simple(predictions_dict, config, ROOT_DIR='../..
     os.system(f'cp {config_ROOT_DIR}/{config_filename} {ROOT_DIR}/{config_filename}')
     
     mdFile, filename = _create_md_file(predictions_dict, config, ROOT_DIR)
-    _log_hyperparams(mdFile, predictions_dict, config)
+    # _log_hyperparams(mdFile, predictions_dict, config)
 
     if m1_dict['plots']['smoothing'] is not None:
         _log_smoothing(mdFile, ROOT_DIR, m1_dict)

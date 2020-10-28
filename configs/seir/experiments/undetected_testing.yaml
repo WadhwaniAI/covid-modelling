@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: simulated
+        data_source: covid19india
         stratified_data: FALSE
         dataloading_params:
             state: Maharashtra
@@ -10,7 +10,7 @@ fitting:
             generate: TRUE
             config_file: undetected_testing_fixed.yaml
             filename: ../../data/data/simulated_data/undetected_testing.csv
-        smooth_jump: FALSE
+        smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
@@ -19,7 +19,7 @@ fitting:
             2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
             2020-06-15: [null, deceased, total, TRUE, weighted-mag]
-        rolling_average: FALSE
+        rolling_average: TRUE
         rolling_average_params:
             center: TRUE
             window_size: 7
@@ -31,12 +31,12 @@ fitting:
     variable_param_ranges:
         # lockdown_R0: [[0.7, 1.2], uniform]
         T_inc: [[4, 6], uniform]
-        T_inf_D: [[2, 6], uniform]
-        T_inf_U: [[3, 7], uniform]
+        T_inf_D: [[1, 10], uniform]
+        T_inf_U: [[1, 25], uniform]
         T_recov_severe: [[10, 30], uniform]
         T_recov_fatal: [[15, 40], uniform]
         beta: [[0,0.5], uniform]
-        # d: [[0,1], uniform]
+        d: [[0,1], uniform]
         P_fatal: [[0, 0.5], uniform]
         I_D_hosp_ratio: [[0,3.0], uniform]
         I_U_hosp_ratio: [[0,4.0], uniform]
