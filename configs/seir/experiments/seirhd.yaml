@@ -19,7 +19,7 @@ fitting:
             2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
             2020-06-15: [null, deceased, total, TRUE, weighted-mag]
-        rolling_average: TRUE
+        rolling_average: FALSE
         rolling_average_params:
             center: TRUE
             window_size: 7
@@ -55,7 +55,7 @@ fitting:
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
-        loss_weights: [1.0] #[0.25, 0.25, 0.25, 0.25]
+        loss_weights: [0.25, 0.25, 0.25, 0.25]
 sensitivity:
     lockdown_R0: [[[0.5, 1.5], 101], total, null]
     I_hosp_ratio: [[[0, 1], 201], total, null]

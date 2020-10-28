@@ -14,7 +14,7 @@ params:
     T_inc: 5
     T_inf_D: 3.3
     T_inf_U: 5.5
-    d: 0.011
+    d: 0.2
     T_recov_severe: 21
     T_recov_fatal: 25
     P_fatal: 0.3

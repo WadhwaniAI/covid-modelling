@@ -9,7 +9,7 @@ fitting:
             use_dataframe: data_all
             generate: TRUE
             config_file: undetected_testing_fixed.yaml
-            filename: ../../data/data/simulated_data/undetected.csv
+            filename: ../../data/data/simulated_data/undetected_testing.csv
         smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
