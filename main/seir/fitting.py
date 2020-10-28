@@ -40,8 +40,6 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
             df_district, description = smooth_big_jump_stratified(
                 df_district, df_not_strat, smooth_jump_params)
         else:
-            # my code
-            print(df_district)
             
             df_district, description = smooth_big_jump(df_district, smooth_jump_params)
 
