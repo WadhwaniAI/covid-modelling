@@ -1,11 +1,11 @@
 fitting:
     # Geographical Location
     data:
-        data_source: athena
+        data_source: covid19india
         stratified_data: FALSE
         dataloading_params:
-            state: Maharashtra
-            district: Mumbai
+            state: Jharkhand
+            district: Bokaro
             use_dataframe: data_all
         smooth_jump: FALSE
         smooth_jump_params: null
@@ -49,13 +49,13 @@ fitting:
     # Variable data smoothing
     data_weights:
         if_weights: TRUE
-        start_date: 2020-10-06
-        end_date: 2020-10-18
+        start_date: 2020-10-02
+        end_date: 2020-10-14
         weights:
-            total: [0.5, 0.5, 0.25, 0.25, 0.2, 0.2, 1, 1, 1, 1, 1, 1.5, 1.5]
-            active: [1.5, 1.5, 1.25, 1.25, 1.2, 1.2, 2, 2, 2, 2, 2, 2.5, 2.5]
-            recovered: [2.5, 2.5, 2.25, 2.25, 2.2, 2.2, 3, 3, 3, 3, 3, 3.5, 3.5]
-            deceased: [3.5, 3.5, 3.25, 3.25, 3.2, 3.2, 4, 4, 4, 4, 4, 4.5, 4.5]
+            total: [10.5, 10.5, 10.25, 10.25, 10.2, 0.2, -1, -1, -1, -1, -1, -1.5, -1.5]
+            active: [11.5, 11.5, 11.25, 11.25, 11.2, 11.2, -2, -2, -2, -2, -2, -2.5, -2.5]
+            recovered: [12.5, 12.5, 12.25, 12.25, 12.2, 2.2, -3, -3, -3, -3, -3, -3.5, -3.5]
+            deceased: [13.5, 13.5, 13.25, 13.25, 13.2, 13.2, 4, 4, -4, -4, -4, -4.5, -4.5]
 sensitivity:
     lockdown_R0: [[[0.5, 1.5], 101], total, null]
     I_hosp_ratio: [[[0, 1], 201], total, null]

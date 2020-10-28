@@ -48,8 +48,8 @@ class Loss_Calculator():
         y_pred_delta = y_pred_delta[y_true_delta != 0]
         y_true_delta = y_true_delta[y_true_delta != 0]
         
-        ape_delta = np.abs((y_true_delta - y_pred_delta + 0) * temporal_weights[1:] / y_true_delta * temporal_weights[1:]) *  100.
-        loss = np.mean(ape_delta)
+        ape_delta = np.abs((y_true_delta - y_pred_delta + 0) / y_true_delta ) * temporal_weights[1:] *  100.
+        loss = np.sum(ape_delta) / np.sum(temporal_weights[1:])
 
         return loss
 
