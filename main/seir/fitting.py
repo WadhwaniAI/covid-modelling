@@ -17,7 +17,7 @@ from main.seir.optimiser import Optimiser
 from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
-from viz import plot_smoothing, plot_fit
+from viz import plot_smoothing, plot_fit, plot_buckets
 
 
 def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, smooth_jump_params, split,
@@ -149,6 +149,8 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     df_prediction = optimiser.solve({**best_params, **default_params}, 
                                     end_date=df_district.iloc[-1, :]['date'], 
                                     model=model)
+    
+    plot_buckets(df_prediction, model)
     
     lc = Loss_Calculator()
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'], 

@@ -5,6 +5,7 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import copy
+import math
 
 from functools import reduce
 from scipy.stats import entropy
@@ -12,6 +13,27 @@ from scipy.stats import entropy
 from utils.generic.enums.columns import *
 from main.seir.forecast import _order_trials_by_loss
 from viz.utils import axis_formatter
+
+def plot_buckets(df_prediction, model, which_buckets=None):
+    if (which_buckets == None):
+        which_buckets = df_prediction.columns.to_list()
+        which_buckets.remove('date')
+    plt.figure(figsize=(20,35))
+    fig,a =  plt.subplots(math.ceil(len(which_buckets)/2),2, figsize=(20,30))
+    fig.suptitle(str(model), fontsize=16)
+    col = 0
+    for i in range(math.ceil(len(which_buckets)/2)):
+        for j in range(2):
+            # import pdb; pdb.set_trace()
+            if (col >= len(which_buckets)):
+                break
+            a[i][j].plot(df_prediction['date'], df_prediction[which_buckets[col]], label=which_buckets[col])
+            plt.sca(a[i][j])
+            plt.xticks(rotation=45)
+            plt.ylabel(which_buckets[col])
+            plt.legend(loc='best')
+            col += 1
+    plt.show()
 
 def plot_fit(df_prediction, df_train, df_val, df_district, train_period, location_description,
              which_compartments=['active', 'total'], description='', savepath=None):

@@ -72,7 +72,7 @@ class SEIR_Undetected_Testing(SEIR):
         input_args['p_params'] = p_params
         input_args['t_params'] = t_params
         input_args['I_hosp_ratio'] = I_D_hosp_ratio + I_U_hosp_ratio
-        self.daily_tests = input_args['kwargs']['daily_testing'] / N 
+        self.daily_tests = input_args['kwargs']['daily_testing']
         del input_args['kwargs']
         super().__init__(**input_args)
 
@@ -113,12 +113,13 @@ class SEIR_Undetected_Testing(SEIR):
             tests_done = self.daily_tests[self.starting_date + pd.Timedelta(days=max(1,math.ceil(t)))]
         except:
             tests_done = self.daily_tests[-1]
+        tests_done_per_E = tests_done/E
 
         # Write differential equations
         dydt[0] = - (I_D + I_U) * S * self.beta  # S
         dydt[1] = (I_D + I_U) * S * self.beta - (E/ self.T_inc)  # E
-        dydt[2] = (1 / self.T_inc)*(1000*tests_done*self.d*self.psi)*E - I_D / self.T_inf_D  # I_D
-        dydt[3] = (1 / self.T_inc)*(1 - 1000*tests_done*self.d*self.psi)*E - I_U / self.T_inf_U  # I_U
+        dydt[2] = (1 / self.T_inc)*(tests_done_per_E*self.d*self.psi)*E - I_D / self.T_inf_D  # I_D
+        dydt[3] = (1 / self.T_inc)*(1 - tests_done_per_E*self.d*self.psi)*E - I_U / self.T_inf_U  # I_U
         dydt[4] = I_U / self.T_inf_U  # P_U
         dydt[5] = (1/self.T_inf_D)*(self.P_severe*I_D) - R_severe/self.T_recov_severe #R_severe
         dydt[6] = (1/self.T_inf_D)*(self.P_fatal*I_D) - R_fatal/self.T_recov_fatal # R_fatal
