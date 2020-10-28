@@ -150,7 +150,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
                                     end_date=df_district.iloc[-1, :]['date'], 
                                     model=model)
     
-    plot_buckets(df_prediction, model)
+    plot_buckets(df_prediction, str(model))
     
     lc = Loss_Calculator()
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'], 

@@ -14,13 +14,13 @@ from utils.generic.enums.columns import *
 from main.seir.forecast import _order_trials_by_loss
 from viz.utils import axis_formatter
 
-def plot_buckets(df_prediction, model, which_buckets=None):
+def plot_buckets(df_prediction, title, which_buckets=None):
     if (which_buckets == None):
         which_buckets = df_prediction.columns.to_list()
         which_buckets.remove('date')
     plt.figure(figsize=(20,35))
     fig,a =  plt.subplots(math.ceil(len(which_buckets)/2),2, figsize=(20,30))
-    fig.suptitle(str(model), fontsize=16)
+    fig.suptitle(title, fontsize=16)
     col = 0
     for i in range(math.ceil(len(which_buckets)/2)):
         for j in range(2):

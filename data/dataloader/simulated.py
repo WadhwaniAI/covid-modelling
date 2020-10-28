@@ -3,6 +3,7 @@ import numpy as np
 import os
 import copy
 from models.seir import *
+from viz import plot_buckets
 
 from data.dataloader.base import BaseLoader
 
@@ -80,4 +81,6 @@ class SimulatedDataLoader(BaseLoader):
             os.makedirs(save_dir)
         df_result.to_csv(os.path.join(save_dir, config['output_file_name']))
         pd.Series((ideal_params)).to_csv(os.path.join(save_dir, 'params_'+config['output_file_name']))
+        
+        plot_buckets(df_result, "Simulated data\n" + config['model'])
         return df_result, ideal_params
