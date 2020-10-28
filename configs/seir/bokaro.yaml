@@ -32,7 +32,7 @@ fitting:
         N: 634000
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 1000
+        num_evals: 100
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
@@ -48,9 +48,9 @@ fitting:
         loss_weights: [0.25, 0.25, 0.25, 0.25]
     # Variable data smoothing
     data_weights:
-        if_weights: FALSE
-        start_date: 2020-10-07
-        end_date: 2020-10-19
+        if_weights: TRUE
+        start_date: 2020-10-06
+        end_date: 2020-10-18
         weights:
             total: [0.5, 0.5, 0.25, 0.25, 0.2, 0.2, 1, 1, 1, 1, 1, 1.5, 1.5]
             active: [1.5, 1.5, 1.25, 1.25, 1.2, 1.2, 2, 2, 2, 2, 2, 2.5, 2.5]

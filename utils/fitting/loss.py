@@ -32,8 +32,9 @@ class Loss_Calculator():
 
         temporal_weights = np.array(temporal_weights)
 
-        ape = np.abs((y_true - y_pred + 0) * temporal_weights / y_true * temporal_weights) * 100.
-        loss = np.mean(ape)
+        ape = np.abs((y_true - y_pred + 0) / y_true ) * temporal_weights * 100.
+        loss = np.sum(ape) / np.sum(temporal_weights)
+        
         return loss
 
     def _calc_mape_delta(self, y_pred, y_true, temporal_weights):
