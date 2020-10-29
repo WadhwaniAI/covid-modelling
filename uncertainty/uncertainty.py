@@ -111,7 +111,6 @@ def plot_chains(mcmc: MCMC, out_dir: str):
 
     for param in params:
         plt.figure(figsize=(20, 10))
-        plt.subplot(2,1,1)
         for i, chain in enumerate(mcmc.chains):
             if i > 1:
                 continue
