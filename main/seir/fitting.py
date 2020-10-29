@@ -168,7 +168,7 @@ def run_cycle(observed_dataframes, weights_dataframes, data, model, variable_par
 
 
 def single_fitting_cycle(data, model, variable_param_ranges, default_params, fitting_method, 
-                         fitting_method_params, split, loss, data_weights):
+                         fitting_method_params, split, loss, data_weights={}):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -206,7 +206,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     observed_dataframes, smoothing = data_setup(**params)
 
     # df_data_weights made here
-    if data_weights['if_weights'] == True:
+    if data_weights.get('if_weights') == True:
         df_data_weights = Data_Weights.make_weights_df(0, observed_dataframes['df_district'],
                                                         data_weights['start_date'],
                                                         data_weights['end_date'],
@@ -216,7 +216,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
         df_data_weights = Data_Weights.make_weights_df(0, observed_dataframes['df_district'],
                                                         None,
                                                         None,
-                                                        data_weights['weights']
+                                                        None
                                                         )
 
     weights_dataframes = Data_Weights.implement_split(0, df_data_weights, split)      

@@ -149,6 +149,10 @@ def _log_tables(mdFile, m2_dict):
     tbl = df.to_markdown()
     mdFile.new_paragraph(tbl)
 
+def _log_r0_multipliers(mdFile, ROOT_DIR, m2_dict):
+    _log_plots_util(mdFile, ROOT_DIR, 'r0-multipliers.png',
+                    m2_dict['plots']['r0_mul_dict'], 'R0 Multipliers')
+
 
 def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/reports/', 
                                 config_filename='default.yaml', config_ROOT_DIR='../../configs/seir'):
@@ -193,6 +197,9 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
     
     mdFile.new_header(level=1, title="Tables")
     _log_tables(mdFile, m2_dict)
+
+    mdFile.new_header(level=1, title="What IFs - R0 Multipliers")
+    _log_r0_multipliers(mdFile, ROOT_DIR, m2_dict)
 
     # Create a table of contents
     mdFile.new_table_of_contents(table_title='Contents', depth=2)
