@@ -4,10 +4,10 @@ fitting:
         data_source: simulated
         stratified_data: FALSE
         dataloading_params:
-            state: Delhi
-            district: Delhi
+            state: Maharashtra
+            district: Mumbai
             use_dataframe: data_all
-            generate: TRUE
+            generate: FALSE
             config_file: undetected_fixed.yaml
             filename: ../../data/data/simulated_data/undetected.csv
         smooth_jump: FALSE
@@ -31,10 +31,10 @@ fitting:
     variable_param_ranges:
         lockdown_R0: [[0.7, 1.2], uniform]  # not being used in the model (there because it throws errors while creating forecasts and for reports)
         T_inc: [[4, 6], uniform]
-        T_inf_D: [[2, 6], uniform]
-        T_inf_U: [[3, 7], uniform]
-        T_recov_severe: [[10, 30], uniform]
-        T_recov_fatal: [[15, 40], uniform]
+        T_inf_D: [[1, 10], uniform]
+        T_inf_U: [[1, 20], uniform]
+        T_recov_severe: [[1, 40], uniform]
+        T_recov_fatal: [[1, 40], uniform]
         beta: [[0,0.5], uniform]
         d: [[0,1], uniform]
         P_fatal: [[0, 0.5], uniform]
