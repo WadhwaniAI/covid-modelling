@@ -80,33 +80,47 @@ def plot_chains(mcmc: MCMC, out_dir: str):
     params = [*mcmc.prior_ranges.keys()]
 
     for param in params:
-        plt.figure(figsize=(20, 10))
-        plt.subplot(1, 2, 1)
+        plt.figure(figsize=(20, 20))
+        plt.subplot(2,1,1)
 
         for i, chain in enumerate(mcmc.chains):
             df = pd.DataFrame(chain[0])
             samples = np.array(df[param])
-            plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+            # plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+            plt.plot(list(range(len(samples))), samples, label='chain {}'.format(i+1))
 
         plt.xlabel("iterations")
         plt.title("Accepted {} samples".format(param))
         plt.legend()
 
-        plt.subplot(1, 2, 2)
+        plt.subplot(2,1,2)
 
         for i, chain in enumerate(mcmc.chains):
             df = pd.DataFrame(chain[1])
             try:
                 samples = np.array(df[param])
-                plt.scatter(list(range(len(samples))), samples, s=10, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+                # plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+                plt.scatter(list(range(len(samples))), samples, s=4, label='chain {}'.format(i+1))
             except:
                 continue
 
         plt.xlabel("iterations")
         plt.title("Rejected {} samples".format(param))
         plt.legend()
-
         plt.savefig(join(out_dir, '{}_{}_{}.png'.format(param, mcmc.district, mcmc.state)))
+
+    for param in params:
+        plt.figure(figsize=(20, 10))
+        plt.subplot(2,1,1)
+        for i, chain in enumerate(mcmc.chains):
+            if i > 1:
+                continue
+            df = pd.DataFrame(chain[0])
+            samples = np.array(df[param])
+            # plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+            plt.hist(samples,bins=500)
+        plt.title("Histogram of {} samples".format(param))
+        plt.show()
 
 def main(config: str):
     """Summary

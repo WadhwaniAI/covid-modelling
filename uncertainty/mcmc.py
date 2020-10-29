@@ -232,7 +232,8 @@ class MCMC(object):
             float: gaussian log-likelihood of the data.
         """
         N = len(true)
-        ll = - (np.sum((((true - pred)/N) ** 2) / (2 * sigma ** 2)))
+        ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (np.sum(((true - pred) ** 2) / (2 * sigma ** 2)))
+        ll = ll/(N**2)
         return ll
 
     def _poisson_log_likelihood(self, true, pred, *ignored):
