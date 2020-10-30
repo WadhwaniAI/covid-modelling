@@ -7,10 +7,6 @@ fitting:
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
-            generate: False
-            config_file: seirhd_fixed.yaml
-            filename: ../../data/data/simulated_data/simulated_data_1.csv
-            params_filename: ../../data/data/simulated_data/params_simulated_data_1.csv #null for no params
         smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]

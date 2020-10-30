@@ -6,9 +6,8 @@ import os
 import pickle
 import datetime
 from collections import defaultdict
-import yaml
 
-from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoader, CovidTrackingLoader, SimulatedDataLoader
+from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoader, CovidTrackingLoader
 
 
 def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
@@ -83,11 +82,6 @@ def get_data(data_source, dataloading_params):
         return get_data_from_covid_tracking(**dataloading_params)
     if data_source == 'filename':
         return get_custom_data_from_file(**dataloading_params)
-    if data_source == 'simulated':
-        if (dataloading_params['generate']):
-            return generate_simulated_data(**dataloading_params)
-        else:
-            return get_simulated_data_from_file(**dataloading_params)
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
@@ -103,46 +97,8 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_dat
     for col in df_result.columns:
         if col in ['active', 'total', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
-    return {"data_frame": df_result}
-
-def generate_simulated_data(**dataloading_params):
-    """generates simulated data using the input params in config file
-    Keyword Arguments
-    -----------------
-        configfile {str} -- Name of config file (located at '../../configs/simulated_data/') required to generste the simulated data
+    return df_result
     
-    Returns
-    -------
-        pd.DataFrame -- dataframe of cases for a particular state, district with 5 columns : 
-            ['date', 'total', 'active', 'deceased', 'recovered']
-    """
-
-    with open(os.path.join("../../configs/simulated_data/", dataloading_params['config_file'])) as configfile:
-        config = yaml.load(configfile, Loader=yaml.SafeLoader)
-
-    loader = SimulatedDataLoader()
-    data_dict = loader.load_data(**config)
-    df_result, params = data_dict['data_frame'], data_dict['actual_params']
-
-    for col in df_result.columns:
-        if col in ['active', 'total', 'recovered', 'deceased']:
-            df_result[col] = df_result[col].astype('int64')    
-    return {"data_frame": df_result[['date', 'active', 'total', 'recovered', 'deceased']], "actual_params": params}
-
-#TODO add support of adding 0s column for the ones which don't exist
-def get_simulated_data_from_file(filename, params_filename=None, **kwargs):
-    params = {}
-    if params_filename:
-        params = pd.read_csv(params_filename).iloc[0,:].to_dict()
-    df_result = pd.read_csv(filename) 
-    df_result['date'] = pd.to_datetime(df_result['date'])
-    df_result.loc[:, ['total', 'active', 'recovered', 'deceased']] = df_result[[
-        'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
-    for col in df_result.columns:
-        if col in ['active', 'total', 'recovered', 'deceased']:
-            df_result[col] = df_result[col].astype('int64')
-    return {"data_frame": df_result[['date', 'active', 'total', 'recovered', 'deceased']], "actual_params": params}
-
 #TODO add support of adding 0s column for the ones which don't exist
 def get_custom_data_from_file(filename, data_format='new', **kwargs):
     if data_format == 'new':
@@ -165,14 +121,14 @@ def get_custom_data_from_file(filename, data_format='new', **kwargs):
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
         
-    return {"data_frame": df_result}
+    return df_result
 
 
 def get_data_from_tracker(state='Maharashtra', district='Mumbai', use_dataframe='data_all', **kwargs):
     if not district is None:
-        return {"data_frame": get_data_from_tracker_district(state, district, use_dataframe)}
+        return get_data_from_tracker_district(state, district, use_dataframe)
     else:
-        return {"data_frame": get_data_from_tracker_state(state)}
+        return get_data_from_tracker_state(state)
 
         
 def get_data_from_tracker_state(state='Delhi', **kwargs):
@@ -323,7 +279,7 @@ def get_data_from_jhu(dataframe, region, sub_region=None):
         raise ValueError('Unknown dataframe type given as input to user')
 
     df.reset_index(drop=True, inplace=True)
-    return {"data_frame": df}
+    return df
 
 
 def get_data_from_ny_times(state, county=None):
@@ -338,7 +294,7 @@ def get_data_from_ny_times(state, county=None):
     df.rename(columns={"cases": "total", "deaths": "deceased"}, inplace=True)
     df.drop('fips', axis=1, inplace=True)
     df.reset_index(drop=True, inplace=True)
-    return {"data_frame": df}
+    return df
 
 
 def get_data_from_covid_tracking(state):
@@ -350,7 +306,7 @@ def get_data_from_covid_tracking(state):
                               "death": "deceased"}, inplace=True)
     df = df_states[df_states['state_name'] == state]
     df.reset_index(drop=True, inplace=True)
-    return {"data_frame": df}
+    return df
 
 
 def implement_rolling(df, window_size, center, win_type, min_periods):
