@@ -71,7 +71,7 @@ forecast:
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
-        num_evals: 100
+        num_evals: 1000
         which_fit: m1
         variable_param_ranges:
             beta: [[0, 10], uniform]
