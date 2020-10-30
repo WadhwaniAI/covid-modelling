@@ -1,20 +1,21 @@
 # Fileformats
-*.csv
-*.pdf
-*.png
-*.pkl
-*.pyc
-*.pickle
-*.txt
-*.json
+*csv
+*pdf
+*png
+*pkl
+*pyc
+*pickle
+*txt
+*json
+*sh
 
 # Junk / Hidden Files
-**.ipynb_checkpoints/
-*.ipynb_checkpoints/
-*.vscode/
-sftp-config.json
+**ipynb_checkpoints/
+*ipynb_checkpoints/
+*vscode/
+sftp-configjson
 *__pycache__
-*.DS_Store
+*DS_Store
 
 # Folders (on Home dir and otherwise)
 *plots/
@@ -39,10 +40,10 @@ cache/
 optim/
 
 # Exceptions
-!data/data/*.csv
-!data/data/mumbai/*.csv
-!docs/model_diagrams/*.pdf
-!docs/figures/*.png
+!data/data/*csv
+!data/data/mumbai/*csv
+!docs/model_diagrams/*pdf
+!docs/figures/*png
 *output/
 **output/
 **/output
