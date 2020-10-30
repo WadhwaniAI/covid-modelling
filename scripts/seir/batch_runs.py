@@ -24,55 +24,68 @@ from utils.generic.enums import Columns
 from utils.fitting.loss import Loss_Calculator
 from utils.generic.logging import log_wandb
 from viz import plot_forecast, plot_top_k_trials, plot_ptiles
+from viz.uncertainty import plot_beta_loss
 
 import yaml
 import wandb
 
-def run_single_config_end_to_end(config, wandb_config, run_name):
-    predictions_dict = {}
 
-    output_folder = '../../misc/reports/{}'.format(
-        datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
-
-    predictions_dict['m1'] = single_fitting_cycle(**copy.deepcopy(config['fitting'])) 
+def fitting(predictions_dict, config):
+    predictions_dict['m1'] = single_fitting_cycle(
+        **copy.deepcopy(config['fitting']))
 
     m2_params = copy.deepcopy(config['fitting'])
     m2_params['split']['val_period'] = 0
     predictions_dict['m2'] = single_fitting_cycle(**m2_params)
 
-    predictions_dict['fitting_date'] = datetime.datetime.now().strftime("%Y-%m-%d")
+    predictions_dict['fitting_date'] = datetime.datetime.now().strftime(
+        "%Y-%m-%d")
 
+def sensitivity(predictions_dict, config):
     predictions_dict['m1']['plots']['sensitivity'], _, _ = calculate_sensitivity_and_plot(
         predictions_dict, config, which_fit='m1')
     predictions_dict['m2']['plots']['sensitivity'], _, _ = calculate_sensitivity_and_plot(
         predictions_dict, config, which_fit='m2')
 
+def fit_beta(predictions_dict, config):
+    uncertainty_args = {'predictions_dict': predictions_dict,
+                        'fitting_config': config['fitting'],
+                        'forecast_config': config['forecast'],
+                        **config['uncertainty']['uncertainty_params']}
+
+    uncertainty = config['uncertainty']['method'](**uncertainty_args)
+
+def process_uncertainty_fitting(predictions_dict, config):
+    predictions_dict['m2']['plots']['beta_loss'], _ = plot_beta_loss(
+        uncertainty.dict_of_trials)
+    uncertainty_forecasts = uncertainty.get_forecasts()
+    for key in uncertainty_forecasts.keys():
+        predictions_dict['m2']['forecasts'][key] = uncertainty_forecasts[key]['df_prediction']
+
+    predictions_dict['m2']['forecasts']['ensemble_mean'] = uncertainty.ensemble_mean_forecast
+
+    predictions_dict['m2']['beta'] = uncertainty.beta
+    predictions_dict['m2']['beta_loss'] = uncertainty.beta_loss
+    predictions_dict['m2']['deciles'] = uncertainty_forecasts
+
+def forecast_best(predictions_dict, config):
     predictions_dict['m2']['forecasts'] = {}
 
     predictions_dict['m2']['forecasts']['best'] = get_forecast(
         predictions_dict, train_fit='m2',
         model=config['fitting']['model'],
-        days=config['forecast']['forecast_days']
+        train_end_date=config['fitting']['split']['end_date'],
+        forecast_days=config['forecast']['forecast_days']
     )
 
     predictions_dict['m2']['plots']['forecast_best'] = plot_forecast(
         predictions_dict,
-        config['fitting']['data']['dataloading_params']['location_description'], 
+        config['fitting']['data']['dataloading_params']['location_description'],
+        which_compartments=config['fitting']['loss']['loss_compartments'],
         error_bars=False
     )
 
-    predictions_dict['m1']['trials_processed'] = forecast_all_trials(
-        predictions_dict, train_fit='m1',
-        model=config['fitting']['model'],
-        forecast_days=config['forecast']['forecast_days']
-    )
-
-    predictions_dict['m2']['trials_processed'] = forecast_all_trials(
-        predictions_dict, train_fit='m2',
-        model=config['fitting']['model'],
-        forecast_days=config['forecast']['forecast_days']
-    )
-
+def plot_forecasts_top_k_trials(predictions_dict, config):
     kforecasts = plot_top_k_trials(
         predictions_dict, train_fit='m2',
         k=config['forecast']['num_trials_to_plot'],
@@ -83,43 +96,52 @@ def run_single_config_end_to_end(config, wandb_config, run_name):
     for column in config['forecast']['plot_topk_trials_for_columns']:
         predictions_dict['m2']['plots']['forecasts_topk'][column.name] = kforecasts[column]
 
-    uncertainty_args = {'predictions_dict': predictions_dict,
-                        **config['uncertainty']['uncertainty_params']}
-
-    uncertainty = config['uncertainty']['method'](**uncertainty_args)
-    uncertainty_forecasts = uncertainty.get_forecasts()
-    for key in uncertainty_forecasts.keys():
-        predictions_dict['m2']['forecasts'][key] = uncertainty_forecasts[key]['df_prediction']
-        
-    predictions_dict['m2']['forecasts']['ensemble_mean'] = uncertainty.ensemble_mean_forecast
-
-    predictions_dict['m2']['beta'] = uncertainty.beta
-    predictions_dict['m2']['beta_loss'] = uncertainty.beta_loss
-    predictions_dict['m2']['deciles'] = uncertainty_forecasts
-
+def plot_forecasts_of_best_candidates(predictions_dict, config):
     predictions_dict['m2']['plots']['forecast_best_50'] = plot_forecast(
         predictions_dict,
         config['fitting']['data']['dataloading_params']['location_description'],
+        which_compartments=config['fitting']['loss']['loss_compartments'],
         fits_to_plot=['best', 50], error_bars=False
     )
 
     predictions_dict['m2']['plots']['forecast_best_80'] = plot_forecast(
         predictions_dict,
         config['fitting']['data']['dataloading_params']['location_description'],
+        which_compartments=config['fitting']['loss']['loss_compartments'],
         fits_to_plot=['best', 80], error_bars=False
     )
 
     predictions_dict['m2']['plots']['forecast_ensemble_mean_50'] = plot_forecast(
         predictions_dict,
         config['fitting']['data']['dataloading_params']['location_description'],
+        which_compartments=config['fitting']['loss']['loss_compartments'],
         fits_to_plot=['ensemble_mean', 50], error_bars=False
     )
 
-    ptiles_plots = plot_ptiles(predictions_dict, 
+def plot_forecasts_ptiles(predictions_dict, config):
+    ptiles_plots = plot_ptiles(predictions_dict,
                                which_compartments=config['forecast']['plot_ptiles_for_columns'])
     predictions_dict['m2']['plots']['forecasts_ptiles'] = {}
     for column in config['forecast']['plot_ptiles_for_columns']:
         predictions_dict['m2']['plots']['forecasts_ptiles'][column.name] = ptiles_plots[column]
+
+
+def run_single_config_end_to_end(config, wandb_config, run_name, perform_sensitivity=False):
+    predictions_dict = {}
+
+    output_folder = '../../misc/reports/{}'.format(
+        datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
+
+    fitting(predictions_dict, config)
+    if perform_sensitivity:
+        sensitivity(predictions_dict, config)
+    forecast_best(predictions_dict, config)
+    fit_beta(predictions_dict, config)
+    process_uncertainty_fitting(predictions_dict, config)
+
+    plot_forecasts_top_k_trials(predictions_dict, config)
+    plot_forecasts_of_best_candidates(predictions_dict, config)
+    plot_forecasts_ptiles(predictions_dict, config)
 
     run = wandb.init(project="covid-modelling", reinit=True, 
                      config=wandb_config, name=run_name)
