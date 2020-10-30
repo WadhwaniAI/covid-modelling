@@ -13,15 +13,16 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 
 sys.path.append('../../../')
-from main.seir.forecast import get_forecast
+from main.seir.forecast import forecast_all_trials
 from main.seir.optimiser import Optimiser
 from .uncertainty_base import Uncertainty
 from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 
 class MCUncertainty(Uncertainty):
-    def __init__(self, predictions_dict, variable_param_ranges, fitting_method, fitting_method_params, which_fit,
-                 date_of_sorting_trials, sort_trials_by_column, loss, percentiles):
+    def __init__(self, predictions_dict, fitting_config, forecast_config, variable_param_ranges, fitting_method, 
+                 fitting_method_params, which_fit, date_of_sorting_trials, sort_trials_by_column, 
+                 loss, percentiles):
         """
         Initializes uncertainty object, finds beta for distribution
 
@@ -30,6 +31,7 @@ class MCUncertainty(Uncertainty):
             date_of_sorting_trials (str): prediction date by which trials should be sorted + distributed
         """
         super().__init__(predictions_dict)
+        # Setting all variables as class variables
         self.variable_param_ranges = variable_param_ranges
         self.which_fit = which_fit
         self.date_of_sorting_trials = date_of_sorting_trials
@@ -37,12 +39,33 @@ class MCUncertainty(Uncertainty):
         for key in loss:
             setattr(self, key, loss[key])
         self.percentiles = percentiles
+        # Processing all trials
+        self.process_trials(predictions_dict, fitting_config, forecast_config)
+        # Finding Best Beta
         self.beta, self.dict_of_trials = self.find_beta(
             fitting_method, fitting_method_params, variable_param_ranges)
         self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
+        # Creating Ensemble Mean Forecast
         self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta}, return_dict=False,
-                                                              return_ensemble_mean_forecast=True)                                                      
+                                                              return_ensemble_mean_forecast=True)
+        # Getting Distribution (decile distributions)
         self.get_distribution()
+
+    def process_trials(self, predictions_dict, fitting_config, forecast_config):
+        predictions_dict['m1']['trials_processed'] = forecast_all_trials(
+            predictions_dict, train_fit='m1',
+            model=fitting_config['model'],
+            train_end_date=fitting_config['split']['end_date'],
+            forecast_days=forecast_config['forecast_days']
+        )
+
+
+        predictions_dict['m2']['trials_processed'] = forecast_all_trials(
+            predictions_dict, train_fit='m2',
+            model=fitting_config['model'],
+            train_end_date=fitting_config['split']['end_date'],
+            forecast_days=forecast_config['forecast_days']
+        )
 
     def trials_to_df(self, trials_processed, column=Columns.active):
         predictions = trials_processed['predictions']
