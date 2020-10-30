@@ -183,5 +183,10 @@ def perform_batch_runs(base_config_filename='us.yaml', username='sansiddh', outp
         plt.close('all')
 
 if __name__ == '__main__':
-    perform_batch_runs('us.yaml')
+    parser = argparse.ArgumentParser(description="SEIR Batch Running Script")
+    parser.add_argument(
+        "--filename", type=str, required=True, help="config filename to use while running the script"
+    )
+    parsed_args = parser.parse_args()
+    perform_batch_runs(parsed_args.filename)
         
