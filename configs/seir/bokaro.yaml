@@ -29,10 +29,10 @@ fitting:
         E_hosp_ratio: [[0, 2], uniform]
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
-        N: 634000
+        N: 2.36e+6
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 100
+        num_evals: 1000
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
