@@ -54,8 +54,9 @@ def fit_beta(predictions_dict, config):
                         **config['uncertainty']['uncertainty_params']}
 
     uncertainty = config['uncertainty']['method'](**uncertainty_args)
+    return uncertainty
 
-def process_uncertainty_fitting(predictions_dict, config):
+def process_uncertainty_fitting(predictions_dict, config, uncertainty):
     predictions_dict['m2']['plots']['beta_loss'], _ = plot_beta_loss(
         uncertainty.dict_of_trials)
     uncertainty_forecasts = uncertainty.get_forecasts()
@@ -136,8 +137,8 @@ def run_single_config_end_to_end(config, wandb_config, run_name, perform_sensiti
     if perform_sensitivity:
         sensitivity(predictions_dict, config)
     forecast_best(predictions_dict, config)
-    fit_beta(predictions_dict, config)
-    process_uncertainty_fitting(predictions_dict, config)
+    uncertainty = fit_beta(predictions_dict, config)
+    process_uncertainty_fitting(predictions_dict, config, uncertainty)
 
     plot_forecasts_top_k_trials(predictions_dict, config)
     plot_forecasts_of_best_candidates(predictions_dict, config)
@@ -152,6 +153,7 @@ def run_single_config_end_to_end(config, wandb_config, run_name, perform_sensiti
 
 def perform_batch_runs(base_config_filename='us.yaml', username='sansiddh', output_folder=None):
     # Getting list of all states
+    print('Getting list of all states')
     from data.dataloader import JHULoader
     obj = JHULoader()
     df = obj._load_from_daily_reports()
