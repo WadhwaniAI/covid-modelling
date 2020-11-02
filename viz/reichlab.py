@@ -62,7 +62,7 @@ def combine_with_train_error(predictions_dict, df):
     
     return df_wadhwani
 
-def create_scatter_plot_mape(df_wadhwani, annotate=True):
+def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=None):
     fig, ax = plt.subplots(figsize=(12, 12))
     df_zpos = df_wadhwani[df_wadhwani['z_score'] > 0]
     df_zneg = df_wadhwani[df_wadhwani['z_score'] < 0]
@@ -72,7 +72,11 @@ def create_scatter_plot_mape(df_wadhwani, annotate=True):
             df_zneg['z_score']*50, c='blue', marker='o', label='-ve Z score states')
     if annotate:
         for i, (index, row) in enumerate(df_wadhwani.iterrows()):
-            ax.annotate(f'{index} ({round(row["z_score"], 2)})', 
+            if abbv:
+                state_name = abbv_dict[index]
+            else:
+                state_name = index
+            ax.annotate(f'{state_name} ({round(row["z_score"], 2)})',
                         (row['best_loss_train'], row['model_mape']))
     ax.set_xlabel('MAPE on training data (calculated daily)')
     ax.set_ylabel('MAPE on unseen data (calculated weekly)')
