@@ -134,8 +134,8 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
     return df_comb, df_mape, df_rank
 
 
-def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key_dict, 
-                           use_as_point_forecast='ensemble_mean'):
+def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key_dict, which_fit='m2', 
+                           use_as_point_forecast='ensemble_mean', skip_percentiles=False):
     df_wiai_submission = pd.DataFrame(columns=df_all_submissions.columns)
     target_end_dates = pd.unique(df_all_submissions['target_end_date'])
 
@@ -144,14 +144,18 @@ def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key
         df_loc_submission = pd.DataFrame(columns=df_all_submissions.columns)
 
         # Loop across all percentiles
-        for percentile in predictions_dict[loc]['m2']['forecasts'].keys():
+        for percentile in predictions_dict[loc][which_fit]['forecasts'].keys():
             if isinstance(percentile, str):
                 # Skipping all point forecasts that are not what the user specified
                 if not percentile == use_as_point_forecast:
                     continue
+            # Skipping all percentiles if the flag is True
+            if skip_percentiles:
+                if (isinstance(percentile, int)) or (isinstance(percentile, float)):
+                    continue
             # Loop across cumulative and deceased
             for mode in ['cum', 'inc']:
-                df_forecast = copy.deepcopy(predictions_dict[loc]['m2']['forecasts'][percentile])
+                df_forecast = copy.deepcopy(predictions_dict[loc][which_fit]['forecasts'][percentile])
 
                 # Take diff for the forecasts (by default forecasts are cumulative)
                 if mode == 'inc':
