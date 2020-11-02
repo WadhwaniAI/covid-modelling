@@ -70,21 +70,22 @@ def process_uncertainty_fitting(predictions_dict, config, uncertainty):
     predictions_dict['m2']['deciles'] = uncertainty_forecasts
 
 def forecast_best(predictions_dict, config):
+    predictions_dict['m1']['forecasts'] = {}
     predictions_dict['m2']['forecasts'] = {}
+    for fit in ['m1', 'm2']:
+        predictions_dict[fit]['forecasts']['best'] = get_forecast(
+            predictions_dict, train_fit=fit,
+            model=config['fitting']['model'],
+            train_end_date=config['fitting']['split']['end_date'],
+            forecast_days=config['forecast']['forecast_days']
+        )
 
-    predictions_dict['m2']['forecasts']['best'] = get_forecast(
-        predictions_dict, train_fit='m2',
-        model=config['fitting']['model'],
-        train_end_date=config['fitting']['split']['end_date'],
-        forecast_days=config['forecast']['forecast_days']
-    )
-
-    predictions_dict['m2']['plots']['forecast_best'] = plot_forecast(
-        predictions_dict,
-        config['fitting']['data']['dataloading_params']['location_description'],
-        which_compartments=config['fitting']['loss']['loss_compartments'],
-        error_bars=False
-    )
+        predictions_dict[fit]['plots']['forecast_best'] = plot_forecast(
+            predictions_dict,
+            config['fitting']['data']['dataloading_params']['location_description'],
+            which_fit=fit, error_bars=False,
+            which_compartments=config['fitting']['loss']['loss_compartments']
+        )
 
 def plot_forecasts_top_k_trials(predictions_dict, config):
     kforecasts = plot_top_k_trials(
