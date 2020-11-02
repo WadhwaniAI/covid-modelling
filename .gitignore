@@ -9,6 +9,9 @@
 *json
 *sh
 
+# Configs with some number in them will not be put on git
+*[0-9]*.yaml
+
 # Junk / Hidden Files
 **ipynb_checkpoints/
 *ipynb_checkpoints/
