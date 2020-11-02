@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import copy
 import math
+import statistics
 
 from functools import reduce
 from scipy.stats import entropy
@@ -318,6 +319,47 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
     fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
 
+def plot_all_params(predictions_dict, model_params=None, weighting='best'):
+    all_params = []
+    if (not model_params):
+        model_params = {}
+        loc = list(predictions_dict.keys())[0]
+        for model_name, model_dict in predictions_dict[loc].items():
+            model_params[model_name] = list(model_dict['m0']['best_params'].keys())
+    
+    # TODO: change to set
+    for _, params in model_params.items():
+        all_params += [param for param in params if param not in all_params]
+
+    param_array = []
+    for loc, loc_dict in predictions_dict.items():
+        for model, model_dict in loc_dict.items():
+            param_values = []
+            for _, run_dict in model_dict.items():
+                # TODO: ensemble
+                if weighting == 'best':
+                    param_values.append(run_dict['best_params'])
+            param_values_stats = pd.DataFrame(param_values).describe()
+            for i, param in enumerate(list(param_values_stats.columns)):
+                param_array.append([param, loc[0], loc[1], model]) 
+                param_array[-1].append(param_values_stats.iloc[1,i])
+                param_array[-1].append(param_values_stats.iloc[2,i])
+    param_array = pd.DataFrame(param_array)
+    param_array.columns = ['param', 'state', 'district', 'model', 'mean', 'std']
+
+    fig, axs = plt.subplots(nrows=len(all_params)//2, ncols=2, 
+                            figsize=(18, 8*(len(all_params)//2)))
+    colors = "bgrcmy"
+    cmap = {model_name : colors[i] for i, model_name in enumerate(model_params)}
+    for i, param in enumerate(all_params):
+        ax = axs.flat[i]
+        param_values = param_array[param_array['param'] == param]
+        ax.bar(param_values['district'] + '\n' + param_values['model'], param_values['mean'], color=param_values['model'].map(cmap))
+        ax.errorbar(param_values['district'] + '\n' + param_values['model'], param_values['mean'], yerr = param_values['std'], color='k', fmt='o')
+        plt.sca(ax)
+        plt.ylabel(param)
+        plt.xticks(rotation=45)
+    plt.show()
 
 def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_axes=True):
     """Plots KL divergence heatmaps for all the sampled params for all runs. 
