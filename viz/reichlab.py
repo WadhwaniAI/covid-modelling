@@ -62,24 +62,30 @@ def combine_with_train_error(predictions_dict, df):
     
     return df_wadhwani
 
-def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=None):
+def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=None, annot_z_score=False, 
+                             log_scale=False):
     fig, ax = plt.subplots(figsize=(12, 12))
     df_zpos = df_wadhwani[df_wadhwani['z_score'] > 0]
     df_zneg = df_wadhwani[df_wadhwani['z_score'] < 0]
     ax.scatter(df_zpos['best_loss_train'], df_zpos['model_mape'],
-            s=df_zpos['z_score']*50, c='red', marker='o', label='+ve Z score states')
+            s=df_zpos['z_score']*100, c='red', marker='o', label='+ve Z score states')
     ax.scatter(df_zneg['best_loss_train'], df_zneg['model_mape'], s=-
-            df_zneg['z_score']*50, c='blue', marker='o', label='-ve Z score states')
+            df_zneg['z_score']*100, c='blue', marker='o', label='-ve Z score states')
     if annotate:
         for i, (index, row) in enumerate(df_wadhwani.iterrows()):
             if abbv:
                 state_name = abbv_dict[index]
             else:
                 state_name = index
-            ax.annotate(f'{state_name} ({round(row["z_score"], 2)})',
-                        (row['best_loss_train'], row['model_mape']))
+            if annot_z_score:
+                annot_str = f'{state_name} ({round(row["z_score"], 2)})'
+            else:
+                annot_str = f'{state_name}'
+            ax.annotate(annot_str, (row['best_loss_train'], row['model_mape']))
+    if log_scale:
+        ax.set_yscale('log')
     ax.set_xlabel('MAPE on training data (calculated daily)')
-    ax.set_ylabel('MAPE on unseen data (calculated weekly)')
+    ax.set_ylabel(f'MAPE on unseen data (calculated weekly) ({"log" if log_scale else "linear"} scale)')
     ax.axvline(1, ls=':', c='red', label='train error threshold (1%)')
     ax.axhline(5, ls=':', c='blue', label='test error threshold (5%)')
     ax.legend()
