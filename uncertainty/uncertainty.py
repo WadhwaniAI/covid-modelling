@@ -10,6 +10,7 @@ import pandas as pd
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from os.path import exists, join, splitext
+import seaborn as sns
 
 from uncertainty.mcmc import MCMC
 from uncertainty.mcmc_utils import predict, get_state
@@ -112,13 +113,12 @@ def plot_chains(mcmc: MCMC, out_dir: str):
     for param in params:
         plt.figure(figsize=(20, 10))
         for i, chain in enumerate(mcmc.chains):
-            if i > 1:
-                continue
             df = pd.DataFrame(chain[0])
             samples = np.array(df[param])
+            mean = np.mean(samples)
             # plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
-            plt.hist(samples,bins=500)
-        plt.title("Histogram of {} samples".format(param))
+            sns.kdeplot(np.array(samples), bw=0.005*mean)
+        plt.title("Density plot of {} samples".format(param))
         plt.show()
 
 def main(config: str):

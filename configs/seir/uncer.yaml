@@ -52,7 +52,7 @@ fitting:
             sigma: .02
         num_evals: 15000
         algo: gaussian
-        n_chains: 5
+        n_chains: 3
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null

@@ -247,7 +247,10 @@ class MCMC(object):
         Returns:
             float: poisson log-likelihood of the data.
         """
-        ll = np.log(poisson.pmf(k = pred, mu = true.mean()))
+        T = np.ediff1d(true)
+        P = np.ediff1d(pred)
+        ll = np.log(poisson.pmf(k = T, mu = P))
+        import pdb; pdb.set_trace()
         return np.sum(ll)
 
     def _log_likelihood(self, theta):
