@@ -1,0 +1,89 @@
+fitting:
+    # Geographical Location
+    data:
+        data_source: covid19india
+        stratified_data: FALSE
+        dataloading_params:
+            state: Maharashtra
+            district: Mumbai
+            use_dataframe: data_all
+            generate: FALSE
+            config_file: undetected_fixed.yaml
+            filename: ../../data/data/simulated_data/undetected.csv
+        smooth_jump: FALSE
+        smooth_jump_params:
+            2020-05-28: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-14: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
+        rolling_average: FALSE
+        rolling_average_params:
+            center: TRUE
+            window_size: 7
+            win_type: null
+            min_periods: 7
+            split_after_rolling: FALSE # NOT IMPLEMENTED
+    #Choose Model and Ranges
+    model: SEIR_Undetected
+    variable_param_ranges:
+        # lockdown_R0: [[0.7, 1.2], uniform]  # not being used in the model (there because it throws errors while creating forecasts and for reports)
+        T_inc: [[4, 6], uniform]
+        T_inf_U: [[1, 20], uniform]
+        T_recov: [[1, 40], uniform]
+        T_recov_fatal: [[1, 40], uniform]
+        beta: [[0,0.5], uniform]
+        d: [[0,1], uniform]
+        P_fatal: [[0, 0.5], uniform]
+        I_hosp_ratio: [[0,4.0], uniform]
+        E_hosp_ratio: [[0,3.0], uniform]
+        Pu_hosp_ratio: [[0,10.0], uniform]
+    default_params:
+        N: 1.0e+7
+        psi: 1.0
+    fitting_method: bayes_opt
+    fitting_method_params:
+        num_evals: 1000
+        algo: tpe
+    #Choose Fitting Periods and num evaluations
+    split:
+        start_date: null # NOT IMPLEMENTED
+        end_date: null
+        train_period: 21
+        val_period: 7
+        test_period: 0 # NOT IMPLEMENTED
+        split_after_rolling: TRUE
+    #Optimisation related parameters
+    loss:
+        loss_method: mape
+        loss_compartments: [total, active, recovered, deceased]
+        loss_weights: [0.25, 0.25, 0.25, 0.25]
+sensitivity:
+    lockdown_R0: [[[0.5, 1.5], 101], total, null]
+    I_hosp_ratio: [[[0, 1], 201], total, null]
+    E_hosp_ratio: [[[0, 2], 201], total, null]
+    P_fatal: [[[0, 0.5], 201], deceased, total]
+    T_recov: [[[1, 100], 101], recovered, total]
+    T_recov_fatal: [[[1, 100], 101], deceased, total]
+forecast:
+    forecast_days: 30
+    num_trials_to_plot: 10
+    plot_topk_trials_for_columns: [total, active]
+    plot_ptiles_for_columns: [total, active]
+uncertainty:
+    method: MCUncertainty
+    uncertainty_params:
+        num_evals: 100
+        # NOT IMPLEMENTED
+        variable_param_ranges:
+            beta: [[0, 10], uniform]
+        date_of_sorting_trials: 2020-09-30
+        sort_trials_by_column: total
+        loss:
+            loss_method: mape
+            loss_compartments: [total, active, recovered, deceased]
+            loss_weights: [0.25, 0.25, 0.25, 0.25]
+        # NOT IMPLEMENTED
+        percentiles: [2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 97.5]
