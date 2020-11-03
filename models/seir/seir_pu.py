@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
+import math
 
 from collections import OrderedDict
 import datetime
@@ -10,10 +11,10 @@ import copy
 from models.seir.seir import SEIR
 from utils.fitting.ode import ODE_Solver
 
-class SEIR_Undetected(SEIR):
-    def __init__(self, lockdown_R0=2.2, T_inf_D=3.3, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
+class SEIR_Undetected_Testing(SEIR):
+    def __init__(self, lockdown_R0=2.2, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
                  P_fatal=0.2, T_recov=14, N=1e7, d=1.0, psi=1.00, beta=0.1, starting_date='2020-03-09', 
-                 observed_values=None, E_hosp_ratio=0.5, I_D_hosp_ratio=0.5, I_U_hosp_ratio=0.5, **kwargs):
+                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, Pu_hosp_ratio=1.2,**kwargs):
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
 
@@ -60,7 +61,7 @@ class SEIR_Undetected(SEIR):
         d: Current Detection Ratio
         psi: effective sensititivity (based on antigen and rtpcr sensitive and their overall proportion)
         """
-        STATES = ['S', 'E', 'I_D', 'I_U', 'P_U', 'R_severe', 'R_fatal', 'C', 'D']
+        STATES = ['S', 'E', 'I', 'P_U', 'R_severe', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]
         input_args = copy.deepcopy(locals())
         # import pdb; pdb.set_trace()
@@ -70,18 +71,17 @@ class SEIR_Undetected(SEIR):
         p_params['P_severe'] = 1 - p_params['P_fatal']
         input_args['p_params'] = p_params
         input_args['t_params'] = t_params
-        input_args['I_hosp_ratio'] = I_D_hosp_ratio + I_U_hosp_ratio
-        self.daily_tests = input_args['kwargs']['daily_testing'] / N 
+        self.daily_tests = input_args['kwargs']['daily_testing']
         del input_args['kwargs']
         super().__init__(**input_args)
 
+        # import pdb; pdb.set_trace()
         self.d = d
         self.psi = psi
-        self.T_inf_D = T_inf_D
-        self.T_inf_U = T_inf_U
-        self.I_D_hosp_ratio = I_D_hosp_ratio
-        self.I_U_hosp_ratio = I_U_hosp_ratio
         self.beta = beta
+        self.T_inf_U = T_inf_U
+        self.Pu_hosp_ratio = Pu_hosp_ratio
+        self.state_init_values['P_U'] = self.Pu_hosp_ratio * observed_values['active'] / self.N
         # self.state_init_values['I_D'] = observed_values['i_d'] / self.N
         # self.state_init_values['I_U'] = observed_values['i_u'] / self.N
         # self.state_init_values['P_U'] = observed_values['p_i'] / self.N
@@ -90,9 +90,6 @@ class SEIR_Undetected(SEIR):
         # self.state_init_values['R_severe'] = observed_values['r_severe'] / self.N
         # self.state_init_values['R_fatal'] = observed_values['r_fatal'] / self.N
         # import pdb; pdb.set_trace()
-        self.state_init_values['I_D'] = self.I_D_hosp_ratio * observed_values['active'] / self.N
-        self.state_init_values['I_U'] = self.I_U_hosp_ratio * observed_values['active'] / self.N
-        del self.state_init_values['I']
 
 
     def get_derivative(self, t, y):
@@ -102,19 +99,23 @@ class SEIR_Undetected(SEIR):
         # Init state variables
         for i, _ in enumerate(y):
             y[i] = max(y[i], 0)
-        S, E, I_D, I_U, P_U, R_severe, R_fatal, C, D = y
+        S, E, I, P_U, R_severe, R_fatal, C, D = y
 
         # Init derivative vector
+        
         dydt = np.zeros(y.shape)
+        try:
+            tests_done = self.daily_tests[self.starting_date + pd.Timedelta(days=max(1,math.ceil(t)))]
+        except:
+            tests_done = self.daily_tests[-1]
 
         # Write differential equations
-        dydt[0] = - (I_D + I_U) * S * self.beta  # S
-        dydt[1] = (I_D + I_U) * S * self.beta - (E/ self.T_inc)  # E
-        dydt[2] = (1 / self.T_inc)*(self.d*self.psi)*E - I_D / self.T_inf_D  # I_D
-        dydt[3] = (1 / self.T_inc)*(1 - self.d*self.psi)*E - I_U / self.T_inf_U  # I_U
-        dydt[4] = I_U / self.T_inf_U  # P_U
-        dydt[5] = (1/self.T_inf_D)*(self.P_severe*I_D) - R_severe/self.T_recov #R_severe
-        dydt[6] = (1/self.T_inf_D)*(self.P_fatal*I_D) - R_fatal/self.T_recov_fatal # R_fatal
+        dydt[0] = - I * S * self.beta  # S
+        dydt[1] = I * S * self.beta - (E/ self.T_inc)  # E
+        dydt[2] = (1 / self.T_inc)*E - I / self.T_inf_U - I*d  # I
+        dydt[4] = I / self.T_inf_U  # P_U
+        dydt[5] = (self.P_severe*I*d) - R_severe/self.T_recov #R_severe
+        dydt[6] = (self.P_fatal*I*d) - R_fatal/self.T_recov_fatal # R_fatal
         dydt[7] = R_severe/self.T_recov   # C
         dydt[8] = R_fatal/self.T_recov_fatal # D
 
