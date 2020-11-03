@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import copy
 import math
+from models.seir import * 
 
 from functools import reduce
 from scipy.stats import entropy
@@ -319,9 +320,56 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
     fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
 
-def plot_all_losses(predictions_dict, model_names, which_losses=['train'], which_compartments=None):
+def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_method='ensemble_combined'):
+    buckets_values = {which_bucket:{} for which_bucket in which_buckets}
+    for loc, loc_dict in predictions_dict.items():
+        for model_name, model_dict in loc_dict.items():
+            params = get_param_stats(model_dict, param_method).loc[['mean']].to_dict('records')[0]
+
+            first_run_dict = model_dict[list(model_dict.keys())[0]]
+            solver = eval(model_name)(**params, **first_run_dict['default_params'])
+            total_days = (list(first_run_dict['df_prediction']['date'])[-1] - list(first_run_dict['df_prediction']['date'])[0]).days
+            df_prediction = solver.predict(total_days=total_days)
+
+            for bucket in which_buckets:
+                if bucket not in df_prediction.columns:
+                    continue
+                if compare=='model':
+                    if loc not in buckets_values[bucket]:
+                        buckets_values[bucket][loc] = {}
+                    buckets_values[bucket][loc][model_name] = df_prediction[['date',bucket]]
+                elif compare=='location':
+                    if model_name not in buckets_values[bucket]:
+                        buckets_values[bucket][model_name] = {}
+                    buckets_values[bucket][model_name][loc] = df_prediction[['date',bucket]]
+
+    # upper limit of n_subplots
+    n_subplots = len(which_buckets)*len(predictions_dict)
+    ncols = 3
+    nrows = math.ceil(n_subplots/ncols)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    colors = "bgrcmy"
+    ax_counter = 0
+    for bucket, bucket_dict in buckets_values.items:
+        for layer_1, layer_1_dict in bucket_dict.items:
+            ax = axs.flat[ax_counter]
+            for k, layer_2 in enumerate(layer_1_dict):
+                ax.plot(layer_1_dict[layer_2]['date'], layer_1_dict[layer_2][bucket], color=colors[k], label=layer_2)
+            plt.sca(ax)
+            plt.ylabel(bucket)
+            plt.xlabel('date')
+            plt.xticks(rotation=45)
+            plt.legend(loc='best')
+            plt.title(layer_1)
+            ax_counter += 1
+    # delete extra axs
+    plt.show()
+
+
+def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments=None):
     all_compartments = []
-    # handle when which_compartments is None
+    # TODO: handle when which_compartments is None
     for _, compartments in which_compartments.items():
         for which_loss in which_losses:
             all_compartments += [compartment for compartment in compartments if compartment not in all_compartments]
