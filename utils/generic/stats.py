@@ -5,17 +5,14 @@ from main.seir.forecast import _order_trials_by_loss
 def get_best_param_dist(model_dict):
     best_param_vals = []
     for _, run_dict in model_dict.items():
-        best_params_run = run_dict['best_params']
-        best_param_vals.append(best_params_run)
+        best_param_vals.append(run_dict['best_params'])
     df = pd.DataFrame(best_param_vals).describe()
     return df.loc[['mean','std']]
 
-def get_ensemble_combined(model_dict,weighting='exp',beta=1):
-    import pdb; pdb.set_trace()
+def get_ensemble_combined(model_dict, weighting='exp', beta=1):
     params_dict = { k: np.array([]) for k in model_dict[list(model_dict.keys())[0]]['best_params'].keys() }
     losses_array = np.array([])
     for _, run_dict in model_dict.items():
-        import pdb; pdb.set_trace()
         params_array, loss_array = _order_trials_by_loss(run_dict)
         losses_array = np.concatenate((losses_array, loss_array), axis=0)
         for param in params_dict.keys():
@@ -35,13 +32,18 @@ def get_ensemble_combined(model_dict,weighting='exp',beta=1):
         variance = np.average((params_dict[param] - mean)**2, weights=weights)
         param_dist_stats[param] = {'mean':mean, 'std':np.sqrt(variance)}
     
-    import pdb; pdb.set_trace()
     df = pd.DataFrame(param_dist_stats)
     return df.loc[['mean','std']]
 
-def get_param_stats(model_dict,method='best'):
+def get_param_stats(model_dict, method='best', weighting=None):
     if method == 'best':
         return get_best_param_dist(model_dict)
-    
     elif method == 'ensemble_combined':
-        return get_ensemble_combined(model_dict)
+        return get_ensemble_combined(model_dict, weighting=weighting)
+
+def get_loss_stats(model_dict, which_loss='train'):
+    loss_vals = []
+    for _, run_dict in model_dict.items():
+        loss_vals.append(run_dict['df_loss'][which_loss])
+    df = pd.DataFrame(loss_vals).describe()
+    return df.loc[['mean','std']]

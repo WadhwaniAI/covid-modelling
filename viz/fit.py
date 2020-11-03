@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 import copy
 import math
-import statistics
 
 from functools import reduce
 from scipy.stats import entropy
@@ -320,8 +319,54 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
     fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
 
+def plot_all_losses(predictions_dict, model_names, which_losses=['train'], which_compartments=None):
+    all_compartments = []
+    # handle when which_compartments is None
+    for _, compartments in which_compartments.items():
+        for which_loss in which_losses:
+            all_compartments += [compartment for compartment in compartments if compartment not in all_compartments]
 
-def plot_all_params(predictions_dict, model_params=None, method='best'):
+    loss_wise_stats = {}
+    for which_loss in which_losses:
+        loss_wise_stats[which_loss] = {compartment:{} for compartment in all_compartments}
+    for loc, loc_dict in predictions_dict.items():
+        for model, model_dict in loc_dict.items():
+            for which_loss in which_losses:
+                loss_values_stats = get_loss_stats(model_dict, which_loss=which_loss)
+                for compartment in loss_values_stats.columns:
+                    if model not in loss_wise_stats[which_loss][compartment]:
+                        loss_wise_stats[which_loss][compartment][model] = {'mean':{}, 'std':{}}
+                    loss_wise_stats[which_loss][compartment][model]['mean'][loc] = loss_values_stats[compartment]['mean']
+                    loss_wise_stats[which_loss][compartment][model]['std'][loc] = loss_values_stats[compartment]['std']
+
+    n_subplots = len(all_compartments)*len(which_losses)
+    ncols = 3
+    nrows = math.ceil(n_subplots/ncols)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    colors = "bgrcmy"
+    bar_width = 0.3
+    for i, which_loss in enumerate(which_losses):
+        for j, compartment in enumerate(all_compartments):
+            ax = axs.flat[i*len(all_compartments) + j]
+            compartment_values = loss_wise_stats[which_loss][compartment]
+            mean_vals, std_vals = {},{}
+            for m,model in enumerate(compartment_values.keys()):
+                mean_vals[model] = compartment_values[model]['mean']
+                std_vals[model] = compartment_values[model]['std']
+                pos = [m*bar_width+n for n in range(len(mean_vals[model]))]
+                ax.bar(pos, mean_vals[model].values(), width=bar_width, color=colors[m], align='center', alpha=0.5, label=model)
+                ax.errorbar(pos, mean_vals[model].values(), yerr=std_vals[model].values(), fmt='o', color='k')
+            plt.sca(ax)
+            plt.title(which_loss)
+            plt.ylabel(compartment)
+            xtick_vals = ["\n".join(tick) for tick in mean_vals[model].keys()]
+            plt.xticks(range(len(xtick_vals)), xtick_vals, rotation=45)
+            plt.legend(loc='best')
+    plt.show()
+
+
+def plot_all_params(predictions_dict, model_params=None, method='best', weighting=None):
     all_params = []
     if (not model_params):
         model_params = {}
@@ -333,24 +378,15 @@ def plot_all_params(predictions_dict, model_params=None, method='best'):
     for _, params in model_params.items():
         all_params += [param for param in params if param not in all_params]
 
-    import pdb; pdb.set_trace()
     param_wise_stats = { param:{} for param in all_params }
     for loc, loc_dict in predictions_dict.items():
         for model, model_dict in loc_dict.items():
-            param_values_stats = get_param_stats(model_dict,method)
-            # param_values = []
-            # for _, run_dict in model_dict.items():
-            #     # TODO: ensemble
-            #     if method == 'best':
-            #         param_values.append(run_dict['best_params'])
-            # param_values_stats = pd.DataFrame(param_values).describe()
+            param_values_stats = get_param_stats(model_dict, method, weighting)
             for param in param_values_stats.columns:
                 if model not in param_wise_stats[param]:
                     param_wise_stats[param][model] = {'mean':{},'std':{}}
                 param_wise_stats[param][model]['mean'][loc] = param_values_stats[param]['mean']
                 param_wise_stats[param][model]['std'][loc] = param_values_stats[param]['std']
-    # param_wise_stats.columns = ['param', 'state', 'district', 'model', 'mean', 'std']
-    import pdb; pdb.set_trace()
 
     n_subplots = len(all_params)
     ncols = 3
@@ -358,32 +394,22 @@ def plot_all_params(predictions_dict, model_params=None, method='best'):
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
     colors = "bgrcmy"
-    cmap = {model_name : colors[i] for i, model_name in enumerate(model_params)}
-    bar_width = 0.2
+    bar_width = 0.3
     for i, param in enumerate(all_params):
         ax = axs.flat[i]
         param_values = param_wise_stats[param]
-        n_models = len(param_values)
         mean_vals, std_vals = {},{}
-        for i,model in enumerate(param_values.keys()):
+        for k,model in enumerate(param_values.keys()):
             mean_vals[model] = param_values[model]['mean']
             std_vals[model] = param_values[model]['std']
-            pos = [i*bar_width+j for j in range(len(mean_vals[model]))]
-            err_pos = [i*bar_width+j+bar_width/2 for j in range(len(mean_vals[model]))]
-            # import pdb; pdb.set_trace()
-            ax.bar(pos,mean_vals[model].values(),width=bar_width,color=colors[i],align='edge',alpha=0.25)
-            ax.errorbar(err_pos,mean_vals[model].values(),yerr=std_vals[model].values(),fmt='o',color='k')
-        # ax.errorbar(param_values['district'] + '\n' + param_values['model'], param_values['mean'], yerr = param_values['std'], color='k', fmt='o')
-        # import pdb; pdb.set_trace()
-        # import pdb; pdb.set_trace()
+            pos = [k*bar_width+j for j in range(len(mean_vals[model]))]
+            ax.bar(pos, mean_vals[model].values(), width=bar_width, color=colors[k], align='center', alpha=0.5, label=model)
+            ax.errorbar(pos, mean_vals[model].values(), yerr=std_vals[model].values(), fmt='o', color='k')
         plt.sca(ax)
         plt.ylabel(param)
-        # plt.xticks(range(len(D)), list(D.keys()))
-        xtick_vals = list(mean_vals[model].keys())
-        for i,_ in enumerate(xtick_vals):
-            xtick_vals[i] = str(xtick_vals[i])
-        xtick_pos = range(len(xtick_vals))
-        plt.xticks(xtick_pos,xtick_vals,rotation=45)
+        xtick_vals = ["\n".join(tick) for tick in mean_vals[model].keys()]
+        plt.xticks(range(len(xtick_vals)), xtick_vals, rotation=45)
+        plt.legend(loc='best')
     plt.show()
 
 def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_axes=True):
