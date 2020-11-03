@@ -22,7 +22,7 @@ from utils.generic.enums import Columns
 class MCUncertainty(Uncertainty):
     def __init__(self, predictions_dict, fitting_config, forecast_config, variable_param_ranges, fitting_method, 
                  fitting_method_params, which_fit, date_of_sorting_trials, sort_trials_by_column, 
-                 loss, percentiles):
+                 loss, percentiles, process_trials=True):
         """
         Initializes uncertainty object, finds beta for distribution
 
@@ -40,7 +40,8 @@ class MCUncertainty(Uncertainty):
             setattr(self, key, loss[key])
         self.percentiles = percentiles
         # Processing all trials
-        self.process_trials(predictions_dict, fitting_config, forecast_config)
+        if process_trials:
+            self.process_trials(predictions_dict, fitting_config, forecast_config)
         # Finding Best Beta
         self.beta, self.dict_of_trials = self.find_beta(
             fitting_method, fitting_method_params, variable_param_ranges)
@@ -152,7 +153,6 @@ class MCUncertainty(Uncertainty):
             deciles_forecast[key] = {}
             df_predictions = predictions[ptile_dict[key]]
             df_predictions['daily_cases'] = df_predictions['total'].diff()
-            df_predictions.dropna(axis=0, how='any', inplace=True)
             deciles_forecast[key]['df_prediction'] = df_predictions
             deciles_forecast[key]['params'] =  params[ptile_dict[key]]
             deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
@@ -181,8 +181,12 @@ class MCUncertainty(Uncertainty):
         predictions = self.predictions_dict['m1']['trials_processed']['predictions']
         loss_cols = self.loss_compartments
         allcols = ['total', 'active', 'recovered', 'deceased']
-        predictions_stacked = np.array([df.loc[:, allcols].to_numpy() for df in predictions])
-        predictions_stacked_weighted_by_beta = beta_loss[:, None, None] * predictions_stacked / beta_loss.sum()
+        shapes = np.array([list(df.loc[:, allcols].to_numpy().shape) for df in predictions])
+        correct_shape_idxs = np.where(shapes[:, 0] == np.amax(shapes, axis=0)[0])[0]
+        pruned_predictions = [df for i, df in enumerate(predictions) if i in correct_shape_idxs]
+        pruned_losses = beta_loss[correct_shape_idxs]
+        predictions_stacked = np.stack([df.loc[:, allcols].to_numpy() for df in pruned_predictions], axis=0)
+        predictions_stacked_weighted_by_beta = pruned_losses[:, None, None] * predictions_stacked / pruned_losses.sum()
         weighted_pred = np.sum(predictions_stacked_weighted_by_beta, axis=0)
         weighted_pred_df = pd.DataFrame(data=weighted_pred, columns=allcols)
         weighted_pred_df['date'] = predictions[0]['date']
