@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: simulated
+        data_source: covid19india
         stratified_data: FALSE
         dataloading_params:
             state: Maharashtra
@@ -10,7 +10,7 @@ fitting:
             generate: FALSE
             config_file: undetected_fixed.yaml
             filename: ../../data/data/simulated_data/undetected.csv
-        smooth_jump: FALSE
+        smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
@@ -19,7 +19,7 @@ fitting:
             2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
             2020-06-15: [null, deceased, total, TRUE, weighted-mag]
-        rolling_average: FALSE
+        rolling_average: TRUE
         rolling_average_params:
             center: TRUE
             window_size: 7
@@ -29,7 +29,6 @@ fitting:
     #Choose Model and Ranges
     model: SEIR_Undetected
     variable_param_ranges:
-        # lockdown_R0: [[0.7, 1.2], uniform]  # not being used in the model (there because it throws errors while creating forecasts and for reports)
         T_inc: [[4, 6], uniform]
         T_inf_D: [[1, 10], uniform]
         T_inf_U: [[1, 20], uniform]
@@ -46,7 +45,7 @@ fitting:
         psi: 1.0
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 1
+        num_evals: 3
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:

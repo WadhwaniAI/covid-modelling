@@ -344,15 +344,18 @@ def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_
                     buckets_values[bucket][model_name][loc] = df_prediction[['date',bucket]]
 
     # upper limit of n_subplots
-    n_subplots = len(which_buckets)*len(predictions_dict)
+    if compare == 'model' :
+        n_subplots = len(which_buckets)*len(predictions_dict)
+    elif compare == 'location':
+        n_subplots = len(which_buckets)*len(list(predictions_dict.values())[0])
     ncols = 3
     nrows = math.ceil(n_subplots/ncols)
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
     colors = "bgrcmy"
     ax_counter = 0
-    for bucket, bucket_dict in buckets_values.items:
-        for layer_1, layer_1_dict in bucket_dict.items:
+    for bucket, bucket_dict in buckets_values.items():
+        for layer_1, layer_1_dict in bucket_dict.items():
             ax = axs.flat[ax_counter]
             for k, layer_2 in enumerate(layer_1_dict):
                 ax.plot(layer_1_dict[layer_2]['date'], layer_1_dict[layer_2][bucket], color=colors[k], label=layer_2)
@@ -364,6 +367,8 @@ def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_
             plt.title(layer_1)
             ax_counter += 1
     # delete extra axs
+    # for i in range(ax_counter,n_subplots):
+    #     fig.delaxes(axs.flat[i])
     plt.show()
 
 
@@ -393,7 +398,7 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
     colors = "bgrcmy"
-    bar_width = 0.3
+    bar_width = (1-0.2)/len(which_compartments)
     for i, which_loss in enumerate(which_losses):
         for j, compartment in enumerate(all_compartments):
             ax = axs.flat[i*len(all_compartments) + j]
@@ -442,7 +447,7 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
     colors = "bgrcmy"
-    bar_width = 0.3
+    bar_width = (1-0.2)/len(model_params)
     for i, param in enumerate(all_params):
         ax = axs.flat[i]
         param_values = param_wise_stats[param]

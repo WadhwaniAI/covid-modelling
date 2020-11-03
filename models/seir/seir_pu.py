@@ -11,10 +11,10 @@ import copy
 from models.seir.seir import SEIR
 from utils.fitting.ode import ODE_Solver
 
-class SEIR_Undetected_Testing(SEIR):
+class SEIR_PU(SEIR):
     def __init__(self, lockdown_R0=2.2, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
                  P_fatal=0.2, T_recov=14, N=1e7, d=1.0, psi=1.00, beta=0.1, starting_date='2020-03-09', 
-                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, Pu_hosp_ratio=1.2,**kwargs):
+                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, Pu_pop_ratio=1.2,**kwargs):
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
 
@@ -80,8 +80,8 @@ class SEIR_Undetected_Testing(SEIR):
         self.psi = psi
         self.beta = beta
         self.T_inf_U = T_inf_U
-        self.Pu_hosp_ratio = Pu_hosp_ratio
-        self.state_init_values['P_U'] = self.Pu_hosp_ratio * observed_values['active'] / self.N
+        self.Pu_pop_ratio = Pu_pop_ratio
+        self.state_init_values['P_U'] = self.Pu_pop_ratio
         # self.state_init_values['I_D'] = observed_values['i_d'] / self.N
         # self.state_init_values['I_U'] = observed_values['i_u'] / self.N
         # self.state_init_values['P_U'] = observed_values['p_i'] / self.N
@@ -112,12 +112,12 @@ class SEIR_Undetected_Testing(SEIR):
         # Write differential equations
         dydt[0] = - I * S * self.beta  # S
         dydt[1] = I * S * self.beta - (E/ self.T_inc)  # E
-        dydt[2] = (1 / self.T_inc)*E - I / self.T_inf_U - I*d  # I
-        dydt[4] = I / self.T_inf_U  # P_U
-        dydt[5] = (self.P_severe*I*d) - R_severe/self.T_recov #R_severe
-        dydt[6] = (self.P_fatal*I*d) - R_fatal/self.T_recov_fatal # R_fatal
-        dydt[7] = R_severe/self.T_recov   # C
-        dydt[8] = R_fatal/self.T_recov_fatal # D
+        dydt[2] = (1 / self.T_inc)*E - I / self.T_inf_U - I*self.d*self.psi  # I
+        dydt[3] = I / self.T_inf_U  # P_U
+        dydt[4] = (self.P_severe*I*self.d*self.psi) - R_severe/self.T_recov #R_severe
+        dydt[5] = (self.P_fatal*I*self.d*self.psi) - R_fatal/self.T_recov_fatal # R_fatal
+        dydt[6] = R_severe/self.T_recov   # C
+        dydt[7] = R_fatal/self.T_recov_fatal # D
 
         return dydt
 
