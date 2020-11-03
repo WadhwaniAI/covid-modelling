@@ -14,6 +14,7 @@ from scipy.stats import entropy
 from utils.generic.enums.columns import *
 from main.seir.forecast import _order_trials_by_loss
 from viz.utils import axis_formatter
+from utils.generic.stats import *
 
 def plot_buckets(df_prediction, title, which_buckets=None):
     if (which_buckets == None):
@@ -319,7 +320,8 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
     fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
 
-def plot_all_params(predictions_dict, model_params=None, weighting='best'):
+
+def plot_all_params(predictions_dict, model_params=None, method='best'):
     all_params = []
     if (not model_params):
         model_params = {}
@@ -331,34 +333,57 @@ def plot_all_params(predictions_dict, model_params=None, weighting='best'):
     for _, params in model_params.items():
         all_params += [param for param in params if param not in all_params]
 
-    param_array = []
+    import pdb; pdb.set_trace()
+    param_wise_stats = { param:{} for param in all_params }
     for loc, loc_dict in predictions_dict.items():
         for model, model_dict in loc_dict.items():
-            param_values = []
-            for _, run_dict in model_dict.items():
-                # TODO: ensemble
-                if weighting == 'best':
-                    param_values.append(run_dict['best_params'])
-            param_values_stats = pd.DataFrame(param_values).describe()
-            for i, param in enumerate(list(param_values_stats.columns)):
-                param_array.append([param, loc[0], loc[1], model]) 
-                param_array[-1].append(param_values_stats.iloc[1,i])
-                param_array[-1].append(param_values_stats.iloc[2,i])
-    param_array = pd.DataFrame(param_array)
-    param_array.columns = ['param', 'state', 'district', 'model', 'mean', 'std']
+            param_values_stats = get_param_stats(model_dict,method)
+            # param_values = []
+            # for _, run_dict in model_dict.items():
+            #     # TODO: ensemble
+            #     if method == 'best':
+            #         param_values.append(run_dict['best_params'])
+            # param_values_stats = pd.DataFrame(param_values).describe()
+            for param in param_values_stats.columns:
+                if model not in param_wise_stats[param]:
+                    param_wise_stats[param][model] = {'mean':{},'std':{}}
+                param_wise_stats[param][model]['mean'][loc] = param_values_stats[param]['mean']
+                param_wise_stats[param][model]['std'][loc] = param_values_stats[param]['std']
+    # param_wise_stats.columns = ['param', 'state', 'district', 'model', 'mean', 'std']
+    import pdb; pdb.set_trace()
 
-    fig, axs = plt.subplots(nrows=len(all_params)//2, ncols=2, 
-                            figsize=(18, 8*(len(all_params)//2)))
+    n_subplots = len(all_params)
+    ncols = 3
+    nrows = math.ceil(n_subplots/ncols)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
     colors = "bgrcmy"
     cmap = {model_name : colors[i] for i, model_name in enumerate(model_params)}
+    bar_width = 0.2
     for i, param in enumerate(all_params):
         ax = axs.flat[i]
-        param_values = param_array[param_array['param'] == param]
-        ax.bar(param_values['district'] + '\n' + param_values['model'], param_values['mean'], color=param_values['model'].map(cmap))
-        ax.errorbar(param_values['district'] + '\n' + param_values['model'], param_values['mean'], yerr = param_values['std'], color='k', fmt='o')
+        param_values = param_wise_stats[param]
+        n_models = len(param_values)
+        mean_vals, std_vals = {},{}
+        for i,model in enumerate(param_values.keys()):
+            mean_vals[model] = param_values[model]['mean']
+            std_vals[model] = param_values[model]['std']
+            pos = [i*bar_width+j for j in range(len(mean_vals[model]))]
+            err_pos = [i*bar_width+j+bar_width/2 for j in range(len(mean_vals[model]))]
+            # import pdb; pdb.set_trace()
+            ax.bar(pos,mean_vals[model].values(),width=bar_width,color=colors[i],align='edge',alpha=0.25)
+            ax.errorbar(err_pos,mean_vals[model].values(),yerr=std_vals[model].values(),fmt='o',color='k')
+        # ax.errorbar(param_values['district'] + '\n' + param_values['model'], param_values['mean'], yerr = param_values['std'], color='k', fmt='o')
+        # import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         plt.sca(ax)
         plt.ylabel(param)
-        plt.xticks(rotation=45)
+        # plt.xticks(range(len(D)), list(D.keys()))
+        xtick_vals = list(mean_vals[model].keys())
+        for i,_ in enumerate(xtick_vals):
+            xtick_vals[i] = str(xtick_vals[i])
+        xtick_pos = range(len(xtick_vals))
+        plt.xticks(xtick_pos,xtick_vals,rotation=45)
     plt.show()
 
 def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_axes=True):
