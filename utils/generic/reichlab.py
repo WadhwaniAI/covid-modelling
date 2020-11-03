@@ -144,6 +144,8 @@ def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key
         df_loc_submission = pd.DataFrame(columns=df_all_submissions.columns)
 
         # Loop across all percentiles
+        if not which_fit in predictions_dict[loc].keys():
+            continue
         for percentile in predictions_dict[loc][which_fit]['forecasts'].keys():
             if isinstance(percentile, str):
                 # Skipping all point forecasts that are not what the user specified
