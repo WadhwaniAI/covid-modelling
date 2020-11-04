@@ -50,8 +50,8 @@ fitting:
     split:
         start_date: null # NOT IMPLEMENTED
         end_date: null
-        train_period: 21
-        val_period: 7
+        train_period: 28
+        val_period: 28
         test_period: 0 # NOT IMPLEMENTED
         split_after_rolling: TRUE
     #Optimisation related parameters
