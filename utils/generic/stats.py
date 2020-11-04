@@ -19,7 +19,6 @@ def get_ensemble_combined(model_dict, weighting='exp', beta=1):
             params_vals = np.array([param_dict[param] for param_dict in params_array])
             params_dict[param] = np.concatenate((params_dict[param],params_vals),axis=0)
     
-    print (weighting)
     if weighting == 'exp':
         weights = np.exp(-beta*np.array(losses_array))
     elif weighting == 'inverse':

@@ -320,7 +320,7 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
     fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
 
-def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_method='ensemble_combined'):
+def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_method='ensemble_combined', model_types=None):
     extra_cols = ['date', 'active', 'total', 'recovered', 'deceased']
     buckets_values = {which_bucket:{} for which_bucket in which_buckets}
     layer2_vals = []
@@ -329,7 +329,8 @@ def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_
             params = get_param_stats(model_dict, param_method).loc[['mean']].to_dict('records')[0]
 
             first_run_dict = model_dict[list(model_dict.keys())[0]]
-            solver = eval(model_name)(**params, **first_run_dict['default_params'])
+            model_type = model_types[model_name]
+            solver = eval(model_type)(**params, **first_run_dict['default_params'])
             total_days = (list(first_run_dict['df_prediction']['date'])[-1] - list(first_run_dict['df_prediction']['date'])[0]).days
             df_prediction = solver.predict(total_days=total_days)
             cols = df_prediction.columns.to_list()

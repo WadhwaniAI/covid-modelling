@@ -38,7 +38,7 @@ fitting:
         P_fatal: [[0, 0.5], uniform]
         I_hosp_ratio: [[0,4.0], uniform]
         E_hosp_ratio: [[0,3.0], uniform]
-        Pu_pop_ratio: [[0,1.0], uniform]
+        Pu_pop_ratio: [[0,1], uniform]
     default_params:
         N: 1.0e+7
         psi: 1.0
