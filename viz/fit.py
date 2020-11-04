@@ -376,9 +376,8 @@ def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_
             plt.legend(loc='best')
             plt.title(layer_1)
             ax_counter += 1
-    # delete extra axs
-    # for i in range(ax_counter,n_subplots):
-    #     fig.delaxes(axs.flat[i])
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
     plt.show()
 
 
@@ -413,9 +412,10 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
         color_map[model] = colors[i]
 
     bar_width = (1-0.2)/len(which_compartments)
-    for i, which_loss in enumerate(which_losses):
-        for j, compartment in enumerate(all_compartments):
-            ax = axs.flat[i*len(all_compartments) + j]
+    ax_counter=0
+    for which_loss in which_losses:
+        for compartment in all_compartments:
+            ax = axs.flat[ax_counter]
             compartment_values = loss_wise_stats[which_loss][compartment]
             mean_vals, std_vals = {},{}
             for m,model in enumerate(compartment_values.keys()):
@@ -430,6 +430,9 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
             xtick_vals = ["\n".join(tick) for tick in mean_vals[model].keys()]
             plt.xticks(range(len(xtick_vals)), xtick_vals, rotation=45)
             plt.legend(loc='best')
+            ax_counter += 1
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
     plt.show()
 
 
@@ -466,8 +469,9 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
         color_map[model] = colors[i]
     
     bar_width = (1-0.2)/len(model_params)
-    for i, param in enumerate(all_params):
-        ax = axs.flat[i]
+    ax_counter=0
+    for param in all_params:
+        ax = axs.flat[ax_counter]
         param_values = param_wise_stats[param]
         mean_vals, std_vals = {},{}
         for k,model in enumerate(param_values.keys()):
@@ -481,6 +485,9 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
         xtick_vals = ["\n".join(tick) for tick in mean_vals[model].keys()]
         plt.xticks(range(len(xtick_vals)), xtick_vals, rotation=45)
         plt.legend(loc='best')
+        ax_counter += 1
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
     plt.show()
 
 def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_axes=True):
