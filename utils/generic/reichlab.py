@@ -8,6 +8,9 @@ import os
 import copy
 import re
 
+from data.dataloader import JHULoader
+from data.processing.processing import get_dataframes_cached
+
 """
 Helper functions for processing different reichlab submissions, processing reichlab ground truth,
 Comparing reichlab models with gt, processing and formatting our (Wadhwani AI) submission, 
@@ -15,6 +18,8 @@ comparing that with gt as well
 """
 
 def get_list_of_models(date_of_submission, comp, reichlab_path='..', read_from_github=False):
+    if comp == 'cum_case':
+        comp = 'inc_case'
     if read_from_github:
         reichlab_path = 'https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master'
     df = pd.read_csv(f'{reichlab_path}/ensemble-metadata/' + \
@@ -31,7 +36,8 @@ def get_list_of_models(date_of_submission, comp, reichlab_path='..', read_from_g
     list_of_models = df_counts.index
     return list_of_models
 
-def process_single_submission(model, date_of_submission, comp, reichlab_path='..', read_from_github=False):
+
+def process_single_submission(model, date_of_submission, comp, df_true, reichlab_path='..', read_from_github=False):
     if read_from_github:
         reichlab_path = 'https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master'
     try:
@@ -51,24 +57,56 @@ def process_single_submission(model, date_of_submission, comp, reichlab_path='..
     # Only keeping the wk forecasts
     df = df[df['target'].apply(lambda x : 'wk' in x)]
     
-    # Only the forecasts corresponnding the comp user are interested in
-    df = df[df['target'].apply(lambda x : comp.replace('_', ' ') in x)]
+    # Only the forecasts corresponding the comp user are interested in
+    if comp == 'cum_case':
+        df = df[df['target'].apply(lambda x : 'inc_case'.replace('_', ' ') in x)]
+    else:
+        df = df[df['target'].apply(lambda x : comp.replace('_', ' ') in x)]
     
     # Pruning the forecasts which are beyond 4 weeks ahead
     df = df[df['target'].apply(lambda x : int(re.findall(r'\d+', x)[0])) <= 4]
     
     df['target_end_date'] = pd.to_datetime(df['target_end_date'])
     df['forecast_date'] = pd.to_datetime(df['forecast_date'])
-    
+
+    if comp == 'cum_case':
+        grouped = df.groupby(['location', 'type', 'quantile'], dropna=False)
+        df_cumsum = pd.DataFrame(columns=df.columns)
+        for name, group in grouped:
+            group['value'] = group['value'].cumsum()
+            df_cumsum = pd.concat([df_cumsum, group], ignore_index=True)
+        
+        gt_cases = df_true.loc[df_true['date'] == df_cumsum['target_end_date'].min() -
+                               timedelta(days=7), ['Province_State','Confirmed']]
+        loc_code_df = pd.read_csv(
+            f'{reichlab_path}/data-locations/locations.csv')
+        gt_cases = gt_cases.merge(loc_code_df, left_on='Province_State', 
+                                  right_on='location_name')
+        gt_cases.drop(['Province_State', 'abbreviation',
+                       'location_name', 'population'], axis=1, inplace=True)
+        gt_cases['location'] = gt_cases['location'].astype(int)
+        gt_cases = gt_cases[gt_cases['location'] < 100]
+        gt_cases.reset_index(drop=True, inplace=True)
+        gt_cases.loc[len(gt_cases), :] = [int(gt_cases.sum(axis=0)['Confirmed']), 0]
+
+        df_cumsum = df_cumsum.merge(gt_cases)
+        df_cumsum['value'] = df_cumsum['value'] + df_cumsum['Confirmed']
+        df_cumsum.drop(['Confirmed'], axis=1, inplace=True)
+        df_cumsum['target'] = df_cumsum['target'].apply(
+            lambda x: x.replace('inc case', 'cum case'))
+        df = df_cumsum
+
     return df
 
 
 def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_path='..', read_from_github=False):
+    dataframes = get_dataframes_cached(loader_class=JHULoader)
+    df_true = dataframes['df_us_states']
     df_all_submissions = process_single_submission(
-        list_of_models[0], date_of_submission, comp, reichlab_path, read_from_github)
+        list_of_models[0], date_of_submission, comp, df_true, reichlab_path, read_from_github)
     for model in list_of_models:
         df_model_subm = process_single_submission(
-            model, date_of_submission, comp, reichlab_path, read_from_github)
+            model, date_of_submission, comp, df_true, reichlab_path, read_from_github)
         df_all_submissions = pd.concat([df_all_submissions, df_model_subm], ignore_index=True)
 
     return df_all_submissions
