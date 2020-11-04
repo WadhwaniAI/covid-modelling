@@ -96,7 +96,7 @@ class SEIR_Undetected(SEIR):
         self.state_init_values['S'] = 0
         self.state_init_values['I'] = 0
         nonSsum = sum(self.state_init_values.values())
-        self.state_init_values['S'] = (self.N - nonSsum)
+        self.state_init_values['S'] = (1 - nonSsum)
         del self.state_init_values['I']
 
 

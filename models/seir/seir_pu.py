@@ -83,7 +83,7 @@ class SEIR_PU(SEIR):
         self.state_init_values['P_U'] = self.Pu_pop_ratio
         self.state_init_values['S'] = 0
         nonSsum = sum(self.state_init_values.values())
-        self.state_init_values['S'] = (self.N - nonSsum)
+        self.state_init_values['S'] = (1 - nonSsum)
         
 
         # import pdb; pdb.set_trace()
