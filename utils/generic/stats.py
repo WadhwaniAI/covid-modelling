@@ -44,11 +44,8 @@ def get_param_stats(model_dict, method='best', weighting=None):
 def get_loss_stats(model_dict, which_loss='train'):
     loss_vals = []
     for _, run_dict in model_dict.items():
-        # import pdb; pdb.set_trace()
         df = run_dict['df_loss'][which_loss]
-        import pdb; pdb.set_trace()
         df['agg'] = df.mean()
         loss_vals.append(df)
     df = pd.DataFrame(loss_vals).describe()
-    import pdb; pdb.set_trace()
     return df.loc[['mean','std']]

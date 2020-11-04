@@ -387,7 +387,7 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
     for _, compartments in which_compartments.items():
         for which_loss in which_losses:
             all_compartments += [compartment for compartment in compartments if compartment not in all_compartments]
-
+    all_compartments.append('agg')
     loss_wise_stats = {}
     for which_loss in which_losses:
         loss_wise_stats[which_loss] = {compartment:{} for compartment in all_compartments}
@@ -395,6 +395,7 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
         for model, model_dict in loc_dict.items():
             for which_loss in which_losses:
                 loss_values_stats = get_loss_stats(model_dict, which_loss=which_loss)
+                # import pdb; pdb.set_trace()
                 for compartment in loss_values_stats.columns:
                     if model not in loss_wise_stats[which_loss][compartment]:
                         loss_wise_stats[which_loss][compartment][model] = {'mean':{}, 'std':{}}
