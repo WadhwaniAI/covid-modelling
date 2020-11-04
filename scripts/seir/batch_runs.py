@@ -153,6 +153,11 @@ def run_single_config_end_to_end(config, wandb_config, run_name, perform_sensiti
 
 
 def perform_batch_runs(base_config_filename='us.yaml', username='sansiddh', output_folder=None):
+    if output_folder is None:
+        output_folder = '/scratch/users/{}/covid-modelling/{}'.format(
+            username, datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
+    os.makedirs(output_folder, exist_ok=True)
+
     # Getting list of all states
     print('Getting list of all states')
     from data.dataloader import JHULoader
@@ -162,11 +167,6 @@ def perform_batch_runs(base_config_filename='us.yaml', username='sansiddh', outp
 
     # Specifying the folder where checkpoints will be saved
     predictions_dict = {}
-    if output_folder is None:
-        output_folder = '/scratch/users/{}/covid-modelling/{}'.format(
-            username, datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
-    os.makedirs(output_folder, exist_ok=True)
-
     for i, state in enumerate(what_to_vary):
         # Update config with new state name
         wandb_config = read_config(base_config_filename, preprocess=False)
