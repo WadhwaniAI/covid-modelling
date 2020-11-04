@@ -427,7 +427,7 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
             plt.sca(ax)
             plt.title(which_loss)
             plt.ylabel(compartment)
-            xtick_vals = ["\n".join(tick) for tick in mean_vals[model].keys()]
+            xtick_vals = mean_vals[model].keys()
             plt.xticks(range(len(xtick_vals)), xtick_vals, rotation=45)
             plt.legend(loc='best')
             ax_counter += 1
@@ -482,8 +482,8 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
             ax.errorbar(pos, mean_vals[model].values(), yerr=std_vals[model].values(), fmt='o', color='k')
         plt.sca(ax)
         plt.ylabel(param)
-        xtick_vals = ["\n".join(tick) for tick in mean_vals[model].keys()]
-        plt.xticks(range(len(xtick_vals)), xtick_vals, rotation=45)
+        xtick_vals = mean_vals[model].keys()
+        plt.xticks(range(len(mean_vals[model].keys())), mean_vals[model].keys(), rotation=45)
         plt.legend(loc='best')
         ax_counter += 1
     for i in range(ax_counter,nrows*ncols):
