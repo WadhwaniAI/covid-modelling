@@ -74,14 +74,20 @@ class SEIR_PU(SEIR):
         self.daily_tests = input_args['kwargs']['daily_testing']
         del input_args['kwargs']
         super().__init__(**input_args)
-
-        # import pdb; pdb.set_trace()
+        
         self.d = d
         self.psi = psi
         self.beta = beta
         self.T_inf_U = T_inf_U
         self.Pu_pop_ratio = Pu_pop_ratio
         self.state_init_values['P_U'] = self.Pu_pop_ratio
+        self.state_init_values['S'] = 0
+        nonSsum = sum(self.state_init_values.values())
+        self.state_init_values['S'] = (self.N - nonSsum)
+        
+
+        # import pdb; pdb.set_trace()
+        
         # self.state_init_values['I_D'] = observed_values['i_d'] / self.N
         # self.state_init_values['I_U'] = observed_values['i_u'] / self.N
         # self.state_init_values['P_U'] = observed_values['p_i'] / self.N
