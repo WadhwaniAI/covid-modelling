@@ -19,6 +19,7 @@ def get_ensemble_combined(model_dict, weighting='exp', beta=1):
             params_vals = np.array([param_dict[param] for param_dict in params_array])
             params_dict[param] = np.concatenate((params_dict[param],params_vals),axis=0)
     
+    print (weighting)
     if weighting == 'exp':
         weights = np.exp(-beta*np.array(losses_array))
     elif weighting == 'inverse':
@@ -39,7 +40,10 @@ def get_param_stats(model_dict, method='best', weighting=None):
     if method == 'best':
         return get_best_param_dist(model_dict)
     elif method == 'ensemble_combined':
-        return get_ensemble_combined(model_dict, weighting=weighting)
+        if weighting:
+            return get_ensemble_combined(model_dict, weighting=weighting)
+        else:
+            return get_ensemble_combined(model_dict)
 
 def get_loss_stats(model_dict, which_loss='train'):
     loss_vals = []
