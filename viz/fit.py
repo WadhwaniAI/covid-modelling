@@ -322,6 +322,7 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
 
 def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_method='ensemble_combined'):
     buckets_values = {which_bucket:{} for which_bucket in which_buckets}
+    layer2_vals = []
     for loc, loc_dict in predictions_dict.items():
         for model_name, model_dict in loc_dict.items():
             params = get_param_stats(model_dict, param_method).loc[['mean']].to_dict('records')[0]
@@ -337,10 +338,14 @@ def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_
                 if compare=='model':
                     if loc not in buckets_values[bucket]:
                         buckets_values[bucket][loc] = {}
+                    if model_name not in layer2_vals :
+                        layer2_vals.append(model_name)
                     buckets_values[bucket][loc][model_name] = df_prediction[['date',bucket]]
                 elif compare=='location':
                     if model_name not in buckets_values[bucket]:
                         buckets_values[bucket][model_name] = {}
+                    if loc not in layer2_vals :
+                        layer2_vals.append(loc)
                     buckets_values[bucket][model_name][loc] = df_prediction[['date',bucket]]
 
     # upper limit of n_subplots
@@ -352,13 +357,18 @@ def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_
     nrows = math.ceil(n_subplots/ncols)
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
+    
     colors = "bgrcmy"
+    color_map = {}
+    for i,layer2_val in enumerate(layer2_vals):
+        color_map[layer2_val] = colors[i]
+    
     ax_counter = 0
     for bucket, bucket_dict in buckets_values.items():
         for layer_1, layer_1_dict in bucket_dict.items():
             ax = axs.flat[ax_counter]
             for k, layer_2 in enumerate(layer_1_dict):
-                ax.plot(layer_1_dict[layer_2]['date'], layer_1_dict[layer_2][bucket], color=colors[k], label=layer_2)
+                ax.plot(layer_1_dict[layer_2]['date'], layer_1_dict[layer_2][bucket], color=color_map[layer_2], label=layer_2)
             plt.sca(ax)
             plt.ylabel(bucket)
             plt.xlabel('date')
@@ -398,6 +408,10 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
     colors = "bgrcmy"
+    color_map = {}
+    for i,model in enumerate(list( list( predictions_dict.values() )[0].keys() )):
+        color_map[model] = colors[i]
+
     bar_width = (1-0.2)/len(which_compartments)
     for i, which_loss in enumerate(which_losses):
         for j, compartment in enumerate(all_compartments):
@@ -408,7 +422,7 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
                 mean_vals[model] = compartment_values[model]['mean']
                 std_vals[model] = compartment_values[model]['std']
                 pos = [m*bar_width+n for n in range(len(mean_vals[model]))]
-                ax.bar(pos, mean_vals[model].values(), width=bar_width, color=colors[m], align='center', alpha=0.5, label=model)
+                ax.bar(pos, mean_vals[model].values(), width=bar_width, color=color_map[model], align='center', alpha=0.5, label=model)
                 ax.errorbar(pos, mean_vals[model].values(), yerr=std_vals[model].values(), fmt='o', color='k')
             plt.sca(ax)
             plt.title(which_loss)
@@ -447,6 +461,10 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
     colors = "bgrcmy"
+    color_map = {}
+    for i,model in enumerate(list(model_params.keys())):
+        color_map[model] = colors[i]
+    
     bar_width = (1-0.2)/len(model_params)
     for i, param in enumerate(all_params):
         ax = axs.flat[i]
@@ -456,7 +474,7 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
             mean_vals[model] = param_values[model]['mean']
             std_vals[model] = param_values[model]['std']
             pos = [k*bar_width+j for j in range(len(mean_vals[model]))]
-            ax.bar(pos, mean_vals[model].values(), width=bar_width, color=colors[k], align='center', alpha=0.5, label=model)
+            ax.bar(pos, mean_vals[model].values(), width=bar_width, color=color_map[model], align='center', alpha=0.5, label=model)
             ax.errorbar(pos, mean_vals[model].values(), yerr=std_vals[model].values(), fmt='o', color='k')
         plt.sca(ax)
         plt.ylabel(param)
