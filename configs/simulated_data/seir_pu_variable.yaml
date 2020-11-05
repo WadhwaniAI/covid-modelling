@@ -1,4 +1,4 @@
-model: SEIRHD
+model: SEIR_PU
 starting_date: 2020-08-18
 total_days: 50
 initial_values:
@@ -9,13 +9,15 @@ include_tests: True
 tests_done: '[10000 for i in range(50)]'
 fix_params: False
 params:
-    N: 1.0e+7
-    lockdown_R0: [[0.6, 1.2], uniform]
+    N: 2.0e+7
     T_inc: [[4, 6], uniform]
-    T_inf: [[3, 4], uniform]
-    T_recov: [[0, 40], uniform]
-    T_recov_fatal: [[0, 40], uniform]
+    T_inf_U: [[1, 20], uniform]
+    T_recov: [[1, 40], uniform]
+    T_recov_fatal: [[1, 40], uniform]
+    beta: [[0,0.5], uniform]
+    d: [[0,1], uniform]
     P_fatal: [[0, 0.5], uniform]
-    E_hosp_ratio: [[0, 2], uniform]
-    I_hosp_ratio: [[0, 2], uniform]
+    I_hosp_ratio: [[0,4.0], uniform]
+    E_hosp_ratio: [[0,3.0], uniform]
+    Pu_pop_ratio: [[0,0.6], uniform]
 output_file_name: simulated_data_1.csv
