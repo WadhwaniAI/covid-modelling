@@ -38,10 +38,10 @@ fitting:
         d: [[0,1], uniform]
         P_fatal: [[0, 0.5], uniform]
         I_D_hosp_ratio: [[0,3.0], uniform]
-        I_U_hosp_ratio: [[0,4.0], uniform]
+        I_U_hosp_ratio: [[0,6.0], uniform]
         E_hosp_ratio: [[0,3.0], uniform]
     default_params:
-        N: 1.0e+7
+        N: 2.0e+7
         psi: 1.0
     fitting_method: bayes_opt
     fitting_method_params:

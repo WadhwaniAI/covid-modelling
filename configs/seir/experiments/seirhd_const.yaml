@@ -36,9 +36,9 @@ fitting:
         T_recov_fatal: [[0, 40], uniform]
         P_fatal: [[0, 0.5], uniform]
         E_hosp_ratio: [[0, 2], uniform]
-        I_hosp_ratio: [[0, 3], uniform]
+        I_hosp_ratio: [[0, 6], uniform]
     default_params:
-        N: 1.0e+7
+        N: 2.0e+7
     fitting_method: bayes_opt
     fitting_method_params:
         num_evals: 1000
