@@ -33,7 +33,7 @@ class MCMC(object):
     """
     
     def __init__(self, optimiser, df_train, default_params, variable_param_ranges, n_chains, total_days,
- algo, num_evals, proposal_sigmas, loss_method, loss_compartments, loss_indices, **ignored):
+ algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices, **ignored):
         """
         Constructor. Fetches the data, initializes the optimizer and sets up the
         likelihood function.
@@ -46,6 +46,7 @@ class MCMC(object):
         self.timestamp = datetime.now()
         self.district = 'Mumbai'
         self.state = 'Maharashtra'
+        self.stride = stride
         #self.state = cfg['fitting']['data']['dataloading_params']['state']
         #self.district = cfg['fitting']['data']['dataloading_params']['district']
         #self.cfg  = cfg
@@ -399,7 +400,7 @@ class MCMC(object):
         combined_acc = list()
         for k, run in enumerate(self.chains):
             burn_in = int(len(run) / 2)
-            combined_acc += run[0][burn_in:]
+            combined_acc += run[0][burn_in:][::self.stride]
 
         n_samples = 1000
         sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
@@ -429,9 +430,9 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
-        #self.chains = []
-        #for i, run in enumerate(range(self.n_chains)):
-        #    self.chains.append(self._metropolis())
+        # self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
+        self.chains = []
+        for i, run in enumerate(range(self.n_chains)):
+           self.chains.append(self._metropolis())
         self._check_convergence()
         return self._get_trials()

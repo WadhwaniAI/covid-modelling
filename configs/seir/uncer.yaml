@@ -50,13 +50,14 @@ fitting:
             E_hosp_ratio: .05
             I_hosp_ratio: .05
             sigma: .02
-        num_evals: 15000
+        num_evals: 1500
         algo: gaussian
-        n_chains: 3
+        n_chains: 4
+        stride: 5
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-10-13
+        end_date: 2020-10-26
         train_period: 21
         val_period: 7
         test_period: 0
@@ -84,7 +85,7 @@ uncertainty:
         which_fit: m1
         variable_param_ranges:
             beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2020-10-13
+        date_of_sorting_trials: 2020-10-26
         sort_trials_by_column: total
         loss:
             loss_method: mape
