@@ -38,7 +38,7 @@ class SimulatedDataLoader(BaseLoader):
 
         ideal_params = copy.deepcopy(config['params'])
         del ideal_params['N']
-        print ("parameters used to generate data:", ideal_params)
+        # print ("parameters used to generate data:", ideal_params)
 
         model_params = config['params']
         model_params['starting_date'] = config['starting_date']
