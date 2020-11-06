@@ -45,7 +45,6 @@ class SimulatedDataLoader(BaseLoader):
         observed_values['total'] = sum(observed_values.values())
         observed_values['date'] =  config['starting_date']
         model_params['observed_values'] = pd.DataFrame.from_dict([observed_values]).iloc[0,:]
-        # import pdb; pdb.set_trace()
         
         if(config['include_tests']):
             simulation_dates = [config['starting_date']+pd.Timedelta(days=i) for i in range(config['total_days'])]
@@ -62,7 +61,6 @@ class SimulatedDataLoader(BaseLoader):
         else:
             df_result = solver.predict()
         
-        # import pdb; pdb.set_trace()
         if(config['include_tests']):
             for i in range(1,len(tests_done)):
                 tests_done[i] = tests_done[i-1] + tests_done[i]
