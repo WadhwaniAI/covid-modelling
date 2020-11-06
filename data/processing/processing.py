@@ -107,7 +107,6 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_dat
 
 def generate_simulated_data(**dataloading_params):
     """generates simulated data using the input params in config file
-
     Keyword Arguments
     -----------------
         configfile {str} -- Name of config file (located at '../../configs/simulated_data/') required to generste the simulated data
@@ -117,45 +116,32 @@ def generate_simulated_data(**dataloading_params):
         pd.DataFrame -- dataframe of cases for a particular state, district with 5 columns : 
             ['date', 'total', 'active', 'deceased', 'recovered']
     """
-    
     with open(os.path.join("../../configs/simulated_data/", dataloading_params['config_file'])) as configfile:
         config = yaml.load(configfile, Loader=yaml.SafeLoader)
 
     loader = SimulatedDataLoader()
-    df_result, params = loader.load_data(**config)
-        
+    data_dict = loader.load_data(**config)
+    df_result, params = data_dict['data_frame'], data_dict['actual_params']
+
     for col in df_result.columns:
         if col in ['active', 'total', 'recovered', 'deceased','tested']:
             df_result[col] = df_result[col].astype('int64')    
     return {"data_frame": df_result, 'actual_params': params}
 
 #TODO add support of adding 0s column for the ones which don't exist
-def get_simulated_data_from_file(filename, data_format='new', **kwargs):
-    if data_format == 'new':
-        df_result = pd.read_csv(filename) 
-        # df_result = df_result.drop(['Ward/block name', 'Ward number (if applicable)', 'Mild cases (isolated)',
-        #                             'Moderate cases (hospitalized)', 'Severe cases (In ICU)', 
-        #                             'Critical cases (ventilated patients)'], axis=1)
-        # columns_to_keep = ['state', 'district', 'date', 'total', 'active', 'recovered', 'deceased']
-        # df_result = df_result[columns_to_keep]
-        # df_result.drop(np.arange(3), inplace=True) TODO: Check if this is necessary
-        df_result['date'] = pd.to_datetime(df_result['date'])
-        # df_result = df_result.dropna(subset=['state'], how='any')
-        df_result.reset_index(inplace=True, drop=True)
-        df_result.loc[:, ['total', 'active', 'recovered', 'deceased']] = df_result[[
-            'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
-        for col in df_result.columns:
-            if col in ['active', 'total', 'recovered', 'deceased']:
-                df_result[col] = df_result[col].astype('int64')
-        # df_result = df_result[['date', 'state', 'district', 'total', 'active', 'recovered', 'deceased']]
-        df_result = df_result.dropna(subset=['date'], how='all')
+def get_simulated_data_from_file(filename, params_filename=None, **kwargs):
+    params = {}
+    if params_filename:
+        params = pd.read_csv(params_filename).iloc[0,:].to_dict()
+    df_result = pd.read_csv(filename) 
+    df_result['date'] = pd.to_datetime(df_result['date'])
+    df_result.loc[:, ['total', 'active', 'recovered', 'deceased']] = df_result[[
+        'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
+    for col in df_result.columns:
+        if col in ['active', 'total', 'recovered', 'deceased','tested']:
+            df_result[col] = df_result[col].astype('int64')
+    return {"data_frame": df_result, "actual_params": params}
 
-    if data_format == 'old':
-        df_result = pd.read_csv(filename)
-        df_result['date'] = pd.to_datetime(df_result['date'])
-        df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
-        
-    return {"data_frame": df_result}
 
 def get_custom_data_from_file(filename, data_format='new', **kwargs):
     if data_format == 'new':
@@ -336,7 +322,7 @@ def get_data_from_jhu(dataframe, region, sub_region=None):
         raise ValueError('Unknown dataframe type given as input to user')
 
     df.reset_index(drop=True, inplace=True)
-    return df
+    return {"data_frame": df}
 
 
 def get_data_from_ny_times(state, county=None):
@@ -351,7 +337,7 @@ def get_data_from_ny_times(state, county=None):
     df.rename(columns={"cases": "total", "deaths": "deceased"}, inplace=True)
     df.drop('fips', axis=1, inplace=True)
     df.reset_index(drop=True, inplace=True)
-    return df
+    return {"data_frame": df}
 
 
 def get_data_from_covid_tracking(state):
@@ -363,7 +349,7 @@ def get_data_from_covid_tracking(state):
                               "death": "deceased"}, inplace=True)
     df = df_states[df_states['state_name'] == state]
     df.reset_index(drop=True, inplace=True)
-    return df
+    return {"data_frame": df}
 
 
 def implement_rolling(df, window_size, center, win_type, min_periods):
