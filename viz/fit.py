@@ -362,7 +362,8 @@ def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_
     nrows = math.ceil(n_subplots/ncols)
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
-    
+    fig.suptitle('Buckets')
+
     colors = "bgrcmy"
     color_map = {}
     for i,layer2_val in enumerate(layer2_vals):
@@ -376,7 +377,7 @@ def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_
                 ax.plot(layer_1_dict[layer_2]['date'], layer_1_dict[layer_2][bucket], color=color_map[layer_2], label=layer_2)
             plt.sca(ax)
             plt.ylabel(bucket)
-            plt.xlabel('date')
+            # plt.xlabel('date')
             plt.xticks(rotation=45)
             plt.legend(loc='best')
             plt.title(layer_1)
