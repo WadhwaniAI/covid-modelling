@@ -67,6 +67,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     rap = rolling_average_params
     
     if rolling_average:
+        
         df_train, df_val, _ = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
             test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],

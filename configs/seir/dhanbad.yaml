@@ -32,15 +32,15 @@ fitting:
         N: 3.07e+6
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 20
+        num_evals: 1000
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: null
-        train_period: 15
-        val_period: 5
-        test_period: 0
+        end_date: 2020-11-05
+        train_period: 12
+        val_period: 3
+        test_period: 10
     #Optimisation related parameters
     loss:
         loss_method: mape
@@ -72,7 +72,7 @@ uncertainty:
     method: MCUncertainty
     uncertainty_params:
         num_evals: 1000
-        which_fit: m1
+        which_fit: m2
         variable_param_ranges:
             beta: [[0, 10], uniform]
         date_of_sorting_trials: 2020-11-20

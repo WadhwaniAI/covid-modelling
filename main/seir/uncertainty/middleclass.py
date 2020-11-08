@@ -148,18 +148,18 @@ class MCUncertainty(Uncertainty):
             float: average relative error calculated over trials and a val set
         """    
         beta = hp['beta']
-        losses = self.predictions_dict['m1']['trials_processed']['losses']
+        losses = self.predictions_dict['m2']['trials_processed']['losses']
         # This is done as rolling average on df_val has already been calculated, 
         # while df_district has no rolling average
-        df_val = self.predictions_dict['m1']['df_district'].set_index('date') \
-            .loc[self.predictions_dict['m1']['df_val']['date'],:]
+        df_val = self.predictions_dict['m2']['df_district'].set_index('date') \
+            .loc[self.predictions_dict['m2']['df_val']['date'],:]
         
-        df_data_weights_val = self.predictions_dict['m1']['df_data_weights_district'].set_index('date') \
-            .loc[self.predictions_dict['m1']['df_data_weights_val']['date'],:]
+        df_data_weights_val = self.predictions_dict['m2']['df_data_weights_district'].set_index('date') \
+            .loc[self.predictions_dict['m2']['df_data_weights_val']['date'],:]
         
         beta_loss = np.exp(-beta*losses)
 
-        predictions = self.predictions_dict['m1']['trials_processed']['predictions']
+        predictions = self.predictions_dict['m2']['trials_processed']['predictions']
         allcols = self.loss_compartments
         predictions_stacked = np.array([df.loc[:, allcols].to_numpy() for df in predictions])
         predictions_stacked_weighted_by_beta = beta_loss[:, None, None] * predictions_stacked / beta_loss.sum()

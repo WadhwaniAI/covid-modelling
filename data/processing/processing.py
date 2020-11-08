@@ -332,7 +332,7 @@ def implement_split(df, train_period, val_period, test_period, start_date, end_d
         if isinstance(start_date, datetime.date):
             start_date = df.loc[df['date'].dt.date == start_date].index[0]
 
-        df_train = df.iloc[:start_date + train_period, :]
+        df_train = df.iloc[start_date :start_date + train_period, :]
         df_val = df.iloc[start_date + train_period:start_date + train_period + val_period, :]
         df_test = df.iloc[start_date + train_period + val_period: \
                           start_date + train_period + val_period + test_period, :]
@@ -349,7 +349,7 @@ def implement_split(df, train_period, val_period, test_period, start_date, end_d
         df_test = df.iloc[len(df) - test_period+end_date:end_date, :]
         df_val = df.iloc[len(df) - (val_period+test_period) +
                         end_date:len(df) - test_period+end_date, :]
-        df_train = df.iloc[:len(df) - (val_period+test_period)+end_date, :]
+        df_train = df.iloc[len(df) - (train_period+val_period+test_period)+end_date:len(df) - (val_period+test_period)+end_date, :]
 
     return df_train, df_val, df_test
 
@@ -371,6 +371,7 @@ def train_val_test_split(df_district, train_period=5, val_period=5, test_period=
     """
     print("splitting data ..")
     df_district_rolling = copy.copy(df_district)
+    print("TVT: ", train_period, val_period, test_period)
     # Perform rolling average on all columns with numeric datatype
     if split_after_rolling:
         df_district_rolling = implement_rolling(
