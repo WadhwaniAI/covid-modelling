@@ -6,7 +6,9 @@ fitting:
         dataloading_params:
             state: Jharkhand
             district: Ranchi
-            use_dataframe: data_all
+            tables: [bed_summaries, case_summaries, testing_summary]
+            schema_name: city_data
+            staging_dir: jharkhand
         smooth_jump: FALSE
         smooth_jump_params: null
         rolling_average: TRUE
@@ -64,7 +66,7 @@ uncertainty:
         which_fit: m1
         variable_param_ranges:
             beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2020-09-30
+        date_of_sorting_trials: 2020-11-20
         sort_trials_by_column: total
         loss:
             loss_method: mape
