@@ -9,7 +9,7 @@ from collections import defaultdict
 from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader
 
 
-def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
+def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, **kwargs):
     if loader_class == Covid19IndiaLoader:
         loader_key = 'tracker'
     if loader_class == AthenaLoader:
@@ -22,7 +22,7 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
     if reload_data:
         print("pulling from source")
         loader = loader_class()
-        dataframes = loader.load_data()
+        dataframes = loader.load_data(**kwargs)
     else:
         try:
             with open(picklefn, 'rb') as pickle_file:
@@ -31,7 +31,7 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
         except:
             print("pulling from source")
             loader = loader_class()
-            dataframes = loader.load_data()
+            dataframes = loader.load_data(**kwargs)
             with open(picklefn, 'wb+') as pickle_file:
                 pickle.dump(dataframes, pickle_file)
     return dataframes
@@ -76,7 +76,7 @@ def get_data(data_source, dataloading_params):
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
-    dataframes = get_dataframes_cached(loader_class=AthenaLoader)
+    dataframes = get_dataframes_cached(loader_class=AthenaLoader, **kwargs)
     df_result = copy.copy(dataframes['case_summaries'])
     df_result.rename(columns={'city': 'district', 'deaths': 'deceased', 'total cases': 'total',
                               'active cases': 'active', 'recovered cases': 'recovered'}, inplace=True)
