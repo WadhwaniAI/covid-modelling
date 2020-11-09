@@ -320,6 +320,48 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
     fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
 
+def get_losses(model_dict, method='best', start_iter=100):
+    if method=='best':
+        best_losses = []
+        for trial in model_dict['m0']['trials']:
+            if len(best_losses) == 0:
+                best_losses.append(trial['result']['loss'])
+            else:
+                best_losses.append(min(best_losses[-1], trial['result']['loss']))
+        return best_losses[start_iter:]
+    elif method=='aggregate':
+        best_losses = np.array([0.0 for i in range(len(model_dict['m0']['trials']))])
+        for run, run_dict in model_dict.items():
+            min_loss = 1e+5
+            for i,trial in enumerate(run_dict['trials']):
+                best_losses[i] += min(min_loss,trial['result']['loss'])
+                min_loss = best_losses[i]
+        best_losses /= len(model_dict)
+        return list(best_losses[start_iter:])
+ 
+def plot_variation_with_iterations(predictions_dict, compare='model', method='best', start_iter=0):
+    # compute the total number of graphs => #locations * #models
+    ncols = 3
+    nrows = len(predictions_dict)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    fig.suptitle('Loss Vs #iterations')
+    ax_counter = 0
+    for tag, tag_dict in predictions_dict.items():
+        ax = axs.flat[ax_counter]
+        for model, model_dict in tag_dict.items():
+            losses = get_losses(model_dict, method=method, start_iter=start_iter)
+            ax.plot(range(start_iter, start_iter + len(losses)), losses, label=model)
+            plt.sca(ax)
+            plt.ylabel('loss')
+            plt.xlabel('iteration')
+            plt.legend(loc='best')
+            plt.title(tag)
+        ax_counter += 1
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
+    plt.show()
+
 def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_method='ensemble_combined', model_types=None):
     extra_cols = ['date', 'active', 'total', 'recovered', 'deceased']
     buckets_values = {which_bucket:{} for which_bucket in which_buckets}
@@ -377,7 +419,6 @@ def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_
                 ax.plot(layer_1_dict[layer_2]['date'], layer_1_dict[layer_2][bucket], color=color_map[layer_2], label=layer_2)
             plt.sca(ax)
             plt.ylabel(bucket)
-            # plt.xlabel('date')
             plt.xticks(rotation=45)
             plt.legend(loc='best')
             plt.title(layer_1)
