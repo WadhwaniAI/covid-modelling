@@ -335,7 +335,7 @@ def get_losses(model_dict, method='best', start_iter=100):
             min_loss = 1e+5
             for i,trial in enumerate(run_dict['trials']):
                 best_losses[i] += min(min_loss,trial['result']['loss'])
-                min_loss = best_losses[i]
+                min_loss = min(min_loss,trial['result']['loss'])
         best_losses /= len(model_dict)
         return list(best_losses[start_iter:])
  
