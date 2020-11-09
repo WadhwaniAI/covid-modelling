@@ -50,7 +50,7 @@ fitting:
             E_hosp_ratio: .05
             I_hosp_ratio: .05
             sigma: .02
-        num_evals: 1500
+        num_evals: 10000
         algo: gaussian
         n_chains: 4
         stride: 5

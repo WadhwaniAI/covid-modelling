@@ -157,7 +157,6 @@ class MCMC(object):
         theta = defaultdict()
         for key in self.prior_ranges:
             theta[key] = np.random.uniform(float(self.prior_ranges[key][0][0]), self.prior_ranges[key][0][1])
-            print(theta[key])
         self.oldLL = self._log_likelihood(theta)
         return theta
 
@@ -430,9 +429,9 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        # self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
-        self.chains = []
-        for i, run in enumerate(range(self.n_chains)):
-           self.chains.append(self._metropolis())
+        self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
+        # self.chains = []
+        # for i, run in enumerate(range(self.n_chains)):
+        #    self.chains.append(self._metropolis())
         self._check_convergence()
         return self._get_trials()
