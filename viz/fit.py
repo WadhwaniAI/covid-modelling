@@ -5,6 +5,8 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import copy
+import math
+from models.seir import * 
 
 from functools import reduce
 from scipy.stats import entropy
@@ -12,6 +14,28 @@ from scipy.stats import entropy
 from utils.generic.enums.columns import *
 from main.seir.forecast import _order_trials_by_loss
 from viz.utils import axis_formatter
+from utils.generic.stats import *
+
+def plot_buckets(df_prediction, title, which_buckets=None):
+    if (which_buckets == None):
+        which_buckets = df_prediction.columns.to_list()
+        which_buckets.remove('date')
+    plt.figure(figsize=(20,35))
+    fig,a =  plt.subplots(math.ceil(len(which_buckets)/2),2, figsize=(20,30))
+    fig.suptitle(title, fontsize=16)
+    col = 0
+    for i in range(math.ceil(len(which_buckets)/2)):
+        for j in range(2):
+            # import pdb; pdb.set_trace()
+            if (col >= len(which_buckets)):
+                break
+            a[i][j].plot(df_prediction['date'], df_prediction[which_buckets[col]], label=which_buckets[col])
+            plt.sca(a[i][j])
+            plt.xticks(rotation=45)
+            plt.ylabel(which_buckets[col])
+            plt.legend(loc='best')
+            col += 1
+    plt.show()
 
 def plot_fit(df_prediction, df_train, df_val, df_district, train_period, location_description,
              which_compartments=['active', 'total'], description='', savepath=None):
@@ -296,6 +320,223 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
     fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
 
+def get_losses(model_dict, method='best', start_iter=100):
+    if method=='best':
+        best_losses = []
+        for trial in model_dict['m0']['trials']:
+            if len(best_losses) == 0:
+                best_losses.append(trial['result']['loss'])
+            else:
+                best_losses.append(min(best_losses[-1], trial['result']['loss']))
+        return best_losses[start_iter:]
+    elif method=='aggregate':
+        best_losses = np.array([0.0 for i in range(len(model_dict['m0']['trials']))])
+        for run, run_dict in model_dict.items():
+            min_loss = 1e+5
+            for i,trial in enumerate(run_dict['trials']):
+                best_losses[i] += min(min_loss,trial['result']['loss'])
+                min_loss = min(min_loss,trial['result']['loss'])
+        best_losses /= len(model_dict)
+        return list(best_losses[start_iter:])
+ 
+def plot_variation_with_iterations(predictions_dict, compare='model', method='best', start_iter=0):
+    # compute the total number of graphs => #locations * #models
+    ncols = 3
+    nrows = len(predictions_dict)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    fig.suptitle('Loss Vs #iterations')
+    ax_counter = 0
+    for tag, tag_dict in predictions_dict.items():
+        ax = axs.flat[ax_counter]
+        for model, model_dict in tag_dict.items():
+            losses = get_losses(model_dict, method=method, start_iter=start_iter)
+            ax.plot(range(start_iter, start_iter + len(losses)), losses, label=model)
+            plt.sca(ax)
+            plt.ylabel('loss')
+            plt.xlabel('iteration')
+            plt.legend(loc='best')
+            plt.title(tag)
+        ax_counter += 1
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
+    plt.show()
+
+def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_method='ensemble_combined', model_types=None):
+    extra_cols = ['date', 'active', 'total', 'recovered', 'deceased']
+    buckets_values = {which_bucket:{} for which_bucket in which_buckets}
+    layer2_vals = []
+    for loc, loc_dict in predictions_dict.items():
+        for model_name, model_dict in loc_dict.items():
+            params = get_param_stats(model_dict, param_method).loc[['mean']].to_dict('records')[0]
+
+            first_run_dict = model_dict[list(model_dict.keys())[0]]
+            model_type = model_types[model_name]
+            solver = eval(model_type)(**params, **first_run_dict['default_params'])
+            total_days = (list(first_run_dict['df_prediction']['date'])[-1] - list(first_run_dict['df_prediction']['date'])[0]).days
+            df_prediction = solver.predict(total_days=total_days)
+            cols = df_prediction.columns.to_list()
+            needed_cols = [col for col in cols if col not in extra_cols]
+            df_prediction['N'] = df_prediction[needed_cols].sum(axis=1)
+
+            for bucket in which_buckets:
+                if bucket not in df_prediction.columns:
+                    continue
+                if compare=='model':
+                    if loc not in buckets_values[bucket]:
+                        buckets_values[bucket][loc] = {}
+                    if model_name not in layer2_vals :
+                        layer2_vals.append(model_name)
+                    buckets_values[bucket][loc][model_name] = df_prediction[['date',bucket]]
+                elif compare=='location':
+                    if model_name not in buckets_values[bucket]:
+                        buckets_values[bucket][model_name] = {}
+                    if loc not in layer2_vals :
+                        layer2_vals.append(loc)
+                    buckets_values[bucket][model_name][loc] = df_prediction[['date',bucket]]
+
+    # upper limit of n_subplots
+    if compare == 'model' :
+        n_subplots = len(which_buckets)*len(predictions_dict)
+    elif compare == 'location':
+        n_subplots = len(which_buckets)*len(list(predictions_dict.values())[0])
+    ncols = 3
+    nrows = math.ceil(n_subplots/ncols)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    fig.suptitle('Buckets')
+
+    colors = "bgrcmy"
+    color_map = {}
+    for i,layer2_val in enumerate(layer2_vals):
+        color_map[layer2_val] = colors[i]
+    
+    ax_counter = 0
+    for bucket, bucket_dict in buckets_values.items():
+        for layer_1, layer_1_dict in bucket_dict.items():
+            ax = axs.flat[ax_counter]
+            for k, layer_2 in enumerate(layer_1_dict):
+                ax.plot(layer_1_dict[layer_2]['date'], layer_1_dict[layer_2][bucket], color=color_map[layer_2], label=layer_2)
+            plt.sca(ax)
+            plt.ylabel(bucket)
+            plt.xticks(rotation=45)
+            plt.legend(loc='best')
+            plt.title(layer_1)
+            ax_counter += 1
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
+    plt.show()
+
+
+def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments=None):
+    all_compartments = []
+    # TODO: handle when which_compartments is None
+    for _, compartments in which_compartments.items():
+        for which_loss in which_losses:
+            all_compartments += [compartment for compartment in compartments if compartment not in all_compartments]
+    all_compartments.append('agg')
+    loss_wise_stats = {}
+    for which_loss in which_losses:
+        loss_wise_stats[which_loss] = {compartment:{} for compartment in all_compartments}
+    for loc, loc_dict in predictions_dict.items():
+        for model, model_dict in loc_dict.items():
+            for which_loss in which_losses:
+                loss_values_stats = get_loss_stats(model_dict, which_loss=which_loss)
+                # import pdb; pdb.set_trace()
+                for compartment in loss_values_stats.columns:
+                    if model not in loss_wise_stats[which_loss][compartment]:
+                        loss_wise_stats[which_loss][compartment][model] = {'mean':{}, 'std':{}}
+                    loss_wise_stats[which_loss][compartment][model]['mean'][loc] = loss_values_stats[compartment]['mean']
+                    loss_wise_stats[which_loss][compartment][model]['std'][loc] = loss_values_stats[compartment]['std']
+
+    n_subplots = len(all_compartments)*len(which_losses)
+    ncols = 3
+    nrows = math.ceil(n_subplots/ncols)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    colors = "bgrcmy"
+    color_map = {}
+    for i,model in enumerate(list( list( predictions_dict.values() )[0].keys() )):
+        color_map[model] = colors[i]
+
+    bar_width = (1-0.2)/len(which_compartments)
+    ax_counter=0
+    for which_loss in which_losses:
+        for compartment in all_compartments:
+            ax = axs.flat[ax_counter]
+            compartment_values = loss_wise_stats[which_loss][compartment]
+            mean_vals, std_vals = {},{}
+            for m,model in enumerate(compartment_values.keys()):
+                mean_vals[model] = compartment_values[model]['mean']
+                std_vals[model] = compartment_values[model]['std']
+                pos = [m*bar_width+n for n in range(len(mean_vals[model]))]
+                ax.bar(pos, mean_vals[model].values(), width=bar_width, color=color_map[model], align='center', alpha=0.5, label=model)
+                ax.errorbar(pos, mean_vals[model].values(), yerr=std_vals[model].values(), fmt='o', color='k')
+            plt.sca(ax)
+            plt.title(which_loss)
+            plt.ylabel(compartment)
+            xtick_vals = mean_vals[model].keys()
+            plt.xticks(range(len(xtick_vals)), xtick_vals, rotation=45)
+            plt.legend(loc='best')
+            ax_counter += 1
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
+    plt.show()
+
+
+def plot_all_params(predictions_dict, model_params=None, method='best', weighting=None):
+    all_params = []
+    if (not model_params):
+        model_params = {}
+        loc = list(predictions_dict.keys())[0]
+        for model_name, model_dict in predictions_dict[loc].items():
+            model_params[model_name] = list(model_dict['m0']['best_params'].keys())
+    
+    # TODO: change to set
+    for _, params in model_params.items():
+        all_params += [param for param in params if param not in all_params]
+
+    param_wise_stats = { param:{} for param in all_params }
+    for loc, loc_dict in predictions_dict.items():
+        for model, model_dict in loc_dict.items():
+            param_values_stats = get_param_stats(model_dict, method, weighting)
+            for param in param_values_stats.columns:
+                if model not in param_wise_stats[param]:
+                    param_wise_stats[param][model] = {'mean':{},'std':{}}
+                param_wise_stats[param][model]['mean'][loc] = param_values_stats[param]['mean']
+                param_wise_stats[param][model]['std'][loc] = param_values_stats[param]['std']
+
+    n_subplots = len(all_params)
+    ncols = 3
+    nrows = math.ceil(n_subplots/ncols)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    colors = "bgrcmy"
+    color_map = {}
+    for i,model in enumerate(list(model_params.keys())):
+        color_map[model] = colors[i]
+    
+    bar_width = (1-0.2)/len(model_params)
+    ax_counter=0
+    for param in all_params:
+        ax = axs.flat[ax_counter]
+        param_values = param_wise_stats[param]
+        mean_vals, std_vals = {},{}
+        for k,model in enumerate(param_values.keys()):
+            mean_vals[model] = param_values[model]['mean']
+            std_vals[model] = param_values[model]['std']
+            pos = [k*bar_width+j for j in range(len(mean_vals[model]))]
+            ax.bar(pos, mean_vals[model].values(), width=bar_width, color=color_map[model], align='center', alpha=0.5, label=model)
+            ax.errorbar(pos, mean_vals[model].values(), yerr=std_vals[model].values(), fmt='o', color='k')
+        plt.sca(ax)
+        plt.ylabel(param)
+        xtick_vals = mean_vals[model].keys()
+        plt.xticks(range(len(mean_vals[model].keys())), mean_vals[model].keys(), rotation=45)
+        plt.legend(loc='best')
+        ax_counter += 1
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
+    plt.show()
 
 def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_axes=True):
     """Plots KL divergence heatmaps for all the sampled params for all runs. 

@@ -12,8 +12,8 @@ class Loss_Calculator():
 
     def _calc_rmse(self, y_pred, y_true, log=False):
         if log:
-            y_true = np.log(y_true[y_true > 0])
             y_pred = np.log(y_pred[y_true > 0])
+            y_true = np.log(y_true[y_true > 0])
         loss = np.sqrt(np.mean((y_true - y_pred)**2))
         return loss
 
@@ -90,6 +90,8 @@ class Loss_Calculator():
             df_train['date']), ['date']+which_compartments]
         df_temp.reset_index(inplace=True, drop=True)
         df_train = df_train.loc[df_train['date'].isin(df_temp['date']), :]
+        df_temp = df_temp.sort_values('date')
+        df_train = df_train.sort_values('date')
         df_train.reset_index(inplace=True, drop=True)
         for compartment in df_loss.index:
             df_loss.loc[compartment, 'train'] = self._calc_mape(

@@ -13,9 +13,11 @@ import json
 
 def _dump_predictions_dict(predictions_dict, ROOT_DIR):
     filepath = os.path.join(ROOT_DIR, 'predictions_dict.pkl')
-    with open(filepath, 'wb+') as dump:
-        pickle.dump(predictions_dict, dump)
-
+    try:
+        with open(filepath, 'wb+') as dump:
+            pickle.dump(predictions_dict, dump)
+    except: 
+        pass
 
 def _dump_params(m1_dict, m2_dict, ROOT_DIR):
     filepath = os.path.join(ROOT_DIR, 'params.json')
@@ -39,8 +41,8 @@ def _save_trials(m1_dict, m2_dict, ROOT_DIR):
 def _create_md_file(predictions_dict, config, ROOT_DIR):
     fitting_date = predictions_dict['fitting_date']
     data_last_date = predictions_dict['m1']['data_last_date']
-    state = config['fitting']['data']['dataloading_params']['region']
-    dist = config['fitting']['data']['dataloading_params']['sub_region']
+    state = config['fitting']['data']['dataloading_params']['state']
+    dist = config['fitting']['data']['dataloading_params']['district']
     dist = '' if dist is None else dist
     filename = os.path.join(ROOT_DIR, f'{state.title()}-{dist.title()}_report_{fitting_date}')
     mdFile = MdUtils(file_name=filename, title=f'{dist.title()} Fits [Based on data until {data_last_date}]')
@@ -81,41 +83,67 @@ def _log_fits(mdFile, ROOT_DIR, fit_dict, which_fit='M1'):
     _log_plots_util(mdFile, ROOT_DIR, f'{which_fit.lower()}-fit.png',
                     fit_dict['plots']['fit'], f'{which_fit} Fit Curve')
 
-    mdFile.new_header(level=2, title=f'{which_fit} Sensitivity Curves')
-    _log_plots_util(mdFile, ROOT_DIR, f'{which_fit.lower()}-sensitivity.png',
-                    fit_dict['plots']['sensitivity'], f'{which_fit} Fit Sensitivity')
+    try:
+        mdFile.new_header(level=2, title=f'{which_fit} Sensitivity Curves')
+        _log_plots_util(mdFile, ROOT_DIR, f'{which_fit.lower()}-sensitivity.png',
+                        fit_dict['plots']['sensitivity'], f'{which_fit} Fit Sensitivity')
+    except:
+        pass
 
 
 def _log_uncertainty_fit(mdFile, fit_dict):
-    return
-    # mdFile.new_paragraph(f"beta - {fit_dict['beta']}")
-    # mdFile.new_paragraph(f"beta loss")
-    # mdFile.insert_code(pformat(fit_dict['beta_loss']))
+    mdFile.new_paragraph(f"beta - {fit_dict['beta']}")
+    mdFile.new_paragraph(f"beta loss")
+    mdFile.insert_code(pformat(fit_dict['beta_loss']))
 
 
-def _log_forecasts(mdFile, ROOT_DIR, m2_dict):
-    _log_plots_util(mdFile, ROOT_DIR, 'forecast-best.png',
-                    m2_dict['plots']['forecast_best'], 'Forecast using M2 Best Params')
-    _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-50.png',
-                    m2_dict['plots']['forecast_best_50'], 'Forecast using best fit, 50th decile params')
-    _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-80.png',
-                    m2_dict['plots']['forecast_best_80'], 'Forecast using best fit, 80th decile params')
-    # _log_plots_util(mdFile, ROOT_DIR, 'forecast-ensemble-mean-50.png',
-    #                 m2_dict['plots']['forecast_ensemble_mean_50'], 'Forecast of ensemble fit, 50th decile')
+def _log_forecasts(mdFile, ROOT_DIR, m_dict):
+    try:
+        _log_plots_util(mdFile, ROOT_DIR, 'forecast-best.png',
+                        m_dict['plots']['forecast_best'], 'Forecast using Best Params')
+    except:
+        pass
 
-    for column, figure in m2_dict['plots']['forecasts_topk'].items():
-        _log_plots_util(mdFile, ROOT_DIR, f'forecast-topk-{column}.png',
-                        figure, f'Forecast of top k trials for column {column}')
+    try:
+        _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-50.png',
+                    m_dict['plots']['forecast_best_50'], 'Forecast using best fit, 50th decile params')
+    except:
+        pass
 
-    for column, figure in m2_dict['plots']['forecasts_ptiles'].items():
-        _log_plots_util(mdFile, ROOT_DIR, f'forecast-ptiles-{column}.png',
-                        figure, f'Forecast of all ptiles for column {column}')
+    try:
+        _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-80.png',
+                    m_dict['plots']['forecast_best_80'], 'Forecast using best fit, 80th decile params')
+    except:
+        pass
 
-    if 'scenarios' in m2_dict['plots'].keys():
-        mdFile.new_header(level=1, title="What if Scenarios")
-        for column, figure in m2_dict['plots']['scenarios'].items():
-            _log_plots_util(mdFile, ROOT_DIR, f'forecast-scenarios-{column}.png',
-                            figure, '')
+    try:
+       _log_plots_util(mdFile, ROOT_DIR, 'forecast-ensemble-mean-50.png',
+                    m_dict['plots']['forecast_ensemble_mean_50'], 'Forecast of ensemble fit, 50th decile')
+    except:
+        pass
+
+    try:
+        for column, figure in m_dict['plots']['forecasts_topk'].items():
+            _log_plots_util(mdFile, ROOT_DIR, f'forecast-topk-{column}.png',
+                            figure, f'Forecast of top k trials for column {column}')
+    except:
+        pass
+    
+    try:
+        for column, figure in m_dict['plots']['forecasts_ptiles'].items():
+            _log_plots_util(mdFile, ROOT_DIR, f'forecast-ptiles-{column}.png',
+                            figure, f'Forecast of all ptiles for column {column}')
+    except:
+        pass
+    
+    try:
+        if 'scenarios' in m_dict['plots'].keys():
+            mdFile.new_header(level=1, title="What if Scenarios")
+            for column, figure in m_dict['plots']['scenarios'].items():
+                _log_plots_util(mdFile, ROOT_DIR, f'forecast-scenarios-{column}.png',
+                                figure, '')
+    except:
+        pass
 
     mdFile.new_paragraph("---")
 
@@ -201,4 +229,50 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
 
     pypandoc.convert_file("{}.md".format(filename), 'docx', outputfile="{}.docx".format(filename))
     #pypandoc.convert_file("{}.docx".format(filename), 'pdf', outputfile="{}.pdf".format(filename))
+    # TODO: pdf conversion has some issues with order of images, low priority
+
+
+def save_dict_and_create_report_simple(predictions_dict, config, ROOT_DIR='../../misc/reports/', 
+                                config_filename='default.yaml', config_ROOT_DIR='../../configs/seir'):
+    """Creates report (BOTH MD and DOCX) for an input of a dict of predictions for a particular district/region
+    The DOCX file can directly be uploaded to Google Drive and shared with the people who have to review
+
+    Arguments:
+        predictions_dict {dict} -- Dict of predictions for a particual district/region [NOT ALL Districts]
+
+    Keyword Arguments:
+        ROOT_DIR {str} -- the path where the plots and the report would be saved (default: {'../../misc/reports/'})
+    """
+
+    if not os.path.exists(ROOT_DIR):
+        os.makedirs(ROOT_DIR)
+
+    m1_dict = predictions_dict['m1']
+
+    _dump_predictions_dict(predictions_dict, ROOT_DIR)
+
+    with open(f'{config_ROOT_DIR}/{config_filename}') as configfile:
+        config = yaml.load(configfile, Loader=yaml.SafeLoader)
+
+    os.system(f'cp {config_ROOT_DIR}/{config_filename} {ROOT_DIR}/{config_filename}')
+    
+    mdFile, filename = _create_md_file(predictions_dict, config, ROOT_DIR)
+    # _log_hyperparams(mdFile, predictions_dict, config)
+
+    if m1_dict['plots']['smoothing'] is not None:
+        _log_smoothing(mdFile, ROOT_DIR, m1_dict)
+
+    mdFile.new_header(level=1, title=f'FITS')
+    _log_fits(mdFile, ROOT_DIR, m1_dict, which_fit='M1')
+
+    # Create Forecasts
+    mdFile.new_header(level=1, title=f'FORECASTS')
+    _log_forecasts(mdFile, ROOT_DIR, m1_dict)
+
+    # Create a table of contents
+    mdFile.new_table_of_contents(table_title='Contents', depth=2)
+    mdFile.create_md_file()
+
+    pypandoc.convert_file("{}.md".format(filename), 'docx', outputfile="{}.docx".format(filename))
+    # pypandoc.convert_file("{}.docx".format(filename), 'pdf', outputfile="{}.pdf".format(filename))
     # TODO: pdf conversion has some issues with order of images, low priority
