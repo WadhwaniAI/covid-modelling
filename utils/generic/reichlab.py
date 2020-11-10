@@ -17,7 +17,24 @@ Comparing reichlab models with gt, processing and formatting our (Wadhwani AI) s
 comparing that with gt as well
 """
 
-def get_list_of_models(date_of_submission, comp, reichlab_path='..', read_from_github=False):
+def get_list_of_models(date_of_submission, comp, reichlab_path='..', read_from_github=False, 
+                       location_id_filter=78, num_submissions_filter=50):
+    """Given an input of submission date, comp, gets list of all models that submitted.
+
+    Args:
+        date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
+        comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        read_from_github (bool, optional): If true, reads files directly from github 
+        instead of cloned repo. Defaults to False.
+        location_id_filter (int, optional): Only considers locations with location code <= this input. 
+        Defaults to 78. All states, territories have code <= 78. > 78, locations are counties
+        num_submissions_filter (bool, optional): Only selects models with submissions more than this.
+        Defaults to 50.
+
+    Returns:
+        list: list of eligible models
+    """
     if comp == 'cum_case':
         comp = 'inc_case'
     if read_from_github:
@@ -26,13 +43,13 @@ def get_list_of_models(date_of_submission, comp, reichlab_path='..', read_from_g
         f'{date_of_submission}-{comp}-model-eligibility.csv')
     df['location'] = df['location'].apply(lambda x : int(x) if x != 'US' else 0)
 
-    df_all_states = df[df['location'] <= 78]
+    df_all_states = df[df['location'] <= location_id_filter]
     df_eligible = df_all_states[df_all_states['overall_eligibility'] == 'eligible']
 
     df_counts = df_eligible.groupby('model').count()
     
     # Filter all models with > 50 submissions
-    df_counts = df_counts[df_counts['overall_eligibility'] > 50]
+    df_counts = df_counts[df_counts['overall_eligibility'] > num_submissions_filter]
     list_of_models = df_counts.index
     return list_of_models
 
