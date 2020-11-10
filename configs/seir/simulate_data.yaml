@@ -1,30 +1,27 @@
 fitting:
     # Geographical Location
     data:
-        data_source: jhu
+        data_source: simulated
         stratified_data: FALSE
         dataloading_params:
-            dataframe: us_states
-            region: Wyoming
-            sub_region: null
+            state: Maharashtra
+            district: Mumbai
+            use_dataframe: data_all
+            generate: TRUE
+            config_file: seirhd_fixed.yaml
+            filename: ../../data/data/simulated_data/simulated_data_1.csv
         smooth_jump: FALSE
-        smooth_jump_params:
-            2020-09-15: [2020-08-22, deceased, active, FALSE, weighted-mag]
-        rolling_average: TRUE
-        rolling_average_params:
-            center: TRUE
-            window_size: 7
-            win_type: null
-            min_periods: 7
-            split_after_rolling: FALSE
+        smooth_jump_params: None
+        rolling_average: FALSE
+        rolling_average_params: None
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
-        lockdown_R0: [[0.7, 1.5], uniform]
+        lockdown_R0: [[0.7, 1.2], uniform]
         T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
-        T_recov: [[0, 2000], uniform]
-        T_recov_fatal: [[0, 100], uniform]
+        T_recov: [[0, 40], uniform]
+        T_recov_fatal: [[0, 40], uniform]
         P_fatal: [[0, 0.1], uniform]
         E_hosp_ratio: [[0, 2], uniform]
         I_hosp_ratio: [[0, 1], uniform]
@@ -37,15 +34,15 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-09-26
+        end_date: 2020-08-31
         train_period: 21
-        val_period: 4
+        val_period: 7
         test_period: 0
     #Optimisation related parameters
     loss:
         loss_method: mape
-        loss_compartments: [deceased]
-        loss_weights: [1]
+        loss_compartments: [total, active, recovered, deceased]
+        loss_weights: [0.25, 0.25, 0.25, 0.25]
 sensitivity:
     lockdown_R0: [[[0.5, 1.5], 101], total, null]
     I_hosp_ratio: [[[0, 1], 201], total, null]
@@ -54,23 +51,21 @@ sensitivity:
     T_recov: [[[1, 100], 101], recovered, total]
     T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
-    forecast_days: 45
+    forecast_days: 30
     num_trials_to_plot: 10
-    plot_topk_trials_for_columns: [deceased]
-    plot_ptiles_for_columns: [deceased]
+    plot_topk_trials_for_columns: [total, active]
+    plot_ptiles_for_columns: [total, active]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
+        num_evals: 100
         which_fit: m1
-        fitting_method: gridsearch
-        fitting_method_params:
-            parallelise: FALSE
         variable_param_ranges:
-            beta: [[0, 10], 101]
-        date_of_sorting_trials: 2020-10-19
+            beta: [[0, 10], uniform]
+        date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:
             loss_method: mape
-            loss_compartments: [deceased]
-            loss_weights: [1]
-        percentiles: [1, 2.5, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 97.5, 99]
+            loss_compartments: [total, active, recovered, deceased]
+            loss_weights: [0.25, 0.25, 0.25, 0.25]
+        percentiles: [2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 97.5]

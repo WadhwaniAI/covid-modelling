@@ -73,15 +73,16 @@ forecast:
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
-        num_evals: 100
-        # NOT IMPLEMENTED
+        which_fit: m1
+        fitting_method: gridsearch
+        fitting_method_params:
+            parallelise: FALSE
         variable_param_ranges:
-            beta: [[0, 10], uniform]
+            beta: [[0, 10], 101]
         date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:
             loss_method: mape
             loss_compartments: [total, active, recovered, deceased]
             loss_weights: [0.25, 0.25, 0.25, 0.25]
-        # NOT IMPLEMENTED
         percentiles: [2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 97.5]

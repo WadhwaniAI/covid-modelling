@@ -50,3 +50,10 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
     
     return plots
 
+def plot_beta_loss(dict_of_trials):
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax.plot(list(dict_of_trials.keys()), list(dict_of_trials.values()))
+    ax.set_ylabel('Loss value')
+    ax.set_xlabel('Beta value')
+    ax.set_title('How the beta loss changes with beta')
+    return fig, ax
