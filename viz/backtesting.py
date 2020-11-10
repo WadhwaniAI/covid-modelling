@@ -19,10 +19,35 @@ from utils.generic.enums.columns import *
 
 def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_format='old_output', filename=None, 
                        predictions_dict=None, which_forecast=80, truncate_plotting_range=False,
-                       separate_compartments=False):
+                       separate_compartments=False, dataloading_params={'state': 'Maharashtra', 'district': 'Mumbai'}):
+    """Function of backtesting plotting
+
+    Args:
+        gt_data_source (str, optional): Ground Truth data source. Defaults to 'athena'.
+        preds_source (str, optional): Source of predictions ('filename'/'pickle'). Defaults to 'filename'.
+        fname_format (str, optional): Format of predictions fname ('old_output'/'new_deciles'). 
+        Required if preds_source == 'filename'. Defaults to 'old_output'.
+        filename (str, optional): path to predictions filename. 
+        Required if preds_source == 'filename'. Defaults to None.
+        predictions_dict (dict, optional): Predictions dict loaded from pickle file. 
+        Required if preds_source == 'pickle'. Defaults to None.
+        which_forecast (int, optional): Which forecast (50, 80, best, etc). Defaults to 80.
+        truncate_plotting_range (bool, optional): If true, only plots those days 
+        for which forecasting was done + training days. Defaults to False.
+        separate_compartments (bool, optional): If true, creates subplot for each compartment. Defaults to False.
+        dataloading_params (dict, optional): Dict corresponding to location where forecasting was done. 
+        Defaults to {'state': 'Maharashtra', 'district': 'Mumbai'}.
+
+    Raises:
+        ValueError: Please give legal fname_format : old_output or new_deciles
+        ValueError: Please give a predictions_dict input, current input is None
+        ValueError: Please give legal preds_source : either filename or pickle
+
+    Returns:
+        mpl.Figure, pd.DataFrame, pd.DataFrame : matplotlib figure, gt df, prediction df (both truncated)
+    """
     
     # Getting gt data
-    dataloading_params = {'state': 'Maharashtra', 'district': 'Mumbai'}
     df_true = get_data(gt_data_source, dataloading_params)
 
     # Setting train_period to None
