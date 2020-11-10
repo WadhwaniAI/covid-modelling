@@ -39,6 +39,7 @@ class Data_Weights():
             if isinstance(start_date, datetime.date):
                 start_date = df_data_weights.loc[df_data_weights['date'].dt.date == start_date].index[0]
 
+            weights_dataframes['df_data_weights_district'] = df_data_weights
             weights_dataframes['df_data_weights_train'] = df_data_weights.iloc[:start_date + train_period, :]
             weights_dataframes['df_data_weights_val'] = df_data_weights.iloc[start_date + train_period:start_date + train_period + val_period, :]
             weights_dataframes['df_data_weights_test'] = df_data_weights.iloc[start_date + train_period + val_period: \
@@ -54,7 +55,12 @@ class Data_Weights():
                 end_date = 0  
 
             weights_dataframes['df_data_weights_district'] = df_data_weights
-            weights_dataframes['df_data_weights_test'] = df_data_weights.iloc[len(df_data_weights) - test_period+end_date:end_date, :]
+            
+            if end_date != 0:
+                weights_dataframes['df_data_weights_test'] = df_data_weights.iloc[len(df_data_weights) - test_period+end_date:end_date, :]
+            else:
+                weights_dataframes['df_data_weights_test'] = df_data_weights.iloc[len(df_data_weights) - test_period:, :]
+            
             weights_dataframes['df_data_weights_val'] = df_data_weights.iloc[len(df_data_weights) - (val_period+test_period) +
                             end_date:len(df_data_weights) - test_period+end_date, :]
             weights_dataframes['df_data_weights_train'] = df_data_weights.iloc[:len(df_data_weights) - (val_period+test_period)+end_date, :]

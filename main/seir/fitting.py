@@ -68,24 +68,24 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     
     if rolling_average:
         
-        df_train, df_val, _ = train_val_test_split(
+        df_train, df_val, df_test = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
             test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
             window_size=rap['window_size'], center=rap['center'], 
             win_type=rap['win_type'], min_periods=rap['min_periods'])
     else:
-        df_train, df_val, _ = train_val_test_split(
+        df_train, df_val, df_test = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
             test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
             window_size=1)
 
-    df_train_nora, df_val_nora, _ = train_val_test_split(
+    df_train_nora, df_val_nora, df_test_nora = train_val_test_split(
         df_district, train_period=split['train_period'], val_period=split['val_period'],
         test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
         window_size=1)
 
     observed_dataframes = {}
-    for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
+    for name in ['df_district', 'df_train', 'df_val', 'df_test', 'df_train_nora', 'df_val_nora', 'df_test_nora']:
         observed_dataframes[name] = eval(name)
     return observed_dataframes, smoothing
 
@@ -112,7 +112,7 @@ def run_cycle(observed_dataframes, weights_dataframes, data, model, variable_par
         dict -- Dict of all predictions
     """
 
-    df_district, df_train, df_val, df_train_nora, df_val_nora = [
+    df_district, df_train, df_val, df_test, df_train_nora, df_val_nora, df_test_nora = [
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
 
     df_data_weights_train, df_data_weights_val, df_data_weights_test, df_data_weights_district = [
@@ -138,7 +138,8 @@ def run_cycle(observed_dataframes, weights_dataframes, data, model, variable_par
                                     model=model)
     
     lc = Loss_Calculator()
-    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, df_data_weights_train, df_data_weights_val, split['train_period'], 
+    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_test_nora, df_prediction, 
+                                              df_data_weights_train, df_data_weights_val, df_data_weights_test, split['train_period'], 
                                               which_compartments=loss['loss_compartments'], method=loss['loss_method'])
 
     if 'state' in data['dataloading_params'].keys() and 'district' in data['dataloading_params'].keys():
@@ -161,7 +162,7 @@ def run_cycle(observed_dataframes, weights_dataframes, data, model, variable_par
     results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
     for name in ['best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
-                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'trials', 'data_last_date', 
+                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_test', 'df_loss', 'trials', 'data_last_date', 
                  'df_data_weights_district', 'df_data_weights_train', 'df_data_weights_val', 'df_data_weights_test']:
         results_dict[name] = eval(name)
 

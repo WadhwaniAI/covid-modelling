@@ -33,9 +33,11 @@ class MCUncertainty(Uncertainty):
         for key in loss:
             setattr(self, key, loss[key])
         self.percentiles = percentiles
-        self.beta = self.find_beta(variable_param_ranges, num_evals)
-        self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
-        self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta}, return_dict=False,
+        self.beta = self.find_beta(variable_param_ranges, which_fit, num_evals)
+        self.beta_loss = self.avg_weighted_error({'beta': self.beta}, which_fit=which_fit, 
+                                                return_dict=True)
+        self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta}, which_fit=which_fit, 
+                                                              return_dict=False,
                                                               return_ensemble_mean_forecast=True)                                                      
         self.get_distribution()
 
@@ -133,11 +135,11 @@ class MCUncertainty(Uncertainty):
             deciles_forecast[key]['df_prediction'] = df_predictions
             deciles_forecast[key]['params'] =  params[ptile_dict[key]]
             deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
-                df_train_nora, None, df_predictions, df_data_weights_train, None, train_period=7,
+                df_train_nora, None, None, df_predictions, df_data_weights_train, None, None, train_period=7,
                 which_compartments=self.loss_compartments)
         return deciles_forecast
 
-    def avg_weighted_error(self, hp, return_dict=False, return_ensemble_mean_forecast=False):
+    def avg_weighted_error(self, hp, which_fit = 'm0', return_dict=False, return_ensemble_mean_forecast=False):
         """
         Loss function to optimize beta
 
@@ -148,18 +150,18 @@ class MCUncertainty(Uncertainty):
             float: average relative error calculated over trials and a val set
         """    
         beta = hp['beta']
-        losses = self.predictions_dict['m2']['trials_processed']['losses']
+        losses = self.predictions_dict[which_fit]['trials_processed']['losses']
         # This is done as rolling average on df_val has already been calculated, 
         # while df_district has no rolling average
-        df_val = self.predictions_dict['m2']['df_district'].set_index('date') \
-            .loc[self.predictions_dict['m2']['df_val']['date'],:]
+        df_val = self.predictions_dict[which_fit]['df_district'].set_index('date') \
+            .loc[self.predictions_dict[which_fit]['df_val']['date'],:]
         
-        df_data_weights_val = self.predictions_dict['m2']['df_data_weights_district'].set_index('date') \
-            .loc[self.predictions_dict['m2']['df_data_weights_val']['date'],:]
+        df_data_weights_val = self.predictions_dict[which_fit]['df_data_weights_district'].set_index('date') \
+            .loc[self.predictions_dict[which_fit]['df_data_weights_val']['date'],:]
         
         beta_loss = np.exp(-beta*losses)
 
-        predictions = self.predictions_dict['m2']['trials_processed']['predictions']
+        predictions = self.predictions_dict[which_fit]['trials_processed']['predictions']
         allcols = self.loss_compartments
         predictions_stacked = np.array([df.loc[:, allcols].to_numpy() for df in predictions])
         predictions_stacked_weighted_by_beta = beta_loss[:, None, None] * predictions_stacked / beta_loss.sum()
@@ -178,7 +180,50 @@ class MCUncertainty(Uncertainty):
         return lc.calc_loss(weighted_pred_df_loss, df_val, df_data_weights_val, method = self.loss_method,
                             which_compartments=allcols, loss_weights=self.loss_weights)
 
-    def find_beta(self, variable_param_ranges, num_evals=1000):
+    # my code
+    def avg_weighted_error_m2(self, hp, which_fit = 'm2', return_dict=False, return_ensemble_mean_forecast=False):
+        """
+        Loss function to optimize beta
+
+        Args:
+            hp (dict): {'beta': float}
+
+        Returns:
+            float: average relative error calculated over trials and a val set
+        """    
+        beta = hp['beta']
+        losses = self.predictions_dict[which_fit]['trials_processed']['losses']
+        # This is done as rolling average on df_val has already been calculated, 
+        # while df_district has no rolling average
+        df_val = self.predictions_dict[which_fit]['df_district'].set_index('date') \
+            .loc[self.predictions_dict[which_fit]['df_val']['date'],:]
+        
+        df_data_weights_val = self.predictions_dict[which_fit]['df_data_weights_district'].set_index('date') \
+            .loc[self.predictions_dict[which_fit]['df_data_weights_val']['date'],:]
+        
+        beta_loss = np.exp(-beta*losses)
+
+        predictions = self.predictions_dict[which_fit]['trials_processed']['predictions']
+        allcols = self.loss_compartments
+        predictions_stacked = np.array([df.loc[:, allcols].to_numpy() for df in predictions])
+        predictions_stacked_weighted_by_beta = beta_loss[:, None, None] * predictions_stacked / beta_loss.sum()
+        weighted_pred = np.sum(predictions_stacked_weighted_by_beta, axis=0)
+        weighted_pred_df = pd.DataFrame(data=weighted_pred, columns=allcols)
+        weighted_pred_df['date'] = predictions[0]['date']
+        weighted_pred_df.set_index('date', inplace=True)
+        weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
+        
+        lc = Loss_Calculator()
+        if return_dict:
+            return lc.calc_loss_dict(weighted_pred_df_loss, df_val, df_data_weights_val, method = self.loss_method)
+        if return_ensemble_mean_forecast:
+            weighted_pred_df.reset_index(inplace=True)
+            return weighted_pred_df
+        return lc.calc_loss(weighted_pred_df_loss, df_val, df_data_weights_val, method = self.loss_method,
+                            which_compartments=allcols, loss_weights=self.loss_weights)
+
+    
+    def find_beta(self, variable_param_ranges, which_fit='m0', num_evals=1000):
         """
         Runs a search over m1 trials to find best beta for a probability distro
 
@@ -193,12 +238,20 @@ class MCUncertainty(Uncertainty):
                 key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
 
         trials = Trials()
-        best = fmin(self.avg_weighted_error,
-                    space=variable_param_ranges,
-                    algo=tpe.suggest,
-                    max_evals=num_evals,
-                    trials=trials)
 
+        if which_fit == 'm0':
+            best = fmin(self.avg_weighted_error,
+                        space=variable_param_ranges,
+                        algo=tpe.suggest,
+                        max_evals=num_evals,
+                        trials=trials)
+        elif which_fit == 'm2':
+            best = fmin(self.avg_weighted_error_m2,
+                        space=variable_param_ranges,
+                        algo=tpe.suggest,
+                        max_evals=num_evals,
+                        trials=trials)
+        
         self.beta = best['beta']
         return self.beta
 

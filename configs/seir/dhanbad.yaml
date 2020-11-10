@@ -37,10 +37,10 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-11-05
+        end_date: 2020-11-09
         train_period: 12
         val_period: 3
-        test_period: 10
+        test_period: 7
     #Optimisation related parameters
     loss:
         loss_method: mape
@@ -64,18 +64,18 @@ sensitivity:
     T_recov: [[[1, 100], 101], recovered, total]
     T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
-    forecast_days: 30
+    forecast_days: 46
     num_trials_to_plot: 10
     plot_topk_trials_for_columns: [total, active]
     plot_ptiles_for_columns: [total, active]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
-        num_evals: 1000
+        num_evals: 100
         which_fit: m2
         variable_param_ranges:
             beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2020-11-20
+        date_of_sorting_trials: 2020-12-25
         sort_trials_by_column: active
         loss:
             loss_method: mape

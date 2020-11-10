@@ -70,7 +70,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         predictions.append(predictions_dict[which_fit]['forecasts'][fits_to_plot[i]])
     
     # Extracting the true data for the district
-    df_true = predictions_dict['m1']['df_district']
+    df_true = predictions_dict[which_fit]['df_district']
 
     '''
     if error_bars:

@@ -49,7 +49,6 @@ def _create_md_file(predictions_dict, config, ROOT_DIR):
     mdFile = MdUtils(file_name=filename, title=f'{dist.title()} Fits [Based on data until {data_last_date}]')
     return mdFile, filename
 
-
 def _log_hyperparams(mdFile, predictions_dict, config):
     mdFile.new_paragraph("---")
     mdFile.new_paragraph(f"Data available till: {predictions_dict['m2']['data_last_date']}")
@@ -76,7 +75,7 @@ def _log_smoothing(mdFile, ROOT_DIR, fit_dict):
 def _log_fits(mdFile, ROOT_DIR, fit_dict, which_fit='M1'):
 
     mdFile.new_header(level=1, title=f'{which_fit} FIT')
-
+    
     if fit_dict.get('df_train') is not None:
         mdFile.new_paragraph(f"TRAIN PERIOD START DATE: {fit_dict['df_train'].date.min().date()}")
         mdFile.new_paragraph(f"TRAIN PERIOD END DATE: {fit_dict['df_train'].date.max().date()}")
@@ -95,11 +94,22 @@ def _log_fits(mdFile, ROOT_DIR, fit_dict, which_fit='M1'):
     mdFile.new_header(level=2, title=f'Optimal Parameters')
     mdFile.insert_code(pformat(fit_dict['best_params']))
     mdFile.new_header(level=2, title=f'MAPE Loss Values')
+    '''
+    if which_fit == 'M0':
+        mdFile.new_paragraph(f"ENSEMBLE MEAN")
+    '''
     mdFile.new_paragraph(fit_dict['df_loss'].to_markdown())
 
-    mdFile.new_header(level=2, title=f'{which_fit} Fit Curves')
-    _log_plots_util(mdFile, ROOT_DIR, f'{which_fit.lower()}-fit.png',
-                    fit_dict['plots']['fit'], f'{which_fit} Fit Curve')
+    if which_fit.lower() == 'm1' or which_fit.lower() == 'm2':
+        mdFile.new_header(level=2, title=f'{which_fit} Fit Curves')
+        _log_plots_util(mdFile, ROOT_DIR, f'{which_fit.lower()}-fit.png',
+                        fit_dict['plots']['fit'], f'{which_fit} Fit Curve')
+    else:
+        mdFile.new_header(level=2, title=f'{which_fit} Fit Curves')
+        _log_plots_util(mdFile, ROOT_DIR, f'{which_fit.lower()}-ensemble_mean.png',
+                        fit_dict['plots']['forecast_ensemble_mean_best'], f'{which_fit} Ensemble Mean Curve')
+     
+
 
     mdFile.new_header(level=2, title=f'{which_fit} Sensitivity Curves')
     _log_plots_util(mdFile, ROOT_DIR, f'{which_fit.lower()}-sensitivity.png',
@@ -115,11 +125,11 @@ def _log_forecasts(mdFile, ROOT_DIR, m1_dict, m2_dict):
     _log_plots_util(mdFile, ROOT_DIR, 'forecast-best.png',
                     m2_dict['plots']['forecast_best'], 'Forecast using M1 Best Params')
     _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-50.png',
-                    m2_dict['plots']['forecast_best_50'], 'Forecast using best fit, 50th decile params')
+                    m2_dict['plots']['forecast_best_50'], 'Forecast using M2 best fit, 50th decile params')
     _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-80.png',
-                    m2_dict['plots']['forecast_best_80'], 'Forecast using best fit, 80th decile params')
+                    m2_dict['plots']['forecast_best_80'], 'Forecast using M2 best fit, 80th decile params')
     _log_plots_util(mdFile, ROOT_DIR, 'forecast-ensemble-mean-50.png',
-                    m2_dict['plots']['forecast_ensemble_mean_50'], 'Forecast of ensemble fit, 50th decile')
+                    m2_dict['plots']['forecast_ensemble_mean_50'], 'Forecast of M2 ensemble fit, 50th decile, best')
 
     for column, figure in m1_dict['plots']['forecasts_topk'].items():
         _log_plots_util(mdFile, ROOT_DIR, f'forecast-topk-{column}.png',
@@ -172,7 +182,7 @@ def _log_r0_multipliers(mdFile, ROOT_DIR, m2_dict):
     _log_plots_util(mdFile, ROOT_DIR, 'r0-multipliers.png',
                     m2_dict['plots']['r0_mul_dict'], 'R0 Multipliers')
 
-def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/reports/', 
+def save_dict_and_create_report(predictions_dict, config_dict, ROOT_DIR='../../misc/reports/', 
                                 config_filename='default.yaml', config_ROOT_DIR='../../configs/seir'):
     """Creates report (BOTH MD and DOCX) for an input of a dict of predictions for a particular district/region
     The DOCX file can directly be uploaded to Google Drive and shared with the people who have to review
@@ -200,6 +210,9 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
     
     mdFile, filename = _create_md_file(predictions_dict, config, ROOT_DIR)
     _log_hyperparams(mdFile, predictions_dict, config)
+
+    mdFile.new_header(level=1, title='')
+    mdFile.new_header(level=1, title='{} - {}'.format(config_dict['fitting']['data']['dataloading_params']['state'], config_dict['fitting']['data']['dataloading_params']['district']))
 
     if m1_dict['plots']['smoothing'] is not None:
        _log_smoothing(mdFile, ROOT_DIR, m1_dict)

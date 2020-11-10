@@ -323,6 +323,7 @@ def implement_rolling(df, window_size, center, win_type, min_periods):
     return df_roll
 
 def implement_split(df, train_period, val_period, test_period, start_date, end_date):
+    
     if start_date is not None and end_date is not None:
         raise ValueError('Both start_date and end_date cannot be specified. Please specify only 1')
     elif start_date is not None:
@@ -336,7 +337,7 @@ def implement_split(df, train_period, val_period, test_period, start_date, end_d
         df_val = df.iloc[start_date + train_period:start_date + train_period + val_period, :]
         df_test = df.iloc[start_date + train_period + val_period: \
                           start_date + train_period + val_period + test_period, :]
-    else:    
+    else:   
         if end_date is not None:
             if isinstance(end_date, int):
                 if end_date > 0:
@@ -346,7 +347,11 @@ def implement_split(df, train_period, val_period, test_period, start_date, end_d
         else:
             end_date = 0  
 
-        df_test = df.iloc[len(df) - test_period+end_date:end_date, :]
+        if end_date != 0:
+            df_test = df.iloc[len(df) - test_period+end_date:end_date, :]
+        else:
+            df_test = df.iloc[len(df) - test_period:, :]
+
         df_val = df.iloc[len(df) - (val_period+test_period) +
                         end_date:len(df) - test_period+end_date, :]
         df_train = df.iloc[len(df) - (train_period+val_period+test_period)+end_date:len(df) - (val_period+test_period)+end_date, :]
@@ -393,7 +398,12 @@ def train_val_test_split(df_district, train_period=5, val_period=5, test_period=
         
     if val_period == 0:
         df_val = None
+    
+    if test_period == 0:
+        df_test = None
 
+    print("CODECODECODECODECODECODECODE")
+    print(df_district)
     return df_train, df_val, df_test
 
 def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):

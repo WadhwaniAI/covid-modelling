@@ -104,7 +104,8 @@ class Loss_Calculator():
             err['rmsle'] = None
         return err
 
-    def create_loss_dataframe_region(self, df_train, df_val, df_prediction, df_data_weights_train, df_data_weights_val, 
+    def create_loss_dataframe_region(self, df_train, df_val, df_test, df_prediction, 
+                                    df_data_weights_train, df_data_weights_val, df_data_weights_test, 
                                     train_period, which_compartments=['active', 'total'], method='mape'
                                     ):
         """Helper function for calculating loss in training pipeline
@@ -121,9 +122,8 @@ class Loss_Calculator():
         Returns:
             pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
         """
-
         # setting indices' names and column names for the loss dataframe
-        df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
+        df_loss = pd.DataFrame(columns=['train', 'val', 'test'], index=which_compartments)
 
         df_temp = df_prediction.loc[df_prediction['date'].isin(
             df_train['date']), ['date']+which_compartments]
@@ -158,6 +158,21 @@ class Loss_Calculator():
         else:
             del df_loss['val']
         
+        if isinstance(df_test, pd.DataFrame):
+            df_temp_2 = df_prediction.loc[df_prediction['date'].isin(
+                df_test['date']), ['date']+which_compartments]
+        
+            df_temp_2.reset_index(inplace=True, drop=True)
+            df_test.reset_index(inplace=True, drop=True)
+            df_data_weights_test.reset_index(inplace=True, drop=True)
+
+            losses = self.calc_loss_dict(df_temp_2, df_test, df_data_weights_test, method=method)
+            for compartment in df_loss.index:
+                df_loss.loc[compartment, 'test'] = losses[compartment]
+
+        else:
+            del df_loss['test']
+
         return df_loss
 
     def create_loss_dataframe_master(self, predictions_dict, train_fit='m1'):
