@@ -29,16 +29,7 @@ def read_config(filename='default.yaml', preprocess=True):
     else:
         return process_config(config)
 
-def process_config(config):
-    """Helper function for processing config file read from yaml file
-
-    Args:
-        config (dict): Unprocessed config dict
-
-    Returns:
-        dict: Processed config dict
-    """
-    nconfig = copy.deepcopy(config)
+def create_location_description(nconfig):
     dl_nconfig = nconfig['fitting']['data']['dataloading_params']
     if 'state' in dl_nconfig.keys() and 'district' in dl_nconfig.keys():
         location_description = (dl_nconfig['state'], dl_nconfig['district'])
@@ -49,6 +40,18 @@ def process_config(config):
     else:
         location_description = (dl_nconfig['state'])
     dl_nconfig['location_description'] = location_description
+
+def process_config(config):
+    """Helper function for processing config file read from yaml file
+
+    Args:
+        config (dict): Unprocessed config dict
+
+    Returns:
+        dict: Processed config dict
+    """
+    nconfig = copy.deepcopy(config)
+    create_location_description(nconfig)
     
     nconfig['fitting']['model'] = getattr(models.seir, nconfig['fitting']['model'])
 
