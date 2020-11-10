@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from hyperopt import hp, tpe, fmin, Trials
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 from collections import OrderedDict
 import itertools
