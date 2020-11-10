@@ -30,6 +30,11 @@ def read_config(filename='default.yaml', preprocess=True):
         return process_config(config)
 
 def create_location_description(nconfig):
+    """Helper function for creating location description
+
+    Args:
+        nconfig (dict): The input config
+    """
     dl_nconfig = nconfig['fitting']['data']['dataloading_params']
     if 'state' in dl_nconfig.keys() and 'district' in dl_nconfig.keys():
         location_description = (dl_nconfig['state'], dl_nconfig['district'])
