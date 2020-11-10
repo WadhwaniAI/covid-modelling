@@ -55,6 +55,20 @@ def get_list_of_models(date_of_submission, comp, reichlab_path='..', read_from_g
 
 
 def process_single_submission(model, date_of_submission, comp, df_true, reichlab_path='..', read_from_github=False):
+    """Processes the CSV file of a single submission (one model, one instance of time)
+
+    Args:
+        model (str): The model name to process CSV of 
+        date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
+        comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
+        df_true (pd.DataFrame): The ground truth dataframe (Used for processing cum_cases submissions)
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        read_from_github (bool, optional): If true, reads files directly from github 
+        instead of cloned repo. Defaults to False.
+
+    Returns:
+        pd.DataFrame: model submssion processed dataframe
+    """
     if read_from_github:
         reichlab_path = 'https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master'
     try:
@@ -117,6 +131,19 @@ def process_single_submission(model, date_of_submission, comp, df_true, reichlab
 
 
 def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_path='..', read_from_github=False):
+    """Process submissions for all models given as input and concatenate them
+
+    Args:
+        list_of_models (list): List of all models to process submission for. Typically output of get_list_of_models
+        date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
+        comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        read_from_github (bool, optional): If true, reads files directly from github 
+        instead of cloned repo. Defaults to False.
+
+    Returns:
+        [type]: [description]
+    """
     dataframes = get_dataframes_cached(loader_class=JHULoader)
     df_true = dataframes['df_us_states']
     df_all_submissions = process_single_submission(
@@ -130,6 +157,19 @@ def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_p
 
 
 def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=False):
+    """Process gt file in reichlab repo. Aggregate by week, and truncate to dates models forecasted for.
+
+    Args:
+        comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
+        df_all_submissions (pd.DataFrame): The dataframe of all model predictions processed. 
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        read_from_github (bool, optional): If true, reads files directly from github 
+        instead of cloned repo. Defaults to False.
+
+    Returns:
+        [pd.DataFrame]*3, dict : gt df, gt df truncated to model prediction dates (daily), 
+        gt df truncated to model prediction dates (aggregated weekly), dict of location name to location key
+    """
     replace_dict = {'cum': 'Cumulative', 'inc': 'Incident',
                     'case': 'Cases', 'death': 'Deaths', '_': ' '}
     truth_fname = comp
@@ -168,6 +208,15 @@ def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=F
 
 
 def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
+    """Function for comparing all predictions to ground truth 
+
+    Args:
+        df_all_submissions (pd.DataFrame): dataframe of all predictions processed
+        df_gt_loss_wk (pd.DataFrame): dataframe of ground truth numbers aggregated at a week level
+
+    Returns:
+        [pd.DataFrame, pd.DataFrame, pd.DataFrame]: combined dataframe, dataframe of mape values, dataframe of ranks
+    """
     df_comb = df_all_submissions.merge(df_gt_loss_wk, 
                                        left_on=['target_end_date', 'location'], 
                                        right_on=['date', 'location'])
@@ -191,6 +240,20 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
 
 def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key_dict, which_fit='m2', 
                            use_as_point_forecast='ensemble_mean', skip_percentiles=False):
+    """Function for formatting our submission in the reichlab format 
+
+    Args:
+        predictions_dict (dict): Predictions dict of all locations
+        df_all_submissions (pd.DataFrame): dataframe of all processed model predictions
+        loc_name_to_key_dict (dict): Dict mapping location names to location key
+        which_fit (str, optional): Which fit to use for forecasting ('m1'/'m2'). Defaults to 'm2'.
+        use_as_point_forecast (str, optional): Which forecast to use as point forecast ('best'/'ensemble_mean'). 
+        Defaults to 'ensemble_mean'.
+        skip_percentiles (bool, optional): If true, processing of all percentiles is skipped. Defaults to False.
+
+    Returns:
+        pd.DataFrame: Processed Wadhwani AI submission
+    """
     df_wiai_submission = pd.DataFrame(columns=df_all_submissions.columns)
     target_end_dates = pd.unique(df_all_submissions['target_end_date'])
 
@@ -264,6 +327,16 @@ def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key
 
 
 def combine_wiai_subm_with_all(df_all_submissions, df_wiai_submission, comp):
+    """Function for combining WIAI submission with all model submissions.
+
+    Args:
+        df_all_submissions (pd.DataFrame): Processed df of all model submissions 
+        df_wiai_submission (pd.DataFrame): Processed WIAI submission
+        comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
+
+    Returns:
+        pd.DataFrame: Combined DataFrame
+    """
     df_all_submissions = df_all_submissions[df_all_submissions['target'].apply(
         lambda x: comp.replace('_', ' ') in x)]
 
