@@ -173,7 +173,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
 
     results_dict = {}
     results_dict['plots'] = {}
-    results_dict['plots']['fit'] = fit_plot
+    # results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
     for name in ['best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
                  'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'trials', 'data_last_date']:
@@ -230,7 +230,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
             default_params, fitting_method, fitting_method_params, split, loss)
 
     
-    predictions_dict['plots']['smoothing'] = smoothing_plot
+    # predictions_dict['plots']['smoothing'] = smoothing_plot
     predictions_dict['smoothing_description'] = smoothing_description
     predictions_dict['df_district_unsmoothed'] = orig_df_district
 

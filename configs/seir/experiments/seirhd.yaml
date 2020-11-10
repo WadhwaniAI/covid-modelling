@@ -41,7 +41,7 @@ fitting:
         N: 2.0e+7
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 1000
+        num_evals: 2500
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
