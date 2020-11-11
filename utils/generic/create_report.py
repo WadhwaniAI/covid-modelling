@@ -94,10 +94,7 @@ def _log_fits(mdFile, ROOT_DIR, fit_dict, which_fit='M1'):
     mdFile.new_header(level=2, title=f'Optimal Parameters')
     mdFile.insert_code(pformat(fit_dict['best_params']))
     mdFile.new_header(level=2, title=f'MAPE Loss Values')
-    '''
-    if which_fit == 'M0':
-        mdFile.new_paragraph(f"ENSEMBLE MEAN")
-    '''
+
     mdFile.new_paragraph(fit_dict['df_loss'].to_markdown())
 
     if which_fit.lower() == 'm1' or which_fit.lower() == 'm2':
