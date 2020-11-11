@@ -7,9 +7,12 @@ fitting:
             state: Jharkhand
             district: Dhanbad
             use_dataframe: data_all
-        smooth_jump: FALSE
-        smooth_jump_params: null
-            # 2020-09-28: [2020-09-27, recovered, active, FALSE, weighted-mag]
+        smooth_jump: TRUE
+        smooth_jump_params: 
+            # 2020-11-01: [null, recovered, active, FALSE, weighted-mag]
+            # 2020-11-02: [null, recovered, active, FALSE, weighted-mag]
+            2020-11-03: [2020-10-15, recovered, active, FALSE, weighted-mag]
+            # 2020-11-04: [null, recovered, active, FALSE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
             center: TRUE
@@ -38,8 +41,8 @@ fitting:
     split:
         start_date: null
         end_date: 2020-11-09
-        train_period: 12
-        val_period: 3
+        train_period: 7
+        val_period: 1
         test_period: 7
     #Optimisation related parameters
     loss:

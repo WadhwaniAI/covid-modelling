@@ -9,7 +9,6 @@ fitting:
             use_dataframe: data_all
         smooth_jump: FALSE
         smooth_jump_params: null
-            # 2020-09-28: [2020-09-27, recovered, active, FALSE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
             center: TRUE

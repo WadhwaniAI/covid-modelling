@@ -38,7 +38,7 @@ fitting:
     split:
         start_date: null
         end_date: 2020-11-09
-        train_period: 12
+        train_period: 7
         val_period: 3
         test_period: 7
     #Optimisation related parameters
