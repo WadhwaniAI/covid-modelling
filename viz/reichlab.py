@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import geoplot as gplt
 import geoplot.crs as gcrs
 
@@ -34,15 +35,18 @@ def create_heatmap(df, var_name='z_score', center=0):
     return fig, ax
 
 
-def create_geoplot_choropleth(df):
+def create_geoplot_choropleth(df, var='z_score', vcenter=0, cmap='coolwarm'):
+    norm = colors.TwoSlopeNorm(vmin=df[var].min(), vcenter=vcenter, 
+                               vmax=df[var].max())
     contiguous_usa = gpd.read_file(gplt.datasets.get_path('contiguous_usa'))
     fig, ax = plt.subplots(figsize=(12, 8))
     gplt.choropleth(
-        contiguous_usa.merge(df, left_on='state', right_index=True),
-        hue='z_score', projection=gcrs.AlbersEqualArea(),
-        edgecolor='black', linewidth=1,
-        cmap='coolwarm', legend=True,
-        ax=ax
+        contiguous_usa.merge(df, left_on='state', right_index=True, how='outer'),
+        hue=var, projection=gcrs.AlbersEqualArea(),
+        edgecolor='grey', linewidth=1,
+        cmap=cmap, norm=norm,
+        figsize=(16, 12), legend=True,
+        legend_kwargs={'orientation': 'horizontal'}
     )
     return fig
 
