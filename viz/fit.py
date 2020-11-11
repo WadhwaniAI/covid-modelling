@@ -428,7 +428,7 @@ def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_
     plt.show()
 
 
-def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments=None):
+def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments=None, method='best_loss_ra'):
     all_compartments = []
     # TODO: handle when which_compartments is None
     for _, compartments in which_compartments.items():
@@ -441,7 +441,7 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
     for loc, loc_dict in predictions_dict.items():
         for model, model_dict in loc_dict.items():
             for which_loss in which_losses:
-                loss_values_stats = get_loss_stats(model_dict, which_loss=which_loss)
+                loss_values_stats = get_loss_stats(model_dict, which_loss=which_loss,method=method)
                 # import pdb; pdb.set_trace()
                 for compartment in loss_values_stats.columns:
                     if model not in loss_wise_stats[which_loss][compartment]:
