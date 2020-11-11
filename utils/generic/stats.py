@@ -44,11 +44,41 @@ def get_param_stats(model_dict, method='best', weighting=None):
         else:
             return get_ensemble_combined(model_dict)
 
-def get_loss_stats(model_dict, which_loss='train'):
-    loss_vals = []
-    for _, run_dict in model_dict.items():
-        df = run_dict['df_loss'][which_loss]
-        df['agg'] = df.mean()
-        loss_vals.append(df)
-    df = pd.DataFrame(loss_vals).describe()
-    return df.loc[['mean','std']]
+def get_loss_stats(model_dict, which_loss='train',method='best_loss_nora',weighting='exp',beta=1.0):
+    if method == 'best_loss_nora':
+        loss_vals = []
+        for _, run_dict in model_dict.items():
+            df = run_dict['df_loss'][which_loss]
+            df['agg'] = df.mean()
+            loss_vals.append(df)
+        df = pd.DataFrame(loss_vals).describe()
+        return df.loc[['mean','std']]
+
+    elif method == 'best_loss_ra':
+        losses_array = np.array([])
+        for _, run_dict in model_dict.items():
+            params_array, loss_array = _order_trials_by_loss(run_dict)
+            losses_array = np.append(losses_array, min(loss_array))
+        df = pd.DataFrame(columns=['agg'],index=['mean','std'])
+        df['agg']['mean'] = np.mean(losses_array)
+        df['agg']['std'] = np.std(losses_array)
+        return df
+    
+    elif method == 'ensemble_loss_ra':
+        losses_array = np.array([])
+        for _, run_dict in model_dict.items():
+            params_array, loss_array = _order_trials_by_loss(run_dict)
+            losses_array = np.concatenate((losses_array, loss_array), axis=0)
+        df = pd.DataFrame(columns=['agg'],index=['mean','std'])
+        if weighting == 'exp':
+            weights = np.exp(-beta*np.array(losses_array))
+        elif weighting == 'inverse':
+            weights = 1/np.array(losses_array)
+        else:
+            weights = np.ones(np.array(losses_array).shape)
+        
+        mean = np.average(losses_array, weights=weights)
+        variance = np.average((losses_array - mean)**2, weights=weights)
+        df['agg']['mean'] = mean
+        df['agg']['std'] = np.sqrt(variance)
+        return df
