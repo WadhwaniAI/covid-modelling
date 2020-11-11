@@ -1,13 +1,10 @@
 import numpy as np
-import pandas as pd
 from hyperopt import hp, tpe, fmin, Trials
 from tqdm import tqdm
 
-from collections import OrderedDict
 import itertools
 import importlib
-from functools import partial, reduce
-import datetime
+from functools import partial
 from joblib import Parallel, delayed
 
 from models.seir import SEIRHD
@@ -212,7 +209,7 @@ class Optimiser():
 
     def bayes_opt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
                   loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
-                  prior='uniform', algo=tpe, **kwargs):
+                  algo=tpe, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
