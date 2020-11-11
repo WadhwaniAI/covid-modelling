@@ -402,8 +402,6 @@ def train_val_test_split(df_district, train_period=5, val_period=5, test_period=
     if test_period == 0:
         df_test = None
 
-    print("CODECODECODECODECODECODECODE")
-    print(df_district)
     return df_train, df_val, df_test
 
 def get_district_timeseries_cached(district, state, disable_tracker=False, filename=None, data_format='new'):
