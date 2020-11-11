@@ -12,7 +12,7 @@ from functools import reduce
 from scipy.stats import entropy
 
 from utils.generic.enums.columns import *
-from main.seir.forecast import _order_trials_by_loss
+from main.seir.forecast import _order_trials_by_loss, forecast_top_k_trials
 from viz.utils import axis_formatter
 from utils.generic.stats import *
 
@@ -319,6 +319,31 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
     fig.suptitle(f'Mean Variance plots for {description}')
     fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
+
+def get_prediction(model_dict, model_name, which_compartments=['total'], method='ensemble', beta=1):
+    # collect all trials with losses - get predictions
+    predictions = []
+    losses = []
+    for run, run_dict in model_dict.items():
+        top_k_predictions, top_k_losses, _ = forecast_top_k_trials(model_dict, model=eval(model_name), k=10, train_fit=run, forecast_days=37)
+        predictions += top_k_predictions
+        losses += list(top_k_losses)
+    # compute ensemble prediction
+    losses = np.array(losses)
+    beta_loss = np.exp(-beta*losses)
+    predictions_stacked = np.array([df.loc[:, which_compartments].to_numpy() for df in predictions])
+    predictions_stacked_weighted_by_beta = beta_loss[:, None, None] * predictions_stacked / beta_loss.sum()
+    weighted_pred = np.sum(predictions_stacked_weighted_by_beta, axis=0)
+    weighted_pred_df = pd.DataFrame(data=weighted_pred, columns=which_compartments)
+    weighted_pred_df['date'] = predictions[0]['date']
+    return weighted_pred_df
+
+def plot_forecasts(predictions_dict, model_types=None, method='ensemble', which_compartments=['total']):
+    for tag, tag_dict in predictions_dict.items():
+        for model_name, model_dict in tag_dict.items():
+            df_prediction = get_prediction(model_dict, model_types[model_name], which_compartments=which_compartments, method=method)
+            train_period = model_dict['m0']['run_params']['split']['train_period']
+            plot_fit(df_prediction, model_dict['m0']['df_train'], model_dict['m0']['df_val'], model_dict['m0']['df_district'], train_period, tag, description=model_name, which_compartments=which_compartments)
 
 def get_losses(model_dict, method='best', start_iter=100):
     if method=='best':
