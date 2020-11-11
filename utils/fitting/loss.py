@@ -159,14 +159,14 @@ class Loss_Calculator():
             del df_loss['val']
         
         if isinstance(df_test, pd.DataFrame):
-            df_temp_2 = df_prediction.loc[df_prediction['date'].isin(
+            df_temp = df_prediction.loc[df_prediction['date'].isin(
                 df_test['date']), ['date']+which_compartments]
         
-            df_temp_2.reset_index(inplace=True, drop=True)
+            df_temp.reset_index(inplace=True, drop=True)
             df_test.reset_index(inplace=True, drop=True)
             df_data_weights_test.reset_index(inplace=True, drop=True)
 
-            losses = self.calc_loss_dict(df_temp_2, df_test, df_data_weights_test, method=method)
+            losses = self.calc_loss_dict(df_temp, df_test, df_data_weights_test, method=method)
             for compartment in df_loss.index:
                 df_loss.loc[compartment, 'test'] = losses[compartment]
 
