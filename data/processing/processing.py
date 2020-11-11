@@ -376,7 +376,7 @@ def train_val_test_split(df_district, train_period=5, val_period=5, test_period=
     """
     print("splitting data ..")
     df_district_rolling = copy.copy(df_district)
-    print("TVT: ", train_period, val_period, test_period)
+
     # Perform rolling average on all columns with numeric datatype
     if split_after_rolling:
         df_district_rolling = implement_rolling(
