@@ -1,3 +1,4 @@
+import pdb
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import geoplot as gplt
@@ -7,6 +8,8 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 import seaborn as sns
+import statsmodels.api as sm
+import adjustText as aT
 
 
 def calculate_z_score(df_mape, df_rank, model_name='Wadhwani_AI'):
@@ -16,7 +19,7 @@ def calculate_z_score(df_mape, df_rank, model_name='Wadhwani_AI'):
     df.columns = ['mean_mape', 'std_mape', 'median_mape',
                   'mad_mape', 'model_mape', 'model_rank']
     df['z_score'] = (df['model_mape'] - df['mean_mape'])/(df['std_mape'])
-    df['non_param_z_score'] = np.abs(df['model_mape'] - df['median_mape'])/(df['mad_mape'])
+    df['non_param_z_score'] = (df['model_mape'] - df['median_mape'])/df['mad_mape']
     return df
 
 
@@ -35,19 +38,37 @@ def create_heatmap(df, var_name='z_score', center=0):
     return fig, ax
 
 
-def create_geoplot_choropleth(df, var='z_score', vcenter=0, cmap='coolwarm'):
-    norm = colors.TwoSlopeNorm(vmin=df[var].min(), vcenter=vcenter, 
-                               vmax=df[var].max())
+def create_geoplot_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap='coolwarm', ax=None):
+    norm = colors.TwoSlopeNorm(vmin=vmin, vcenter=vcenter, vmax=vmax)
     contiguous_usa = gpd.read_file(gplt.datasets.get_path('contiguous_usa'))
-    fig, ax = plt.subplots(figsize=(12, 8))
-    gplt.choropleth(
-        contiguous_usa.merge(df, left_on='state', right_index=True, how='outer'),
-        hue=var, projection=gcrs.AlbersEqualArea(),
-        edgecolor='grey', linewidth=1,
-        cmap=cmap, norm=norm,
-        figsize=(16, 12), legend=True,
-        legend_kwargs={'orientation': 'horizontal'}
-    )
+    df_geo = contiguous_usa.merge(df, left_on='state', right_index=True, how='left')
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(16, 12))
+    else:
+        fig = None
+    df_geo.plot(column=var, cmap=cmap, linewidth=0.8,
+                ax=ax, edgecolor='silver', norm=norm)
+    df_geo[df_geo[var].isna()].plot(color="darkgrey", ax=ax,
+                                    linewidth=0.8, edgecolor='silver')
+    # gplt.choropleth(
+    #     df_geo, hue=var, projection=gcrs.AlbersEqualArea(),
+    #     edgecolor='grey', linewidth=1,
+    #     cmap=cmap, norm=norm,
+    #     figsize=(16, 12), legend=True,
+    #     legend_kwargs={'orientation': 'horizontal'}
+    # )
+    df_geo['centroid'] = df_geo['geometry'].centroid
+    texts = []
+    for i, row in df_geo.iterrows():
+        if not row['centroid'] is None:
+            label = np.around(row[var], 2)
+            texts.append(ax.text(row['centroid'].x,
+                                 row['centroid'].y, label, fontsize=8))
+
+    # aT.adjust_text(texts, force_points=0.3, force_text=0.8, expand_points=(1, 1), expand_text=(1, 1),
+    #                arrowprops=dict(arrowstyle="-", color='black', lw=0.5))
+    # ax.grid()
+    ax.set_title(f'Choropleth for {var}')
     return fig
 
 def combine_with_train_error(predictions_dict, df):
