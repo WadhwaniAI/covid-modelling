@@ -27,7 +27,7 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
     return df_prediction
 
 
-def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], log_scale=False, filename=None, train_fit='m1',
+def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], log_scale=False, filename=None, train_fit='m2',
                   which_compartments=['active', 'total', 'deceased', 'recovered'],
                   fileformat='eps', error_bars=False, days=30):
     """Function for plotting forecasts (both best fit and uncertainty deciles)
