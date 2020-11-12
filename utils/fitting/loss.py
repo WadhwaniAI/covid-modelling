@@ -24,6 +24,19 @@ class Loss_Calculator():
         ape = np.abs((y_true - y_pred + 0) / y_true) *  100
         loss = np.mean(ape)
         return loss
+    def _calc_l1_perc(self, y_pred, y_true,perc):
+        e = y_true - y_pred
+        loss = np.sum(np.max(e*perc,(perc-1)*e))
+        return loss
+
+    def _calc_mape_perc(self, y_pred, y_true,perc):
+        y_pred = y_pred[y_true != 0]
+        y_true = y_true[y_true != 0]
+
+        ape = ((y_true - y_pred + 0) / y_true) *  100
+        perc_ape = np.max(ape*perc,(perc-1)*ape)
+        loss = np.mean(perc_ape)
+        return loss
 
     def calc_loss_dict(self, df_prediction, df_true, method='rmse'):
         if method == 'rmse':
@@ -40,7 +53,19 @@ class Loss_Calculator():
             except Exception:
                 continue
         return losses
-
+    def calc_loss_perc_dict(self, df_prediction, df_true,perc, method='rmse'):
+        if method == 'l1':
+            calculate = lambda x, y : self._calc_l1_perc(x, y,perc)
+        if method == 'mape':
+            calculate = lambda x, y : self._calc_mape_perc(x, y,perc)
+        
+        losses = {}
+        for compartment in self.columns:
+            try:
+                losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
+            except Exception:
+                continue
+        return losses
     def calc_loss(self, df_prediction, df_true, method='rmse', 
                   which_compartments=['active', 'recovered', 'total', 'deceased'], loss_weights=[1, 1, 1, 1]):
         losses = self.calc_loss_dict(df_prediction, df_true, method)
