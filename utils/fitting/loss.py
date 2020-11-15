@@ -133,6 +133,46 @@ class Loss_Calculator():
         else:
             del df_loss['val']
         return df_loss
+    def create_loss_dataframe_region_perc(self, df_train, df_val, df_prediction, train_period, perc,
+                    which_compartments=['active', 'total']):
+        """Helper function for calculating loss in training pipeline
+
+        Arguments:
+            df_train {pd.DataFrame} -- Train dataset
+            df_val {pd.DataFrame} -- Val dataset
+            df_prediction {pd.DataFrame} -- Model Prediction
+            train_period {int} -- Length of training Period
+
+        Keyword Arguments:
+            which_compartments {list} -- List of buckets to calculate loss on (default: {['active', 'total']})
+
+        Returns:
+            pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
+        """
+        df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
+
+        df_temp = df_prediction.loc[df_prediction['date'].isin(
+            df_train['date']), ['date']+which_compartments]
+        df_temp.reset_index(inplace=True, drop=True)
+        df_train = df_train.loc[df_train['date'].isin(df_temp['date']), :]
+        df_temp = df_temp.sort_values('date')
+        df_train = df_train.sort_values('date')
+        df_train.reset_index(inplace=True, drop=True)
+        for compartment in df_loss.index:
+            df_loss.loc[compartment, 'train'] = self._calc_mape_perc(
+                np.array(df_temp[compartment]), np.array(df_train[compartment]),perc)
+
+        if isinstance(df_val, pd.DataFrame):
+            df_temp = df_prediction.loc[df_prediction['date'].isin(
+                df_val['date']), ['date']+which_compartments]
+            df_temp.reset_index(inplace=True, drop=True)
+            df_val.reset_index(inplace=True, drop=True)
+            for compartment in df_loss.index:
+                df_loss.loc[compartment, 'val'] = self._calc_mape(
+                    np.array(df_temp[compartment]), np.array(df_val[compartment]))
+        else:
+            del df_loss['val']
+        return df_loss
 
     def create_loss_dataframe_master(self, predictions_dict, train_fit='m1'):
         starting_key = list(predictions_dict.keys())[0]

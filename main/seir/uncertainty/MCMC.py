@@ -128,6 +128,9 @@ class MCMCUncertainty(Uncertainty):
             deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
                 df_train_nora, None, df_predictions, train_period=7,
                 which_compartments=self.loss_compartments)
+            # deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region_perc(
+            #     df_train_nora, None, df_predictions, train_period=7,perc=key,
+            #     which_compartments=self.loss_compartments)
         return deciles_forecast
 
     def avg_weighted_error(self,hp, return_dict=False, return_ensemble_mean_forecast=False):

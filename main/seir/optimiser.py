@@ -81,7 +81,7 @@ class Optimiser():
     # TODO add cross validation support
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIRHD,
                                loss_compartments=['active', 'recovered', 'total', 'deceased'], 
-                               loss_weights = [1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse', 
+                               loss_weights = [0.25, 0.25, 0.25, 0.25], loss_indices=[-20, -10], loss_method='rmse', 
                                debug=False):
         """The function that computes solves the ODE for a given set of input params and computes loss on train set
 

@@ -450,16 +450,16 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
                     loss_wise_stats[which_loss][compartment][model]['std'][loc] = loss_values_stats[compartment]['std']
 
     n_subplots = len(all_compartments)*len(which_losses)
-    ncols = 3
+    ncols = 5
     nrows = math.ceil(n_subplots/ncols)
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
-    colors = "bgrcmy"
+    colors = "grmybc"
     color_map = {}
     for i,model in enumerate(list( list( predictions_dict.values() )[0].keys() )):
         color_map[model] = colors[i]
 
-    bar_width = (1-0.2)/len(which_compartments)
+    bar_width = (1-0.4)/len(which_compartments)
     ax_counter=0
     for which_loss in which_losses:
         for compartment in all_compartments:
@@ -474,7 +474,7 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
                 ax.errorbar(pos, mean_vals[model].values(), yerr=std_vals[model].values(), fmt='o', color='k')
             plt.sca(ax)
             plt.title(which_loss)
-            plt.ylabel(compartment)
+            plt.xlabel(compartment)
             xtick_vals = mean_vals[model].keys()
             plt.xticks(range(len(xtick_vals)), xtick_vals, rotation=45)
             plt.legend(loc='best')
@@ -507,7 +507,7 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
                 param_wise_stats[param][model]['std'][loc] = param_values_stats[param]['std']
 
     n_subplots = len(all_params)
-    ncols = 3
+    ncols = 5
     nrows = math.ceil(n_subplots/ncols)
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
@@ -516,7 +516,7 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
     for i,model in enumerate(list(model_params.keys())):
         color_map[model] = colors[i]
     
-    bar_width = (1-0.2)/len(model_params)
+    bar_width = (1-0.5)/len(model_params)
     ax_counter=0
     for param in all_params:
         ax = axs.flat[ax_counter]
@@ -529,7 +529,7 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
             ax.bar(pos, mean_vals[model].values(), width=bar_width, color=color_map[model], align='center', alpha=0.5, label=model)
             ax.errorbar(pos, mean_vals[model].values(), yerr=std_vals[model].values(), fmt='o', color='k')
         plt.sca(ax)
-        plt.ylabel(param)
+        plt.xlabel(param)
         xtick_vals = mean_vals[model].keys()
         plt.xticks(range(len(mean_vals[model].keys())), mean_vals[model].keys(), rotation=45)
         plt.legend(loc='best')
