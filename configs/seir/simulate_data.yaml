@@ -1,32 +1,19 @@
 fitting:
     # Geographical Location
     data:
-        data_source: covid19india
+        data_source: simulated
         stratified_data: FALSE
         dataloading_params:
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
-<<<<<<< HEAD
+            generate: TRUE
+            config_file: seirhd_fixed.yaml
+            filename: ../../data/data/simulated_data/simulated_data_1.csv
         smooth_jump: FALSE
-=======
-        smooth_jump: TRUE
->>>>>>> master
-        smooth_jump_params:
-            2020-05-28: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-14: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
-            2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
-            2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
-        rolling_average: TRUE
-        rolling_average_params:
-            center: TRUE
-            window_size: 7
-            win_type: null
-            min_periods: 7
-            split_after_rolling: FALSE
+        smooth_jump_params: None
+        rolling_average: FALSE
+        rolling_average_params: None
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
@@ -41,14 +28,13 @@ fitting:
     default_params:
         N: 1.0e+7
     fitting_method: bayes_opt
-
     fitting_method_params:
-        num_evals: 1500
+        num_evals: 1000
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-10-26
+        end_date: 2020-08-31
         train_period: 21
         val_period: 7
         test_period: 0
@@ -76,7 +62,7 @@ uncertainty:
         which_fit: m1
         variable_param_ranges:
             beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2020-10-26
+        date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:
             loss_method: mape
