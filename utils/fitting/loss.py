@@ -24,6 +24,13 @@ class Loss_Calculator():
         ape = np.abs((y_true - y_pred + 0) / y_true) *  100
         loss = np.mean(ape)
         return loss
+    def _calc_smape(self, y_pred, y_true):
+        y_pred = y_pred[y_true != 0]
+        y_true = y_true[y_true != 0]
+
+        ape = np.abs((y_true - y_pred + 0) / np.mean(y_true,y_pred)) *  100
+        loss = np.mean(ape)
+        return loss
     def _calc_l1_perc(self, y_pred, y_true,perc):
         e = y_true - y_pred
         loss = np.sum(np.max(e*perc,(perc-1)*e))
@@ -32,9 +39,10 @@ class Loss_Calculator():
     def _calc_mape_perc(self, y_pred, y_true,perc):
         y_pred = y_pred[y_true != 0]
         y_true = y_true[y_true != 0]
-
         ape = ((y_true - y_pred + 0) / y_true) *  100
-        perc_ape = np.max(ape*perc,(perc-1)*ape)
+        A = np.multiply(ape,perc)
+        B = np.multiply(ape,perc-1)
+        perc_ape = np.maximum(A,B)
         loss = np.mean(perc_ape)
         return loss
 
@@ -45,6 +53,8 @@ class Loss_Calculator():
             calculate = lambda x, y : self._calc_rmse(x, y, log=True)
         if method == 'mape':
             calculate = lambda x, y : self._calc_mape(x, y)
+        if method == 'smape':
+            calculate = lambda x, y : self._calc_smape(x, y)
         
         losses = {}
         for compartment in self.columns:
