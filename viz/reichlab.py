@@ -1,3 +1,4 @@
+from copy import copy, deepcopy
 import pdb
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -11,6 +12,7 @@ import seaborn as sns
 import statsmodels.api as sm
 import adjustText as aT
 
+from viz.utils import add_inset_subplot_to_axes
 
 def calculate_z_score(df_mape, df_rank, model_name='Wadhwani_AI'):
     df = pd.concat([df_mape.mean(axis=0), df_mape.std(axis=0), 
@@ -37,26 +39,7 @@ def create_heatmap(df, var_name='z_score', center=0):
     ax.set_title(f'Heatmap of {var_name} for all US states, sorted by z_score, cmap centered at {center}')
     return fig, ax
 
-
-def create_geoplot_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap='coolwarm', ax=None):
-    norm = colors.TwoSlopeNorm(vmin=vmin, vcenter=vcenter, vmax=vmax)
-    contiguous_usa = gpd.read_file(gplt.datasets.get_path('contiguous_usa'))
-    df_geo = contiguous_usa.merge(df, left_on='state', right_index=True, how='left')
-    if ax is None:
-        fig, ax = plt.subplots(figsize=(16, 12))
-    else:
-        fig = None
-    df_geo.plot(column=var, cmap=cmap, linewidth=0.8,
-                ax=ax, edgecolor='silver', norm=norm)
-    df_geo[df_geo[var].isna()].plot(color="darkgrey", ax=ax,
-                                    linewidth=0.8, edgecolor='silver')
-    # gplt.choropleth(
-    #     df_geo, hue=var, projection=gcrs.AlbersEqualArea(),
-    #     edgecolor='grey', linewidth=1,
-    #     cmap=cmap, norm=norm,
-    #     figsize=(16, 12), legend=True,
-    #     legend_kwargs={'orientation': 'horizontal'}
-    # )
+def _label_geographies(ax, df_geo, var, adjust_text=False, remove_ticks=True):
     df_geo['centroid'] = df_geo['geometry'].centroid
     texts = []
     for i, row in df_geo.iterrows():
@@ -65,9 +48,47 @@ def create_geoplot_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cma
             texts.append(ax.text(row['centroid'].x,
                                  row['centroid'].y, label, fontsize=8))
 
-    # aT.adjust_text(texts, force_points=0.3, force_text=0.8, expand_points=(1, 1), expand_text=(1, 1),
-    #                arrowprops=dict(arrowstyle="-", color='black', lw=0.5))
-    # ax.grid()
+    if adjust_text:
+        aT.adjust_text(texts, force_points=0.3, force_text=0.8, expand_points=(1, 1), 
+                       expand_text=(1, 1), arrowprops=dict(arrowstyle="-", color='black', lw=0.5))
+
+    if remove_ticks:
+        ax.xaxis.set_ticks([])
+        ax.yaxis.set_ticks([])
+
+
+def create_geoplot_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap='coolwarm', ax=None, gdf=None, 
+                              adjust_text=False):
+    norm = colors.TwoSlopeNorm(vmin=vmin, vcenter=vcenter, vmax=vmax)
+    if gdf is None:
+        gdf = gpd.read_file(gplt.datasets.get_path('contiguous_usa'))
+    df_geo = gdf.merge(df, left_on='state', right_index=True, how='left')
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(16, 12))
+    else:
+        fig = None
+    df_noncontigous = copy(df_geo[df_geo['state'].isin(['Alaska', 'Hawaii'])])
+    df_geo = df_geo[np.logical_not(df_geo['state'].isin(['Alaska', 'Hawaii']))]
+    df_geo.plot(column=var, cmap=cmap, linewidth=0.8,
+                ax=ax, edgecolor='silver', norm=norm)
+    df_geo[df_geo[var].isna()].plot(color="darkgrey", ax=ax,
+                                    linewidth=0.8, edgecolor='silver')
+    subax_1 = add_inset_subplot_to_axes(ax, [0.2, 0.014, 0.12, 0.12])
+    df_noncontigous[df_noncontigous['state'] == 'Hawaii'].plot(
+        column=var, cmap=cmap, linewidth=0.8,
+        ax=subax_1, edgecolor='silver', norm=norm
+    )
+    
+    subax_2 = add_inset_subplot_to_axes(ax, [0, 0.014, 0.25, 0.25])
+    df_noncontigous[df_noncontigous['state'] == 'Alaska'].plot(
+        column=var, cmap=cmap, linewidth=0.8,
+        ax=subax_2, edgecolor='silver', norm=norm
+    )
+
+    _label_geographies(ax, df_geo, var, adjust_text)
+    _label_geographies(subax_1, copy(df_noncontigous[df_noncontigous['state'] == 'Hawaii']), var, adjust_text)
+    _label_geographies(subax_2, copy(df_noncontigous[df_noncontigous['state'] == 'Alaska']), var, adjust_text)
+
     ax.set_title(f'Choropleth for {var}')
     return fig
 
