@@ -35,6 +35,7 @@ contextily==1.0.1
 covasim==0.22.3
 cryptography==2.9
 cycler==0.10.0
+data==0.4
 databricks-cli==0.11.0
 decorator==4.4.2
 defusedxml==0.6.0
@@ -50,6 +51,7 @@ Fiona==1.8.17
 Flask==1.1.2
 Flask-Login==0.5.0
 Flask-Session==0.3.1
+funcsigs==1.0.2
 future==0.18.2
 GDAL==3.1.4
 geographiclib==1.50
@@ -94,6 +96,7 @@ jupyterlab-server==1.2.0
 kiwisolver==1.2.0
 kombu==4.6.8
 lab==6.0
+latex==0.7.0
 lazy-object-proxy==1.4.3
 line-profiler==3.0.2
 llvmlite==0.31.0
@@ -183,13 +186,14 @@ scikit-learn==0.22.2.post1
 scipy==1.4.1
 sciris==0.16.7
 scirisweb==0.16.6
-seaborn==0.10.0
+seaborn==0.11.0
 seirsplus==0.0.14
 Send2Trash==1.5.0
 sentry-sdk==0.16.3
 service-identity==18.1.0
 Shapely==1.7.1
 shortuuid==1.0.1
+shutilwhich==1.1.0
 simplejson==3.17.0
 six==1.14.0
 sklearn==0.0
@@ -202,6 +206,7 @@ statsmodels==0.11.1
 subprocess32==3.5.4
 tabula-py==2.1.0
 tabulate==0.8.7
+tempdir==0.7.1
 tenacity==6.2.0
 terminado==0.8.3
 testpath==0.4.4
