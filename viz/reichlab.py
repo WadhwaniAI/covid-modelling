@@ -1,7 +1,8 @@
-from copy import copy, deepcopy
-import pdb
+from copy import copy
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
 import geoplot as gplt
 import geoplot.crs as gcrs
 
@@ -42,8 +43,8 @@ def create_heatmap(df, var_name='z_score', center=0):
 def _label_geographies(ax, df_geo, var, adjust_text=False, remove_ticks=True):
     df_geo['centroid'] = df_geo['geometry'].centroid
     texts = []
-    for i, row in df_geo.iterrows():
-        if not row['centroid'] is None:
+    for _, row in df_geo.iterrows():
+        if (not row['centroid'] is None) & (not pd.isna(row[var])):
             label = np.around(row[var], 2)
             texts.append(ax.text(row['centroid'].x,
                                  row['centroid'].y, label, fontsize=8))
@@ -70,9 +71,9 @@ def create_geoplot_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cma
     df_noncontigous = copy(df_geo[df_geo['state'].isin(['Alaska', 'Hawaii'])])
     df_geo = df_geo[np.logical_not(df_geo['state'].isin(['Alaska', 'Hawaii']))]
     df_geo.plot(column=var, cmap=cmap, linewidth=0.8,
-                ax=ax, edgecolor='silver', norm=norm)
-    df_geo[df_geo[var].isna()].plot(color="darkgrey", ax=ax,
-                                    linewidth=0.8, edgecolor='silver')
+                ax=ax, edgecolor='silver', norm=norm, 
+                missing_kwds={"color": "darkgrey", "edgecolor": "red",
+                              "hatch": "///"})
     subax_1 = add_inset_subplot_to_axes(ax, [0.2, 0.014, 0.12, 0.12])
     df_noncontigous[df_noncontigous['state'] == 'Hawaii'].plot(
         column=var, cmap=cmap, linewidth=0.8,
@@ -90,6 +91,8 @@ def create_geoplot_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cma
     _label_geographies(subax_2, copy(df_noncontigous[df_noncontigous['state'] == 'Alaska']), var, adjust_text)
 
     ax.set_title(f'Choropleth for {var}')
+    legend_elements = [Patch(facecolor='silver', edgecolor='r', hatch="///", label='Did Not Forecast')]
+    ax.legend(handles=legend_elements)
     return fig
 
 def combine_with_train_error(predictions_dict, df):
