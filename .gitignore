@@ -21,6 +21,7 @@ sftp-configjson
 *DS_Store
 
 # Folders (on Home dir and otherwise)
+data/data/shapefiles/
 *plots/
 **plots/
 *outputs/
