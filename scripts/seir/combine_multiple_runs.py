@@ -9,6 +9,9 @@ import matplotlib.dates as mdates
 
 from scipy.stats import zscore
 
+import sys
+sys.path.append('../../')
+
 import os
 import copy
 import pickle
