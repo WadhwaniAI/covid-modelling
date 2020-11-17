@@ -2,8 +2,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt 
 import copy
-from main.seir.optimiser import Optimiser
-
 
 def gridsearch_single_param(predictions_dict, config, which_fit='m1', var_name=None,
                             param_range=np.linspace(1, 100, 201), df_train=None, train_period=None, 

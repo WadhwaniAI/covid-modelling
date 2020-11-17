@@ -1,14 +1,8 @@
 import pandas as pd
-from datetime import datetime
 import time
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import matplotlib as mpl
-
 import sys
 sys.path.append('../..')
 from main.seir.fitting import data_setup, run_cycle
-from viz import setup_plt
 
 class SEIRBacktest:
     def __init__(self, state, district, df_district, df_district_raw_data, data_from_tracker):
