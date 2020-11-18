@@ -38,7 +38,7 @@ class MCUncertainty(Uncertainty):
         self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta}, return_dict=False,
                                                               return_ensemble_mean_forecast=True)                                                      
         self.get_distribution()
-
+        self.p_val = self.p_test()
     def trials_to_df(self, trials_processed, column=Columns.active):
         predictions = trials_processed['predictions']
         params = trials_processed['params']
@@ -58,7 +58,24 @@ class MCUncertainty(Uncertainty):
             pred = pred.append(predictions[i].set_index(
                 'date').loc[:, [column.name]].transpose(), ignore_index=True)
         return pd.concat([trials, pred], axis=1)
-
+    
+    def p_test(self):
+        df_trials = self.trials_to_df(self.predictions_dict[self.which_fit]['trials_processed'], 
+                                      self.sort_trials_by_column)
+        p = []
+        total_time = len(self.predictions_dict[self.which_fit]['df_val']['date'].keys())
+        for i in self.predictions_dict[self.which_fit]['df_val']['date'].keys():
+            date_to_eval = self.predictions_dict[self.which_fit]['df_val']['date'][i]
+            datetime_to_eval = datetime.datetime.combine(date_to_eval,datetime.time())
+            gt = self.predictions_dict[self.which_fit]['df_val']['total'][i]
+            trials_on_day = df_trials.loc[:,datetime_to_eval]
+            N = len(trials_on_day)
+            p_u = (trials_on_day>gt).sum()/N
+            p_l = 1- p_u
+            p.append( 2 * min(p_u,p_l))
+        answer = sum(p)/total_time
+        return answer
+    
     def get_distribution(self):
         """
         Computes probability distribution based on given beta and date 
@@ -129,6 +146,9 @@ class MCUncertainty(Uncertainty):
             deciles_forecast[key]['params'] =  params[ptile_dict[key]]
             deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
                 df_train_nora, None, df_predictions, train_period=7,
+                which_compartments=self.loss_compartments)
+            deciles_forecast[key]['df_loss_perc'] = Loss_Calculator().create_loss_dataframe_region_perc(
+                df_train_nora, None, df_predictions, train_period=7,perc=key/100,
                 which_compartments=self.loss_compartments)
         return deciles_forecast
 

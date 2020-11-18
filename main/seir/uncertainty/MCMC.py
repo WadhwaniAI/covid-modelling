@@ -37,6 +37,7 @@ class MCMCUncertainty(Uncertainty):
         self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
         self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta},return_dict=False,return_ensemble_mean_forecast=True)                                                      
         self.get_distribution()
+        self.p_val = self.p_test()
 
     def trials_to_df(self, trials_processed, column=Columns.active):
         predictions = trials_processed['predictions']
@@ -57,6 +58,24 @@ class MCMCUncertainty(Uncertainty):
             pred = pred.append(predictions[i].set_index(
                 'date').loc[:, [column.name]].transpose(), ignore_index=True)
         return pd.concat([trials, pred], axis=1)
+
+    def p_test(self):
+        df_trials = self.trials_to_df(self.predictions_dict[self.which_fit]['trials_processed'], 
+                                      self.sort_trials_by_column)
+        p = []
+        total_time = len(self.predictions_dict[self.which_fit]['df_val']['date'].keys())
+        for i in self.predictions_dict[self.which_fit]['df_val']['date'].keys():
+            date_to_eval = self.predictions_dict[self.which_fit]['df_val']['date'][i]
+            datetime_to_eval = datetime.datetime.combine(date_to_eval,datetime.time())
+            gt = self.predictions_dict[self.which_fit]['df_val']['total'][i]
+            trials_on_day = df_trials.loc[:,datetime_to_eval]
+            N = len(trials_on_day)
+            p_u = (trials_on_day>gt).sum()/N
+            p_l = 1- p_u
+            p.append( 2 * min(p_u,p_l))
+        answer = sum(p)/total_time
+        return answer
+        
 
     def get_distribution(self):
         """
@@ -84,7 +103,7 @@ class MCMCUncertainty(Uncertainty):
         self.date_of_sorting_trials = datetime.datetime.combine(
             self.date_of_sorting_trials, datetime.time())
         df[self.date_of_sorting_trials] = df_trials.loc[:, self.date_of_sorting_trials]
-        
+
         df = df.sort_values(by=self.date_of_sorting_trials)
         df.index.name = 'idx'
         df.reset_index(inplace=True)

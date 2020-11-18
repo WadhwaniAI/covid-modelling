@@ -401,7 +401,7 @@ class MCMC(object):
             burn_in = int(len(run) / 2)
             combined_acc += run[0][burn_in:][::self.stride]
 
-        n_samples = 1500
+        n_samples = 3000
         sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
         #Total day is 1 less than training_period
         
