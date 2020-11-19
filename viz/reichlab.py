@@ -67,6 +67,34 @@ def combine_with_train_error(predictions_dict, df):
 
     return df_wadhwani
 
+def create_performance_table(df_mape, df_rank):
+    """Creates dataframe of all models sorted by MAPE value and rank, to compare relative performance 
+
+    Args:
+        df_mape (pd.DataFrame): df of MAPE values for all models, regions
+        df_rank (pd.DataFrame): df of ranks for all models, regions
+
+    Returns:
+        pd.DataFrame: The performance talble
+    """
+    median_mape = df_mape.loc[:, np.logical_not(
+        df_mape.loc['Wadhwani_AI', :].isna())].median(axis=1).rename('median_mape')
+    median_rank = df_rank.loc[:, np.logical_not(
+        df_rank.loc['Wadhwani_AI', :].isna())].median(axis=1).rename('median_rank')
+    merged = pd.concat([median_mape, median_rank], axis=1)
+    merged.reset_index(inplace=True)
+    merged['model1'] = merged['model']
+    merged = merged[['model', 'median_mape', 'model1', 'median_rank']]
+    merged = merged.sort_values('median_mape').round(2)
+    merged.reset_index(drop=True, inplace=True)
+    temp = copy(merged.loc[:, ['model1', 'median_rank']])
+    temp.sort_values('median_rank', inplace=True)
+    temp.reset_index(drop=True, inplace=True)
+    merged.loc[:, ['model1', 'median_rank']
+            ] = temp.loc[:, ['model1', 'median_rank']]
+    merged.index = merged.index + 1
+    return merged
+
 
 def preprocess_shape_file(filename='cb_2018_us_state_5m/cb_2018_us_state_5m.shp', 
                           root_dir='../../data/data/shapefiles'):
