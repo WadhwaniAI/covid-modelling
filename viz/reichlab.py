@@ -360,3 +360,22 @@ def plot_qq_all_states(df_mape, fit=True, df_wadhwani=None):
     fig.subplots_adjust(top=0.97)
 
     return fig, axs
+
+
+def mape_heatmap_single_state(df_mape, state, cmap='Reds'):
+    """Function for creating rectangular heatmap of MAPE values of models for given state
+
+    Args:
+        df_mape (pd.DataFrame): dataframe of mape values for all models, region
+        state (str): Which state to make heatmap for
+        cmap (str, optional): What colormap to use. Defaults to 'Reds'.
+
+    Returns:
+        mpl.Figure, mpl.Axes: The Figure and Axes object
+    """
+    fig, ax = plt.subplots(figsize=(18, 2))
+    sns.heatmap(df_mape[state].to_numpy().reshape(1, -1), cmap=cmap,
+                ax=ax, xticklabels=df_mape[state].index, annot=True)
+    ax.set_title(state)
+
+    return fig, ax
