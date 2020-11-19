@@ -5,6 +5,7 @@ from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 import geoplot as gplt
 import geoplot.crs as gcrs
+from shapely.geometry import MultiPolygon
 
 import pandas as pd
 import geopandas as gpd
@@ -16,6 +17,17 @@ import adjustText as aT
 from viz.utils import add_inset_subplot_to_axes
 
 def calculate_z_score(df_mape, df_rank, model_name='Wadhwani_AI'):
+    """Function for calculating Z score and non param Z score
+
+    Args:
+        df_mape (pd.DataFrame): dataframes of mape values for all models, locations
+        df_rank (pd.DataFrame): dataframes of ranks values for all models, locations
+        model_name (str, optional): Which model to calculate Z scores for. Defaults to 'Wadhwani_AI'.
+
+    Returns:
+        pd.DataFrame: dataframe with the calculated Z scores
+    """
+
     df = pd.concat([df_mape.mean(axis=0), df_mape.std(axis=0), 
                     df_mape.median(axis=0), df_mape.mad(axis=0),
                     df_mape.loc[model_name, :], df_rank.loc[model_name, :]], axis=1)
@@ -27,6 +39,19 @@ def calculate_z_score(df_mape, df_rank, model_name='Wadhwani_AI'):
 
 
 def create_heatmap(df, var_name='z_score', center=0):
+    """General function for creating sns heatmap for variables which measure the performance 
+    of our forecasts with respect to other models
+
+    Args:
+        df (pd.DataFrame): The dataframe of where rows correspond to different states, 
+        and the different columns are metrics for evaluating model performance. 
+        Like z_score, non_param_z_score
+        var_name (str, optional): Which column name to use. Defaults to 'z_score'.
+        center (int, optional): Where is the heatmap to be centered. Defaults to 0.
+
+    Returns:
+        mpl.Figure, mpl.Axes: Figure and Axes of the heatmap plot
+    """
     fig, ax = plt.subplots(figsize=(12, 12))
 
     df_sorted = df.sort_values('z_score')
@@ -41,6 +66,15 @@ def create_heatmap(df, var_name='z_score', center=0):
     return fig, ax
 
 def _label_geographies(ax, df_geo, var, adjust_text=False, remove_ticks=True):
+    """Helper function for labelling all the geographies in the choropleth plot
+
+    Args:
+        ax (mpl.Axes): The axes in which annotation is to be done
+        df_geo (gpd.GeoDataFrame): The gdf with the geometry data
+        var (str): The variable which is to be annotated
+        adjust_text (bool, optional): If true, location of annotation is adjusted. Defaults to False.
+        remove_ticks (bool, optional): If true, removed the ticks of the axes. Defaults to True.
+    """
     df_geo['centroid'] = df_geo['geometry'].centroid
     texts = []
     for _, row in df_geo.iterrows():
@@ -58,8 +92,24 @@ def _label_geographies(ax, df_geo, var, adjust_text=False, remove_ticks=True):
         ax.yaxis.set_ticks([])
 
 
-def create_geoplot_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap='coolwarm', ax=None, gdf=None, 
-                              adjust_text=False):
+def create_single_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap='coolwarm', ax=None, gdf=None, 
+                             adjust_text=False):
+    """Function for creating single choropleth for all US states
+
+    Args:
+        df (pd.DataFrame): The dataframe with the data for which the choropleth is to be made
+        var (str, optional): The variable to make the choropleth for. Defaults to 'z_score'.
+        vcenter (int, optional): Center of cmap. Defaults to 0.
+        vmin (int, optional): Min of cmap. Defaults to -1.
+        vmax (int, optional): Max of cmap. Defaults to 1.
+        cmap (str, optional): Which matplotlib cmap to use. Defaults to 'coolwarm'.
+        ax (mpl.Axes, optional): If given, makes plot on this axes. Defaults to None.
+        gdf (gpd.GeoDataFrame, optional): If given, uses this as the geodataframe. Defaults to None.
+        adjust_text (bool, optional): If true, adjusts the text of the annotation. Defaults to False.
+
+    Returns:
+        [type]: [description]
+    """
     norm = colors.TwoSlopeNorm(vmin=vmin, vcenter=vcenter, vmax=vmax)
     if gdf is None:
         gdf = gpd.read_file(gplt.datasets.get_path('contiguous_usa'))
@@ -95,7 +145,49 @@ def create_geoplot_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cma
     ax.legend(handles=legend_elements)
     return fig
 
+
+def preprocess_shape_file(filename='cb_2018_us_state_5m/cb_2018_us_state_5m.shp', 
+                          root_dir='../../data/data/shapefiles'):
+    """Helper function for preprocessing shape file of US states
+
+    Args:
+        filename (str, optional): Shapefile filename. Defaults to 'cb_2018_us_state_5m/cb_2018_us_state_5m.shp'.
+        root_dir (str, optional): Directory where shapefiles are stored. Defaults to '../../data/data/shapefiles'.
+    
+    Returns:
+        gpd.GeoDataFrame: Returns the preprocessed geodataframe
+    """
+    gdf = gpd.read_file(f'{root_dir}/{filename}')
+    gdf.rename({'NAME' : 'state'}, axis=1, inplace=True)
+    # Removing territories
+    states_to_remove = ['United States Virgin Islands', 'Puerto Rico', 'American Samoa', 
+                        'Commonwealth of the Northern Mariana Islands', 'Guam']
+    gdf = gdf[np.logical_not(gdf['state'].isin(states_to_remove))]
+
+    # Pruning parts of Alaska where the Latitude is negative (ie, beyond -180)
+    multi_polys = gdf.loc[gdf['state'] == 'Alaska', 'geometry'].to_numpy()[0]
+    indices_to_keep = []
+    for i, poly in enumerate(multi_polys):
+        xcords = np.array(list(poly.exterior.coords))[:, 0]
+        if sum(xcords > 0) != len(xcords):
+            indices_to_keep.append(i)
+
+    new_multi_polys = MultiPolygon([poly for i, poly in enumerate(multi_polys) if i in indices_to_keep])
+
+    idx = gdf[gdf['state'] == 'Alaska'].index[0]
+    gdf[gdf.index == idx] = gdf[gdf.index == idx].set_geometry([new_multi_polys])
+    return gdf
+
 def combine_with_train_error(predictions_dict, df):
+    """Combine the Z score dataframe with the train error datafrom (read from predictions_dict file)
+
+    Args:
+        predictions_dict (dict): The predictions_dict output file
+        df (pd.DataFrame): Z Score dataframe
+
+    Returns:
+        pd.DataFrame: df with the z scores and train error
+    """
     df_wadhwani = pd.DataFrame(index=list(predictions_dict.keys()),
                                columns=['best_loss_train', 'test_loss', 
                                         'T_recov_fatal', 'P_fatal'])
@@ -113,6 +205,19 @@ def combine_with_train_error(predictions_dict, df):
 
 def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=None, annot_z_score=False, 
                              log_scale=False):
+    """Function for creating scatter plot of train error vs test error 
+
+    Args:
+        df_wadhwani (pd.DataFrame): The dataframe which contains the train and test error values
+        annotate (bool, optional): If true, each of the points in the scatter are annotated. Defaults to True.
+        abbv (bool, optional): If true, the abbreviation of the state is used for annotation. Defaults to False.
+        abbv_dict (dict, optional): Dict mapping state name to state code name. Necessary if abbv=True. Defaults to None.
+        annot_z_score (bool, optional): If true, the Z score is also annotated. Defaults to False.
+        log_scale (bool, optional): If true, the y_scale is lo. Defaults to False.
+
+    Returns:
+        mpl.Figure: Matplotlib figure with the scatter plot
+    """
     fig, ax = plt.subplots(figsize=(12, 12))
     df_zpos = df_wadhwani[df_wadhwani['z_score'] > 0]
     df_zneg = df_wadhwani[df_wadhwani['z_score'] < 0]
