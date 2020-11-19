@@ -38,6 +38,68 @@ def calculate_z_score(df_mape, df_rank, model_name='Wadhwani_AI'):
     return df
 
 
+def combine_with_train_error(predictions_dict, df):
+    """Combine the Z score dataframe with the train error datafrom (read from predictions_dict file)
+
+    Args:
+        predictions_dict (dict): The predictions_dict output file
+        df (pd.DataFrame): Z Score dataframe
+
+    Returns:
+        pd.DataFrame: df with the z scores and train error
+    """
+    df_wadhwani = pd.DataFrame(index=list(predictions_dict.keys()),
+                               columns=['best_loss_train', 'test_loss',
+                                        'T_recov_fatal', 'P_fatal'])
+    for loc in predictions_dict.keys():
+        df_wadhwani.loc[loc, 'best_loss_train'] = predictions_dict[loc]['m2']['df_loss'].to_numpy()[
+            0][0]
+        df_wadhwani.loc[loc,
+                        'T_recov_fatal'] = predictions_dict[loc]['m2']['best_params']['T_recov_fatal']
+        df_wadhwani.loc[loc,
+                        'P_fatal'] = predictions_dict[loc]['m2']['best_params']['P_fatal']
+
+    df_wadhwani = df_wadhwani.merge(df, left_index=True, right_index=True)
+
+    df_wadhwani.drop(['Northern Mariana Islands', 'Guam',
+                      'Virgin Islands'], axis=0, inplace=True, errors='ignore')
+
+    return df_wadhwani
+
+
+def preprocess_shape_file(filename='cb_2018_us_state_5m/cb_2018_us_state_5m.shp', 
+                          root_dir='../../data/data/shapefiles'):
+    """Helper function for preprocessing shape file of US states
+
+    Args:
+        filename (str, optional): Shapefile filename. Defaults to 'cb_2018_us_state_5m/cb_2018_us_state_5m.shp'.
+        root_dir (str, optional): Directory where shapefiles are stored. Defaults to '../../data/data/shapefiles'.
+    
+    Returns:
+        gpd.GeoDataFrame: Returns the preprocessed geodataframe
+    """
+    gdf = gpd.read_file(f'{root_dir}/{filename}')
+    gdf.rename({'NAME' : 'state'}, axis=1, inplace=True)
+    # Removing territories
+    states_to_remove = ['United States Virgin Islands', 'Puerto Rico', 'American Samoa', 
+                        'Commonwealth of the Northern Mariana Islands', 'Guam']
+    gdf = gdf[np.logical_not(gdf['state'].isin(states_to_remove))]
+
+    # Pruning parts of Alaska where the Latitude is negative (ie, beyond -180)
+    multi_polys = gdf.loc[gdf['state'] == 'Alaska', 'geometry'].to_numpy()[0]
+    indices_to_keep = []
+    for i, poly in enumerate(multi_polys):
+        xcords = np.array(list(poly.exterior.coords))[:, 0]
+        if sum(xcords > 0) != len(xcords):
+            indices_to_keep.append(i)
+
+    new_multi_polys = MultiPolygon([poly for i, poly in enumerate(multi_polys) if i in indices_to_keep])
+
+    idx = gdf[gdf['state'] == 'Alaska'].index[0]
+    gdf[gdf.index == idx] = gdf[gdf.index == idx].set_geometry([new_multi_polys])
+    return gdf
+
+
 def create_heatmap(df, var_name='z_score', center=0):
     """General function for creating sns heatmap for variables which measure the performance 
     of our forecasts with respect to other models
@@ -145,63 +207,6 @@ def create_single_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap
     ax.legend(handles=legend_elements)
     return fig
 
-
-def preprocess_shape_file(filename='cb_2018_us_state_5m/cb_2018_us_state_5m.shp', 
-                          root_dir='../../data/data/shapefiles'):
-    """Helper function for preprocessing shape file of US states
-
-    Args:
-        filename (str, optional): Shapefile filename. Defaults to 'cb_2018_us_state_5m/cb_2018_us_state_5m.shp'.
-        root_dir (str, optional): Directory where shapefiles are stored. Defaults to '../../data/data/shapefiles'.
-    
-    Returns:
-        gpd.GeoDataFrame: Returns the preprocessed geodataframe
-    """
-    gdf = gpd.read_file(f'{root_dir}/{filename}')
-    gdf.rename({'NAME' : 'state'}, axis=1, inplace=True)
-    # Removing territories
-    states_to_remove = ['United States Virgin Islands', 'Puerto Rico', 'American Samoa', 
-                        'Commonwealth of the Northern Mariana Islands', 'Guam']
-    gdf = gdf[np.logical_not(gdf['state'].isin(states_to_remove))]
-
-    # Pruning parts of Alaska where the Latitude is negative (ie, beyond -180)
-    multi_polys = gdf.loc[gdf['state'] == 'Alaska', 'geometry'].to_numpy()[0]
-    indices_to_keep = []
-    for i, poly in enumerate(multi_polys):
-        xcords = np.array(list(poly.exterior.coords))[:, 0]
-        if sum(xcords > 0) != len(xcords):
-            indices_to_keep.append(i)
-
-    new_multi_polys = MultiPolygon([poly for i, poly in enumerate(multi_polys) if i in indices_to_keep])
-
-    idx = gdf[gdf['state'] == 'Alaska'].index[0]
-    gdf[gdf.index == idx] = gdf[gdf.index == idx].set_geometry([new_multi_polys])
-    return gdf
-
-def combine_with_train_error(predictions_dict, df):
-    """Combine the Z score dataframe with the train error datafrom (read from predictions_dict file)
-
-    Args:
-        predictions_dict (dict): The predictions_dict output file
-        df (pd.DataFrame): Z Score dataframe
-
-    Returns:
-        pd.DataFrame: df with the z scores and train error
-    """
-    df_wadhwani = pd.DataFrame(index=list(predictions_dict.keys()),
-                               columns=['best_loss_train', 'test_loss', 
-                                        'T_recov_fatal', 'P_fatal'])
-    for loc in predictions_dict.keys():
-        df_wadhwani.loc[loc, 'best_loss_train'] = predictions_dict[loc]['m2']['df_loss'].to_numpy()[0][0]
-        df_wadhwani.loc[loc, 'T_recov_fatal'] = predictions_dict[loc]['m2']['best_params']['T_recov_fatal']
-        df_wadhwani.loc[loc, 'P_fatal'] = predictions_dict[loc]['m2']['best_params']['P_fatal']
-
-    df_wadhwani = df_wadhwani.merge(df, left_index=True, right_index=True)
-
-    df_wadhwani.drop(['Northern Mariana Islands', 'Guam',
-                      'Virgin Islands'], axis=0, inplace=True, errors='ignore')
-    
-    return df_wadhwani
 
 def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=None, annot_z_score=False, 
                              log_scale=False):
