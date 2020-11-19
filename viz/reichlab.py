@@ -259,6 +259,14 @@ def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=N
 
 
 def plot_ecdf_single_state(df_mape, state, ax, model='Wadhwani_AI'):
+    """Function for ECDF plot for a single region 
+
+    Args:
+        df_mape (pd.DataFrame): The dataframe with MAPE values for every model
+        state (str): The state for which the plotting has to done
+        ax (mpl.Axes): The axes object to make the plot in
+        model (str, optional): Which model to highlight via a vertical line. Defaults to 'Wadhwani_AI'.
+    """
     sns.ecdfplot(data=df_mape[state], ax=ax)
     ax.axvline(df_mape.loc[model, state], ls=':',
                c='red', label='Wadhwani AI Submission')
@@ -267,6 +275,14 @@ def plot_ecdf_single_state(df_mape, state, ax, model='Wadhwani_AI'):
 
 
 def plot_ecdf_all_states(df_mape):
+    """Function for ECDF plots for all states
+
+    Args:
+        df_mape (pd.DataFrame): The dataframe with MAPE values for every model, region
+
+    Returns:
+        mpl.Figure, [mpl.Axes] : The figure and axes objects
+    """
     fig, axs = plt.subplots(figsize=(21, 6*15), nrows=15, ncols=3)
     columns = df_mape.loc[:, np.logical_not(
         df_mape.loc['Wadhwani_AI', :].isna())].columns
@@ -278,7 +294,18 @@ def plot_ecdf_all_states(df_mape):
 
     return fig, axs
 
-def plot_qq_single_state(df_mape, state, ax, fit=True, df_wadhwani=None):
+def plot_qq_single_state(df_mape, state, ax, fit=False, df_wadhwani=None):
+    """Function for QQ plot for a single region 
+
+    Args:
+        df_mape (pd.DataFrame): The dataframe with MAPE values for every model, region
+        state (str): The state for which the plotting has to done
+        ax (mpl.Axes): The axes object to make the plot in
+        fit (bool, optional): If true, theoretical quantiles are fit to data. Defaults to False.
+        df_wadhwani (pd.DataFrame, optional): If fit=true, the mean and std values 
+        to use for the theoretical quantiles. Defaults to None.
+    """
+
     if fit:
         sm.qqplot(df_mape[state], dist=stats.norm, fit=True, line='45', ax=ax)
     else:
@@ -288,6 +315,17 @@ def plot_qq_single_state(df_mape, state, ax, fit=True, df_wadhwani=None):
     
 
 def plot_qq_all_states(df_mape, fit=True, df_wadhwani=None):
+    """Function for QQ plot for a single region 
+
+    Args:
+        df_mape (pd.DataFrame): The dataframe with MAPE values for every model, region
+        fit (bool, optional): If true, theoretical quantiles are fit to data. Defaults to False.
+        df_wadhwani (pd.DataFrame, optional): If fit=true, the mean and std values 
+        to use for the theoretical quantiles. Defaults to None.
+    
+    Returns:
+        mpl.Figure, [mpl.Axes] : The figure and axes objects
+    """
     fig, axs = plt.subplots(figsize=(21, 6*15), nrows=15, ncols=3)
     columns = df_mape.loc[:, np.logical_not(
         df_mape.loc['Wadhwani_AI', :].isna())].columns
