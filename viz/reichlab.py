@@ -2,7 +2,6 @@ from copy import copy
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib.patches import Patch
-from matplotlib.lines import Line2D
 import geoplot as gplt
 import geoplot.crs as gcrs
 from shapely.geometry import MultiPolygon
@@ -11,6 +10,7 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 import seaborn as sns
+import scipy.stats as stats
 import statsmodels.api as sm
 import adjustText as aT
 
@@ -256,3 +256,46 @@ def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=N
     ax.legend()
     ax.set_title(f'Scatter plot of train vs test error, point radii proportional to {stat_metric_to_use}')
     return fig
+
+
+def plot_ecdf_single_state(df_mape, state, ax, model='Wadhwani_AI'):
+    sns.ecdfplot(data=df_mape[state], ax=ax)
+    ax.axvline(df_mape.loc[model, state], ls=':',
+               c='red', label='Wadhwani AI Submission')
+    ax.set_title(state)
+    ax.legend()
+
+
+def plot_ecdf_all_states(df_mape):
+    fig, axs = plt.subplots(figsize=(21, 6*15), nrows=15, ncols=3)
+    columns = df_mape.loc[:, np.logical_not(
+        df_mape.loc['Wadhwani_AI', :].isna())].columns
+    for i, state in enumerate(columns):
+        ax = axs.flat[i]
+        plot_ecdf_single_state(df_mape, state, ax, model='Wadhwani_AI')
+    fig.suptitle('Emperical Cumulative Distribution Function Plots for all states')
+    fig.subplots_adjust(top=0.97)
+
+    return fig, axs
+
+def plot_qq_single_state(df_mape, state, ax, fit=True, df_wadhwani=None):
+    if fit:
+        sm.qqplot(df_mape[state], dist=stats.norm, fit=True, line='45', ax=ax)
+    else:
+        sm.qqplot(df_mape[state], dist=stats.norm, loc=df_wadhwani.loc[state, 'mean_mape'], 
+                scale=df_wadhwani.loc[state, 'std_mape'], line='45', ax=ax)
+    ax.set_title(state)
+    
+
+def plot_qq_all_states(df_mape, fit=True, df_wadhwani=None):
+    fig, axs = plt.subplots(figsize=(21, 6*15), nrows=15, ncols=3)
+    columns = df_mape.loc[:, np.logical_not(
+        df_mape.loc['Wadhwani_AI', :].isna())].columns
+    for i, state in enumerate(columns):
+        ax = axs.flat[i]
+        plot_qq_single_state(df_mape, state, ax, fit=fit,
+                             df_wadhwani=df_wadhwani)
+    fig.suptitle('Q-Q plots for all states')
+    fig.subplots_adjust(top=0.97)
+
+    return fig, axs
