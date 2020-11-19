@@ -1,6 +1,7 @@
 from copy import copy
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+from matplotlib import cm
 from matplotlib.patches import Patch
 import geoplot as gplt
 import geoplot.crs as gcrs
@@ -207,6 +208,28 @@ def create_single_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap
     ax.legend(handles=legend_elements)
     return fig
 
+def plot_multiple_choropleths(df_wadhwani:pd.DataFrame, gdf:gpd.GeoDataFrame, vars_to_plot:dict):
+    """Function for plotting multiple choropleths in 1 fig
+
+    Args:
+        df_wadhwani (pd.DataFrame): dataframe with different metrics analysing model performance for every location
+        gdf (gpd.GeoDataFrame): The processed shapefile as a geopandas dataframe
+        vars_to_plot (dict): Dict containing which params to plot choropleths for, and corresponding plotting params
+
+    Returns:
+        mpl.Figure, [mpl.Axes]: The matplotlib figure and axes object
+    """
+    fig, axs = plt.subplots(figsize=(14, 7*len(vars_to_plot)), 
+                            nrows=len(vars_to_plot), ncols=1)
+    for i, (var, plotting_params) in enumerate(vars_to_plot.items()):
+        _ = create_single_choropleth(df_wadhwani, var=var, vcenter=plotting_params['vcenter'],
+                                     vmin=plotting_params['vmin'], vmax=plotting_params['vmax'],
+                                     cmap=plotting_params['cmap'], ax=axs.flat[i], gdf=gdf)
+        fig.colorbar(cm.ScalarMappable(norm=colors.TwoSlopeNorm(
+            vmin=plotting_params['vmin'], vcenter=plotting_params['vcenter'], 
+            vmax=plotting_params['vmax']), cmap=plotting_params['cmap']), ax=axs.flat[i])
+    
+    return fig, axs
 
 def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=None, annot_z_score=False, 
                              stat_metric_to_use='z_score', log_scale=False):
