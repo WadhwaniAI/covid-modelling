@@ -309,6 +309,33 @@ def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=N
     return fig
 
 
+def create_scatter_plot_zscores(df_wadhwani, annotate=False, us_states_abbv_dict=None):
+    """Create scatter plot between Z score and Non Param Z Score
+
+    Args:
+        df_wadhwani (pd.DataFrame): Dataframe which has Z and non param Z scores for all states
+        annotate (bool, optional): If true, annotates scatters with all state code. Defaults to False.
+        us_states_abbv_dict (dict, optional): if annotate=true, uses this state_code dict to annotate. 
+        Necessary if annotate=True. Defaults to None.
+
+    Returns:
+        mpl.Figure, mpl.Axes: The figure and axes object
+    """
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.scatter(df_wadhwani['z_score'], df_wadhwani['non_param_z_score'])
+    ax.plot(df_wadhwani['z_score'], df_wadhwani['z_score'], '-r', label='y=x line')
+    ax.set_xlabel('Z Score (Mean, Std)')
+    ax.set_ylabel('Non Param Z Score (Median, MAD)')
+    ax.set_title('Non Param Z Score vs Z Score ')
+    ax.grid()
+    if annotate:
+        for  index, row in df_wadhwani.iterrows():
+            annot_str = us_states_abbv_dict[index]
+            ax.annotate(annot_str, (row['z_score'], row['non_param_z_score']))
+    ax.legend()
+
+    return fig, ax
+
 def plot_ecdf_single_state(df_mape, state, ax, model='Wadhwani_AI'):
     """Function for ECDF plot for a single region 
 
