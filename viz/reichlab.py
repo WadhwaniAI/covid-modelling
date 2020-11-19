@@ -209,27 +209,33 @@ def create_single_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap
 
 
 def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=None, annot_z_score=False, 
-                             log_scale=False):
+                             stat_metric_to_use='z_score', log_scale=False):
     """Function for creating scatter plot of train error vs test error 
 
     Args:
         df_wadhwani (pd.DataFrame): The dataframe which contains the train and test error values
-        annotate (bool, optional): If true, each of the points in the scatter are annotated. Defaults to True.
-        abbv (bool, optional): If true, the abbreviation of the state is used for annotation. Defaults to False.
-        abbv_dict (dict, optional): Dict mapping state name to state code name. Necessary if abbv=True. Defaults to None.
-        annot_z_score (bool, optional): If true, the Z score is also annotated. Defaults to False.
+        annotate (bool, optional): If true, each of the points in the scatter 
+        are annotated. Defaults to True.
+        abbv (bool, optional): If true, the abbreviation of the state is used 
+        for annotation. Defaults to False.
+        abbv_dict (dict, optional): Dict mapping state name to state code name. 
+        Necessary if abbv=True. Defaults to None.
+        annot_z_score (bool, optional): If true, the Z score is also annotated. 
+        Defaults to False.
+        stat_metric_to_use (str, optional): Which statistical metric to use on the 
+        color and radius scale. Defaults to 'z_score'
         log_scale (bool, optional): If true, the y_scale is lo. Defaults to False.
 
     Returns:
         mpl.Figure: Matplotlib figure with the scatter plot
     """
     fig, ax = plt.subplots(figsize=(12, 12))
-    df_zpos = df_wadhwani[df_wadhwani['z_score'] > 0]
-    df_zneg = df_wadhwani[df_wadhwani['z_score'] < 0]
+    df_zpos = df_wadhwani[df_wadhwani[stat_metric_to_use] > 0]
+    df_zneg = df_wadhwani[df_wadhwani[stat_metric_to_use] < 0]
     ax.scatter(df_zpos['best_loss_train'], df_zpos['model_mape'],
-            s=df_zpos['z_score']*100, c='red', marker='o', label='+ve Z score states')
+            s=df_zpos[stat_metric_to_use]*100, c='red', marker='o', label='+ve Z score states')
     ax.scatter(df_zneg['best_loss_train'], df_zneg['model_mape'], s=-
-            df_zneg['z_score']*100, c='blue', marker='o', label='-ve Z score states')
+            df_zneg[stat_metric_to_use]*100, c='blue', marker='o', label='-ve Z score states')
     if annotate:
         for i, (index, row) in enumerate(df_wadhwani.iterrows()):
             if abbv:
@@ -237,7 +243,7 @@ def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=N
             else:
                 state_name = index
             if annot_z_score:
-                annot_str = f'{state_name} ({round(row["z_score"], 2)})'
+                annot_str = f'{state_name} ({round(row[stat_metric_to_use], 2)})'
             else:
                 annot_str = f'{state_name}'
             ax.annotate(annot_str, (row['best_loss_train'], row['model_mape']))
@@ -248,5 +254,5 @@ def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=N
     ax.axvline(1, ls=':', c='red', label='train error threshold (1%)')
     ax.axhline(5, ls=':', c='blue', label='test error threshold (5%)')
     ax.legend()
-    ax.set_title(f'Scatter plot of train vs test error, point radii proportional to z_score')
+    ax.set_title(f'Scatter plot of train vs test error, point radii proportional to {stat_metric_to_use}')
     return fig
