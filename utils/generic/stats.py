@@ -26,6 +26,8 @@ def get_ensemble_combined(model_dict, weighting='exp', beta=1):
     else:
         weights = np.ones(np.array(losses_array).shape)
     
+    if 'beta' not in params_dict and 'lockdown_R0' in params_dict and 'T_inc' in params_dict:
+        params_dict['beta'] = np.divide(params_dict['lockdown_R0'], params_dict['T_inc'])
     param_dist_stats = {}
     for param in params_dict.keys():
         mean = np.average(params_dict[param], weights=weights)

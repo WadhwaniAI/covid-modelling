@@ -526,6 +526,8 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
         for model, model_dict in loc_dict.items():
             param_values_stats = get_param_stats(model_dict, method, weighting)
             for param in param_values_stats.columns:
+                if param not in all_params:
+                    continue
                 if model not in param_wise_stats[param]:
                     param_wise_stats[param][model] = {'mean':{},'std':{}}
                 param_wise_stats[param][model]['mean'][loc] = param_values_stats[param]['mean']
