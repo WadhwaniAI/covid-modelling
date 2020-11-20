@@ -146,10 +146,10 @@ class MCUncertainty(Uncertainty):
             deciles_forecast[key]['params'] =  params[ptile_dict[key]]
             deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
                 df_train_nora, None, df_predictions, train_period=7,
-                which_compartments=self.loss_compartments)
+                which_compartments=['total'])
             deciles_forecast[key]['df_loss_perc'] = Loss_Calculator().create_loss_dataframe_region_perc(
                 df_train_nora, None, df_predictions, train_period=7,perc=key/100,
-                which_compartments=self.loss_compartments)
+                which_compartments=['total'])
         return deciles_forecast
 
     def avg_weighted_error(self, hp, return_dict=False, return_ensemble_mean_forecast=False):
@@ -184,7 +184,7 @@ class MCUncertainty(Uncertainty):
             return lc.calc_loss_dict(weighted_pred_df_loss, df_val, method = self.loss_method)
         if return_ensemble_mean_forecast:
             weighted_pred_df.reset_index(inplace=True)
-            return weighted_pred_df
+            return weighted_pred_df,lc.calc_loss_dict(weighted_pred_df_loss, df_val, method = self.loss_method)
         return lc.calc_loss(weighted_pred_df_loss, df_val, method = self.loss_method,
                             which_compartments=allcols, loss_weights=self.loss_weights)
 

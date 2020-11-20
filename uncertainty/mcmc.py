@@ -12,6 +12,7 @@ from data.processing.processing import get_data
 from uncertainty.mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
     avg_sum_multiple_chains, get_state, get_formatted_trials
 import pdb
+import scipy
 
 class MCMC(object):
 
@@ -334,6 +335,7 @@ class MCMC(object):
         Returns:
             tuple: tuple containing a list of accepted and a list of rejected parameter values.
         """
+        scipy.random.seed()
         theta = self._param_init()
         accepted = [theta]
         rejected = list()
@@ -401,7 +403,7 @@ class MCMC(object):
             burn_in = int(len(run) / 2)
             combined_acc += run[0][burn_in:][::self.stride]
 
-        n_samples = 3000
+        n_samples = 1500
         sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
         #Total day is 1 less than training_period
         
@@ -429,9 +431,9 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        # self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
-        self.chains = []
-        for i, run in enumerate(range(self.n_chains)):
-           self.chains.append(self._metropolis())
+        self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
+        # self.chains = []
+        # for i, run in enumerate(range(self.n_chains)):
+        #    self.chains.append(self._metropolis())
         self._check_convergence()
         return self._get_trials()
