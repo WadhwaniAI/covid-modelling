@@ -62,6 +62,12 @@ def _log_plots_util(mdFile, ROOT_DIR, plot_filename, figure, fig_text):
     mdFile.new_line(mdFile.new_inline_image(text=fig_text, path=plot_filepath))
     mdFile.new_paragraph("")
 
+def _log_daily_trends(mdFile, ROOT_DIR, fit_dict):
+    mdFile.new_header(level=1, title=f'DAILY TRENDS')
+    for trend, trend_plot in fit_dict['plots']['trends'].items():
+        _log_plots_util(mdFile, ROOT_DIR, trend + '.png',
+                        trend_plot, trend + ' Plot')
+    mdFile.new_paragraph("")
 
 def _log_smoothing(mdFile, ROOT_DIR, fit_dict):
     mdFile.new_header(level=1, title=f'SMOOTHING')
@@ -95,7 +101,7 @@ def _log_fits(mdFile, ROOT_DIR, fit_dict, which_fit='M1'):
     mdFile.insert_code(pformat(fit_dict['best_params']))
     mdFile.new_header(level=2, title=f'MAPE Loss Values')
 
-    mdFile.new_paragraph(fit_dict['df_loss'].to_markdown())
+    mdFile.new_paragraph(fit_dict['df_loss'].to_markdown(tablefmt="simple"))
 
     if which_fit.lower() == 'm1' or which_fit.lower() == 'm2':
         mdFile.new_header(level=2, title=f'{which_fit} Fit Curves')
@@ -210,6 +216,9 @@ def save_dict_and_create_report(predictions_dict, config_dict, ROOT_DIR='../../m
 
     mdFile.new_header(level=1, title='')
     mdFile.new_header(level=1, title='{} - {}'.format(config_dict['fitting']['data']['dataloading_params']['state'], config_dict['fitting']['data']['dataloading_params']['district']))
+
+    if m0_dict['plots']['trends'] is not None:
+        _log_daily_trends(mdFile, ROOT_DIR, m0_dict)
 
     if m1_dict['plots']['smoothing'] is not None:
        _log_smoothing(mdFile, ROOT_DIR, m1_dict)

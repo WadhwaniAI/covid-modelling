@@ -94,6 +94,22 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, locatio
         plt.savefig(savepath)
     return fig
 
+def plot_daily_trend(df_district, which_trend='incident'):
+    col_mapping = {
+        'incident' : 'total',
+        'recoveries' : 'recovered',
+        'deaths' : 'deceased',
+        'tests' : 'tested'
+    }
+    df_district['daily_' + which_trend] = df_district[col_mapping[which_trend]].diff()
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax.plot(df_district['date'], df_district['daily_' + which_trend], label='daily ' + which_trend)
+    plt.xticks(rotation=45)
+    plt.ylabel('daily ' + which_trend)
+    plt.xlabel('date')
+    plt.legend(loc='best')
+    return fig
 
 def plot_fit_multiple_preds(predictions_dict, which_fit='m1'):
 

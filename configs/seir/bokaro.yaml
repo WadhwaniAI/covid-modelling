@@ -36,7 +36,7 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-11-09
+        end_date: 2020-11-20
         train_period: 12
         val_period: 3
         test_period: 7
