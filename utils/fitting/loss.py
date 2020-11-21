@@ -108,10 +108,12 @@ class Loss_Calculator():
         """
         if method == 'rmse':
             calculate = lambda x, y : self._calc_rmse(x, y)
-        if method == 'rmse_log':
+        elif method == 'rmse_log':
             calculate = lambda x, y : self._calc_rmse(x, y, log=True)
-        if method == 'mape':
+        elif method == 'mape':
             calculate = lambda x, y : self._calc_mape(x, y)
+        else:
+            raise ValueError('Pleae inputted a supported loss fn (mape, rmse or rmsle)')
         
         losses = {}
         for compartment in self.columns:
