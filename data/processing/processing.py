@@ -9,7 +9,7 @@ from collections import defaultdict
 from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader
 
 
-def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, **kwargs):
+def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, label=None, **kwargs):
     if loader_class == Covid19IndiaLoader:
         loader_key = 'tracker'
     if loader_class == AthenaLoader:
@@ -17,8 +17,9 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, **
     if loader_class == JHULoader:
         loader_key = 'jhu'
     os.makedirs("../../misc/cache/", exist_ok=True)
-    picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}.pkl".format(
-        today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
+    label = '' if label is None else f'_{label}'
+    picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}{label}.pkl".format(
+        today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key, label=label)
     if reload_data:
         print("pulling from source")
         loader = loader_class()
@@ -76,10 +77,11 @@ def get_data(data_source, dataloading_params):
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
-    dataframes = get_dataframes_cached(loader_class=AthenaLoader, **kwargs)
+    label = kwargs.pop('label', None)
+    dataframes = get_dataframes_cached(loader_class=AthenaLoader, label=label, **kwargs)
     df_result = copy.copy(dataframes['case_summaries'])
-    df_result.rename(columns={'city': 'district', 'deaths': 'deceased', 'total cases': 'total',
-                              'active cases': 'active', 'recovered cases': 'recovered'}, inplace=True)
+    df_result.rename(columns={'deaths': 'deceased', 'total cases': 'total',
+                              'active cases': 'active', 'recoveries': 'recovered'}, inplace=True)
     df_result = df_result[np.logical_and(
         df_result['state'] == state, df_result['district'] == district)]
     df_result = df_result.loc[:, :'deceased']
@@ -89,6 +91,7 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_dat
     for col in df_result.columns:
         if col in ['active', 'total', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
+
     return df_result
     
 #TODO add support of adding 0s column for the ones which don't exist
