@@ -116,7 +116,7 @@ def log_mlflow(experiment_name='covid-modelling-default', run_name=None, params=
     mlflow.set_experiment(experiment_name)
     cred_file_path = '../../misc/mlflow/credentials.json'
     if not os.path.isfile(cred_file_path):
-        print('MLflow credentials not found')
+        raise ValueError('MLflow credentials not found')
     else:
         with open(cred_file_path, 'r') as infile:
             mlflow_config = json.load(infile)
