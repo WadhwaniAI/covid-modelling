@@ -97,6 +97,10 @@ def _log_fits(mdFile, ROOT_DIR, fit_dict, which_fit='M1'):
 
     mdFile.new_paragraph("")
     mdFile.new_header(level=2, title=f'')
+    mdFile.new_header(level=2, title=f'Variable parameter space')
+    mdFile.insert_code(pformat(fit_dict['run_params']['variable_param_ranges']))
+    mdFile.new_header(level=2, title=f'Default parameters')
+    mdFile.insert_code(pformat(fit_dict['run_params']['default_params']))
     mdFile.new_header(level=2, title=f'Optimal Parameters')
     mdFile.insert_code(pformat(fit_dict['best_params']))
     mdFile.new_header(level=2, title=f'MAPE Loss Values')
