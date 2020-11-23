@@ -63,7 +63,7 @@ def calculate_sensitivity_and_plot(predictions_dict, config, which_fit='m1'):
         var_name, param_range, comp_name, aux_comp = var_tuples[i]
         params_dict, loss_array = gridsearch_single_param(predictions_dict, config, which_fit, var_name=var_name,
                                                           param_range=param_range, comp_name=comp_name, 
-                                                          aux_comp=aux_comp)
+                                                          aux_comp=aux_comp,debug=True)
         ax.plot([x[list(x.keys())[0]] for x in params_dict], loss_array)
         ax.set_ylabel('Loss Value (MAPE)')
         ax.set_xlabel('{}'.format(var_name))

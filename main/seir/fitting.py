@@ -26,10 +26,12 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
     """
     if stratified_data:
-        df_not_strat = get_data(data_source, dataloading_params)
+        data_dict = get_data(data_source, dataloading_params)
+        df_not_strat = data_dict['data_frame']
         df_district = granular.get_data(data_source, dataloading_params)
     else:
-        df_district = get_data(data_source, dataloading_params)
+        data_dict = get_data(data_source, dataloading_params)
+        df_district = data_dict['data_frame']
     
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
@@ -45,7 +47,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
                                         dataloading_params['district'], which_compartments=loss_compartments, 
                                         description='Smoothing')
     df_district['daily_cases'] = df_district['total'].diff()
-    df_district.dropna(axis=0, how='any', subset=['total', 'active', 'recovered', 'deceased', 'daily_cases'], 
+    df_district.dropna(axis=0, how='any', subset=['total'], 
                        inplace=True)
     df_district.reset_index(drop=True, inplace=True)
 
@@ -79,7 +81,9 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     observed_dataframes = {}
     for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
         observed_dataframes[name] = eval(name)
-    return observed_dataframes, smoothing
+    if 'ideal_params' in data_dict:
+        return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing, "ideal_params" : data_dict['ideal_params']}
+    return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing}
 
 
 def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_params, fitting_method,
@@ -128,9 +132,9 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     lc = Loss_Calculator()
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'], 
                                               which_compartments=loss['loss_compartments'])
-
+    
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
-                        data['dataloading_params']['state'], data['dataloading_params']['district'], 
+                        location_description=data['dataloading_params']['location_description'],
                         which_compartments=loss['loss_compartments'])
 
     results_dict = {}
@@ -178,8 +182,11 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     params = {**data}
     params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
-    observed_dataframes, smoothing = data_setup(**params)
+    data_dict = data_setup(**params)
+    observed_dataframes, smoothing = data_dict['observed_dataframes'], data_dict['smoothing']
     smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
+    smoothing_description = smoothing['smoothing_description'] if 'smoothing_description' in smoothing else None
+
     orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
 
     print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
@@ -189,12 +196,13 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
             default_params, fitting_method, fitting_method_params, split, loss)
 
-    if smoothing_plot != None:
-        predictions_dict['plots']['smoothing'] = smoothing_plot
-        predictions_dict['smoothing_description'] = smoothing['smoothing_description']
+    
+    predictions_dict['plots']['smoothing'] = smoothing_plot
+    predictions_dict['smoothing_description'] = smoothing_description
     predictions_dict['df_district_unsmoothed'] = orig_df_district
 
     # record parameters for reproducibility
     predictions_dict['run_params'] = run_params
-
+    if 'ideal_params' in data_dict:
+        predictions_dict['ideal_params'] = data_dict['ideal_params']
     return predictions_dict
