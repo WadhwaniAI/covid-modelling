@@ -8,7 +8,7 @@ class AthenaLoader(BaseLoader):
     def __init__(self):
         super().__init__()
 
-    def create_connection(self, schema_name, staging_dir, pyathena_rc_path=None):
+    def create_connection(self, schema, staging_dir, pyathena_rc_path=None):
         """Creates SQL Server connection using AWS Athena credentials
 
         Keyword Arguments:
@@ -19,7 +19,7 @@ class AthenaLoader(BaseLoader):
         """
         if pyathena_rc_path is None:
             pyathena_rc_path = '../../misc/pyathena/pyathena.rc'
-        SCHEMA_NAME = schema_name
+        SCHEMA_NAME = schema
 
         # Open Pyathena RC file and get list of all connection variables in a processable format
         with open(pyathena_rc_path) as f:
@@ -46,7 +46,7 @@ class AthenaLoader(BaseLoader):
         return cursor
 
 
-    def load_data(self, schema_name, tables, staging_dir, pyathena_rc_path=None):
+    def load_data(self, schema, tables, staging_dir, pyathena_rc_path=None):
         """Creates connection to Athena database and returns all the tables there as a dict of Pandas dataframes
 
         Keyword Arguments:
@@ -66,7 +66,7 @@ class AthenaLoader(BaseLoader):
             pyathena_rc_path = '../../misc/pyathena/pyathena.rc'
 
         # Create connection
-        cursor = self.create_connection(schema_name, staging_dir, pyathena_rc_path)
+        cursor = self.create_connection(schema, staging_dir, pyathena_rc_path)
 
         # Run SQL SELECT queries to get all the tables in the database as pandas dataframes
         dataframes = {}

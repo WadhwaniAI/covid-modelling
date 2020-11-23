@@ -13,7 +13,7 @@ We may add a 5th key for `whatifs` scenarios, but that depends on how formally i
 
 - `data` :
     - `tables` : list of tables to retrieve from Athena DB
-    - `schema_name` : name of the schema in Athena DB
+    - `schema` : name of the schema in Athena DB
     - `staging_dir` : name of the S3 staging directory
     - `label` : label used to name all associated artifacts 
 - `model` : 
