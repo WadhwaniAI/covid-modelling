@@ -1,19 +1,15 @@
 fitting:
     # Geographical Location
     data:
-        data_source: covid_tracking
+        data_source: jhu
         stratified_data: FALSE
         dataloading_params:
-            state: Massachusetts
+            dataframe: us_states
+            region: Wyoming
+            sub_region: null
         smooth_jump: FALSE
         smooth_jump_params:
-            2020-05-28: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-14: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
-            2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
-            2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
+            2020-09-15: [2020-08-22, deceased, active, FALSE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
             center: TRUE
@@ -27,11 +23,11 @@ fitting:
         lockdown_R0: [[0.7, 1.5], uniform]
         T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
-        T_recov: [[20, 300], uniform]
-        T_recov_fatal: [[0, 40], uniform]
+        T_recov: [[0, 2000], uniform]
+        T_recov_fatal: [[0, 100], uniform]
         P_fatal: [[0, 0.1], uniform]
         E_hosp_ratio: [[0, 2], uniform]
-        I_hosp_ratio: [[0.1, 0.15], uniform]
+        I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
     fitting_method: bayes_opt
@@ -43,13 +39,13 @@ fitting:
         start_date: null
         end_date: 2020-09-26
         train_period: 21
-        val_period: 3
+        val_period: 4
         test_period: 0
     #Optimisation related parameters
     loss:
         loss_method: mape
-        loss_compartments: [total, active, recovered, deceased]
-        loss_weights: [0.25, 0.25, 0.25, 0.25]
+        loss_compartments: [deceased]
+        loss_weights: [1]
 sensitivity:
     lockdown_R0: [[[0.5, 1.5], 101], total, null]
     I_hosp_ratio: [[[0, 1], 201], total, null]
@@ -58,21 +54,23 @@ sensitivity:
     T_recov: [[[1, 100], 101], recovered, total]
     T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
-    forecast_days: 30
+    forecast_days: 45
     num_trials_to_plot: 10
-    plot_topk_trials_for_columns: [total, active]
-    plot_ptiles_for_columns: [total, active]
+    plot_topk_trials_for_columns: [deceased]
+    plot_ptiles_for_columns: [deceased]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
-        num_evals: 100
         which_fit: m1
+        fitting_method: gridsearch
+        fitting_method_params:
+            parallelise: FALSE
         variable_param_ranges:
-            beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2020-09-30
+            beta: [[0, 10], 101]
+        date_of_sorting_trials: 2020-10-19
         sort_trials_by_column: total
         loss:
             loss_method: mape
-            loss_compartments: [total, active, recovered, deceased]
-            loss_weights: [0.25, 0.25, 0.25, 0.25]
-        percentiles: [2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 97.5]
+            loss_compartments: [deceased]
+            loss_weights: [1]
+        percentiles: [1, 2.5, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 97.5, 99]
