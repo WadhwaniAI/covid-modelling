@@ -84,8 +84,8 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai'):
     df = copy.copy(dataframes['case_summaries'])
     df_bed = copy.copy(dataframes['bed_summaries'])
     df.dropna(axis=0, how='any', inplace=True)
-    df = df.merge(df_bed, on=['state', 'city', 'date', 'partition_0'], how='outer')
-    df.rename(columns={'city': 'district', 'deaths': 'deceased', 'total cases': 'total',
+    df = df.merge(df_bed, on=['state', 'district', 'date', 'partition_0'], how='outer')
+    df.rename(columns={'deaths': 'deceased', 'total cases': 'total',
                        'active cases': 'active', 'recovered cases': 'recovered'}, inplace=True)
     df.replace(',', '', regex=True, inplace=True)
     df = df[np.logical_and(df['state'] == state, df['district'] == district)]
