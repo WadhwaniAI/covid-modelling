@@ -180,7 +180,9 @@ class MCUncertainty(Uncertainty):
 
         predictions = self.predictions_dict['m1']['trials_processed']['predictions']
         loss_cols = self.loss_compartments
-        allcols = ['total', 'active', 'recovered', 'deceased']
+        allcols = ['total', 'active', 'recovered', 'deceased', 'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator',
+                   'asymptomatic', 'symptomatic', 'critical']
+        allcols = list(set(allcols) & set(predictions[0].columns))
         shapes = np.array([list(df.loc[:, allcols].to_numpy().shape) for df in predictions])
         correct_shape_idxs = np.where(shapes[:, 0] == np.amax(shapes, axis=0)[0])[0]
         pruned_predictions = [df for i, df in enumerate(predictions) if i in correct_shape_idxs]
