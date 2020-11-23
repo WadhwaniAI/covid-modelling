@@ -39,6 +39,8 @@ class MCUncertainty(Uncertainty):
         for key in loss:
             setattr(self, key, loss[key])
         self.percentiles = percentiles
+        self.fitting_config = fitting_config
+        self.forecast_config = forecast_config
         # Processing all trials
         if process_trials:
             self.process_trials(predictions_dict, fitting_config, forecast_config)
@@ -156,7 +158,7 @@ class MCUncertainty(Uncertainty):
             deciles_forecast[key]['df_prediction'] = df_predictions
             deciles_forecast[key]['params'] =  params[ptile_dict[key]]
             deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
-                df_train_nora, None, df_predictions, train_period=7,
+                df_train_nora, None, df_predictions, train_period=self.fitting_config['split']['val_period'],
                 which_compartments=self.loss_compartments)
         return deciles_forecast
 
