@@ -86,10 +86,13 @@ def get_data(data_source, dataloading_params):
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
     dataframes = get_dataframes_cached(loader_class=AthenaLoader)
-    df_result = copy.copy(dataframes['new_covid_case_summary'])
-    df_result['state'] = 'maharashtra'
+    df_result = copy.copy(dataframes['case_summaries'])
+    df_result['state'] = state
+    if (not district):
+        district = 'All'
     df_result = df_result[np.logical_and(
-        df_result['state'] == state.lower(), df_result['district'] == district.lower())]
+            df_result['state'].str.lower() == state.lower(), df_result['district'].str.lower() == district.lower())]
+    df_result = df_result.rename(columns={'total cases': 'total', 'active cases': 'active', 'recoveries':'recovered', 'deaths':'deceased'})
     df_result = df_result.loc[:, :'deceased']
     df_result.dropna(axis=0, how='any', inplace=True)
     df_result.loc[:, 'date'] = pd.to_datetime(df_result['date'])

@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: covid19india
+        data_source: athena
         stratified_data: FALSE
         dataloading_params:
             state: Jharkhand
@@ -37,7 +37,7 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-11-20
+        end_date: 2020-11-22
         train_period: 7
         val_period: 3
         test_period: 7
