@@ -11,6 +11,7 @@ from functools import partial
 from hyperopt import fmin, tpe, hp, Trials
 from tqdm import tqdm
 from joblib import Parallel, delayed
+from datetime import timedelta
 
 sys.path.append('../../../')
 from main.seir.forecast import forecast_all_trials
@@ -114,16 +115,15 @@ class MCUncertainty(Uncertainty):
         df['pdf'] = df['weight'] / df['weight'].sum()
         df_trials = self.trials_to_df(self.predictions_dict[self.which_fit]['trials_processed'], 
                                       self.sort_trials_by_column)
-        self.date_of_sorting_trials = datetime.datetime.combine(
-            self.date_of_sorting_trials, datetime.time())
-        df[self.date_of_sorting_trials] = df_trials.loc[:, self.date_of_sorting_trials]
-        
-        df = df.sort_values(by=self.date_of_sorting_trials)
-        df.index.name = 'idx'
-        df.reset_index(inplace=True)
-        
-        df['cdf'] = df['pdf'].cumsum()
-        
+        # Removing non time stamp columns
+        df_trials = df_trials.loc[:, [x for x in df_trials.columns if type(x) is pd.Timestamp]]
+        # Converting to datetime
+        df_trials.columns = [datetime.datetime.date(x) if type(x) is pd.Timestamp else x for x in df_trials.columns]
+        data_last_date = df_trials.columns[-1] - timedelta(days=self.forecast_config['forecast_days'])
+        # Only keeping the dates beyond the train-val date
+        drop_list = [x for x in df_trials.columns if x <= data_last_date]
+        df_trials.drop(drop_list, axis=1, inplace=True)
+        df = pd.concat([df, df_trials], axis=1)
         self.distribution = df
         return self.distribution
 
@@ -258,7 +258,13 @@ class MCUncertainty(Uncertainty):
             percentiles = range(10, 100, 10), np.array([2.5, 5, 95, 97.5])
             percentiles = np.sort(np.concatenate(percentiles))
         else:
-            np.sort(percentiles)        
+            np.sort(percentiles)
+
+        df = df.sort_values(by=self.date_of_sorting_trials)
+        df.index.name = 'idx'
+        df.reset_index(inplace=True)
+
+        df['cdf'] = df['pdf'].cumsum()
 
         ptile_dict = {}
         for ptile in percentiles:
