@@ -60,6 +60,7 @@ class Loss_Calculator():
         ape = np.abs((y_true - y_pred + 0) / np.mean(y_true,y_pred)) *  100
         loss = np.mean(ape)
         return loss
+    
     def _calc_l1_perc(self, y_pred, y_true,perc):
         """Function for calculating L1 percentile loss
 
