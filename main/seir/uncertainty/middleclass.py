@@ -22,8 +22,8 @@ from utils.generic.enums import Columns
 
 class MCUncertainty(Uncertainty):
     def __init__(self, predictions_dict, fitting_config, forecast_config, variable_param_ranges, fitting_method, 
-                 fitting_method_params, which_fit, date_of_sorting_trials, sort_trials_by_column, 
-                 loss, percentiles, process_trials=True):
+                 fitting_method_params, which_fit, construct_percentiles_day_wise, date_of_sorting_trials, 
+                 sort_trials_by_column, loss, percentiles, process_trials=True):
         """
         Initializes uncertainty object, finds beta for distribution
 
@@ -52,8 +52,6 @@ class MCUncertainty(Uncertainty):
         # Creating Ensemble Mean Forecast
         self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta}, return_dict=False,
                                                               return_ensemble_mean_forecast=True)
-        # Getting Distribution (decile distributions)
-        self.get_distribution()
 
     def process_trials(self, predictions_dict, fitting_config, forecast_config):
         predictions_dict['m1']['trials_processed'] = forecast_all_trials(
@@ -62,7 +60,6 @@ class MCUncertainty(Uncertainty):
             train_end_date=fitting_config['split']['end_date'],
             forecast_days=forecast_config['forecast_days']
         )
-
 
         predictions_dict['m2']['trials_processed'] = forecast_all_trials(
             predictions_dict, train_fit='m2',
@@ -90,77 +87,6 @@ class MCUncertainty(Uncertainty):
             pred = pred.append(predictions[i].set_index(
                 'date').loc[:, [column.name]].transpose(), ignore_index=True)
         return pd.concat([trials, pred], axis=1)
-
-    def get_distribution(self):
-        """
-        Computes probability distribution based on given beta and date 
-        over the trials in predictions_dict[self.which_fit]['all_trials']
-
-        Args:
-
-        Returns:
-            pd.DataFrame: dataframe of sorted trials, with columns
-                idx: original trial index
-                loss: loss value for that trial
-                weight: np.exp(-beta*loss)
-                pdf: pdf
-                cdf: cdf
-                <date_of_sorting_trials>: predicted value on <date_of_sorting_trials>
-
-        """    
-        
-        df = pd.DataFrame(columns=['loss', 'weight', 'pdf', self.date_of_sorting_trials, 'cdf'])
-        df['loss'] = self.predictions_dict[self.which_fit]['trials_processed']['losses']
-        df['weight'] = np.exp(-self.beta*df['loss'])
-        df['pdf'] = df['weight'] / df['weight'].sum()
-        df_trials = self.trials_to_df(self.predictions_dict[self.which_fit]['trials_processed'], 
-                                      self.sort_trials_by_column)
-        # Removing non time stamp columns
-        df_trials = df_trials.loc[:, [x for x in df_trials.columns if type(x) is pd.Timestamp]]
-        # Converting to datetime
-        df_trials.columns = [datetime.datetime.date(x) if type(x) is pd.Timestamp else x for x in df_trials.columns]
-        data_last_date = df_trials.columns[-1] - timedelta(days=self.forecast_config['forecast_days'])
-        # Only keeping the dates beyond the train-val date
-        drop_list = [x for x in df_trials.columns if x <= data_last_date]
-        df_trials.drop(drop_list, axis=1, inplace=True)
-        df = pd.concat([df, df_trials], axis=1)
-        self.distribution = df
-        return self.distribution
-
-    def get_forecasts(self, percentiles=None):
-        """
-        Get forecasts at certain percentiles
-
-        Args:
-            percentiles (list, optional): percentiles at which predictions from the distribution 
-                will be returned. Defaults to all deciles 10-90, as well as 2.5/97.5 and 5/95.
-
-        Returns:
-            dict: deciles_forecast, {percentile: {df_prediction: pd.DataFrame, df_loss: pd.DataFrame, params: dict}}
-        """  
-        if percentiles is None:
-            ptile_dict = self.get_ptiles_idx(percentiles=self.percentiles)
-        else:
-            ptile_dict = self.get_ptiles_idx(percentiles=percentiles)
-        
-        deciles_forecast = {}
-        
-        predictions = self.predictions_dict[self.which_fit]['trials_processed']['predictions']
-        params = self.predictions_dict[self.which_fit]['trials_processed']['params']
-        df_district = self.predictions_dict[self.which_fit]['df_district']
-        df_train_nora = df_district.set_index('date').loc[
-            self.predictions_dict[self.which_fit]['df_train']['date'], :].reset_index()
-        
-        for key in ptile_dict.keys():
-            deciles_forecast[key] = {}
-            df_predictions = predictions[ptile_dict[key]]
-            df_predictions['daily_cases'] = df_predictions['total'].diff()
-            deciles_forecast[key]['df_prediction'] = df_predictions
-            deciles_forecast[key]['params'] =  params[ptile_dict[key]]
-            deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
-                df_train_nora, None, df_predictions, train_period=self.fitting_config['split']['val_period'],
-                which_compartments=self.loss_compartments)
-        return deciles_forecast
 
     def avg_weighted_error(self, params, return_dict=False, return_ensemble_mean_forecast=False):
         """
@@ -240,6 +166,80 @@ class MCUncertainty(Uncertainty):
             print(f'Min Loss - {min_loss}')
             return best_beta, dict_of_trials
 
+
+    def get_distribution(self):
+        """
+        Computes probability distribution based on given beta and date 
+        over the trials in predictions_dict[self.which_fit]['all_trials']
+
+        Args:
+
+        Returns:
+            pd.DataFrame: dataframe of sorted trials, with columns
+                idx: original trial index
+                loss: loss value for that trial
+                weight: np.exp(-beta*loss)
+                pdf: pdf
+                cdf: cdf
+                <date_of_sorting_trials>: predicted value on <date_of_sorting_trials>
+
+        """    
+        
+        df = pd.DataFrame(columns=['loss', 'weight', 'pdf', self.date_of_sorting_trials, 'cdf'])
+        df['loss'] = self.predictions_dict[self.which_fit]['trials_processed']['losses']
+        df['weight'] = np.exp(-self.beta*df['loss'])
+        df['pdf'] = df['weight'] / df['weight'].sum()
+        df_trials = self.trials_to_df(self.predictions_dict[self.which_fit]['trials_processed'], 
+                                      self.sort_trials_by_column)
+        # Removing non time stamp columns
+        df_trials = df_trials.loc[:, [x for x in df_trials.columns if type(x) is pd.Timestamp]]
+        # Converting to datetime
+        df_trials.columns = [datetime.datetime.date(x) if type(x) is pd.Timestamp else x for x in df_trials.columns]
+        # data_last_date = df_trials.columns[-1] - timedelta(days=self.forecast_config['forecast_days'])
+        # # Only keeping the dates beyond the train-val date
+        # drop_list = [x for x in df_trials.columns if x <= data_last_date]
+        # df_trials.drop(drop_list, axis=1, inplace=True)
+        df = pd.concat([df, df_trials], axis=1)
+        return df
+
+    def get_forecasts(self, percentiles=None):
+        """
+        Get forecasts at certain percentiles
+
+        Args:
+            percentiles (list, optional): percentiles at which predictions from the distribution 
+                will be returned. Defaults to all deciles 10-90, as well as 2.5/97.5 and 5/95.
+
+        Returns:
+            dict: deciles_forecast, {percentile: {df_prediction: pd.DataFrame, df_loss: pd.DataFrame, params: dict}}
+        """ 
+        # Getting Distribution (decile distributions)
+        self.distribution = self.get_distribution()
+
+        if percentiles is None:
+            ptile_dict = self.get_ptiles_idx(percentiles=self.percentiles)
+        else:
+            ptile_dict = self.get_ptiles_idx(percentiles=percentiles)
+        
+        deciles_forecast = {}
+        
+        predictions = self.predictions_dict[self.which_fit]['trials_processed']['predictions']
+        params = self.predictions_dict[self.which_fit]['trials_processed']['params']
+        df_district = self.predictions_dict[self.which_fit]['df_district']
+        df_train_nora = df_district.set_index('date').loc[
+            self.predictions_dict[self.which_fit]['df_train']['date'], :].reset_index()
+        
+        for key in ptile_dict.keys():
+            deciles_forecast[key] = {}
+            df_predictions = predictions[ptile_dict[key]]
+            df_predictions['daily_cases'] = df_predictions['total'].diff()
+            deciles_forecast[key]['df_prediction'] = df_predictions
+            deciles_forecast[key]['params'] =  params[ptile_dict[key]]
+            deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
+                df_train_nora, None, df_predictions, train_period=self.fitting_config['split']['val_period'],
+                which_compartments=self.loss_compartments)
+        return deciles_forecast
+
     def get_ptiles_idx(self, percentiles=None):
         """
         Get the predictions at certain percentiles from a distribution of trials
@@ -250,17 +250,17 @@ class MCUncertainty(Uncertainty):
 
         Returns:
             dict: {percentile: index} where index is the trial index (to arrays in predictions_dict)
-        """    
+        """
         if self.distribution is None:
-            raise Exception("No distribution found. Must call get_distribution first.")
-        
-        if percentiles is None:
-            percentiles = range(10, 100, 10), np.array([2.5, 5, 95, 97.5])
-            percentiles = np.sort(np.concatenate(percentiles))
-        else:
-            np.sort(percentiles)
+            raise Exception(
+                "No distribution found. Must call get_distribution first.")
 
-        df = df.sort_values(by=self.date_of_sorting_trials)
+        if percentiles is None:
+            percentiles = np.concatenate(
+                range(10, 100, 10), np.array([2.5, 5, 95, 97.5]))
+        percentiles = np.sort(percentiles)
+
+        df = self.distribution.sort_values(by=self.date_of_sorting_trials)
         df.index.name = 'idx'
         df.reset_index(inplace=True)
 
@@ -268,8 +268,10 @@ class MCUncertainty(Uncertainty):
 
         ptile_dict = {}
         for ptile in percentiles:
-            index_value = (self.distribution['cdf'] - ptile/100).apply(abs).idxmin()
-            best_idx = self.distribution.loc[index_value - 2:index_value + 2, :]['idx'].min()
+            index_value = (
+                self.distribution['cdf'] - ptile/100).apply(abs).idxmin()
+            best_idx = self.distribution.loc[index_value -
+                                             2:index_value + 2, :]['idx'].min()
             ptile_dict[ptile] = int(best_idx)
 
         return ptile_dict
