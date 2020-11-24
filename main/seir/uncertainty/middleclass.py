@@ -1,17 +1,17 @@
 
 import os
+import pdb
 import sys
 import json
 import itertools
 import datetime
-import copy
+from copy import copy, deepcopy
 import numpy as np
 import pandas as pd
 from functools import partial
 from hyperopt import fmin, tpe, hp, Trials
 from tqdm import tqdm
 from joblib import Parallel, delayed
-from datetime import timedelta
 
 sys.path.append('../../../')
 from main.seir.forecast import forecast_all_trials
@@ -78,7 +78,7 @@ class MCUncertainty(Uncertainty):
             cols.append(key)
         trials = pd.DataFrame(columns=cols)
         for i in range(len(params)):
-            to_add = copy.copy(params[i])
+            to_add = copy(params[i])
             to_add['loss'] = losses[i]
             to_add['compartment'] = column.name
             trials = trials.append(to_add, ignore_index=True)
@@ -185,7 +185,7 @@ class MCUncertainty(Uncertainty):
 
         """    
         
-        df = pd.DataFrame(columns=['loss', 'weight', 'pdf', self.date_of_sorting_trials, 'cdf'])
+        df = pd.DataFrame(columns=['loss', 'weight', 'pdf'])
         df['loss'] = self.predictions_dict[self.which_fit]['trials_processed']['losses']
         df['weight'] = np.exp(-self.beta*df['loss'])
         df['pdf'] = df['weight'] / df['weight'].sum()
@@ -200,6 +200,8 @@ class MCUncertainty(Uncertainty):
         # drop_list = [x for x in df_trials.columns if x <= data_last_date]
         # df_trials.drop(drop_list, axis=1, inplace=True)
         df = pd.concat([df, df_trials], axis=1)
+        df.index.name = 'idx'
+        df.reset_index(inplace=True)
         return df
 
     def get_forecasts(self, percentiles=None):
@@ -217,9 +219,9 @@ class MCUncertainty(Uncertainty):
         self.distribution = self.get_distribution()
 
         if percentiles is None:
-            ptile_dict = self.get_ptiles_idx(percentiles=self.percentiles)
+            df_ptile_idxs = self.get_ptiles_idx(percentiles=self.percentiles)
         else:
-            ptile_dict = self.get_ptiles_idx(percentiles=percentiles)
+            df_ptile_idxs = self.get_ptiles_idx(percentiles=percentiles)
         
         deciles_forecast = {}
         
@@ -239,6 +241,20 @@ class MCUncertainty(Uncertainty):
                 df_train_nora, None, df_predictions, train_period=self.fitting_config['split']['val_period'],
                 which_compartments=self.loss_compartments)
         return deciles_forecast
+
+    def _ptile_idx_helper(self, percentiles, date):
+        df = deepcopy(self.distribution)
+        df = df.sort_values(by=date)
+        df.reset_index(drop=True, inplace=True)
+
+        df['cdf'] = df['pdf'].cumsum()
+
+        ptile_idxs = []
+        for ptile in percentiles:
+            index_value = (df['cdf'] - ptile/100).apply(abs).idxmin()
+            ptile_idxs.append(df.loc[index_value, 'idx'])
+
+        return ptile_idxs
 
     def get_ptiles_idx(self, percentiles=None):
         """
@@ -260,18 +276,10 @@ class MCUncertainty(Uncertainty):
                 range(10, 100, 10), np.array([2.5, 5, 95, 97.5]))
         percentiles = np.sort(percentiles)
 
-        df = self.distribution.sort_values(by=self.date_of_sorting_trials)
-        df.index.name = 'idx'
-        df.reset_index(inplace=True)
+        dates = [x for x in self.distribution.columns if isinstance(x, datetime.date)]
+        df_ptile_idxs = pd.DataFrame(columns=percentiles, index=dates)
 
-        df['cdf'] = df['pdf'].cumsum()
+        for date, _ in df_ptile_idxs.iterrows():
+            df_ptile_idxs.loc[date, :] = self._ptile_idx_helper(percentiles, date)
 
-        ptile_dict = {}
-        for ptile in percentiles:
-            index_value = (
-                self.distribution['cdf'] - ptile/100).apply(abs).idxmin()
-            best_idx = self.distribution.loc[index_value -
-                                             2:index_value + 2, :]['idx'].min()
-            ptile_dict[ptile] = int(best_idx)
-
-        return ptile_dict
+        return df_ptile_idxs
