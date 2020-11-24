@@ -196,10 +196,6 @@ class MCUncertainty(Uncertainty):
         df_trials = df_trials.loc[:, [x for x in df_trials.columns if type(x) is pd.Timestamp]]
         # Converting to datetime
         df_trials.columns = [datetime.datetime.date(x) if type(x) is pd.Timestamp else x for x in df_trials.columns]
-        # data_last_date = df_trials.columns[-1] - timedelta(days=self.forecast_config['forecast_days'])
-        # # Only keeping the dates beyond the train-val date
-        # drop_list = [x for x in df_trials.columns if x <= data_last_date]
-        # df_trials.drop(drop_list, axis=1, inplace=True)
         df = pd.concat([df, df_trials], axis=1)
         df.index.name = 'idx'
         df.reset_index(inplace=True)
@@ -243,6 +239,7 @@ class MCUncertainty(Uncertainty):
             else:
                 df_prediction = predictions[df_ptile_idxs.iloc[0][ptile]]
             
+            df_prediction.loc[:, 'S':] = df_prediction.loc[:, 'S':].apply(pd.to_numeric)
             deciles_forecast[ptile]['df_prediction'] = df_prediction
             if not self.construct_percentiles_day_wise:
                 deciles_forecast[ptile]['params'] = params[df_ptile_idxs.iloc[0][ptile]]
