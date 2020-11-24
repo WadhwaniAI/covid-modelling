@@ -223,15 +223,15 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
     df_comb = df_comb.rename({'value_x': 'forecast_value', 
                               'value_y': 'true_value'}, axis=1)
 
-    df_comb = df_comb[df_comb['type'] == 'point']
-    df_comb['p_error'] = np.abs(df_comb['forecast_value'] - df_comb['true_value'])*100/(df_comb['true_value']+1e-8)
-    num_cols = ['p_error', 'forecast_value']
+    df_comb['ape'] = np.abs(df_comb['forecast_value'] - df_comb['true_value'])*100/(df_comb['true_value']+1e-8)
+    num_cols = ['ape', 'forecast_value']
     df_comb.loc[:, num_cols] = df_comb.loc[:, num_cols].apply(pd.to_numeric)
-    df_mape = df_comb.groupby(['model', 'location', 
+    df_temp = df_comb[df_comb['type'] == 'point']
+    df_mape = df_temp.groupby(['model', 'location',
                                'location_name']).mean().reset_index()
     
     df_mape = df_mape.pivot(index='model', columns='location_name', 
-                            values='p_error')
+                            values='ape')
 
     df_rank = df_mape.rank()
 
