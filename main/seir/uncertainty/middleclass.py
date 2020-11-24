@@ -42,6 +42,7 @@ class MCUncertainty(Uncertainty):
         self.percentiles = percentiles
         self.fitting_config = fitting_config
         self.forecast_config = forecast_config
+        self.construct_percentiles_day_wise = construct_percentiles_day_wise
         # Processing all trials
         if process_trials:
             self.process_trials(predictions_dict, fitting_config, forecast_config)
@@ -222,23 +223,31 @@ class MCUncertainty(Uncertainty):
             df_ptile_idxs = self.get_ptiles_idx(percentiles=self.percentiles)
         else:
             df_ptile_idxs = self.get_ptiles_idx(percentiles=percentiles)
-        
+                
         deciles_forecast = {}
         
         predictions = self.predictions_dict[self.which_fit]['trials_processed']['predictions']
+        predictions = [df.loc[:, :'total'] for df in predictions]
+        predictions_stacked = np.stack([df.to_numpy() for df in predictions], axis=0)
         params = self.predictions_dict[self.which_fit]['trials_processed']['params']
         df_district = self.predictions_dict[self.which_fit]['df_district']
         df_train_nora = df_district.set_index('date').loc[
             self.predictions_dict[self.which_fit]['df_train']['date'], :].reset_index()
         
-        for key in ptile_dict.keys():
-            deciles_forecast[key] = {}
-            df_predictions = predictions[ptile_dict[key]]
-            df_predictions['daily_cases'] = df_predictions['total'].diff()
-            deciles_forecast[key]['df_prediction'] = df_predictions
-            deciles_forecast[key]['params'] =  params[ptile_dict[key]]
-            deciles_forecast[key]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
-                df_train_nora, None, df_predictions, train_period=self.fitting_config['split']['val_period'],
+        for ptile in df_ptile_idxs.columns:
+            deciles_forecast[ptile] = {}
+            if self.construct_percentiles_day_wise:
+                ptile_pred_stacked = predictions_stacked[df_ptile_idxs[ptile].to_list(), :, :]
+                pred_data = ptile_pred_stacked.diagonal().T
+                df_prediction = pd.DataFrame(data=pred_data, columns=predictions[0].columns)
+            else:
+                df_prediction = predictions[df_ptile_idxs.iloc[0][ptile]]
+            
+            deciles_forecast[ptile]['df_prediction'] = df_prediction
+            if not self.construct_percentiles_day_wise:
+                deciles_forecast[ptile]['params'] = params[df_ptile_idxs.iloc[0][ptile]]
+            deciles_forecast[ptile]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
+                df_train_nora, None, df_prediction, train_period=self.fitting_config['split']['val_period'],
                 which_compartments=self.loss_compartments)
         return deciles_forecast
 
@@ -279,7 +288,12 @@ class MCUncertainty(Uncertainty):
         dates = [x for x in self.distribution.columns if isinstance(x, datetime.date)]
         df_ptile_idxs = pd.DataFrame(columns=percentiles, index=dates)
 
-        for date, _ in df_ptile_idxs.iterrows():
-            df_ptile_idxs.loc[date, :] = self._ptile_idx_helper(percentiles, date)
-
+        if self.construct_percentiles_day_wise:
+            for date, _ in df_ptile_idxs.iterrows():
+                df_ptile_idxs.loc[date, :] = self._ptile_idx_helper(percentiles, date)
+        else:
+            df_ptile_idxs.loc[self.date_of_sorting_trials, :] = self._ptile_idx_helper(
+                percentiles, self.date_of_sorting_trials)
+            df_ptile_idxs = df_ptile_idxs.loc[[self.date_of_sorting_trials], :]
+        
         return df_ptile_idxs
