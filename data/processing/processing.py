@@ -92,6 +92,8 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_dat
         district = 'All'
     df_result = df_result[np.logical_and(
             df_result['state'].str.lower() == state.lower(), df_result['district'].str.lower() == district.lower())]
+    if district == 'Ranchi':
+        df_result = df_result[~df_result['partition_0'].isin(['bokaro', 'dhanbad', 'east_singhbhum', 'all_district'])]
     df_result = df_result.rename(columns={'total cases': 'total', 'active cases': 'active', 'recoveries':'recovered', 'deaths':'deceased'})
     df_result = df_result.loc[:, :'deceased']
     df_result.dropna(axis=0, how='any', inplace=True)
