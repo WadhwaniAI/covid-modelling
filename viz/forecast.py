@@ -68,7 +68,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     for i, forecast in enumerate(fits_to_plot):
         predictions.append(predictions_dict[which_fit]['forecasts'][fits_to_plot[i]])
     
-    df_true = predictions_dict[train_fit]['df_district']
+    df_true = predictions_dict['m1']['df_district']
 
     if error_bars:
         for i, df_prediction in enumerate(predictions):

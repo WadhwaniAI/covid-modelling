@@ -60,14 +60,12 @@ class MCUncertainty(Uncertainty):
             train_end_date=fitting_config['split']['end_date'],
             forecast_days=forecast_config['forecast_days']
         )
-
-
-        predictions_dict['m2']['trials_processed'] = forecast_all_trials(
-            predictions_dict, train_fit='m2',
-            model=fitting_config['model'],
-            train_end_date=fitting_config['split']['end_date'],
-            forecast_days=forecast_config['forecast_days']
-        )
+        # predictions_dict['m2']['trials_processed'] = forecast_all_trials(
+        #     predictions_dict, train_fit='m2',
+        #     model=fitting_config['model'],
+        #     train_end_date=fitting_config['split']['end_date'],
+        #     forecast_days=forecast_config['forecast_days']
+        # )
 
     def trials_to_df(self, trials_processed, column=Columns.active):
         predictions = trials_processed['predictions']
