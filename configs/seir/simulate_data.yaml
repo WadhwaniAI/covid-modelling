@@ -62,6 +62,7 @@ uncertainty:
         which_fit: m1
         variable_param_ranges:
             beta: [[0, 10], uniform]
+        construct_percentiles_day_wise: TRUE
         date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:
