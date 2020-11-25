@@ -266,7 +266,6 @@ class Optimiser():
                     algo=algo_module.suggest,
                     max_evals=num_evals,
                     trials=trials)
-        
         return best, trials
 
 
@@ -310,4 +309,5 @@ class Optimiser():
         # out_dir = join('plots', '{}_{}'.format(sig, exp_name))
         # os.makedirs(out_dir, exist_ok=True)
         # plot_chains(mcmc_fit, out_dir)
+        print("DIC-------->",mcmc_fit.DIC)
         return mcmc_fit._get_trials()
