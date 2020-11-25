@@ -15,6 +15,7 @@ from utils.generic.enums.columns import *
 from main.seir.forecast import _order_trials_by_loss, forecast_top_k_trials
 from viz.utils import axis_formatter
 from utils.generic.stats import *
+from utils.generic.recovery import get_recovery_loss
 
 def plot_buckets(df_prediction, title, which_buckets=None):
     if (which_buckets == None):
@@ -508,6 +509,127 @@ def plot_all_losses(predictions_dict, which_losses=['train'], which_compartments
         fig.delaxes(axs.flat[i])
     plt.show()
 
+
+def plot_cv_in_params(predictions_dict, model_params=None):
+    all_params = []
+    if (not model_params):
+        model_params = {}
+        loc = list(predictions_dict.keys())[0]
+        for model_name, model_dict in predictions_dict[loc].items():
+            model_params[model_name] = list(model_dict['m0']['best_params'].keys())
+    
+    # TODO: change to set
+    for _, params in model_params.items():
+        all_params += [param for param in params if param not in all_params]
+
+    param_wise_stats = { param:{} for param in all_params }
+    for loc, loc_dict in predictions_dict.items():
+        for model, model_dict in loc_dict.items():
+            param_values_stats = get_param_stats(model_dict, method='ensemble_combined', weighting='exp')
+            for param in param_values_stats.columns:
+                if param not in all_params:
+                    continue
+                if model not in param_wise_stats[param]:
+                    param_wise_stats[param][model] = {'mean':{},'std':{}, 'cv':{}}
+                param_wise_stats[param][model]['mean'][loc] = param_values_stats[param]['mean']
+                param_wise_stats[param][model]['std'][loc] = param_values_stats[param]['std']
+                param_wise_stats[param][model]['cv'][loc] = param_values_stats[param]['std']*1.0/param_values_stats[param]['mean']
+
+    n_subplots = len(all_params)
+    ncols = 3
+    nrows = math.ceil(n_subplots/ncols)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    colors = "bgrcmy"
+    color_map = {}
+    for i,model in enumerate(list(model_params.keys())):
+        color_map[model] = colors[i]
+    
+    bar_width = (1-0.2)/len(model_params)
+    ax_counter=0
+    for param in all_params:
+        ax = axs.flat[ax_counter]
+        param_values = param_wise_stats[param]
+        cv_vals = {}
+        for k,model in enumerate(param_values.keys()):
+            cv_vals[model] = param_values[model]['cv']
+            pos = [k*bar_width+j for j in range(len(cv_vals[model]))]
+            ax.bar(pos, cv_vals[model].values(), width=bar_width, color=color_map[model], align='center', alpha=0.5, label=model)
+        plt.sca(ax)
+        plt.ylabel(param)
+        plt.ylim(0,1)
+        xtick_vals = cv_vals[model].keys()
+        plt.xticks(range(len(cv_vals[model].keys())), cv_vals[model].keys(), rotation=45)
+        plt.legend(loc='best')
+        ax_counter += 1
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
+    plt.show()
+
+def plot_recovery_loss(predictions_dict, actual_param, model_params=None, method='best', weighting=None):
+    all_params = ['agg']
+    if (not model_params):
+        model_params = {}
+        loc = list(predictions_dict.keys())[0]
+        for model_name, model_dict in predictions_dict[loc].items():
+            model_params[model_name] = list(model_dict['m0']['best_params'].keys())
+    
+    # TODO: change to set
+    for _, params in model_params.items():
+        all_params += [param for param in params if param not in all_params]
+
+    param_wise_stats = { param:{} for param in all_params }
+    for loc, loc_dict in predictions_dict.items():
+        for model, model_dict in loc_dict.items():
+            param_values_stats = get_param_stats(model_dict, method, weighting)
+            num_param = 0
+            if model not in param_wise_stats['agg']:
+                param_wise_stats['agg'][model] = {'recovery_loss':{}}
+            param_wise_stats['agg'][model]['recovery_loss'][loc] = 0
+            for param in param_values_stats.columns:
+                if param not in all_params:
+                    continue
+                if model not in param_wise_stats[param]:
+                    param_wise_stats[param][model] = {'mean':{},'std':{}, 'recovery_loss':{}}
+                param_wise_stats[param][model]['mean'][loc] = param_values_stats[param]['mean']
+                param_wise_stats[param][model]['std'][loc] = param_values_stats[param]['std']
+                param_wise_stats[param][model]['recovery_loss'][loc] = get_recovery_loss(param_values_stats[param]['mean'], 
+                                                                                actual_param[param], method='mape')
+                param_wise_stats['agg'][model]['recovery_loss'][loc] += get_recovery_loss(param_values_stats[param]['mean'],
+                                                                                actual_param[param], method='mape')
+                num_param += 1
+            param_wise_stats['agg'][model]['recovery_loss'][loc] /= num_param
+
+    n_subplots = len(all_params)
+    ncols = 3
+    nrows = math.ceil(n_subplots/ncols)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    colors = "bgrcmy"
+    color_map = {}
+    for i,model in enumerate(list(model_params.keys())):
+        color_map[model] = colors[i]
+    
+    bar_width = (1-0.2)/len(model_params)
+    ax_counter=0
+    for param in all_params:
+        ax = axs.flat[ax_counter]
+        param_values = param_wise_stats[param]
+        rl_vals = {}
+        for k,model in enumerate(param_values.keys()):
+            rl_vals[model] = param_values[model]['recovery_loss']
+            pos = [k*bar_width+j for j in range(len(rl_vals[model]))]
+            ax.bar(pos, rl_vals[model].values(), width=bar_width, color=color_map[model], align='center', alpha=0.5, label=model)
+        plt.sca(ax)
+        plt.ylabel(param)
+        xtick_vals = rl_vals[model].keys()
+        plt.xticks(range(len(rl_vals[model].keys())), rl_vals[model].keys(), rotation=45)
+        plt.legend(loc='best')
+        ax_counter += 1
+    
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
+    plt.show()
 
 def plot_all_params(predictions_dict, model_params=None, method='best', weighting=None):
     all_params = []
