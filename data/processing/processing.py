@@ -29,7 +29,7 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, la
     if reload_data:
         print("pulling from source")
         loader = loader_class()
-        dataframes = loader.load_data(**kwargs)
+        dataframes = loader.load_data()
     else:
         try:
             with open(picklefn, 'rb') as pickle_file:
