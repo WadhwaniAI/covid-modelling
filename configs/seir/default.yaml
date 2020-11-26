@@ -39,7 +39,7 @@ fitting:
     fitting_method: bayes_opt
 
     fitting_method_params:
-        num_evals: 3000
+        num_evals: 1500
         algo: tpe
     #Choose Fitting Periods and num evaluations
     split:
@@ -68,10 +68,14 @@ forecast:
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
-        num_evals: 100
         which_fit: m1
+        fitting_type: bo
+        fitting_method: gridsearch
+        fitting_method_params:
+            parallelise: FALSE
         variable_param_ranges:
-            beta: [[0, 10], uniform]
+            beta: [[0, 10], 101]
+        construct_percentiles_day_wise: TRUE
         date_of_sorting_trials: 2020-10-26
         sort_trials_by_column: total
         loss:

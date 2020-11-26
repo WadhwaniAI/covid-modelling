@@ -132,7 +132,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges, fitting_method)
     args = {'df_train': df_train, 'default_params': default_params, 'variable_param_ranges':variable_param_ranges, 
             'model':model, 'fitting_method': fitting_method, **fitting_method_params, **split, **loss}
-    best_params, trials = getattr(optimiser, fitting_method)(**args)
+    best_params, trials, metric = getattr(optimiser, fitting_method)(**args)
     print('best parameters\n', best_params)
 
     df_prediction = optimiser.solve({**best_params, **default_params}, 
@@ -142,20 +142,9 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     lc = Loss_Calculator()
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'], 
                                               which_compartments=loss['loss_compartments'])
-
-    if 'state' in data['dataloading_params'].keys() and 'district' in data['dataloading_params'].keys():
-        location_description = (data['dataloading_params']['state'],
-                                data['dataloading_params']['district'])
-    elif 'region' in data['dataloading_params'].keys() and 'sub_region' in data['dataloading_params'].keys():
-        location_description = (data['dataloading_params']['region'],
-                                data['dataloading_params']['sub_region'])
-    elif 'state' in data['dataloading_params'].keys() and 'county' in data['dataloading_params'].keys():
-        location_description = (data['dataloading_params']['state'],
-                                data['dataloading_params']['county'])
-    else:
-        location_description = (data['dataloading_params']['state'])
+    
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
-                        location_description=location_description,
+                        location_description=data['dataloading_params']['location_description'],
                         which_compartments=loss['loss_compartments'])
 
     results_dict = {}
@@ -165,7 +154,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     for name in ['best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
                  'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
-
+    results_dict['metric'] = metric
     return results_dict
 
 

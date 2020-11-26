@@ -159,8 +159,8 @@ class MCMC(object):
         theta = defaultdict()
         for key in self.prior_ranges:
             theta[key] = np.random.uniform(float(self.prior_ranges[key][0][0]), self.prior_ranges[key][0][1])
-        self.oldLL = self._log_likelihood(theta)
-        return theta
+        oldLL = self._log_likelihood(theta)
+        return theta,oldLL
 
     def _proposal(self, theta_old):
         """
@@ -252,7 +252,6 @@ class MCMC(object):
         T = np.ediff1d(true)
         P = np.ediff1d(pred)
         ll = np.log(poisson.pmf(k = T, mu = P))
-        import pdb; pdb.set_trace()
         return np.sum(ll)
 
     def _log_likelihood(self, theta):
@@ -269,7 +268,6 @@ class MCMC(object):
         params_dict = {**theta, **self._default_params}
         df_prediction = self._optimiser.solve(params_dict,end_date = self.df_train[-1:]['date'].item())
         sigma = 250
-
 
         for compartment in self.compartments:
             pred = np.array(df_prediction[compartment], dtype=np.int64)
@@ -298,7 +296,7 @@ class MCMC(object):
             prior = 1
         
         return np.log(prior)
-    def _accept(self, theta_old, theta_new):    
+    def _accept(self, theta_old, theta_new, explored , optimized,oldLL):    
         """
         Decides, using the likelihood function, whether a newly proposed set of param values should 
         be accepted and added to the MCMC chain.
@@ -311,11 +309,11 @@ class MCMC(object):
             bool: whether or not to accept the new parameter set.
         """
         x_new = self._log_likelihood(theta_new)
-        x_old = self.oldLL
+        x_old = oldLL
         
         if (x_new) > (x_old):
-            self.optimized+=1
-            return True
+            optimized+=1
+            return True,explored,optimized
         else:
             x = np.random.uniform(0, 1)
             LLdiff = x_new - x_old
@@ -325,8 +323,8 @@ class MCMC(object):
             accept_bool = x < np.exp(x_new - x_old)
             # print("Did we choose this sample",accept_bool)
             if accept_bool :
-                self.explored+=1
-            return accept_bool
+                explored+=1
+            return accept_bool,explored,optimized
 
     def _metropolis(self):
         """
@@ -336,30 +334,32 @@ class MCMC(object):
             tuple: tuple containing a list of accepted and a list of rejected parameter values.
         """
         scipy.random.seed()
-        theta = self._param_init()
+        theta ,oldLL = self._param_init()
         accepted = [theta]
         rejected = list()
         A = 0
-        self.explored =0
-        self.optimized = 0
+        accepted_LIK = [oldLL]
+        explored = 0
+        optimized = 0
         for i in tqdm(range(self.iters)):
 
             theta_new = self.Gauss_proposal(theta)
-            
-            if self._accept(theta, theta_new):
-                self.oldLL = self._log_likelihood(theta_new)
+            accept_choice , explored , optimized = self._accept(theta, theta_new, explored, optimized,oldLL)
+            if accept_choice:
+                oldLL = self._log_likelihood(theta_new)
                 theta = theta_new
                 A += 1
             else:
                 rejected.append(theta_new)
             # if i == 20:
             #     import pdb; pdb.set_trace()
+            accepted_LIK.append(oldLL)
             accepted.append(theta)
         print("The acceptance ratio is --------> ",A / self.iters )
-        print("The explored steps are --------> ",self.explored )
-        print("The optimized steps are --------> ",self.optimized )
+        print("The explored steps are --------> ",explored )
+        print("The optimized steps are --------> ",optimized )
         #Confirm whether this is the correct implementation of acceptance ratio
-        return accepted, rejected
+        return accepted, rejected , accepted_LIK
 
     def _check_convergence(self):
         """
@@ -392,21 +392,37 @@ class MCMC(object):
         pp.pprint(R_hat)
         self.R_hat = R_hat
 
+    def calc_DIC(self,selected_LIK,selected_ACC):
+        deviance = np.array(selected_LIK)*-2
+        mean_deviance = np.mean(deviance)
+        theta_dict_keys = list(selected_ACC[0].keys())
+        acc = [list(i.values()) for i in selected_ACC]
+        acc = np.array(acc)
+        m_acc = np.mean(acc,axis =0)
+        m_acc_sample = OrderedDict(zip(theta_dict_keys,m_acc))
+        deviance_at_mean =  self._log_likelihood(m_acc_sample)*-2
+        return 2 * mean_deviance - deviance_at_mean 
+
     def _get_trials(self):
-        """Summary
+        """Summary      
+
         
         Returns:
             TYPE: Description
         """
         combined_acc = list()
+        combined_LIK = list()
         for k, run in enumerate(self.chains):
             burn_in = int(len(run) / 2)
             combined_acc += run[0][burn_in:][::self.stride]
-
+            combined_LIK += run[2][burn_in:][::self.stride]
         n_samples = 1500
         sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
         #Total day is 1 less than training_period
-        
+        sample_indices = [int(i) for i in sample_indices]
+        selected_LIK = [combined_LIK[i] for i in sample_indices]
+        selected_ACC = [combined_acc[i] for i in sample_indices]
+        self.DIC = self.calc_DIC(selected_LIK,selected_ACC)
         #total_days = len(self.df_train['date'])-1
         #loss_indices = [-self.fit_days, None]
 
@@ -431,9 +447,9 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
-        # self.chains = []
-        # for i, run in enumerate(range(self.n_chains)):
-        #    self.chains.append(self._metropolis())
+        # self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
+        self.chains = []
+        for i, run in enumerate(range(self.n_chains)):
+           self.chains.append(self._metropolis())
         self._check_convergence()
         return self._get_trials()
