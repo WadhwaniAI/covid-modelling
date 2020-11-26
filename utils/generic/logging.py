@@ -1,9 +1,14 @@
-import wandb
 import copy
-import matplotlib as mpl
+import json
+import numbers
+import os
 
+import matplotlib as mpl
+import mlflow
 import numpy as np
 import pandas as pd
+import wandb
+
 
 def create_dataframes_for_logging(m2_dict):
     """Function for creating dataframes of top k trials params, deciles params and deciles losses
@@ -44,7 +49,7 @@ def create_dataframes_for_logging(m2_dict):
 
 
 def log_wandb(predictions_dict):
-    """Function for logging stuff to W&B. Logs config param during intialisation, 
+    """Function for logging stuff to W&B. Logs config param during initialisation,
        matplotlib plots, and pandas dataframes
 
     Args:
@@ -94,3 +99,43 @@ def log_wandb(predictions_dict):
 
     for key, value in predictions_dict['m2']['plots']['forecasts_ptiles'].items():
         wandb.log({f"{'forecasts'}/forecasts_ptiles_{key}": [wandb.Image(value)]})
+
+
+def log_mlflow(experiment_name='covid-modelling-default', run_name=None, params=None, metrics=None, artifact_dir=None,
+               tags=None):
+    """Function for logging to MLflow
+
+    Args:
+        experiment_name (str): name of MLflow experiment
+        run_name (str): name of the run
+        params (dict): dictionary of parameters to log
+        metrics (dict): dictionary of metrics to log
+        artifact_dir (str): path containing artifacts to log
+        tags (dict): dictionary of tags to log
+    """
+    mlflow.set_experiment(experiment_name)
+    cred_file_path = '../../misc/mlflow/credentials.json'
+    if not os.path.isfile(cred_file_path):
+        raise ValueError('MLflow credentials not found')
+    else:
+        with open(cred_file_path, 'r') as infile:
+            mlflow_config = json.load(infile)
+        os.environ['MLFLOW_TRACKING_USERNAME'] = mlflow_config['username']
+        os.environ['MLFLOW_TRACKING_PASSWORD'] = mlflow_config['password']
+        mlflow.set_tracking_uri(mlflow_config['tracking_url'])
+
+        with mlflow.start_run(run_name=run_name):
+            if params is not None:
+                print('Logging parameters...')
+                mlflow.log_params(params)
+            if metrics is not None:
+                print('Logging metrics...')
+                for metric, value in metrics.items():
+                    if isinstance(value, numbers.Number):
+                        mlflow.log_metric(key=metric, value=value)
+            if artifact_dir is not None:
+                print(f'Logging artifacts from local directory: {artifact_dir}')
+                mlflow.log_artifacts(artifact_dir)
+            if tags is not None:
+                print('Logging tags...')
+                mlflow.set_tags(tags)
