@@ -132,7 +132,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges, fitting_method)
     args = {'df_train': df_train, 'default_params': default_params, 'variable_param_ranges':variable_param_ranges, 
             'model':model, 'fitting_method': fitting_method, **fitting_method_params, **split, **loss}
-    best_params, trials = getattr(optimiser, fitting_method)(**args)
+    best_params, trials, metric = getattr(optimiser, fitting_method)(**args)
     print('best parameters\n', best_params)
 
     df_prediction = optimiser.solve({**best_params, **default_params}, 
@@ -154,7 +154,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     for name in ['best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
                  'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
-
+    results_dict['metric'] = metric
     return results_dict
 
 

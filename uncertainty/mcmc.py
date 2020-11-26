@@ -269,7 +269,6 @@ class MCMC(object):
         df_prediction = self._optimiser.solve(params_dict,end_date = self.df_train[-1:]['date'].item())
         sigma = 250
 
-
         for compartment in self.compartments:
             pred = np.array(df_prediction[compartment], dtype=np.int64)
             true = np.array(self.df_train[compartment], dtype=np.int64)
@@ -448,9 +447,9 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
-        # self.chains = []
-        # for i, run in enumerate(range(self.n_chains)):
-        #    self.chains.append(self._metropolis())
+        # self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
+        self.chains = []
+        for i, run in enumerate(range(self.n_chains)):
+           self.chains.append(self._metropolis())
         self._check_convergence()
         return self._get_trials()

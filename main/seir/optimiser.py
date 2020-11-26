@@ -20,6 +20,7 @@ from uncertainty.uncertainty import plot_chains
 from uncertainty.mcmc_utils import predict
 from datetime import date
 from datetime import datetime
+from utils.fitting.mcmc_utils import _log_likelihood,calc_DIC,params_from_trials
 
 class Optimiser():
     """Class which implements all optimisation related activites (training, evaluation, etc)
@@ -266,7 +267,10 @@ class Optimiser():
                     algo=algo_module.suggest,
                     max_evals=num_evals,
                     trials=trials)
-        return best, trials
+        selected_ACC = params_from_trials(trials)
+        df_train = df_train[loss_indices[0]:loss_indices[1]]
+        metric = {"DIC":calc_DIC(selected_ACC,df_train,default_params,self,loss_compartments)}
+        return best, trials , metric
 
 
     def mcmc_opt(self, df_train, default_params, variable_param_ranges, proposal_sigmas,end_date,model=SEIRHD, num_evals=10000, stride = 5, n_chains = 10,
@@ -309,5 +313,6 @@ class Optimiser():
         # out_dir = join('plots', '{}_{}'.format(sig, exp_name))
         # os.makedirs(out_dir, exist_ok=True)
         # plot_chains(mcmc_fit, out_dir)
-        print("DIC-------->",mcmc_fit.DIC)
-        return mcmc_fit._get_trials()
+        metric = {"DIC":mcmc_fit.DIC}
+        best,tri = mcmc_fit._get_trials()
+        return best,tri,metric

@@ -69,6 +69,7 @@ uncertainty:
     method: MCUncertainty
     uncertainty_params:
         which_fit: m1
+        fitting_type: bo
         fitting_method: gridsearch
         fitting_method_params:
             parallelise: FALSE
