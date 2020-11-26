@@ -6,7 +6,13 @@ fitting:
         dataloading_params:
             state: Maharashtra
             district: Mumbai
+            # COVID19India:
             use_dataframe: data_all
+            # Athena:
+            # tables: [bed_summaries, case_summaries, testing_summary]
+            # schema: city_data_mumbai
+            # staging_dir: mumbai
+            # label: mumbai
         smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]

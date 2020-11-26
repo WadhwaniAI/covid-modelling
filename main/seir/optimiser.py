@@ -63,6 +63,8 @@ class Optimiser():
 
         solver = model(**params_dict)
         total_days = (end_date.date() - params_dict['starting_date']).days
+        if total_days < 0:
+            raise Exception('Number of days of prediction cannot be negative.')
         df_prediction = solver.predict(total_days=total_days)
         return df_prediction
 
