@@ -5,6 +5,7 @@ from datetime import datetime
 import multiprocessing as mp
 import numpy as np
 from joblib import delayed, Parallel
+from functools import partial
 from scipy.stats import poisson
 from tqdm import tqdm
 import copy
@@ -326,13 +327,14 @@ class MCMC(object):
                 explored+=1
             return accept_bool,explored,optimized
 
-    def _metropolis(self):
+    def _metropolis(self, iters):
         """
         Implementation of the metropolis loop.
         
         Returns:
             tuple: tuple containing a list of accepted and a list of rejected parameter values.
         """
+        print('I am metropolis')
         scipy.random.seed()
         theta ,oldLL = self._param_init()
         accepted = [theta]
@@ -341,7 +343,7 @@ class MCMC(object):
         accepted_LIK = [oldLL]
         explored = 0
         optimized = 0
-        for i in tqdm(range(self.iters)):
+        for i in tqdm(range(iters)):
 
             theta_new = self.Gauss_proposal(theta)
             accept_choice , explored , optimized = self._accept(theta, theta_new, explored, optimized,oldLL)
@@ -355,7 +357,7 @@ class MCMC(object):
             #     import pdb; pdb.set_trace()
             accepted_LIK.append(oldLL)
             accepted.append(theta)
-        print("The acceptance ratio is --------> ",A / self.iters )
+        print("The acceptance ratio is --------> ",A / iters )
         print("The explored steps are --------> ",explored )
         print("The optimized steps are --------> ",optimized )
         #Confirm whether this is the correct implementation of acceptance ratio
@@ -447,9 +449,11 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        # self.chains = Parallel(n_jobs=self.n_chains)(delayed(self._metropolis)() for i, run in enumerate(range(self.n_chains)))
-        self.chains = []
-        for i, run in enumerate(range(self.n_chains)):
-           self.chains.append(self._metropolis())
+        partial_metropolis = partial(self._metropolis, iters=self.iters)
+        self.chains = Parallel(n_jobs=self.n_chains)(
+            delayed(partial_metropolis)() for _ in range(self.n_chains))
+        # self.chains = []
+        # for i, run in enumerate(range(self.n_chains)):
+        #    self.chains.append(self._metropolis())
         self._check_convergence()
         return self._get_trials()
