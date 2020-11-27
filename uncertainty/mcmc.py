@@ -334,7 +334,6 @@ class MCMC(object):
         Returns:
             tuple: tuple containing a list of accepted and a list of rejected parameter values.
         """
-        print('I am metropolis')
         scipy.random.seed()
         theta ,oldLL = self._param_init()
         accepted = [theta]
@@ -454,6 +453,6 @@ class MCMC(object):
             delayed(partial_metropolis)() for _ in range(self.n_chains))
         # self.chains = []
         # for i, run in enumerate(range(self.n_chains)):
-        #    self.chains.append(self._metropolis())
+        #    self.chains.append(self._metropolis(self.iters))
         self._check_convergence()
         return self._get_trials()

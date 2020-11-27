@@ -313,6 +313,6 @@ class Optimiser():
         # out_dir = join('plots', '{}_{}'.format(sig, exp_name))
         # os.makedirs(out_dir, exist_ok=True)
         # plot_chains(mcmc_fit, out_dir)
-        metric = {"DIC":mcmc_fit.DIC}
+        metric = {"DIC":mcmc_fit.DIC,"GR-ratio":mcmc_fit.R_hat}
         best,tri = mcmc_fit._get_trials()
         return best,tri,metric
