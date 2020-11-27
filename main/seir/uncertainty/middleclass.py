@@ -66,12 +66,12 @@ class MCUncertainty(Uncertainty):
             forecast_days=forecast_config['forecast_days']
         )
 
-        predictions_dict['m2']['trials_processed'] = forecast_all_trials(
-            predictions_dict, train_fit='m2',
-            model=fitting_config['model'],
-            train_end_date=fitting_config['split']['end_date'],
-            forecast_days=forecast_config['forecast_days']
-        )
+        # predictions_dict['m2']['trials_processed'] = forecast_all_trials(
+        #     predictions_dict, train_fit='m2',
+        #     model=fitting_config['model'],
+        #     train_end_date=fitting_config['split']['end_date'],
+        #     forecast_days=forecast_config['forecast_days']
+        # )
 
     def trials_to_df(self, trials_processed, column=Columns.active):
         predictions = trials_processed['predictions']
@@ -147,7 +147,7 @@ class MCUncertainty(Uncertainty):
             return lc.calc_loss_dict(weighted_pred_df_loss, df_val, method=self.loss_method)
         if return_ensemble_mean_forecast:
             weighted_pred_df.reset_index(inplace=True)
-            return weighted_pred_df,lc.calc_loss_dict(weighted_pred_df_loss, df_val, method = self.loss_method)
+            return {'df_prediction':weighted_pred_df,'df_loss':lc.calc_loss_dict(weighted_pred_df_loss, df_val, method = self.loss_method)}
         return lc.calc_loss(weighted_pred_df_loss, df_val, method=self.loss_method,
                             which_compartments=loss_cols, loss_weights=self.loss_weights)
 
