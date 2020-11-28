@@ -1,10 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime, date, timedelta
-from glob import glob
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import os
+from pytz import timezone
 import copy
 import re
 
@@ -17,14 +14,30 @@ Comparing reichlab models with gt, processing and formatting our (Wadhwani AI) s
 comparing that with gt as well
 """
 
-def get_list_of_models(date_of_submission, comp, reichlab_path='..', read_from_github=False, 
+
+def get_mapping(which='location_name_to_code', reichlab_path='../../../covid19-forecast-hub', read_from_github=False):
+    if read_from_github:
+        reichlab_path = 'https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master'
+    df = pd.read_csv(f'{reichlab_path}/data-locations/locations.csv')
+    df.dropna(how='any', axis=0, inplace=True)
+    if which == 'location_name_to_code':
+        mapping_dict = dict(zip(df['location_name'], df['location']))
+    elif which == 'location_name_to_abbv':
+        mapping_dict = dict(zip(df['location_name'], df['abbreviation']))
+    else:
+        mapping_dict = {}
+    return mapping_dict
+
+
+def get_list_of_models(date_of_submission, comp, reichlab_path='../../../covid19-forecast-hub', read_from_github=False, 
                        location_id_filter=78, num_submissions_filter=50):
     """Given an input of submission date, comp, gets list of all models that submitted.
 
     Args:
         date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
         comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
-        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+        Defaults to '../../../covid19-forecast-hub'.
         read_from_github (bool, optional): If true, reads files directly from github 
         instead of cloned repo. Defaults to False.
         location_id_filter (int, optional): Only considers locations with location code <= this input. 
@@ -54,7 +67,8 @@ def get_list_of_models(date_of_submission, comp, reichlab_path='..', read_from_g
     return list_of_models
 
 
-def process_single_submission(model, date_of_submission, comp, df_true, reichlab_path='..', read_from_github=False):
+def process_single_submission(model, date_of_submission, comp, df_true, reichlab_path='../../../covid19-forecast-hub', 
+                              read_from_github=False):
     """Processes the CSV file of a single submission (one model, one instance of time)
 
     Args:
@@ -62,7 +76,8 @@ def process_single_submission(model, date_of_submission, comp, df_true, reichlab
         date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
         comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
         df_true (pd.DataFrame): The ground truth dataframe (Used for processing cum_cases submissions)
-        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+        Defaults to '../../../covid19-forecast-hub'.
         read_from_github (bool, optional): If true, reads files directly from github 
         instead of cloned repo. Defaults to False.
 
@@ -130,14 +145,16 @@ def process_single_submission(model, date_of_submission, comp, df_true, reichlab
     return df
 
 
-def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_path='..', read_from_github=False):
+def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_path='../../../covid19-forecast-hub', 
+                            read_from_github=False):
     """Process submissions for all models given as input and concatenate them
 
     Args:
         list_of_models (list): List of all models to process submission for. Typically output of get_list_of_models
         date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
         comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
-        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+        Defaults to '../../../covid19-forecast-hub'.
         read_from_github (bool, optional): If true, reads files directly from github 
         instead of cloned repo. Defaults to False.
 
@@ -162,7 +179,8 @@ def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=F
     Args:
         comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
         df_all_submissions (pd.DataFrame): The dataframe of all model predictions processed. 
-        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+        Defaults to '../../../covid19-forecast-hub'.
         read_from_github (bool, optional): If true, reads files directly from github 
         instead of cloned repo. Defaults to False.
 
@@ -201,10 +219,7 @@ def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=F
     df_gt_loss_wk['date'] = df_gt_loss_wk['date'].apply(
         lambda x: x - np.timedelta64(1, 'D'))
 
-    loc_name_to_key_dict = dict(zip(df_gt_loss['location_name'], 
-                                    df_gt_loss['location']))
-
-    return df_gt, df_gt_loss, df_gt_loss_wk, loc_name_to_key_dict
+    return df_gt, df_gt_loss, df_gt_loss_wk
 
 
 def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
@@ -238,13 +253,12 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
     return df_comb, df_mape, df_rank
 
 
-def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key_dict, which_fit='m2', 
+def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mode='submission', which_fit='m2',
                            use_as_point_forecast='ensemble_mean', skip_percentiles=False):
     """Function for formatting our submission in the reichlab format 
 
     Args:
         predictions_dict (dict): Predictions dict of all locations
-        df_all_submissions (pd.DataFrame): dataframe of all processed model predictions
         loc_name_to_key_dict (dict): Dict mapping location names to location key
         which_fit (str, optional): Which fit to use for forecasting ('m1'/'m2'). Defaults to 'm2'.
         use_as_point_forecast (str, optional): Which forecast to use as point forecast ('best'/'ensemble_mean'). 
@@ -254,12 +268,14 @@ def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key
     Returns:
         pd.DataFrame: Processed Wadhwani AI submission
     """
-    df_wiai_submission = pd.DataFrame(columns=df_all_submissions.columns)
-    target_end_dates = pd.unique(df_all_submissions['target_end_date'])
+    end_date = list(predictions_dict.values())[0]['m2']['run_params']['split']['end_date']
+    columns = ['forecast_date', 'target', 'target_end_date', 'location', 'type',
+               'quantile', 'value', 'model']
+    df_wiai_submission = pd.DataFrame(columns=columns)
 
     # Loop across all locations
     for loc in predictions_dict.keys():
-        df_loc_submission = pd.DataFrame(columns=df_all_submissions.columns)
+        df_loc_submission = pd.DataFrame(columns=columns)
 
         # Loop across all percentiles
         if not which_fit in predictions_dict[loc].keys():
@@ -284,11 +300,18 @@ def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key
                     df_forecast.loc[:, num_cols] = df_forecast.loc[:, num_cols].diff()
                     df_forecast.dropna(axis=0, how='any', inplace=True)
 
+                # Truncate forecasts df to only beyond the training date
+                df_forecast = df_forecast[df_forecast['date'].dt.date > end_date]
                 # Aggregate the forecasts by a week (def of week : Sun-Sat)
                 df_forecast = df_forecast.resample(
                     'W-Sat', label='right', origin='start', on='date').max()
+                if formatting_mode == 'submission':
+                    now = datetime.now(timezone('US/Eastern'))
+                    if not ((now.strftime("%A") == 'Sunday') or (now.strftime("%A") == 'Monday')):
+                        df_forecast = df_forecast.iloc[1:, :]
+                else:
+                    now = datetime.now()
                 # Only keep those forecasts that correspond to the forecasts others submitted
-                df_forecast = df_forecast[df_forecast.index.isin(target_end_dates)]
                 df_forecast.drop(['date'], axis=1, inplace=True, errors='ignore')
                 df_forecast.reset_index(inplace=True)
 
@@ -315,7 +338,7 @@ def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key
                     df_subm['quantile'] = percentile/100
                 df_subm['location'] = loc_name_to_key_dict[loc]
                 df_subm['model'] = 'Wadhwani_AI'
-                df_subm['forecast_date'] = datetime.combine(date.today(), 
+                df_subm['forecast_date'] = datetime.combine(now.date(),
                                                             datetime.min.time())
                 df_loc_submission = pd.concat([df_loc_submission, df_subm], 
                                             ignore_index=True)
@@ -342,6 +365,10 @@ def combine_wiai_subm_with_all(df_all_submissions, df_wiai_submission, comp):
 
     df_wiai_submission = df_wiai_submission[df_wiai_submission['target'].apply(
         lambda x: comp.replace('_', ' ') in x)]
+
+    target_end_dates = pd.unique(df_all_submissions['target_end_date'])
+    df_wiai_submission = df_wiai_submission[df_wiai_submission['target_end_date'].isin(
+        target_end_dates)]
 
     df_all =  pd.concat([df_all_submissions, df_wiai_submission], 
                         ignore_index=True)
