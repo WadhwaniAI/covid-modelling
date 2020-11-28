@@ -79,6 +79,7 @@ def plot_ptiles_reichlab(df_comb, model, location, compartment='deceased', plot_
     adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
     axis_formatter(ax)
     fig.suptitle('Forecast of all deciles for {}, {}, {}'.format(model, location, compartment.label), fontsize=16)
+    fig.subplots_adjust(top=0.96)
     
     return fig, ax
 
