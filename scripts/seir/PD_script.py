@@ -44,6 +44,8 @@ models = {'MCMC':'uncer.yaml','BO':'default.yaml'}
 runs = 10
 PD = {}
 for n in range(runs):
+    print("The iteration number is ",n)
+    print("The iteration number is ",n)
     PD[f'm{n}']= {}
     for model_name,config_filename in models.items():
         config = read_config(config_filename)
@@ -67,12 +69,12 @@ for n in range(runs):
 
 # %%
 import pickle as pkl
-with open('../../misc/predictions/PD_oct_10.pickle', 'wb') as handle:
+with open('../../misc/predictions/PD_aug_10.pickle', 'wb') as handle:
     pkl.dump(PD, handle)
 
 
 # %%
-with open('../../misc/predictions/PD_oct_10.pickle', 'rb') as handle:
+with open('../../misc/predictions/PD_aug_10.pickle', 'rb') as handle:
     PD = pkl.load(handle)
 
 
