@@ -80,9 +80,11 @@ class SEIR_PU(SEIR):
         self.beta = beta
         self.T_inf_U = T_inf_U
         self.Pu_pop_ratio = Pu_pop_ratio
-        self.state_init_values['P_U'] = self.Pu_pop_ratio
+        self.state_init_values['P_U'] = observed_values['P_U']/N if self.Pu_pop_ratio=='true' else self.Pu_pop_ratio
         self.state_init_values['S'] = 0
         nonSsum = sum(self.state_init_values.values())
+        # print(observed_values)
+        # import pdb; pdb.set_trace()
         self.state_init_values['S'] = (1 - nonSsum)
         
 
