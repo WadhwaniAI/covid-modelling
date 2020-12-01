@@ -209,7 +209,7 @@ class Optimiser():
 
     def bayes_opt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
                   loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
-                  algo=tpe, **kwargs):
+                  algo=tpe, seed=42, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -247,10 +247,12 @@ class Optimiser():
 
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
         trials = Trials()
+        rstate = np.random.RandomState(seed)
         best = fmin(partial_solve_and_compute_loss,
                     space=variable_param_ranges,
                     algo=algo_module.suggest,
                     max_evals=num_evals,
+                    rstate=rstate,
                     trials=trials)
         
         return best, trials
