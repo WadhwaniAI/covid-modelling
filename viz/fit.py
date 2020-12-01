@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import copy
 import math
+import os
 from models.seir import * 
 
 from functools import reduce
@@ -670,6 +671,8 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
     for param in all_params:
         ax = axs.flat[ax_counter]
         param_values = param_wise_stats[param]
+        if (len(param_values) == 0):
+            continue
         mean_vals, std_vals = {},{}
         for k,model in enumerate(param_values.keys()):
             mean_vals[model] = param_values[model]['mean']
@@ -686,6 +689,37 @@ def plot_all_params(predictions_dict, model_params=None, method='best', weightin
     for i in range(ax_counter,nrows*ncols):
         fig.delaxes(axs.flat[i])
     plt.show()
+
+def save_result_summary(predictions_dict, actual_params, which_losses=['train', 'val'], loss_methods=['best_loss_ra', 'ensemble_loss_ra', 'best_loss_nora'], param_methods=['best', 'ensemble_combined'], output_file_name="results.csv"):
+    output = []
+    for tag, tag_dict in predictions_dict.items():
+        output_dict = {}
+        output_dict['tag'] = tag
+        for model, model_dict in tag_dict.items():
+            output_dict['model'] = model
+            for which_loss in which_losses:
+                for loss_method in loss_methods:
+                    loss_values_stats = get_loss_stats(model_dict, which_loss=which_loss,method=loss_method)
+                    for compartment in loss_values_stats.columns:
+                        output_dict[loss_method.split('_')[0] + '_' + which_loss + '_' + compartment + '_mean'] = loss_values_stats[compartment]['mean']
+                        output_dict[loss_method.split('_')[0] + '_' + which_loss + '_' + compartment + '_std'] = loss_values_stats[compartment]['std']
+            for param_method in param_methods:
+                param_values_stats = get_param_stats(model_dict, param_method)
+                # for param in param_values_stats.columns:
+                for param in actual_params:
+                    if param not in param_values_stats.columns:
+                        output_dict[param_method.split('_')[0] + '_' + param + '_mean'] = 'Fixed'
+                        output_dict[param_method.split('_')[0] + '_' + param + '_std'] = 'Fixed'
+                    else:
+                        output_dict[param_method.split('_')[0] + '_' + param + '_mean'] = param_values_stats[param]['mean']
+                        output_dict[param_method.split('_')[0] + '_' + param + '_std'] = param_values_stats[param]['std']
+            for param in actual_params:
+                output_dict['actual_' + param] = actual_params[param]
+            output.append(output_dict)
+    output = pd.DataFrame(output)
+    output.to_csv(os.path.join("../../misc/predictions/", output_file_name))
+    print ("saved output at " + os.path.join("../../misc/predictions/", output_file_name))
+    return output
 
 def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_axes=True):
     """Plots KL divergence heatmaps for all the sampled params for all runs. 
