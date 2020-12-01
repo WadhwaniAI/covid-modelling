@@ -40,6 +40,7 @@ fitting:
     fitting_method_params:
         num_evals: 1000
         algo: tpe
+        seed: 42
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
