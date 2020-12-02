@@ -13,7 +13,7 @@ class SEIR(Model):
 
     @abstractmethod
     def __init__(self, STATES, R_STATES, p_params, t_params, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2, N=7e6, 
-                 starting_date='2020-03-09', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
+                 starting_date='2020-03-09', observed_values=None, E_hosp_ratio=1.5, I_hosp_ratio=0.5, **kwargs):
 
         params = {
             # R0 values
@@ -49,7 +49,7 @@ class SEIR(Model):
         for state in R_STATES:
             statename = state.split('R_')[1]
             P_keyname = [k for k in p_params.keys() if k.split('P_')[1] == statename][0]
-            state_init_values[state] = p_params[P_keyname] * observed_values['active']
+            state_init_values[state] = observed_values[state] if p_params[P_keyname]=='true' else p_params[P_keyname] * observed_values['active']
         
         state_init_values['C'] = observed_values['recovered']
         state_init_values['D'] = observed_values['deceased']
