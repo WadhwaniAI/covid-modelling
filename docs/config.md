@@ -34,10 +34,18 @@ We may add a 5th key for `whatifs` scenarios, but that depends on how formally i
 Parameters for each uncertainty class come inside `uncertainty_params`. 
 
 For MCUncertainty : 
-- `num_evals` : 
-- `date_of_sorting_trials` : 
-- `sort_trials_by_column` : 
+- `num_evals` : int
+- `fitting_method`: str. Can be `gridsearch` or  `bayes_opt`
+For `gridsearch` -  
+- `fitting_method_params`:
+    - `parallelise`: bool
+Specify the range for beta - 
+- `variable_param_ranges`:
+    - `beta`: [[0, 10], 101] (Eg)
+- `construct_percentiles_day_wise`: bool. If true, percentiles are constructed day wise.
+- `date_of_sorting_trials` : date
+- `sort_trials_by_column` : str
 - `loss` :
-    - `loss_method` : 
-    - `loss_compartments` : 
-    - `loss_weights` : 
+    - `loss_method` : str
+    - `loss_compartments` : \[str\]
+    - `loss_weights` : \[float\]
