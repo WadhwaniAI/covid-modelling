@@ -34,10 +34,10 @@ Giving train, val and test period is a must. If both start and end date are null
 
 ## Forecast
 
-- `forecast_days` :
-- `num_trials_to_plot` :
-- `plot_topk_trials_for_columns` :
-- `plot_ptiles_for_columns` :
+- `forecast_days` : int. 
+- `num_trials_to_plot` : int. Num trials to plot in the plot_topk_trials functions
+- `plot_topk_trials_for_columns` : \[str\]. Which columns to plot topk trials for. 
+- `plot_ptiles_for_columns` :\[str\]. Which columns to plot percentiles for. 
 
 ## Uncertainty
 
@@ -61,3 +61,4 @@ Specify the range for beta -
     - `loss_method` : str. Can be `rmse`, `mape`, or `rmsle`
     - `loss_compartments` : \[str\]
     - `loss_weights` : \[float\]
+- `percentiles`: \[float\]. Which percentiles to compute. 
