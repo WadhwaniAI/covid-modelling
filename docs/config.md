@@ -16,9 +16,21 @@ We may add a 5th key for `whatifs` scenarios, but that depends on how formally i
 - `variable_param_ranges` :
 - `default_params` :
 - `fitting_method` :
-- `fitting_method_params` :
+- `fitting_method_params` : str. Can be `gridsearch` or  `bayes_opt`
+    - `num_evals`: int
+    - `algo`: str. Can be `tpe` (TPE), `atpe` (adaptive TPE), or `rand` (random search)
+    - `seed`: int
 - `split` :
+    - `start_date`: date. Start of training period. Default null
+    - `end_date`: date. End of training period. Default null
+    - `train_period`: int. Length of training period.
+    - `val_period`: int. Length of validation period.
+    - `test_period`: int. Length of test period.
+Giving train, val and test period is a must. If both start and end date are null, it fits on latest data. Both can't be given, only 1 of them can be given. Otherwise an error will be thrown.
 - `loss` :
+    - `loss_method` : str. Can be `rmse`, `mape`, or `rmsle`
+    - `loss_compartments` : \[str\]
+    - `loss_weights` : \[float\]
 
 ## Forecast
 
@@ -46,6 +58,6 @@ Specify the range for beta -
 - `date_of_sorting_trials` : date
 - `sort_trials_by_column` : str
 - `loss` :
-    - `loss_method` : str
+    - `loss_method` : str. Can be `rmse`, `mape`, or `rmsle`
     - `loss_compartments` : \[str\]
     - `loss_weights` : \[float\]
