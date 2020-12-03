@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime, date, timedelta
+from pandas.core import groupby
 from pytz import timezone
 import copy
 import re
@@ -118,7 +119,7 @@ def process_single_submission(model, date_of_submission, comp, df_true, reichlab
     if comp == 'cum_case':
         grouped = df.groupby(['location', 'type', 'quantile'], dropna=False)
         df_cumsum = pd.DataFrame(columns=df.columns)
-        for name, group in grouped:
+        for _, group in grouped:
             group['value'] = group['value'].cumsum()
             df_cumsum = pd.concat([df_cumsum, group], ignore_index=True)
         
@@ -253,7 +254,7 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
     return df_comb, df_mape, df_rank
 
 
-def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mode='submission', which_fit='m2',
+def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mode='analysis', which_fit='m2',
                            use_as_point_forecast='ensemble_mean', skip_percentiles=False):
     """Function for formatting our submission in the reichlab format 
 
@@ -336,12 +337,25 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                 else:
                     df_subm['type'] = 'quantile'
                     df_subm['quantile'] = percentile/100
-                df_subm['location'] = loc_name_to_key_dict[loc]
+                if formatting_mode == 'submission':
+                    df_subm['location'] = loc_name_to_key_dict[loc]
+                else:
+                    df_subm['location'] = int(loc_name_to_key_dict[loc])
                 df_subm['model'] = 'Wadhwani_AI'
                 df_subm['forecast_date'] = datetime.combine(now.date(),
                                                             datetime.min.time())
                 df_loc_submission = pd.concat([df_loc_submission, df_subm], 
                                             ignore_index=True)
+        if formatting_mode == 'submission':
+            grouped = df_loc_submission[df_loc_submission['type'] == 'quantile'].groupby('target')
+            for _, group in grouped:
+                diff_less_than_0 = np.diff(group['value']) < 0
+                if sum(diff_less_than_0) > 0:
+                    indices = np.where(diff_less_than_0 == True)[0]
+                    for idx in indices:
+                        df_loc_submission.loc[group.iloc[idx+1, :].name,
+                                            'value'] = df_loc_submission.loc[group.iloc[idx, :].name, 'value']
+                
         df_wiai_submission = pd.concat([df_wiai_submission, df_loc_submission],
                                         ignore_index=True)
         print(f'{loc} done')
