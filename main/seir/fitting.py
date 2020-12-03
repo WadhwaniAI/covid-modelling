@@ -186,6 +186,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     observed_dataframes, smoothing = data_dict['observed_dataframes'], data_dict['smoothing']
     smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
     smoothing_description = smoothing['smoothing_description'] if 'smoothing_description' in smoothing else None
+
     orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
 
     print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))

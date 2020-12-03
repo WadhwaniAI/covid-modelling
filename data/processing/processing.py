@@ -10,7 +10,7 @@ import yaml
 from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoader, CovidTrackingLoader, SimulatedDataLoader
 
 
-def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
+def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, label=None, **kwargs):
     if loader_class == Covid19IndiaLoader:
         loader_key = 'tracker'
     if loader_class == AthenaLoader:
@@ -22,8 +22,9 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
     if loader_class == CovidTrackingLoader:
         loader_key = 'covid_tracking'
     os.makedirs("../../misc/cache/", exist_ok=True)
-    picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}.pkl".format(
-        today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key)
+    label = '' if label is None else f'_{label}'
+    picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}{label}.pkl".format(
+        today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key, label=label)
     if reload_data:
         print("pulling from source")
         loader = loader_class()
@@ -36,7 +37,7 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False):
         except:
             print("pulling from source")
             loader = loader_class()
-            dataframes = loader.load_data()
+            dataframes = loader.load_data(**kwargs)
             with open(picklefn, 'wb+') as pickle_file:
                 pickle.dump(dataframes, pickle_file)
     return dataframes
@@ -90,11 +91,13 @@ def get_data(data_source, dataloading_params):
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
     print('fetching from athenadb...')
-    dataframes = get_dataframes_cached(loader_class=AthenaLoader)
-    df_result = copy.copy(dataframes['new_covid_case_summary'])
-    df_result['state'] = 'maharashtra'
+    label = kwargs.pop('label', None)
+    dataframes = get_dataframes_cached(loader_class=AthenaLoader, label=label, **kwargs)
+    df_result = copy.copy(dataframes['case_summaries'])
+    df_result.rename(columns={'deaths': 'deceased', 'total cases': 'total',
+                              'active cases': 'active', 'recoveries': 'recovered'}, inplace=True)
     df_result = df_result[np.logical_and(
-        df_result['state'] == state.lower(), df_result['district'] == district.lower())]
+        df_result['state'] == state, df_result['district'] == district)]
     df_result = df_result.loc[:, :'deceased']
     df_result.dropna(axis=0, how='any', inplace=True)
     df_result.loc[:, 'date'] = pd.to_datetime(df_result['date'])
@@ -102,6 +105,7 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_dat
     for col in df_result.columns:
         if col in ['active', 'total', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
+
     return {"data_frame": df_result}
 
 def generate_simulated_data(**dataloading_params):
