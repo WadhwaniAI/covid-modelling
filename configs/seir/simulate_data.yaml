@@ -4,9 +4,7 @@ fitting:
         data_source: simulated
         stratified_data: FALSE
         dataloading_params:
-            state: Maharashtra
-            district: Mumbai
-            use_dataframe: data_all
+            reload_data: FALSE
             generate: TRUE
             config_file: seirhd_fixed.yaml
             filename: ../../data/data/simulated_data/simulated_data_1.csv

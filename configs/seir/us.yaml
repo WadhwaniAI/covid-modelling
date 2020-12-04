@@ -4,6 +4,7 @@ fitting:
         data_source: jhu
         stratified_data: FALSE
         dataloading_params:
+            reload_data: FALSE
             dataframe: us_states
             region: Wyoming
             sub_region: null

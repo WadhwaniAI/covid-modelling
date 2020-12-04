@@ -3,6 +3,7 @@ fitting:
         data_source: athena
         stratified_data: TRUE
         dataloading_params:
+            reload_data: FALSE
             state: Maharashtra
             district: Mumbai
         smooth_jump: TRUE
