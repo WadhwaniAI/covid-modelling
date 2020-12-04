@@ -29,7 +29,7 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, la
     if reload_data:
         print("pulling from source")
         loader = loader_class()
-        dataframes = loader.load_data()
+        dataframes = loader.load_data(**kwargs)
     else:
         try:
             with open(picklefn, 'rb') as pickle_file:
@@ -90,7 +90,7 @@ def get_data(data_source, dataloading_params):
         else:
             return get_simulated_data_from_file(**dataloading_params)
 
-def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
+def get_custom_data_from_db(state='Maharashtra', district='Mumbai', **kwargs):
     print('fetching from athenadb...')
     label = kwargs.pop('label', None)
     dataframes = get_dataframes_cached(loader_class=AthenaLoader, label=label, **kwargs)

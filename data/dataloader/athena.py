@@ -46,7 +46,7 @@ class AthenaLoader(BaseLoader):
         return cursor
 
 
-    def load_data(self, schema, tables, staging_dir, pyathena_rc_path=None):
+    def load_data(self, schema, tables, staging_dir, pyathena_rc_path=None, **kwargs):
         """Creates connection to Athena database and returns all the tables there as a dict of Pandas dataframes
 
         Keyword Arguments:
