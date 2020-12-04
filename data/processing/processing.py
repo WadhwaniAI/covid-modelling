@@ -13,14 +13,17 @@ from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoad
 def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, label=None, **kwargs):
     if loader_class == Covid19IndiaLoader:
         loader_key = 'tracker'
-    if loader_class == AthenaLoader:
+    elif loader_class == AthenaLoader:
         loader_key = 'athena'
-    if loader_class == JHULoader:
+    elif loader_class == JHULoader:
         loader_key = 'jhu'
-    if loader_class == NYTLoader:
+    elif loader_class == NYTLoader:
         loader_key = 'nyt'
-    if loader_class == CovidTrackingLoader:
+    elif loader_class == CovidTrackingLoader:
         loader_key = 'covid_tracking'
+    else:
+        raise ValueError('loader_class must be one of following : Covid19IndiaLoader, AthenaLoader, ' +
+                         'JHULoader, NYTLoader, CovidTrackingLoader')
     os.makedirs("../../misc/cache/", exist_ok=True)
     label = '' if label is None else f'_{label}'
     picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}{label}.pkl".format(
@@ -89,10 +92,12 @@ def get_data(data_source, dataloading_params):
         else:
             return get_simulated_data_from_file(**dataloading_params)
 
-def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, **kwargs):
+
+def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_data=False, 
+                            reload_data=False, **kwargs):
     print('fetching from athenadb...')
     label = kwargs.pop('label', None)
-    dataframes = get_dataframes_cached(loader_class=AthenaLoader, label=label, **kwargs)
+    dataframes = get_dataframes_cached(loader_class=AthenaLoader, reload_data=reload_data, label=label, **kwargs)
     df_result = copy.copy(dataframes['case_summaries'])
     df_result.rename(columns={'deaths': 'deceased', 'total cases': 'total',
                               'active cases': 'active', 'recoveries': 'recovered'}, inplace=True)
@@ -163,23 +168,26 @@ def get_custom_data_from_file(filename, data_format='new', **kwargs):
         df_result = df_result[['date', 'state', 'district', 'total', 'active', 'recovered', 'deceased']]
         df_result = df_result.dropna(subset=['date'], how='all')
         
-    if data_format == 'old':
+    elif data_format == 'old':
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
+    else:
+        raise ValueError('data_format can only be new or old')
         
     return {"data_frame": df_result}
 
 
-def get_data_from_tracker(state='Maharashtra', district='Mumbai', use_dataframe='data_all', **kwargs):
+def get_data_from_tracker(state='Maharashtra', district='Mumbai', use_dataframe='data_all', 
+                          reload_data=False, ** kwargs):
     if not district is None:
-        return {"data_frame": get_data_from_tracker_district(state, district, use_dataframe)}
+        return {"data_frame": get_data_from_tracker_district(state, district, use_dataframe, reload_data)}
     else:
-        return {"data_frame": get_data_from_tracker_state(state)}
+        return {"data_frame": get_data_from_tracker_state(state, reload_data)}
 
         
-def get_data_from_tracker_state(state='Delhi', **kwargs):
-    dataframes = get_dataframes_cached()
+def get_data_from_tracker_state(state='Delhi', reload_data=False, **kwargs):
+    dataframes = get_dataframes_cached(reload_data=reload_data)
     df_states = copy.copy(dataframes['df_states_all'])
     df_state = df_states[df_states['state'] == state]
     df_state['date'] = pd.to_datetime(df_state['date'])
@@ -187,8 +195,9 @@ def get_data_from_tracker_state(state='Delhi', **kwargs):
     df_state.reset_index(inplace=True, drop=True)
     return df_state
 
-def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_dataframe='raw_data', **kwargs):
-    dataframes = get_dataframes_cached()
+def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_dataframe='raw_data',
+                                   reload_data=False, **kwargs):
+    dataframes = get_dataframes_cached(reload_data=reload_data)
 
     if use_dataframe == 'data_all':
         df_districts = copy.copy(dataframes['df_districts_all'])
@@ -284,8 +293,8 @@ def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_
         return out.reset_index()
 
 
-def get_data_from_jhu(dataframe, region, sub_region=None, **kwargs):
-    dataframes = get_dataframes_cached(loader_class=JHULoader)
+def get_data_from_jhu(dataframe, region, sub_region=None, reload_data=False, **kwargs):
+    dataframes = get_dataframes_cached(loader_class=JHULoader, reload_data=reload_data)
     df = dataframes[f'df_{dataframe}']
     if dataframe == 'global':
         df.rename(columns= {"ConfirmedCases": "total", "Deaths": "deceased",
@@ -329,8 +338,9 @@ def get_data_from_jhu(dataframe, region, sub_region=None, **kwargs):
     return {"data_frame": df}
 
 
-def get_data_from_ny_times(state, county=None, **kwargs):
-    dataframes = get_dataframes_cached(loader_class=NYTLoader)
+def get_data_from_ny_times(state, county=None, reload_data=False, **kwargs):
+    dataframes = get_dataframes_cached(
+        loader_class=NYTLoader, reload_data=reload_data)
     if county is not None:
         df = dataframes['counties']
         df = df[np.logical_and(df['state'] == state, df['county'] == county)]
@@ -344,8 +354,9 @@ def get_data_from_ny_times(state, county=None, **kwargs):
     return {"data_frame": df}
 
 
-def get_data_from_covid_tracking(state, **kwargs):
-    dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader)
+def get_data_from_covid_tracking(state, reload_data=False, **kwargs):
+    dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader, 
+                                       reload_data=reload_data)
     df_states = dataframes['df_states']
     df_states = df_states.loc[:, ['date', 'state', 'state_name', 'positive', 
                                   'active', 'recovered', 'death']]
