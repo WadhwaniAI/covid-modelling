@@ -254,6 +254,28 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
     return df_comb, df_mape, df_rank
 
 
+def _qtiles_nondec_check(df_loc_submission):
+    grouped = df_loc_submission[df_loc_submission['type']
+                                == 'quantile'].groupby('target')
+    nondec_check = [sum(np.diff(group['value']) < 0) > 0 for _, group in grouped]
+    nondec_check = np.array(nondec_check)
+    return sum(nondec_check) > 0
+
+
+def _qtiles_nondec_correct(df_loc_submission):
+    grouped = df_loc_submission[df_loc_submission['type']
+                                == 'quantile'].groupby('target')
+    for target, group in grouped:
+        diff_less_than_0 = np.diff(group['value']) < 0
+        if sum(diff_less_than_0) > 0:
+            indices = np.where(diff_less_than_0 == True)[0]
+            for idx in indices:
+                df_idx1, df_idx2 = (group.iloc[idx, :].name, 
+                                    group.iloc[idx+1, :].name)
+                df_loc_submission.loc[df_idx2, 'value'] = df_loc_submission.loc[df_idx1, 'value']
+
+    return df_loc_submission
+
 def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mode='analysis', which_fit='m2',
                            use_as_point_forecast='ensemble_mean', skip_percentiles=False):
     """Function for formatting our submission in the reichlab format 
@@ -347,14 +369,8 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                 df_loc_submission = pd.concat([df_loc_submission, df_subm], 
                                             ignore_index=True)
         if formatting_mode == 'submission':
-            grouped = df_loc_submission[df_loc_submission['type'] == 'quantile'].groupby('target')
-            for _, group in grouped:
-                diff_less_than_0 = np.diff(group['value']) < 0
-                if sum(diff_less_than_0) > 0:
-                    indices = np.where(diff_less_than_0 == True)[0]
-                    for idx in indices:
-                        df_loc_submission.loc[group.iloc[idx+1, :].name,
-                                            'value'] = df_loc_submission.loc[group.iloc[idx, :].name, 'value']
+            while(_qtiles_nondec_check(df_loc_submission)):
+                df_loc_submission = _qtiles_nondec_correct(df_loc_submission)
                 
         df_wiai_submission = pd.concat([df_wiai_submission, df_loc_submission],
                                         ignore_index=True)
