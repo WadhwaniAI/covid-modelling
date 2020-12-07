@@ -125,7 +125,9 @@ def get_custom_data_from_file(filename, data_format='new', **kwargs):
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
-        
+        for col in df_result.columns:
+            if col in ['active', 'total', 'recovered', 'deceased']:
+                df_result[col] = df_result[col].astype('int64')
     return df_result
 
 
