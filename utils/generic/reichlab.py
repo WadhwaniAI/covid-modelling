@@ -330,6 +330,7 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                     'W-Sat', label='right', origin='start', on='date').max()
                 if formatting_mode == 'submission':
                     now = datetime.now(timezone('US/Eastern'))
+                    df_forecast = df_forecast[df_forecast['date'].dt.date > now.date()]
                     if not ((now.strftime("%A") == 'Sunday') or (now.strftime("%A") == 'Monday')):
                         df_forecast = df_forecast.iloc[1:, :]
                 else:
