@@ -90,6 +90,8 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_dat
     df_result['state'] = state
     if (not district):
         district = 'All'
+    elif district.lower() == "east singhbhum":
+        district = "East Singbhum"
     df_result = df_result[np.logical_and(
             df_result['state'].str.lower() == state.lower(), df_result['district'].str.lower() == district.lower())]
     if district == 'Ranchi':

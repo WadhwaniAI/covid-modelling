@@ -37,7 +37,7 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-11-22
+        end_date: null
         train_period: 12
         val_period: 3
         test_period: 7
@@ -75,7 +75,7 @@ uncertainty:
         which_fit: m2
         variable_param_ranges:
             beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2020-12-25
+        date_of_sorting_trials: 2021-01-01
         sort_trials_by_column: active
         loss:
             loss_method: mape
