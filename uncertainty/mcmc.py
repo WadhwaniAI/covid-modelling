@@ -14,7 +14,7 @@ from uncertainty.mcmc_utils import set_optimizer, compute_W, compute_B, accumula
     avg_sum_multiple_chains, get_state, get_formatted_trials
 import pdb
 import scipy
-
+from scipy.stats import norm as N
 class MCMC(object):
 
     """
@@ -70,36 +70,6 @@ class MCMC(object):
         #                                    self._default_params_old, optimiser)
         self.proposal_sigmas = proposal_sigmas
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
-        self.fit2new = False
-
-    # def __init__(self, cfg, df_district=None, **ignored):
-    #     """
-    #     Constructor. Fetches the data, initializes the optimizer and sets up the
-    #     likelihood function.
-        
-    #     Args:
-    #         cfg (dict): dictonary containing all the config parameters.
-    #         df_district (pd.DataFrame, optional): dataframe containing district data.
-    #         **ignored: flag to ignore extra parameters.
-    #     """
-    #     self.timestamp = datetime.now()
-    #     self.state = cfg['fitting']['data']['dataloading_params']['state']
-    #     self.district = cfg['fitting']['data']['dataloading_params']['district']
-    #     self.cfg  = cfg
-    #     self.df_district = df_district if df_district is not None else self._fetch_data()
-    #     self._split_data()
-    #     self.loss_method = cfg['fitting']['loss']['loss_method']
-    #     self.train_days = self.cfg['fitting']['split']['train_period']
-    #     self.n_chains = cfg['fitting']['fitting_method_params']['n_chains']
-    #     self.likelihood = cfg['fitting']['fitting_method_params']['algo']
-    #     self._default_params_old = cfg['fitting']['default_params']
-    #     self.prior_ranges = cfg['fitting']['variable_param_ranges']
-    #     self.iters = cfg['fitting']['fitting_method_params']['num_evals']
-    #     self.compartments = cfg['uncertainty']['uncertainty_params']['loss']['loss_compartments']
-    #     self._optimiser, self._default_params = set_optimizer(self.df_train,self.train_days,self._default_params_old)
-    #     self.proposal_sigmas = cfg['fitting']['fitting_method_params']['proposal_sigmas']
-    #     self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
-    #     self.fit2new = False
 
 
     def _fetch_data(self):
@@ -137,18 +107,6 @@ class MCMC(object):
         print("Train set:\n", self.df_train)
         print("Val set:\n", self.df_val)
 
-    def _get_new_cases_array(self, cases):
-        """
-        Computes and returns new cases per day from array of total cases per day.
-        
-        Args:
-            cases (np.ndarray): array containing total number of cases per day.
-        
-        Returns:
-            np.ndarray: array containing new case counts per day.
-        """
-        return np.array(cases[1:]) - np.array(cases[:-1])
-
     def _param_init(self):
         """
         Samples the first value for each param from a uniform prior distribution with ranges
@@ -161,37 +119,9 @@ class MCMC(object):
         for key in self.prior_ranges:
             theta[key] = np.random.uniform(float(self.prior_ranges[key][0][0]), self.prior_ranges[key][0][1])
         oldLL = self._log_likelihood(theta)
+        theta['gamma'] = 0.01
         return theta,oldLL
 
-    def _proposal(self, theta_old):
-        """
-        Proposes a new set of parameter values given the previous set.
-        
-        Args:
-            theta_old (dict): dictionary of old param-value pairs.
-        
-        Returns:
-            OrderedDict: dictionary of newly proposed param-value pairs.
-        """
-        theta_new = OrderedDict()
-        
-        for param in theta_old:
-
-            old_value = theta_old[param]
-            new_value = None
-            lower_bound = np.exp(float(self.prior_ranges[param][0][0]))
-            upper_bound = np.exp(self.prior_ranges[param][0][1])
-            #print(lower_bound, upper_bound)
-            while new_value == None:
-                #Gaussian proposal
-
-                new_value = np.random.normal(loc=np.exp(old_value), scale=np.exp((self.proposal_sigmas[param])))
-                if new_value < lower_bound or new_value > upper_bound:
-                    new_value = None
-                    continue
-                new_value = np.log(new_value)
-            theta_new[param] = new_value
-        return theta_new
     def Gauss_proposal(self, theta_old):
         """
         Proposes a new set of parameter values given the previous set.
@@ -203,9 +133,11 @@ class MCMC(object):
             OrderedDict: dictionary of newly proposed param-value pairs.
         """
         theta_new = OrderedDict()
-        multiplier = 2
+        
         for param in theta_old:
-
+            if param == 'gamma':
+                theta_new[param] = theta_old[param]
+                continue
             old_value = theta_old[param]
             new_value = None
             lower_bound = (float(self.prior_ranges[param][0][0]))
@@ -213,7 +145,7 @@ class MCMC(object):
             #print(lower_bound, upper_bound)
             while new_value == None:
                 #Gaussian proposal
-                new_value = np.random.normal(loc = old_value, scale = multiplier*self.proposal_sigmas[param])
+                new_value = np.random.normal(loc = old_value, scale = self.proposal_sigmas[param])
                 # new_value = np.random.normal(loc=np.exp(old_value), scale=np.exp((self.proposal_sigmas[param])))
                 if new_value < lower_bound or new_value > upper_bound:
                     new_value = None
@@ -236,7 +168,6 @@ class MCMC(object):
         """
         N = len(true)
         ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (np.sum(((true - pred) ** 2) / (2 * sigma ** 2)))
-        ll = ll/(N**2)
         return ll
 
     def _poisson_log_likelihood(self, true, pred, *ignored):
@@ -268,16 +199,14 @@ class MCMC(object):
         ll = 0
         params_dict = {**theta, **self._default_params}
         df_prediction = self._optimiser.solve(params_dict,end_date = self.df_train[-1:]['date'].item())
-        sigma = 250
+        sigma = theta ['gamma']
 
         for compartment in self.compartments:
             pred = np.array(df_prediction[compartment], dtype=np.int64)
             true = np.array(self.df_train[compartment], dtype=np.int64)
-            if self.fit2new:
-                pred = self._get_new_cases_array(pred.copy())
-                true = self._get_new_cases_array(true.copy())
-
-            ll += self.dist_log_likelihood(true, pred, sigma)
+            T = np.ediff1d(np.log(true))
+            P = np.ediff1d(np.log(pred))
+            ll += self.dist_log_likelihood(T, P, sigma)
 
         return ll
 
@@ -297,6 +226,19 @@ class MCMC(object):
             prior = 1
         
         return np.log(prior)
+
+    def truncated_gaussian(self,theta):
+        multiplier_offset = 1
+        for param in theta:
+            if param == 'gamma':
+                continue
+            a = (float(self.prior_ranges[param][0][0]))
+            b = (self.prior_ranges[param][0][1])
+            sigma = self.proposal_sigmas[param]
+            param_value = theta[param]
+            multiplier_offset *= ( N.cdf((b-param_value)/sigma) -  N.cdf((a-param_value)/sigma) )
+        return multiplier_offset
+
     def _accept(self, theta_old, theta_new, explored , optimized,oldLL):    
         """
         Decides, using the likelihood function, whether a newly proposed set of param values should 
@@ -317,12 +259,8 @@ class MCMC(object):
             return True,explored,optimized
         else:
             x = np.random.uniform(0, 1)
-            LLdiff = x_new - x_old
-            alpha = np.exp(x_new - x_old)
-            # print("THe log-likelihood difference is ",LLdiff)
-            # print("The exploring probability is",alpha)
-            accept_bool = x < np.exp(x_new - x_old)
-            # print("Did we choose this sample",accept_bool)
+            alpha = (np.exp(x_new) * self.truncated_gaussian(theta_old)) / (np.exp(x_old) * self.truncated_gaussian(theta_new) )
+            accept_bool = x < alpha
             if accept_bool :
                 explored+=1
             return accept_bool,explored,optimized
@@ -448,11 +386,11 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        partial_metropolis = partial(self._metropolis, iters=self.iters)
-        self.chains = Parallel(n_jobs=self.n_chains)(
-            delayed(partial_metropolis)() for _ in range(self.n_chains))
-        # self.chains = []
-        # for i, run in enumerate(range(self.n_chains)):
-        #    self.chains.append(self._metropolis(self.iters))
+        # partial_metropolis = partial(self._metropolis, iters=self.iters)
+        # self.chains = Parallel(n_jobs=self.n_chains)(
+        #     delayed(partial_metropolis)() for _ in range(self.n_chains))
+        self.chains = []
+        for i, run in enumerate(range(self.n_chains)):
+           self.chains.append(self._metropolis(self.iters))
         self._check_convergence()
         return self._get_trials()

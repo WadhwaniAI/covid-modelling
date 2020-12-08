@@ -34,25 +34,25 @@ fitting:
         P_fatal: [[1e-10, 0.2], uniform]
         E_hosp_ratio: [[1e-10, 1], uniform]
         I_hosp_ratio: [[1e-10, 1], uniform]
-        sigma: [[1, 3],uniform]
+        gamma: [[1, 3],uniform]
     default_params:
         N: 1.0e+7
     fitting_method: mcmc_opt
 
     fitting_method_params:
         proposal_sigmas:
-            lockdown_R0: 0.04
-            T_inc: 0.3
-            T_inf: 0.1
-            T_recov: .5
-            T_recov_fatal: 2.5
-            P_fatal: 0.01
-            E_hosp_ratio: .05
-            I_hosp_ratio: .05
-            sigma: .02
+            lockdown_R0: 0.08
+            T_inc: 0.6
+            T_inf: 0.2
+            T_recov: 1
+            T_recov_fatal: 5
+            P_fatal: 0.02
+            E_hosp_ratio: .1
+            I_hosp_ratio: .1
+            gamma: .04
         num_evals: 15000
         algo: gaussian
-        n_chains: 5
+        n_chains: 4
         stride: 3
     #Choose Fitting Periods and num evaluations
     split:
