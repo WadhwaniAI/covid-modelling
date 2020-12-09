@@ -31,11 +31,9 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
                   filename=None, which_compartments=['active', 'total', 'deceased', 'recovered'], 
                   fileformat='eps', error_bars=False, days=30):
     """Function for plotting forecasts (both best fit and uncertainty deciles)
-
     Arguments:
         predictions_dict {dict} -- Dict of predictions for a particular district 
         region {tuple} -- Region Name eg : ('Maharashtra', 'Mumbai')
-
     Keyword Argument
         which_compartments {list} -- Which compartments to plot (default: {['active', 'total', 'deceased', 'recovered']})
         df_prediction {pd.DataFrame} -- DataFrame of predictions (default: {None})
@@ -44,7 +42,6 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         filename {str} -- If given, the plot is saved here (default: {None})
         fileformat {str} -- The format in which the plot will be saved (default: {'eps'})
         error_bars {bool} -- If true, error bars will be plotted (default: {False})
-
     Returns:
         ax -- Matplotlib ax figure
     """

@@ -15,6 +15,7 @@ from uncertainty.mcmc_utils import set_optimizer, compute_W, compute_B, accumula
 import pdb
 import scipy
 from scipy.stats import norm as N
+from scipy.stats import invgamma as inv
 class MCMC(object):
 
     """
@@ -118,8 +119,11 @@ class MCMC(object):
         theta = defaultdict()
         for key in self.prior_ranges:
             theta[key] = np.random.uniform(float(self.prior_ranges[key][0][0]), self.prior_ranges[key][0][1])
-        oldLL = self._log_likelihood(theta)
-        theta['gamma'] = 0.01
+        oldLL,_,_ = self._log_likelihood(theta)
+        alpha = 500
+        beta =  2
+        from scipy.stats import invgamma as inv
+        theta['gamma'] = np.sqrt(inv.rvs(a = alpha ,scale = beta , size = 1 )[0])
         return theta,oldLL
 
     def Gauss_proposal(self, theta_old):
@@ -167,8 +171,9 @@ class MCMC(object):
             float: gaussian log-likelihood of the data.
         """
         N = len(true)
-        ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (np.sum(((true - pred) ** 2) / (2 * sigma ** 2)))
-        return ll
+        diff = np.sum(((true - pred) ** 2))
+        ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (diff / (2 * sigma ** 2))
+        return ll, N/2 ,diff/2
 
     def _poisson_log_likelihood(self, true, pred, *ignored):
         """
@@ -197,6 +202,8 @@ class MCMC(object):
             float: log-likelihood of the data.
         """
         ll = 0
+        da = 0
+        db = 0
         params_dict = {**theta, **self._default_params}
         df_prediction = self._optimiser.solve(params_dict,end_date = self.df_train[-1:]['date'].item())
         sigma = theta ['gamma']
@@ -206,9 +213,11 @@ class MCMC(object):
             true = np.array(self.df_train[compartment], dtype=np.int64)
             T = np.ediff1d(np.log(true))
             P = np.ediff1d(np.log(pred))
-            ll += self.dist_log_likelihood(T, P, sigma)
-
-        return ll
+            LL,d_alpha,d_beta = self.dist_log_likelihood(T, P, sigma)
+            ll += LL
+            da += d_alpha
+            db += d_beta
+        return ll,da,db
 
     def _log_prior(self, theta):
         """
@@ -251,19 +260,19 @@ class MCMC(object):
         Returns:
             bool: whether or not to accept the new parameter set.
         """
-        x_new = self._log_likelihood(theta_new)
+        x_new,da,db= self._log_likelihood(theta_new)
         x_old = oldLL
         
         if (x_new) > (x_old):
             optimized+=1
-            return True,explored,optimized
+            return True,explored,optimized,x_new,da,db
         else:
             x = np.random.uniform(0, 1)
             alpha = (np.exp(x_new) * self.truncated_gaussian(theta_old)) / (np.exp(x_old) * self.truncated_gaussian(theta_new) )
             accept_bool = x < alpha
             if accept_bool :
                 explored+=1
-            return accept_bool,explored,optimized
+            return accept_bool,explored,optimized,x_new,da,db
 
     def _metropolis(self, iters):
         """
@@ -273,19 +282,24 @@ class MCMC(object):
             tuple: tuple containing a list of accepted and a list of rejected parameter values.
         """
         scipy.random.seed()
-        theta ,oldLL = self._param_init()
+        theta , oldLL = self._param_init()
         accepted = [theta]
         rejected = list()
         A = 0
         accepted_LIK = [oldLL]
         explored = 0
         optimized = 0
+        alpha = 500
+        beta = 2
         for i in tqdm(range(iters)):
 
             theta_new = self.Gauss_proposal(theta)
-            accept_choice , explored , optimized = self._accept(theta, theta_new, explored, optimized,oldLL)
+            accept_choice,explored , optimized,LL,da,db = self._accept(theta, theta_new, explored, optimized,oldLL)
+            alpha += da
+            beta += db
+            theta_new['gamma'] = np.sqrt(inv.rvs(a = alpha,scale = beta,size = 1)[0])
             if accept_choice:
-                oldLL = self._log_likelihood(theta_new)
+                oldLL = LL
                 theta = theta_new
                 A += 1
             else:

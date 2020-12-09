@@ -69,12 +69,12 @@ for n in range(runs):
 
 # %%
 import pickle as pkl
-with open('../../misc/predictions/PD_aug_10.pickle', 'wb') as handle:
+with open('../../misc/predictions/PD_truncated_logdiff_gibbs_oct.pickle', 'wb') as handle:
     pkl.dump(PD, handle)
 
 
 # %%
-with open('../../misc/predictions/PD_aug_10.pickle', 'rb') as handle:
+with open('../../misc/predictions/PD_truncated_logdiff_gibbs_oct.pickle', 'rb') as handle:
     PD = pkl.load(handle)
 
 
