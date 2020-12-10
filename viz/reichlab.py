@@ -12,6 +12,7 @@ import geopandas as gpd
 import numpy as np
 import seaborn as sns
 import scipy.stats as stats
+from scipy.stats import median_abs_deviation
 import statsmodels.api as sm
 import adjustText as aT
 
@@ -145,7 +146,8 @@ def create_heatmap(df, var_name='z_score', center=0):
     """
     fig, ax = plt.subplots(figsize=(12, 12))
 
-    df_sorted = df.sort_values('z_score')
+    df_sorted = df.sort_values(var_name)
+    df_sorted.dropna(axis=0, how='any', inplace=True)
     annot_mat = df_sorted.index.to_numpy().reshape(-1, 3) + " : " + \
     np.around(df_sorted[var_name].to_numpy().reshape(-1, 3), 2).astype(str)
     annot_mat = annot_mat.astype(str).tolist()
@@ -153,7 +155,9 @@ def create_heatmap(df, var_name='z_score', center=0):
                 cmap='coolwarm', center=center, xticklabels=False,
                 yticklabels=False, annot=annot_mat, fmt='', ax=ax)
 
-    ax.set_title(f'Heatmap of {var_name} for all US states, sorted by z_score, cmap centered at {center}')
+    ax.set_title(
+        f'Heatmap of {var_name.replace("_", " ")} for all US states, \n' + \
+            f'sorted by {var_name.replace("_", " ")}, cmap centered at {center}')
     return fig, ax
 
 def _label_geographies(ax, df_geo, var, adjust_text=False, remove_ticks=True):
@@ -172,7 +176,7 @@ def _label_geographies(ax, df_geo, var, adjust_text=False, remove_ticks=True):
         if (not row['centroid'] is None) & (not pd.isna(row[var])):
             label = np.around(row[var], 2)
             texts.append(ax.text(row['centroid'].x,
-                                 row['centroid'].y, label, fontsize=8))
+                                 row['centroid'].y, label, fontsize=10))
 
     if adjust_text:
         aT.adjust_text(texts, force_points=0.3, force_text=0.8, expand_points=(1, 1), 
@@ -231,7 +235,7 @@ def create_single_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap
     _label_geographies(subax_1, copy(df_noncontigous[df_noncontigous['state'] == 'Hawaii']), var, adjust_text)
     _label_geographies(subax_2, copy(df_noncontigous[df_noncontigous['state'] == 'Alaska']), var, adjust_text)
 
-    ax.set_title(f'Choropleth for {var}')
+    ax.set_title(f'Choropleth for {var.replace("_", " ")}')
     legend_elements = [Patch(facecolor='silver', edgecolor='r', hatch="///", label='Did Not Forecast')]
     ax.legend(handles=legend_elements)
     return fig
@@ -302,10 +306,10 @@ def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=N
         ax.set_yscale('log')
     ax.set_xlabel('MAPE on training data (calculated daily)')
     ax.set_ylabel(f'MAPE on unseen data (calculated weekly) ({"log" if log_scale else "linear"} scale)')
-    ax.axvline(1, ls=':', c='red', label='train error threshold (1%)')
-    ax.axhline(5, ls=':', c='blue', label='test error threshold (5%)')
+    ax.axvline(1, ls=':', c='red', label='train error threshold (1\%)')
+    ax.axhline(5, ls=':', c='blue', label='test error threshold (5\%)')
     ax.legend()
-    ax.set_title(f'Scatter plot of train vs test error, point radii proportional to {stat_metric_to_use}')
+    ax.set_title(f'Scatter plot of train vs test error, point radii proportional to {stat_metric_to_use.replace("_", " ")}')
     return fig
 
 
@@ -349,6 +353,7 @@ def plot_ecdf_single_state(df_mape, state, ax, model='Wadhwani_AI'):
     ax.axvline(df_mape.loc[model, state], ls=':',
                c='red', label='Wadhwani AI Submission')
     ax.set_title(state)
+    ax.set_xlabel('MAPE')
     ax.legend()
 
 
@@ -432,5 +437,37 @@ def mape_heatmap_single_state(df_mape, state, cmap='Reds'):
     sns.heatmap(df_mape[state].to_numpy().reshape(1, -1), cmap=cmap,
                 ax=ax, xticklabels=df_mape[state].index, annot=True)
     ax.set_title(state)
+
+    return fig, ax
+
+
+def qtile_barchart(df_comb, quant, color='C0', latex=False):
+    df_temp = df_comb[df_comb['quantile'] == quant]
+
+    df_mape = df_temp.groupby(['model', 'location',
+                               'location_name']).mean().reset_index()
+
+    df_mape = df_mape.pivot(index='model', columns='location_name',
+                            values='perc_loss_mape')
+
+    df_plot = pd.DataFrame([df_mape.median(axis=1)]).T
+    df_plot.columns = ['median']
+    df_plot['mad'] = median_abs_deviation(df_mape, axis=1, nan_policy='omit')
+    df_plot = df_plot.sort_values('median')
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+
+    y_pos = np.arange(len(df_plot))
+    barlist = ax.barh(y_pos, df_plot['median'],
+                      xerr=df_plot['mad'], align='center', color=color)
+    ax.set_yticks(y_pos)
+    if latex:
+        ax.set_yticklabels([x.replace('_', '\_') for x in df_plot.index])
+    ax.invert_yaxis()  # labels read top-to-bottom
+    wai_idx = np.where(df_plot.index == 'Wadhwani_AI')[0][0]
+    barlist[wai_idx].set_color('purple')
+    ax.set_xlabel('Median of Quantile MAPE Loss aggregated across states')
+    ax.set_title(
+        f'Median Quantile MAPE loss for {int(quant*100)}th percentile for all models')
 
     return fig, ax
