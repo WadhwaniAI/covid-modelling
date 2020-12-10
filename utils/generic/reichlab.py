@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, date, timedelta
 from pandas.core import groupby
+from pandas.core.algorithms import quantile
 from pytz import timezone
 import copy
 import re
@@ -254,6 +255,31 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
     return df_comb, df_mape, df_rank
 
 
+def _inc_sum_matches_cum_check(df_loc_submission, which_comp):
+    loc = df_loc_submission.iloc[0, :]['location']
+    buggy_forecasts = []
+    if which_comp is None:
+        comps_to_check_for = ['death', 'case']
+    else:
+        comps_to_check_for = [which_comp]
+    for comp in comps_to_check_for:
+        df = df_loc_submission.loc[[
+            comp in x for x in df_loc_submission['target']], :]
+        grouped = df.groupby(['type', 'quantile'])
+        for (type, quantile), group in grouped:
+            cum_diff = group.loc[['cum' in x for x in group['target']], 'value'].diff()
+            inc = group.loc[['inc' in x for x in group['target']], 'value']
+            cum_diff = cum_diff.to_numpy()[1:]
+            inc = inc.to_numpy()[1:]
+            if int(np.sum(np.logical_not((cum_diff - inc) < 1e-8))) != 0:
+                print('Sum of inc != cum for {}, {}, {}, {}'.format(
+                    loc, comp, type, quantile))
+                print(cum_diff, inc)
+                buggy_forecasts.append((loc, comp, type, quantile))
+    
+    return len(buggy_forecasts) == 0
+
+
 def _qtiles_nondec_check(df_loc_submission):
     grouped = df_loc_submission[df_loc_submission['type']
                                 == 'quantile'].groupby('target')
@@ -277,7 +303,7 @@ def _qtiles_nondec_correct(df_loc_submission):
     return df_loc_submission
 
 def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mode='analysis', which_fit='m2',
-                           use_as_point_forecast='ensemble_mean', skip_percentiles=False):
+                           use_as_point_forecast='ensemble_mean', which_comp=None, skip_percentiles=False):
     """Function for formatting our submission in the reichlab format 
 
     Args:
@@ -315,6 +341,11 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
             # Loop across cumulative and deceased
             for mode in ['cum', 'inc']:
                 df_forecast = copy.deepcopy(predictions_dict[loc][which_fit]['forecasts'][percentile])
+                for comp in ['deceased', 'total']:
+                    dec_indices = np.where(np.diff(df_forecast[comp]) < 0)[0]
+                    if len(dec_indices) > 0:
+                        for idx in dec_indices:
+                            df_forecast.loc[idx+1, comp] = df_forecast.loc[idx, comp]
 
                 # Take diff for the forecasts (by default forecasts are cumulative)
                 if mode == 'inc':
@@ -358,7 +389,16 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                                 'total': 'value'}, axis=1, inplace=True)
 
                 # Create the type quantile  columns for all forecasts
-                df_subm = pd.concat([df_subm_d, df_subm_t], ignore_index=True)
+                if which_comp is not None:
+                    if which_comp == 'death':
+                        df_subm = df_subm_d
+                    elif which_comp == 'case':
+                        df_subm = df_subm_d
+                    else:
+                        raise ValueError('Incorrect option of which_comp given. ' + \
+                            'which_comp can be either death/case')
+                else:
+                    df_subm = pd.concat([df_subm_d, df_subm_t], ignore_index=True)
                 if isinstance(percentile, str):
                     df_subm['type'] = 'point'
                     df_subm['quantile'] = np.nan
@@ -373,8 +413,11 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                 df_subm['forecast_date'] = datetime.combine(now.date(),
                                                             datetime.min.time())
                 df_loc_submission = pd.concat([df_loc_submission, df_subm], 
-                                            ignore_index=True)
+                                              ignore_index=True)
         if formatting_mode == 'submission':
+            _inc_sum_matches_cum_check(df_loc_submission, which_comp)
+            # if not _inc_sum_matches_cum_check(df_loc_submission, which_comp):
+                # raise AssertionError('Sum of inc != cum for some forecasts')
             while(_qtiles_nondec_check(df_loc_submission)):
                 df_loc_submission = _qtiles_nondec_correct(df_loc_submission)
                 
