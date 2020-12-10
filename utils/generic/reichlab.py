@@ -326,8 +326,13 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                 # Truncate forecasts df to only beyond the training date
                 df_forecast = df_forecast[df_forecast['date'].dt.date > end_date]
                 # Aggregate the forecasts by a week (def of week : Sun-Sat)
-                df_forecast = df_forecast.resample(
-                    'W-Sat', label='right', origin='start', on='date').max()
+                if mode == 'cum':
+                    df_forecast = df_forecast.resample(
+                        'W-Sat', label='right', origin='start', on='date').max()
+                if mode == 'inc':
+                    df_forecast = df_forecast.resample(
+                        'W-Sat', label='right', origin='start', on='date').sum()
+                df_forecast['date'] = df_forecast.index
                 if formatting_mode == 'submission':
                     now = datetime.now(timezone('US/Eastern'))
                     df_forecast = df_forecast[df_forecast['date'].dt.date > now.date()]
