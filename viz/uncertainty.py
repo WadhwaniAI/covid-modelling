@@ -15,7 +15,10 @@ from viz.utils import axis_formatter
 def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments=[Columns.active], 
                 plot_individual_curves=True, log_scale=False):
     predictions = copy(predictions_dict[train_fit]['forecasts'])
-    del predictions['best']
+    try:
+        del predictions['best']
+    except:
+        pass
 
     df_master = list(predictions.values())[0]
     for df in list(predictions.values())[1:]:
