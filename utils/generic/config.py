@@ -26,20 +26,50 @@ def read_config(filename='default.yaml', preprocess=True):
     
     if not preprocess:
         return config
-    
-    config['fitting']['model'] = getattr(models.seir, config['fitting']['model'])
+    else:
+        return process_config(config)
 
-    config['forecast']['plot_topk_trials_for_columns'] = [Columns.from_name(
-        column) for column in config['forecast']['plot_topk_trials_for_columns']]
-    config['forecast']['plot_ptiles_for_columns'] = [Columns.from_name(
-        column) for column in config['forecast']['plot_ptiles_for_columns']]
+def create_location_description(nconfig):
+    """Helper function for creating location description
 
-    config['uncertainty']['method'] = getattr(uncertainty_module, config['uncertainty']['method'])
-    config['uncertainty']['uncertainty_params']['sort_trials_by_column'] = Columns.from_name(
-        config['uncertainty']['uncertainty_params']['sort_trials_by_column'])
+    Args:
+        nconfig (dict): The input config
+    """
+    dl_nconfig = nconfig['fitting']['data']['dataloading_params']
+    if 'state' in dl_nconfig.keys() and 'district' in dl_nconfig.keys():
+        location_description = (dl_nconfig['state'], dl_nconfig['district'])
+    elif 'region' in dl_nconfig.keys() and 'sub_region' in dl_nconfig.keys():
+        location_description = (dl_nconfig['region'], dl_nconfig['sub_region'])
+    elif 'state' in dl_nconfig.keys() and 'county' in dl_nconfig.keys():
+        location_description = (dl_nconfig['state'], dl_nconfig['county'])
+    else:
+        location_description = (dl_nconfig['state'])
+    dl_nconfig['location_description'] = location_description
+
+def process_config(config):
+    """Helper function for processing config file read from yaml file
+
+    Args:
+        config (dict): Unprocessed config dict
+
+    Returns:
+        dict: Processed config dict
+    """
+    nconfig = copy.deepcopy(config)
+    create_location_description(nconfig)
     
+    nconfig['fitting']['model'] = getattr(models.seir, nconfig['fitting']['model'])
+
+    nconfig['forecast']['plot_topk_trials_for_columns'] = [Columns.from_name(
+        column) for column in nconfig['forecast']['plot_topk_trials_for_columns']]
+    nconfig['forecast']['plot_ptiles_for_columns'] = [Columns.from_name(
+        column) for column in nconfig['forecast']['plot_ptiles_for_columns']]
+
+    nconfig['uncertainty']['method'] = getattr(uncertainty_module, nconfig['uncertainty']['method'])
+    nconfig['uncertainty']['uncertainty_params']['sort_trials_by_column'] = Columns.from_name(
+        nconfig['uncertainty']['uncertainty_params']['sort_trials_by_column'])
         
-    return config
+    return nconfig
 
 def make_date_key_str(config):
     """A function that loops recursively across the input config and 

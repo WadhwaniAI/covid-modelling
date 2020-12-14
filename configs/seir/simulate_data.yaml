@@ -1,22 +1,19 @@
 fitting:
     # Geographical Location
     data:
-        data_source: covid19india
+        data_source: simulated
         stratified_data: FALSE
         dataloading_params:
-            state: Jharkhand
-            district: null
+            state: Maharashtra
+            district: Mumbai
             use_dataframe: data_all
+            generate: TRUE
+            config_file: seirhd_fixed.yaml
+            filename: ../../data/data/simulated_data/simulated_data_1.csv
         smooth_jump: FALSE
-        smooth_jump_params: null
-            # 2020-09-28: [2020-09-27, recovered, active, FALSE, weighted-mag]
-        rolling_average: TRUE
-        rolling_average_params:
-            center: TRUE
-            window_size: 7
-            win_type: null
-            min_periods: 1
-            split_after_rolling: FALSE
+        smooth_jump_params: None
+        rolling_average: FALSE
+        rolling_average_params: None
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
@@ -37,9 +34,9 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: null
-        train_period: 15
-        val_period: 5
+        end_date: 2020-08-31
+        train_period: 21
+        val_period: 7
         test_period: 0
     #Optimisation related parameters
     loss:

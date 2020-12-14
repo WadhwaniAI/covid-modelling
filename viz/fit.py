@@ -84,7 +84,13 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, locatio
     
         ax.axvline(x=df_train.iloc[-train_period, :]['date'], ls=':', color='brown', label='Train starts')
         if isinstance(df_val, pd.DataFrame) and len(df_val) > 0:
-            ax.axvline(x=df_val.iloc[0, ]['date'], ls=':', color='black', label='Val starts')
+            ax.axvline(x=df_val.iloc[0, ]['date'],
+                       ls=':', color='black', label='Val starts')
+            ax.axvline(x=df_val.iloc[-1, ]['date'], ls=':',
+                       color='black', label='Train+Val ends')
+        else:
+            ax.axvline(x=df_train.iloc[-1, ]['date'], ls=':',
+                       color='black', label='Train+Val ends')
         
         axis_formatter(ax, legend_elements, custom_legend=False)
         i += 1

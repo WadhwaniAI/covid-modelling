@@ -1,7 +1,3 @@
-import pandas as pd
-import numpy as np
-import datetime
-
 from pyathena import connect
 from pyathena.pandas_cursor import PandasCursor
 
@@ -12,7 +8,7 @@ class AthenaLoader(BaseLoader):
     def __init__(self):
         super().__init__()
 
-    def create_connection(self, pyathena_rc_path=None):
+    def create_connection(self, schema, staging_dir, pyathena_rc_path=None):
         """Creates SQL Server connection using AWS Athena credentials
 
         Keyword Arguments:
@@ -21,9 +17,9 @@ class AthenaLoader(BaseLoader):
         Returns:
             [cursor] -- [Connection Cursor]
         """
-        if pyathena_rc_path == None:
+        if pyathena_rc_path is None:
             pyathena_rc_path = '../../misc/pyathena/pyathena.rc'
-        SCHEMA_NAME = 'wiai-covid-data'
+        SCHEMA_NAME = schema
 
         # Open Pyathena RC file and get list of all connection variables in a processable format
         with open(pyathena_rc_path) as f:
@@ -32,6 +28,7 @@ class AthenaLoader(BaseLoader):
         lines = [x.strip() for x in lines]
         lines = [x.split('export ')[1] for x in lines]
         lines = [line.replace('=', '="') + '"' if '="' not in line else line for line in lines]
+        lines = [line.replace('S3_STAGING_DIR_NAME', staging_dir) for line in lines]
         variables = [line.split('=') for line in lines]
 
         # Create variables using the processed variable names from the RC file
@@ -51,7 +48,7 @@ class AthenaLoader(BaseLoader):
         return cursor
 
 
-    def load_data(self, pyathena_rc_path=None):
+    def load_data(self, schema, tables, staging_dir, pyathena_rc_path=None, **kwargs):
         """Creates connection to Athena database and returns all the tables there as a dict of Pandas dataframes
 
         Keyword Arguments:
@@ -67,20 +64,18 @@ class AthenaLoader(BaseLoader):
             healthcare_capacity
             testing_summary
         """
-        if pyathena_rc_path == None:
+        if pyathena_rc_path is None:
             pyathena_rc_path = '../../misc/pyathena/pyathena.rc'
 
         # Create connection
-        cursor = self.create_connection(pyathena_rc_path)
+        cursor = self.create_connection(schema, staging_dir, pyathena_rc_path)
 
         # Run SQL SELECT queries to get all the tables in the database as pandas dataframes
         dataframes = {}
-        tables_list = cursor.execute('Show tables').as_pandas().to_numpy().reshape(-1, )
-        tables_list = ['covid_case_summary', 'new_covid_case_summary', 'testing_summary']
-        for table in tables_list:
+        for table in tables:
             dataframes[table] = cursor.execute(
                 'SELECT * FROM {}'.format(table)).as_pandas()
-        
+
         return dataframes
 
     def get_athena_dataframes(self, **kwargs):

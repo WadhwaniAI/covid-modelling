@@ -31,10 +31,12 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
     """
     if stratified_data:
-        df_not_strat = get_data(data_source, dataloading_params)
+        data_dict = get_data(data_source, dataloading_params)
+        df_not_strat = data_dict['data_frame']
         df_district = granular.get_data(data_source, dataloading_params)
     else:
-        df_district = get_data(data_source, dataloading_params)
+        data_dict = get_data(data_source, dataloading_params)
+        df_district = data_dict['data_frame']
     
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
@@ -86,7 +88,9 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     observed_dataframes = {}
     for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
         observed_dataframes[name] = eval(name)
-    return observed_dataframes, smoothing
+    if 'ideal_params' in data_dict:
+        return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing, "ideal_params" : data_dict['ideal_params']}
+    return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing}
 
 
 def run_cycle(observed_dataframes, weights_dataframes, data, model, variable_param_ranges, default_params, fitting_method,
@@ -137,22 +141,13 @@ def run_cycle(observed_dataframes, weights_dataframes, data, model, variable_par
                                     model=model)
     
     lc = Loss_Calculator()
-    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, df_data_weights_train, df_data_weights_val, split['train_period'], 
-                                              which_compartments=loss['loss_compartments'], method=loss['loss_method'])
-
-    if 'state' in data['dataloading_params'].keys() and 'district' in data['dataloading_params'].keys():
-        location_description = (data['dataloading_params']['state'],
-                                data['dataloading_params']['district'])
-    elif 'region' in data['dataloading_params'].keys() and 'sub_region' in data['dataloading_params'].keys():
-        location_description = (data['dataloading_params']['region'],
-                                data['dataloading_params']['sub_region'])
-    elif 'state' in data['dataloading_params'].keys() and 'county' in data['dataloading_params'].keys():
-        location_description = (data['dataloading_params']['state'],
-                                data['dataloading_params']['county'])
-    else:
-        location_description = (data['dataloading_params']['state'])
+    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, 
+                                              df_data_weights_train, df_data_weights_val, 
+                                              split['train_period'], which_compartments=loss['loss_compartments'], 
+                                              method=loss['loss_method'])
+    
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
-                        location_description=location_description,
+                        location_description=data['dataloading_params']['location_description'],
                         which_compartments=loss['loss_compartments'])
 
     results_dict = {}
@@ -201,25 +196,20 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     params = {**data}
     params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
-    
-    # df_district, df_train, df_val made here
-    observed_dataframes, smoothing = data_setup(**params)
+
+    data_dict = data_setup(**params)
+    observed_dataframes, smoothing = data_dict['observed_dataframes'], data_dict['smoothing']
 
     # df_data_weights made here
     if data_weights.get('if_weights') == True:
-        df_data_weights = Data_Weights.make_weights_df(0, observed_dataframes['df_district'],
-                                                        data_weights['start_date'],
-                                                        data_weights['end_date'],
-                                                        data_weights['weights']
-                                                        )
+        df_data_weights = Data_Weights.make_weights_df(
+            0, observed_dataframes['df_district'], data_weights['start_date'], 
+            data_weights['end_date'], data_weights['weights'])
     else:
-        df_data_weights = Data_Weights.make_weights_df(0, observed_dataframes['df_district'],
-                                                        None,
-                                                        None,
-                                                        None
-                                                        )
+        df_data_weights = Data_Weights.make_weights_df(
+            0, observed_dataframes['df_district'], None, None, None)
 
-    weights_dataframes = Data_Weights.implement_split(0, df_data_weights, split)      
+    weights_dataframes = Data_Weights.implement_split(0, df_data_weights, split)
     smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
     smoothing_description = smoothing['smoothing_description'] if 'smoothing_description' in smoothing else None
     orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
@@ -238,5 +228,6 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
 
     # record parameters for reproducibility
     predictions_dict['run_params'] = run_params
-
+    if 'ideal_params' in data_dict:
+        predictions_dict['ideal_params'] = data_dict['ideal_params']
     return predictions_dict

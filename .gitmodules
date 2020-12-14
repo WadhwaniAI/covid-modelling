@@ -1,4 +1,4 @@
 [submodule "lib/covid19-india"]
 	path = lib/covid19-india
 	url = https://github.com/dsindiavscovid/covid19-india.git
-	branch = hetero_ensemble_generalised
+	branch = staging

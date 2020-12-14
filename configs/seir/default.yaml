@@ -6,7 +6,13 @@ fitting:
         dataloading_params:
             state: Maharashtra
             district: Mumbai
+            # COVID19India:
             use_dataframe: data_all
+            # Athena:
+            # tables: [bed_summaries, case_summaries, testing_summary]
+            # schema: city_data_mumbai
+            # staging_dir: mumbai
+            # label: mumbai
         smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
@@ -77,10 +83,12 @@ forecast:
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
-        num_evals: 100
         which_fit: m1
+        fitting_method: gridsearch
+        fitting_method_params:
+            parallelise: FALSE
         variable_param_ranges:
-            beta: [[0, 10], uniform]
+            beta: [[0, 10], 101]
         date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:
@@ -91,3 +99,6 @@ uncertainty:
 what_ifs:
     percentile: 80
     multipliers: [0.9, 1, 1.05, 1.1, 1.2, 1.25]
+logging:
+    experiment_name: wiai-temp
+    run_name: null
