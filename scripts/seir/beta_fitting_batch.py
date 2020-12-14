@@ -8,7 +8,8 @@ from tqdm import tqdm
 from utils.generic.config import read_config, make_date_key_str
 from viz import plot_ptiles
 
-def run_beta_fitting(loc_dict, config):
+
+def _perform_beta_fitting(loc_dict, config):
     uncertainty_args = {'predictions_dict': loc_dict, 'fitting_config': config['fitting'],
                         'forecast_config': config['forecast'], 'process_trials': False,
                         **config['uncertainty']['uncertainty_params']}
@@ -55,7 +56,7 @@ predictions_pkl_filename = f'/scratch/users/{parsed_args.username}/covid-modelli
 with open(predictions_pkl_filename, 'rb') as f:
     predictions_dict = pickle.load(f)
 
-partial_run_beta_fitting = partial(run_beta_fitting, config=config)
+partial_run_beta_fitting = partial(_perform_beta_fitting, config=config)
 
 loc_dict_arr = Parallel(n_jobs=parsed_args.nthreads)(delayed(partial_run_beta_fitting)(
     loc_dict) for _, loc_dict in tqdm(predictions_dict.items()))
