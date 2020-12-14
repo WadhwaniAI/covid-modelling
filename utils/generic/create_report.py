@@ -41,6 +41,7 @@ def _create_md_file(predictions_dict, config, ROOT_DIR):
     data_last_date = predictions_dict['m1']['data_last_date']
     state = config['fitting']['data']['dataloading_params']['state']
     dist = config['fitting']['data']['dataloading_params']['district']
+    dist = '' if dist is None else dist
     filename = os.path.join(ROOT_DIR, f'{state.title()}-{dist.title()}_report_{fitting_date}')
     mdFile = MdUtils(file_name=filename, title=f'{dist.title()} Fits [Based on data until {data_last_date}]')
     return mdFile, filename
@@ -177,7 +178,7 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
     mdFile, filename = _create_md_file(predictions_dict, config, ROOT_DIR)
     _log_hyperparams(mdFile, predictions_dict, config)
 
-    if m1_dict['plots']['smoothing'] is not None:
+    if 'smoothing' in m1_dict and m1_dict['plots']['smoothing'] is not None:
         _log_smoothing(mdFile, ROOT_DIR, m1_dict)
 
     mdFile.new_header(level=1, title=f'FITS')
@@ -198,5 +199,5 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
     mdFile.create_md_file()
 
     pypandoc.convert_file("{}.md".format(filename), 'docx', outputfile="{}.docx".format(filename))
-    # pypandoc.convert_file("{}.docx".format(filename), 'pdf', outputfile="{}.pdf".format(filename))
+    #pypandoc.convert_file("{}.docx".format(filename), 'pdf', outputfile="{}.pdf".format(filename))
     # TODO: pdf conversion has some issues with order of images, low priority

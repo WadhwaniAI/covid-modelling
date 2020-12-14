@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import seaborn as sns
 from pandas.plotting import register_matplotlib_converters
+from matplotlib.lines import Line2D
 
 
 def axis_formatter(ax, legend_elements=None, custom_legend=False, log_scale=False):
@@ -31,6 +32,19 @@ def axis_formatter(ax, legend_elements=None, custom_legend=False, log_scale=Fals
         ax.legend(handles=legend_elements)
     else:
         ax.legend()
+
+
+def show_figure(fig):
+    """Helper function for plotting figs not created from pyplot and loaded from pickle file.
+    Create a dummy figure and uses its manager to display "fig"
+
+    Args:
+        fig (mpl.Figure): The figure you want to plot.
+    """
+    dummy = plt.figure()
+    new_manager = dummy.canvas.manager
+    new_manager.canvas.figure = fig
+    fig.set_canvas(new_manager.canvas)
 
 def setup_plt(ycol, yscale='log'):
     sns.set()

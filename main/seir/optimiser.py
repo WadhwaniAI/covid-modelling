@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from hyperopt import hp, tpe, fmin, Trials
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 from collections import OrderedDict
 import itertools
@@ -32,19 +32,19 @@ class Optimiser():
             dict -- dict of ranges of variable params
         """
 
-        # TODO add support for different prior for each variable
+        formatted_param_ranges = {}
         if fitting_method == 'bayes_opt':
             for key in variable_param_ranges.keys():
-                variable_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
+                formatted_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
                     key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
 
         if fitting_method == 'gridsearch':
             for key in variable_param_ranges.keys():
-                variable_param_ranges[key] = np.linspace(variable_param_ranges[key][0][0], 
-                                                         variable_param_ranges[key][0][1], 
-                                                         variable_param_ranges[key][1])
+                formatted_param_ranges[key] = np.linspace(variable_param_ranges[key][0][0],
+                                                          variable_param_ranges[key][0][1], 
+                                                          variable_param_ranges[key][1])
 
-        return variable_param_ranges
+        return formatted_param_ranges
 
     def solve(self, params_dict :dict, model=SEIRHD, end_date=None):
         """This function solves the ODE for an input of params (but does not compute loss)
@@ -63,6 +63,8 @@ class Optimiser():
 
         solver = model(**params_dict)
         total_days = (end_date.date() - params_dict['starting_date']).days
+        if total_days < 0:
+            raise Exception('Number of days of prediction cannot be negative.')
         df_prediction = solver.predict(total_days=total_days)
         return df_prediction
 
@@ -198,7 +200,7 @@ class Optimiser():
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
                                                  df_true=df_train, total_days=total_days, model=model,
                                                  loss_method=loss_method, loss_indices=loss_indices,
-                                                 loss_compartments=loss_compartments, debug=debug)
+                                                 loss_compartments=loss_compartments, debug=False)
         
         # If debugging is enabled the gridsearch is not parallelised
         if debug:
