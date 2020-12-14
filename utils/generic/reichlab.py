@@ -415,9 +415,9 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                 df_loc_submission = pd.concat([df_loc_submission, df_subm], 
                                               ignore_index=True)
         if formatting_mode == 'submission':
-            _inc_sum_matches_cum_check(df_loc_submission, which_comp)
-            # if not _inc_sum_matches_cum_check(df_loc_submission, which_comp):
-                # raise AssertionError('Sum of inc != cum for some forecasts')
+            # _inc_sum_matches_cum_check(df_loc_submission, which_comp)
+            if not _inc_sum_matches_cum_check(df_loc_submission, which_comp):
+                raise AssertionError('Sum of inc != cum for some forecasts')
             while(_qtiles_nondec_check(df_loc_submission)):
                 df_loc_submission = _qtiles_nondec_correct(df_loc_submission)
                 
