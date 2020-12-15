@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_squared_error, mean_squared_log_error
-
 
 class Loss_Calculator():
 
