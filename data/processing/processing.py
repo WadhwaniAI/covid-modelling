@@ -14,14 +14,16 @@ from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoad
 def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, label=None, **kwargs):
     if loader_class == Covid19IndiaLoader:
         loader_key = 'tracker'
-    if loader_class == AthenaLoader:
+    elif loader_class == AthenaLoader:
         loader_key = 'athena'
-    if loader_class == JHULoader:
+    elif loader_class == JHULoader:
         loader_key = 'jhu'
-    if loader_class == NYTLoader:
+    elif loader_class == NYTLoader:
         loader_key = 'nyt'
-    if loader_class == CovidTrackingLoader:
+    elif loader_class == CovidTrackingLoader:
         loader_key = 'covid_tracking'
+    else:
+        raise ValueError('Please give a valid loader_class Class')
     os.makedirs("../../misc/cache/", exist_ok=True)
     label = '' if label is None else f'_{label}'
     picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}{label}.pkl".format(
@@ -164,10 +166,12 @@ def get_custom_data_from_file(filename, data_format='new', **kwargs):
         df_result = df_result[['date', 'state', 'district', 'total', 'active', 'recovered', 'deceased']]
         df_result = df_result.dropna(subset=['date'], how='all')
         
-    if data_format == 'old':
+    elif data_format == 'old':
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
+    else:
+        raise ValueError("data_format can only be either 'new' or 'old'")
         
     return {"data_frame": df_result}
 
