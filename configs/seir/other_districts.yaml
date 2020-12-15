@@ -5,7 +5,7 @@ fitting:
         stratified_data: FALSE
         dataloading_params:
             state: Jharkhand
-            district: Ramgarh
+            district: other districts
             use_dataframe: data_all
         smooth_jump: FALSE
         smooth_jump_params: null
@@ -29,7 +29,7 @@ fitting:
         E_hosp_ratio: [[0, 2], uniform]
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
-        N: 1.09e+6
+        N: 23.54e+6
     fitting_method: bayes_opt
     fitting_method_params:
         num_evals: 1000

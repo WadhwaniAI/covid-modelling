@@ -1,13 +1,11 @@
 fitting:
     # Geographical Location
     data:
-        data_source: filename
+        data_source: athena
         stratified_data: FALSE
         dataloading_params:
             state: Jharkhand
             district: Deogarh
-            filename: ../../data/data/deogarh.csv
-            data_format: old
             use_dataframe: data_all
         smooth_jump: FALSE
         smooth_jump_params: null
@@ -40,7 +38,7 @@ fitting:
     split:
         start_date: null
         end_date: null
-        train_period: 7
+        train_period: 12
         val_period: 3
         test_period: 7
     #Optimisation related parameters

@@ -88,22 +88,47 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', granular_dat
     dataframes = get_dataframes_cached(loader_class=AthenaLoader)
     df_result = copy.copy(dataframes['case_summaries'])
     df_result['state'] = state
-    if (not district):
-        district = 'All'
-    elif district.lower() == "east singhbhum":
-        district = "East Singbhum"
-    df_result = df_result[np.logical_and(
-            df_result['state'].str.lower() == state.lower(), df_result['district'].str.lower() == district.lower())]
-    if district == 'Ranchi':
-        df_result = df_result[~df_result['partition_0'].isin(['bokaro', 'dhanbad', 'east_singhbhum', 'all_district'])]
+    #*********************
+    # extra rows at athena: remove them
+    df_result = df_result[~((df_result['partition_0'].isin(['bokaro', 'dhanbad', 'east_singhbhum', 'all_district'])) & (df_result['district'].str.lower() == 'ranchi'))]
+    #*********************
+    
     df_result = df_result.rename(columns={'total cases': 'total', 'active cases': 'active', 'recoveries':'recovered', 'deaths':'deceased'})
     df_result = df_result.loc[:, :'deceased']
     df_result.dropna(axis=0, how='any', inplace=True)
     df_result.loc[:, 'date'] = pd.to_datetime(df_result['date'])
-    df_result.reset_index(inplace=True, drop=True)
+
+    #*********************
+    # row missing at athena for date = 26/04/2020, district=Bokaro: remove them
+    missing_val = df_result[(df_result['district'].str.lower() == "bokaro") & (df_result['date'] == datetime.datetime(2020,4,25))]
+    missing_val['date'] = datetime.datetime(2020,4,26)
+    df_result = pd.concat([missing_val, df_result], axis=0)
+    #*********************
+
     for col in df_result.columns:
         if col in ['active', 'total', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
+    if (not district):
+        district = 'All'
+    elif district.lower() == "east singhbhum":
+        district = "East Singbhum"
+    elif district.lower() == "other districts":
+        districts = df_result['district'].value_counts().index.to_list()
+        districts.remove('All')
+        df_other_districts = df_result[df_result['district'].str.lower() == 'all']
+        df_other_districts['district'] = district
+        df_other_districts = df_other_districts.sort_values(by=['date']).reset_index()
+        for dist in districts:
+            df_dist = df_result[df_result['district'].str.lower() == dist.lower()]
+            df_dist = df_dist.sort_values(by=['date']).reset_index()
+            for col in ['active', 'total', 'recovered', 'deceased']:
+                df_other_districts[col] -= df_dist[col].astype(int)
+        df_result = pd.concat([df_other_districts, df_result], axis=0)
+    df_result = df_result[np.logical_and(
+            df_result['state'].str.lower() == state.lower(), df_result['district'].str.lower() == district.lower())]
+    
+    df_result.reset_index(inplace=True, drop=True)
+    
     return df_result
     
 #TODO add support of adding 0s column for the ones which don't exist
