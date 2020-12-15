@@ -131,6 +131,9 @@ def generate_simulated_data(**dataloading_params):
     loader = SimulatedDataLoader()
     data_dict = loader.load_data(**config)
     df_result, params = data_dict['data_frame'], data_dict['actual_params']
+    if dataloading_params['simulate_spike']:
+        df_result = loader.simulate_spike(
+            df=df_result, **dataloading_params['simulate_spike_params'])
 
     for col in df_result.columns:
         if col in ['active', 'total', 'recovered', 'deceased']:

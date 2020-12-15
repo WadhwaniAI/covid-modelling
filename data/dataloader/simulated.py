@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import copy
+from datetime import timedelta
 from models.seir import *
 
 from data.dataloader.base import BaseLoader
@@ -31,7 +32,8 @@ class SimulatedDataLoader(BaseLoader):
             for param in config['params']:
                 if param == 'N':
                     continue
-                config['params'][param] = getattr(np.random, config['params'][param][1])(config['params'][param][0][0], config['params'][param][0][1])
+                config['params'][param] = getattr(np.random, config['params'][param][1])(
+                    config['params'][param][0][0], config['params'][param][0][1])
         actual_params = copy.deepcopy(config['params'])
         del actual_params['N']
         print ("parameters used to generate data:", actual_params)
@@ -51,9 +53,34 @@ class SimulatedDataLoader(BaseLoader):
         else:
             df_result = solver.predict()
 
-        save_dir = '../../data/data/simulated_data/'    
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        df_result.to_csv(os.path.join(save_dir, config['output_file_name']))
-        pd.DataFrame([actual_params]).to_csv(os.path.join(save_dir, 'params_'+config['output_file_name']), index=False)
+        if config['save']:
+            save_dir = '../../data/data/simulated_data/'
+            os.makedirs(save_dir, exist_ok=True)
+            df_result.to_csv(os.path.join(save_dir, config['output_file_name']))
+            pd.DataFrame([actual_params]).to_csv(
+                f'{save_dir}params_{config["output_file_name"]}', index=False)
         return {"data_frame": df_result, "actual_params": actual_params} 
+
+    def simulate_spike(self, df, comp, start_date, end_date, frac_to_report):
+        df_diff = copy.deepcopy(df)
+        num_cols = df_diff.select_dtypes(include='number').columns
+        df_diff.loc[:, num_cols] = df_diff.loc[:, num_cols].diff()
+        df_to_spike = df_diff[(df_diff['date'].dt.date >= start_date)
+                              & (df_diff['date'].dt.date < end_date)]
+        spike = np.sum(df_to_spike[comp]*(1-frac_to_report))
+        df_to_spike.loc[:, 'active'] += df_to_spike[comp]*(1-frac_to_report)
+        df_to_spike.loc[:, comp] -= df_to_spike[comp]*(1-frac_to_report)
+
+        base_nums = df.loc[df['date'].dt.date == (start_date - timedelta(days=1)), num_cols] 
+        df_to_spike.loc[:, num_cols] = df_to_spike.loc[:, num_cols].cumsum() 
+        df_to_spike.loc[:, num_cols] += base_nums.to_numpy()
+
+        df.loc[df['date'].isin(df_to_spike['date']), :] = df_to_spike
+
+        df.loc[df['date'].dt.date == end_date, ['active', comp]] = \
+            df.loc[df['date'].dt.date == (end_date - timedelta(days=1)), ['active', comp]].to_numpy()
+
+        df.loc[df['date'].dt.date == end_date, comp] += spike
+        df.loc[df['date'].dt.date == end_date, 'active'] -= spike
+
+        return df
