@@ -76,21 +76,23 @@ def get_data(data_source, dataloading_params):
     """
     if data_source == 'covid19india':
         return get_data_from_tracker(**dataloading_params)
-    if data_source == 'athena':
+    elif data_source == 'athena':
         return get_custom_data_from_db(**dataloading_params)
-    if data_source == 'jhu':
+    elif data_source == 'jhu':
         return get_data_from_jhu(**dataloading_params)
-    if data_source == 'nyt':
+    elif data_source == 'nyt':
         return get_data_from_ny_times(**dataloading_params)
-    if data_source == 'covid_tracking':
+    elif data_source == 'covid_tracking':
         return get_data_from_covid_tracking(**dataloading_params)
-    if data_source == 'filename':
+    elif data_source == 'filename':
         return get_custom_data_from_file(**dataloading_params)
-    if data_source == 'simulated':
+    elif data_source == 'simulated':
         if (dataloading_params['generate']):
             return generate_simulated_data(**dataloading_params)
         else:
             return get_simulated_data_from_file(**dataloading_params)
+    else:
+        raise ValueError('Given data source is unsupported')
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', **kwargs):
     print('fetching from athenadb...')
