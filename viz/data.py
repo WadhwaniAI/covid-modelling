@@ -5,7 +5,7 @@ import pandas as pd
 from utils.generic.enums.columns import *
 from viz.utils import setup_plt, axis_formatter
 
-def plot_smoothing(orig_df_district, new_df_district, state, district,
+def plot_smoothing(orig_df_district, new_df_district, location_description,
                    which_compartments=['active', 'total', 'recovered', 'deceased'], 
                    description='Smoothing'):
     """Helper function for creating plots for the smoothing
@@ -36,7 +36,7 @@ def plot_smoothing(orig_df_district, new_df_district, state, district,
             plot_ledger[key] = False
     n_rows = np.sum(list(plot_ledger.values()))
     fig, axs = plt.subplots(nrows=n_rows, figsize=(12, 10*n_rows))
-    fig.suptitle('{} {}, {}'.format(description, district, state))
+    fig.suptitle('{} {}'.format(description, location_description))
     i = 0
     for key in plot_ledger.keys():
         if not plot_ledger[key]:
