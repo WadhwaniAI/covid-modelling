@@ -42,8 +42,10 @@ def create_location_description(nconfig):
         location_description = (dl_nconfig['region'], dl_nconfig['sub_region'])
     elif 'state' in dl_nconfig.keys() and 'county' in dl_nconfig.keys():
         location_description = (dl_nconfig['state'], dl_nconfig['county'])
-    else:
+    elif 'state' in dl_nconfig.keys():
         location_description = (dl_nconfig['state'])
+    else:
+        location_description = ''
     dl_nconfig['location_description'] = location_description
 
 def process_config(config):
