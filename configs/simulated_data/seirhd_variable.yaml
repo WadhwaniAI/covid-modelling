@@ -16,4 +16,5 @@ params:
     P_fatal: [[0, 0.5], uniform]
     E_hosp_ratio: [[0, 2], uniform]
     I_hosp_ratio: [[0, 2], uniform]
+save: FALSE
 output_file_name: simulated_data_1.csv 

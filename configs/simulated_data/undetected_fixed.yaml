@@ -19,4 +19,5 @@ params:
     I_D_hosp_ratio: 2
     I_U_hosp_ratio: 3
     psi: 1
+save: FALSE
 output_file_name: simulated_data_1.csv 
