@@ -1,19 +1,21 @@
 fitting:
-    # Geographical Location
     data:
         data_source: simulated
         stratified_data: FALSE
         dataloading_params:
-            state: Maharashtra
-            district: Mumbai
-            use_dataframe: data_all
             generate: TRUE
             config_file: seirhd_fixed.yaml
-            filename: ../../data/data/simulated_data/simulated_data_1.csv
+            simulate_spike: FALSE
+            simulate_spike_params:
+                comp: recovered
+                start_date: 2020-07-18
+                end_date: 2020-07-31
+                frac_to_report: 0.2
         smooth_jump: FALSE
-        smooth_jump_params: None
+        smooth_jump_params: 
+            2020-07-30: [2020-07-18, recovered, active, FALSE, weighted-mag]
         rolling_average: FALSE
-        rolling_average_params: None
+        rolling_average_params: null
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
