@@ -24,7 +24,6 @@ sftp-configjson
 *DS_Store
 
 # Folders (on Home dir and otherwise)
-notebooks/seir/\[TRY\]\ reichlab-submission.ipynb
 data/data/shapefiles/
 *plots/
 **plots/

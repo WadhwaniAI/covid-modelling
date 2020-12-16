@@ -3,6 +3,7 @@ fitting:
         data_source: athena
         stratified_data: TRUE
         dataloading_params:
+            reload_data: FALSE
             state: Maharashtra
             district: Mumbai
         smooth_jump: TRUE
@@ -25,7 +26,7 @@ fitting:
             center: TRUE
             window_size: 7
             win_type: null
-            split_after_rolling: TRUE # NOT IMPLEMENTED
+            split_after_rolling: TRUE
     #Choose Model and Ranges
     model: SEIRHD_Severity
     variable_param_ranges:  
@@ -48,13 +49,14 @@ fitting:
     fitting_method_params:
         num_evals: 1000
         algo: tpe
+        seed: 42
     #Choose Fitting Periods and num evaluations
     split:
-        start_date: null # NOT IMPLEMENTED
-        end_date: null # NOT IMPLEMENTED
+        start_date: null
+        end_date: null
         train_period: 21
         val_period: 7
-        test_period: 0 # NOT IMPLEMENTED
+        test_period: 0
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased, asymptomatic, symptomatic, critical]
@@ -85,6 +87,7 @@ uncertainty:
             parallelise: FALSE
         variable_param_ranges:
             beta: [[0, 10], 101]
+        construct_percentiles_day_wise: TRUE
         date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:

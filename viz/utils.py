@@ -34,6 +34,34 @@ def axis_formatter(ax, legend_elements=None, custom_legend=False, log_scale=Fals
         ax.legend()
 
 
+def add_inset_subplot_to_axes(ax, rect):
+    """General purpose helper function for adding an inset subplot within a particular subplot
+
+    Args:
+        ax (mpl.Axes): The axes in which the inset plot is to be added
+        rect (list): List providing details of the size of the subplot. of the form [x, y, w, h], 
+        where x, y is the bottom left coordinate of the rectangle, and w and h are the width and 
+        height of the rectangle respectively.
+
+    Returns:
+        mpl.Axes: A mpl Axes variable corresponding to the inset subplot.
+    """
+    fig = plt.gcf()
+    box = ax.get_position() 
+    inax_position = ax.transAxes.transform(rect[0:2])
+    transFigure = fig.transFigure.inverted()
+    infig_position = transFigure.transform(inax_position)
+    width = box.width * rect[2]
+    height = box.height * rect[3]
+    subax = fig.add_axes([infig_position[0], infig_position[1], 
+                          width, height])
+    x_labelsize = subax.get_xticklabels()[0].get_size() * (rect[2]**0.5)
+    y_labelsize = subax.get_yticklabels()[0].get_size() * (rect[3]**0.5)
+    subax.xaxis.set_tick_params(labelsize=x_labelsize)
+    subax.yaxis.set_tick_params(labelsize=y_labelsize)
+    return subax
+
+
 def show_figure(fig):
     """Helper function for plotting figs not created from pyplot and loaded from pickle file.
     Create a dummy figure and uses its manager to display "fig"

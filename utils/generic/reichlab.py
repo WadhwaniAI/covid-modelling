@@ -1,10 +1,9 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime, date, timedelta
-from glob import glob
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import os
+from pandas.core import groupby
+from pandas.core.algorithms import quantile
+from pytz import timezone
 import copy
 import re
 
@@ -17,14 +16,30 @@ Comparing reichlab models with gt, processing and formatting our (Wadhwani AI) s
 comparing that with gt as well
 """
 
-def get_list_of_models(date_of_submission, comp, reichlab_path='..', read_from_github=False, 
+
+def get_mapping(which='location_name_to_code', reichlab_path='../../../covid19-forecast-hub', read_from_github=False):
+    if read_from_github:
+        reichlab_path = 'https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master'
+    df = pd.read_csv(f'{reichlab_path}/data-locations/locations.csv')
+    df.dropna(how='any', axis=0, inplace=True)
+    if which == 'location_name_to_code':
+        mapping_dict = dict(zip(df['location_name'], df['location']))
+    elif which == 'location_name_to_abbv':
+        mapping_dict = dict(zip(df['location_name'], df['abbreviation']))
+    else:
+        mapping_dict = {}
+    return mapping_dict
+
+
+def get_list_of_models(date_of_submission, comp, reichlab_path='../../../covid19-forecast-hub', read_from_github=False, 
                        location_id_filter=78, num_submissions_filter=50):
     """Given an input of submission date, comp, gets list of all models that submitted.
 
     Args:
         date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
         comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
-        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+        Defaults to '../../../covid19-forecast-hub'.
         read_from_github (bool, optional): If true, reads files directly from github 
         instead of cloned repo. Defaults to False.
         location_id_filter (int, optional): Only considers locations with location code <= this input. 
@@ -54,7 +69,8 @@ def get_list_of_models(date_of_submission, comp, reichlab_path='..', read_from_g
     return list_of_models
 
 
-def process_single_submission(model, date_of_submission, comp, df_true, reichlab_path='..', read_from_github=False):
+def process_single_submission(model, date_of_submission, comp, df_true, reichlab_path='../../../covid19-forecast-hub', 
+                              read_from_github=False):
     """Processes the CSV file of a single submission (one model, one instance of time)
 
     Args:
@@ -62,7 +78,8 @@ def process_single_submission(model, date_of_submission, comp, df_true, reichlab
         date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
         comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
         df_true (pd.DataFrame): The ground truth dataframe (Used for processing cum_cases submissions)
-        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+        Defaults to '../../../covid19-forecast-hub'.
         read_from_github (bool, optional): If true, reads files directly from github 
         instead of cloned repo. Defaults to False.
 
@@ -103,7 +120,7 @@ def process_single_submission(model, date_of_submission, comp, df_true, reichlab
     if comp == 'cum_case':
         grouped = df.groupby(['location', 'type', 'quantile'], dropna=False)
         df_cumsum = pd.DataFrame(columns=df.columns)
-        for name, group in grouped:
+        for _, group in grouped:
             group['value'] = group['value'].cumsum()
             df_cumsum = pd.concat([df_cumsum, group], ignore_index=True)
         
@@ -130,14 +147,16 @@ def process_single_submission(model, date_of_submission, comp, df_true, reichlab
     return df
 
 
-def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_path='..', read_from_github=False):
+def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_path='../../../covid19-forecast-hub', 
+                            read_from_github=False):
     """Process submissions for all models given as input and concatenate them
 
     Args:
         list_of_models (list): List of all models to process submission for. Typically output of get_list_of_models
         date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
         comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
-        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+        Defaults to '../../../covid19-forecast-hub'.
         read_from_github (bool, optional): If true, reads files directly from github 
         instead of cloned repo. Defaults to False.
 
@@ -162,7 +181,8 @@ def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=F
     Args:
         comp (str): Which compartment (Can be 'inc_case', 'cum_case', 'inc_death', or 'cum_death')
         df_all_submissions (pd.DataFrame): The dataframe of all model predictions processed. 
-        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). Defaults to '..'.
+        reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+        Defaults to '../../../covid19-forecast-hub'.
         read_from_github (bool, optional): If true, reads files directly from github 
         instead of cloned repo. Defaults to False.
 
@@ -201,10 +221,7 @@ def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=F
     df_gt_loss_wk['date'] = df_gt_loss_wk['date'].apply(
         lambda x: x - np.timedelta64(1, 'D'))
 
-    loc_name_to_key_dict = dict(zip(df_gt_loss['location_name'], 
-                                    df_gt_loss['location']))
-
-    return df_gt, df_gt_loss, df_gt_loss_wk, loc_name_to_key_dict
+    return df_gt, df_gt_loss, df_gt_loss_wk
 
 
 def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
@@ -223,28 +240,74 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
     df_comb = df_comb.rename({'value_x': 'forecast_value', 
                               'value_y': 'true_value'}, axis=1)
 
-    df_comb = df_comb[df_comb['type'] == 'point']
-    df_comb['p_error'] = np.abs(df_comb['forecast_value'] - df_comb['true_value'])*100/(df_comb['true_value']+1e-8)
-    num_cols = ['p_error', 'forecast_value']
+    df_comb['mape'] = np.abs(df_comb['forecast_value'] - df_comb['true_value'])*100/(df_comb['true_value']+1e-8)
+    num_cols = ['mape', 'forecast_value']
     df_comb.loc[:, num_cols] = df_comb.loc[:, num_cols].apply(pd.to_numeric)
-    df_mape = df_comb.groupby(['model', 'location', 
+    df_temp = df_comb[df_comb['type'] == 'point']
+    df_mape = df_temp.groupby(['model', 'location',
                                'location_name']).mean().reset_index()
     
     df_mape = df_mape.pivot(index='model', columns='location_name', 
-                            values='p_error')
+                            values='mape')
 
     df_rank = df_mape.rank()
 
     return df_comb, df_mape, df_rank
 
 
-def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key_dict, which_fit='m2', 
-                           use_as_point_forecast='ensemble_mean', skip_percentiles=False):
+def _inc_sum_matches_cum_check(df_loc_submission, which_comp):
+    loc = df_loc_submission.iloc[0, :]['location']
+    buggy_forecasts = []
+    if which_comp is None:
+        comps_to_check_for = ['death', 'case']
+    else:
+        comps_to_check_for = [which_comp]
+    for comp in comps_to_check_for:
+        df = df_loc_submission.loc[[
+            comp in x for x in df_loc_submission['target']], :]
+        grouped = df.groupby(['type', 'quantile'])
+        for (type, quantile), group in grouped:
+            cum_diff = group.loc[['cum' in x for x in group['target']], 'value'].diff()
+            inc = group.loc[['inc' in x for x in group['target']], 'value']
+            cum_diff = cum_diff.to_numpy()[1:]
+            inc = inc.to_numpy()[1:]
+            if int(np.sum(np.logical_not((cum_diff - inc) < 1e-8))) != 0:
+                print('Sum of inc != cum for {}, {}, {}, {}'.format(
+                    loc, comp, type, quantile))
+                print(cum_diff, inc)
+                buggy_forecasts.append((loc, comp, type, quantile))
+    
+    return len(buggy_forecasts) == 0
+
+
+def _qtiles_nondec_check(df_loc_submission):
+    grouped = df_loc_submission[df_loc_submission['type']
+                                == 'quantile'].groupby('target')
+    nondec_check = [sum(np.diff(group['value']) < 0) > 0 for _, group in grouped]
+    nondec_check = np.array(nondec_check)
+    return sum(nondec_check) > 0
+
+
+def _qtiles_nondec_correct(df_loc_submission):
+    grouped = df_loc_submission[df_loc_submission['type']
+                                == 'quantile'].groupby('target')
+    for target, group in grouped:
+        diff_less_than_0 = np.diff(group['value']) < 0
+        if sum(diff_less_than_0) > 0:
+            indices = np.where(diff_less_than_0 == True)[0]
+            for idx in indices:
+                df_idx1, df_idx2 = (group.iloc[idx, :].name, 
+                                    group.iloc[idx+1, :].name)
+                df_loc_submission.loc[df_idx2, 'value'] = df_loc_submission.loc[df_idx1, 'value']
+
+    return df_loc_submission
+
+def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mode='analysis', which_fit='m2',
+                           use_as_point_forecast='ensemble_mean', which_comp=None, skip_percentiles=False):
     """Function for formatting our submission in the reichlab format 
 
     Args:
         predictions_dict (dict): Predictions dict of all locations
-        df_all_submissions (pd.DataFrame): dataframe of all processed model predictions
         loc_name_to_key_dict (dict): Dict mapping location names to location key
         which_fit (str, optional): Which fit to use for forecasting ('m1'/'m2'). Defaults to 'm2'.
         use_as_point_forecast (str, optional): Which forecast to use as point forecast ('best'/'ensemble_mean'). 
@@ -254,12 +317,14 @@ def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key
     Returns:
         pd.DataFrame: Processed Wadhwani AI submission
     """
-    df_wiai_submission = pd.DataFrame(columns=df_all_submissions.columns)
-    target_end_dates = pd.unique(df_all_submissions['target_end_date'])
+    end_date = list(predictions_dict.values())[0]['m2']['run_params']['split']['end_date']
+    columns = ['forecast_date', 'target', 'target_end_date', 'location', 'type',
+               'quantile', 'value', 'model']
+    df_wiai_submission = pd.DataFrame(columns=columns)
 
     # Loop across all locations
     for loc in predictions_dict.keys():
-        df_loc_submission = pd.DataFrame(columns=df_all_submissions.columns)
+        df_loc_submission = pd.DataFrame(columns=columns)
 
         # Loop across all percentiles
         if not which_fit in predictions_dict[loc].keys():
@@ -276,6 +341,11 @@ def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key
             # Loop across cumulative and deceased
             for mode in ['cum', 'inc']:
                 df_forecast = copy.deepcopy(predictions_dict[loc][which_fit]['forecasts'][percentile])
+                for comp in ['deceased', 'total']:
+                    dec_indices = np.where(np.diff(df_forecast[comp]) < 0)[0]
+                    if len(dec_indices) > 0:
+                        for idx in dec_indices:
+                            df_forecast.loc[idx+1, comp] = df_forecast.loc[idx, comp]
 
                 # Take diff for the forecasts (by default forecasts are cumulative)
                 if mode == 'inc':
@@ -284,11 +354,24 @@ def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key
                     df_forecast.loc[:, num_cols] = df_forecast.loc[:, num_cols].diff()
                     df_forecast.dropna(axis=0, how='any', inplace=True)
 
+                # Truncate forecasts df to only beyond the training date
+                df_forecast = df_forecast[df_forecast['date'].dt.date > end_date]
                 # Aggregate the forecasts by a week (def of week : Sun-Sat)
-                df_forecast = df_forecast.resample(
-                    'W-Sat', label='right', origin='start', on='date').max()
+                if mode == 'cum':
+                    df_forecast = df_forecast.resample(
+                        'W-Sat', label='right', origin='start', on='date').max()
+                if mode == 'inc':
+                    df_forecast = df_forecast.resample(
+                        'W-Sat', label='right', origin='start', on='date').sum()
+                df_forecast['date'] = df_forecast.index
+                if formatting_mode == 'submission':
+                    now = datetime.now(timezone('US/Eastern'))
+                    df_forecast = df_forecast[df_forecast['date'].dt.date > now.date()]
+                    if not ((now.strftime("%A") == 'Sunday') or (now.strftime("%A") == 'Monday')):
+                        df_forecast = df_forecast.iloc[1:, :]
+                else:
+                    now = datetime.now()
                 # Only keep those forecasts that correspond to the forecasts others submitted
-                df_forecast = df_forecast[df_forecast.index.isin(target_end_dates)]
                 df_forecast.drop(['date'], axis=1, inplace=True, errors='ignore')
                 df_forecast.reset_index(inplace=True)
 
@@ -306,19 +389,38 @@ def format_wiai_submission(predictions_dict, df_all_submissions, loc_name_to_key
                                 'total': 'value'}, axis=1, inplace=True)
 
                 # Create the type quantile  columns for all forecasts
-                df_subm = pd.concat([df_subm_d, df_subm_t], ignore_index=True)
+                if which_comp is not None:
+                    if which_comp == 'death':
+                        df_subm = df_subm_d
+                    elif which_comp == 'case':
+                        df_subm = df_subm_d
+                    else:
+                        raise ValueError('Incorrect option of which_comp given. ' + \
+                            'which_comp can be either death/case')
+                else:
+                    df_subm = pd.concat([df_subm_d, df_subm_t], ignore_index=True)
                 if isinstance(percentile, str):
                     df_subm['type'] = 'point'
                     df_subm['quantile'] = np.nan
                 else:
                     df_subm['type'] = 'quantile'
                     df_subm['quantile'] = percentile/100
-                df_subm['location'] = loc_name_to_key_dict[loc]
+                if formatting_mode == 'submission':
+                    df_subm['location'] = loc_name_to_key_dict[loc]
+                else:
+                    df_subm['location'] = int(loc_name_to_key_dict[loc])
                 df_subm['model'] = 'Wadhwani_AI'
-                df_subm['forecast_date'] = datetime.combine(date.today(), 
+                df_subm['forecast_date'] = datetime.combine(now.date(),
                                                             datetime.min.time())
                 df_loc_submission = pd.concat([df_loc_submission, df_subm], 
-                                            ignore_index=True)
+                                              ignore_index=True)
+        if formatting_mode == 'submission':
+            # _inc_sum_matches_cum_check(df_loc_submission, which_comp)
+            if not _inc_sum_matches_cum_check(df_loc_submission, which_comp):
+                raise AssertionError('Sum of inc != cum for some forecasts')
+            while(_qtiles_nondec_check(df_loc_submission)):
+                df_loc_submission = _qtiles_nondec_correct(df_loc_submission)
+                
         df_wiai_submission = pd.concat([df_wiai_submission, df_loc_submission],
                                         ignore_index=True)
         print(f'{loc} done')
@@ -342,6 +444,10 @@ def combine_wiai_subm_with_all(df_all_submissions, df_wiai_submission, comp):
 
     df_wiai_submission = df_wiai_submission[df_wiai_submission['target'].apply(
         lambda x: comp.replace('_', ' ') in x)]
+
+    target_end_dates = pd.unique(df_all_submissions['target_end_date'])
+    df_wiai_submission = df_wiai_submission[df_wiai_submission['target_end_date'].isin(
+        target_end_dates)]
 
     df_all =  pd.concat([df_all_submissions, df_wiai_submission], 
                         ignore_index=True)

@@ -4,6 +4,7 @@ fitting:
         data_source: simulated
         stratified_data: FALSE
         dataloading_params:
+            reload_data: FALSE
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
@@ -46,6 +47,7 @@ fitting:
     fitting_method_params:
         num_evals: 100
         algo: tpe
+        seed: 42
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
@@ -79,6 +81,7 @@ uncertainty:
             parallelise: FALSE
         variable_param_ranges:
             beta: [[0, 10], 101]
+        construct_percentiles_day_wise: TRUE
         date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:

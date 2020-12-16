@@ -4,15 +4,10 @@ fitting:
         data_source: covid19india
         stratified_data: FALSE
         dataloading_params:
+            reload_data: FALSE
             state: Maharashtra
             district: Mumbai
-            # COVID19India:
             use_dataframe: data_all
-            # Athena:
-            # tables: [bed_summaries, case_summaries, testing_summary]
-            # schema: city_data_mumbai
-            # staging_dir: mumbai
-            # label: mumbai
         smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
@@ -46,6 +41,7 @@ fitting:
     fitting_method_params:
         num_evals: 1000
         algo: tpe
+        seed: 42
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
@@ -79,6 +75,7 @@ uncertainty:
             parallelise: FALSE
         variable_param_ranges:
             beta: [[0, 10], 101]
+        construct_percentiles_day_wise: TRUE
         date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:
