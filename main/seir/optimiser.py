@@ -308,11 +308,11 @@ class Optimiser():
         mcmc_fit = MCMC(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
                  algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,loss_weights)
         mcmc_fit.run()
-        sig = mcmc_fit.timestamp.strftime("%d-%b-%Y (%H:%M:%S)")
-        exp_name = 'uncer'
-        out_dir = join('plots', '{}_{}'.format(sig, exp_name))
-        os.makedirs(out_dir, exist_ok=True)
-        plot_chains(mcmc_fit, out_dir)
+        # sig = mcmc_fit.timestamp.strftime("%d-%b-%Y (%H:%M:%S)")
+        # exp_name = 'uncer'
+        # out_dir = join('plots', '{}_{}'.format(sig, exp_name))
+        # os.makedirs(out_dir, exist_ok=True)
+        # plot_chains(mcmc_fit, out_dir)
         metric = {"DIC":mcmc_fit.DIC,"GR-ratio":mcmc_fit.R_hat}
         best,tri = mcmc_fit._get_trials()
         return best,tri,metric

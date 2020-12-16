@@ -27,8 +27,8 @@ fitting:
     model: SEIRHD
     variable_param_ranges:
         lockdown_R0: [[0.7, 1.2], uniform]
-        T_inc: [[3, 5], uniform]
-        T_inf: [[3, 5], uniform]
+        T_inc: [[4, 5], uniform]
+        T_inf: [[3, 4], uniform]
         T_recov: [[1e-10, 40], uniform]
         T_recov_fatal: [[1e-10, 40], uniform]
         P_fatal: [[1e-10, 0.2], uniform]
@@ -57,7 +57,7 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-09-26
+        end_date: 2020-10-26
         train_period: 21
         val_period: 7
         test_period: 0
@@ -89,7 +89,7 @@ uncertainty:
         variable_param_ranges:
             beta: [[0, 10], 101]
         construct_percentiles_day_wise: TRUE
-        date_of_sorting_trials: 2020-09-26
+        date_of_sorting_trials: 2020-10-26
         sort_trials_by_column: total
         loss:
             loss_method: mape

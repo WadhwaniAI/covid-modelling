@@ -369,7 +369,7 @@ class MCMC(object):
             burn_in = int(len(run) / 2)
             combined_acc += run[0][burn_in:][::self.stride]
             combined_LIK += run[2][burn_in:][::self.stride]
-        n_samples = 1500
+        n_samples = 2000
         sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
         #Total day is 1 less than training_period
         sample_indices = [int(i) for i in sample_indices]
@@ -400,11 +400,11 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        # partial_metropolis = partial(self._metropolis, iters=self.iters)
-        # self.chains = Parallel(n_jobs=self.n_chains)(
-        #     delayed(partial_metropolis)() for _ in range(self.n_chains))
-        self.chains = []
-        for i, run in enumerate(range(self.n_chains)):
-           self.chains.append(self._metropolis(self.iters))
+        partial_metropolis = partial(self._metropolis, iters=self.iters)
+        self.chains = Parallel(n_jobs=self.n_chains)(
+            delayed(partial_metropolis)() for _ in range(self.n_chains))
+        # self.chains = []
+        # for i, run in enumerate(range(self.n_chains)):
+        #    self.chains.append(self._metropolis(self.iters))
         self._check_convergence()
         return self._get_trials()

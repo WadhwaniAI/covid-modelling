@@ -168,6 +168,60 @@ def plot_fit_multiple_preds(predictions_dict, which_fit='m1'):
     plt.tight_layout()
     return fig
 
+def plot_comp_density_plots(predictions_dict,fig,axs):
+    params_dict_mcmc = {}
+    params_dict_bo = {}
+    params = list(predictions_dict['m0']['BO']['m1']['best_params'].keys())
+    loss_arr = []
+    for  param in params:
+        params_dict_bo[param] = []
+        params_dict_mcmc[param] = []
+    for run_number,run_dict in predictions_dict.items():
+        params_array_mcmc, loss_mcmc = _order_trials_by_loss(run_dict['MCMC']['m1'])
+        params_array_bo, loss_bo = _order_trials_by_loss(run_dict['BO']['m1'])
+        loss_arr.extend(loss_bo)
+        for param_set in params_array_mcmc:
+            for param in params:
+                params_dict_mcmc[param].append(param_set[param])
+        for param_set in params_array_bo:
+            for param in params:
+                params_dict_bo[param].append(param_set[param])
+    
+    weights = np.exp(-1*np.array(loss_arr))
+    W =  (len(weights)*weights) / np.sum(weights)
+    params_dict_bo['W'] = W
+    for i, param in enumerate(params_dict_mcmc.keys()):
+        if (param == 'gamma'):
+            continue
+        ax = axs.flat[i]
+        sns.distplot(params_dict_mcmc[param], hist = True, kde = False,bins= 100,
+                 kde_kws = {'shade': True, 'linewidth': 3},label = ['MCMC'] ,ax=ax)
+        sns.distplot(params_dict_bo[param], hist = True, kde = False,bins= 100,
+                 kde_kws = {'shade': True, 'linewidth': 3},hist_kws={'weights':W},label = ['BayesOpt'] ,ax=ax)
+        ax.set_title(f'Denisty Plot of parameter {param}')
+        ax.set_ylabel('Density')
+        ax.legend()
+    return fig,axs
+    #     params_array_mcmc, loss_mcmc = _order_trials_by_loss(predictions_dict['MCMC']['m1'])
+    # params_dict_mcmc = {param: [param_dict[param] for param_dict in params_array_mcmc]
+    #                for param in params_array_mcmc[0].keys()}
+    # params_array_bo, loss_bo = _order_trials_by_loss(predictions_dict['BO']['m1'])
+    # params_dict_bo = {param: [param_dict[param] for param_dict in params_array_bo]
+    #                for param in params_array_bo[0].keys()}
+    # for i, param in enumerate(params_dict_mcmc.keys()):
+    #     if (param == 'gamma'):
+    #         continue
+    #     ax = axs.flat[i]
+    #     sns.distplot(params_dict_mcmc[param], hist = True, kde = False,
+    #              kde_kws = {'shade': True, 'linewidth': 3},label = 'MCMC' ,ax=ax)
+    #     sns.distplot(params_dict_bo[param], hist = True, kde = False,
+    #              kde_kws = {'shade': True, 'linewidth': 3},label = 'BO', ax=ax)
+
+    #     ax.set_title(f'Denisty Plot of parameter {param}')
+    #     ax.set_ylabel('Density')
+    #     ax.legend()
+    # return fig,axs
+    
 
 def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
                    savefig=False, filename=None, label=None):
