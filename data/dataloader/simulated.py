@@ -28,6 +28,7 @@ class SimulatedDataLoader(BaseLoader):
                 ['date', 'total', 'active', 'deceased', 'recovered']
             dict -- parameter values used to create the simulated data
         """
+        np.random.seed(config['seed'])
         if (not config['fix_params']):
             for param in config['params']:
                 if param == 'N':
