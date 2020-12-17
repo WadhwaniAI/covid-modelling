@@ -2,11 +2,12 @@ model: SEIRHD
 starting_date: 2020-07-12
 total_days: 50
 initial_values:
-    recovered: 95000
+    recovered: [[50000, 100000], uniform]
     deceased: 7500
-    active: 20000
-fix_params: False
-seed: 0
+    active: [[50000, 100000], uniform]
+fix_params: FALSE
+set_seed: FALSE
+seed: null
 params:
     N: 1.0e+7
     lockdown_R0: [[0.6, 1.2], uniform]
