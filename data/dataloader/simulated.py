@@ -28,7 +28,8 @@ class SimulatedDataLoader(BaseLoader):
                 ['date', 'total', 'active', 'deceased', 'recovered']
             dict -- parameter values used to create the simulated data
         """
-        np.random.seed(config['seed'])
+        if config['set_seed']:
+            np.random.seed(config['seed'])
         if (not config['fix_params']):
             for param in config['params']:
                 if param == 'N':
@@ -43,6 +44,13 @@ class SimulatedDataLoader(BaseLoader):
         model_params['starting_date'] = config['starting_date']
 
         initial_colums = ['active', 'recovered', 'deceased']
+        for key in initial_colums:
+            if isinstance(config['initial_values'][key], list):
+                config['initial_values'][key] = \
+                    np.random.randint(config['initial_values'][key][0][0],
+                                      config['initial_values'][key][0][1])
+        print("Initial values used to generate data:", config['initial_values'])
+
         observed_values = {col : config['initial_values'][col] for col in initial_colums}
         observed_values['total'] = sum(observed_values.values())
         observed_values['date'] =  config['starting_date']
