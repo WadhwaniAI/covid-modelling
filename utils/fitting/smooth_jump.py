@@ -92,7 +92,7 @@ def smooth_big_jump(df_district, smooth_jump_params):
         df_district, description = smooth_big_jump_helper(
             df_district, main_comp, aux_comp, date, smoothing_length=length, method=method,
             description=description, aux_var_add=aux_var_add)
-            
+
     print(sum(df_district['total'] == df_district['recovered'] \
               + df_district['deceased'] + df_district['active']), len(df_district))
 
