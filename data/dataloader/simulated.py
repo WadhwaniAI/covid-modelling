@@ -71,25 +71,27 @@ class SimulatedDataLoader(BaseLoader):
         return {"data_frame": df_result, "actual_params": actual_params} 
 
     def simulate_spike(self, df, comp, start_date, end_date, frac_to_report):
+        df_spiked = copy.deepcopy(df)
         df_diff = copy.deepcopy(df)
+        # Create incident cases dataframe
         num_cols = df_diff.select_dtypes(include='number').columns
         df_diff.loc[:, num_cols] = df_diff.loc[:, num_cols].diff()
+        # Filter the dataframe that has to be spiked
         df_to_spike = df_diff[(df_diff['date'].dt.date >= start_date)
-                              & (df_diff['date'].dt.date < end_date)]
+                              & (df_diff['date'].dt.date <= end_date)]
+        # Modifiying time frame dfs to report only fraction of cases
         spike = np.sum(df_to_spike[comp]*(1-frac_to_report))
         df_to_spike.loc[:, 'active'] += df_to_spike[comp]*(1-frac_to_report)
         df_to_spike.loc[:, comp] -= df_to_spike[comp]*(1-frac_to_report)
 
-        base_nums = df.loc[df['date'].dt.date == (start_date - timedelta(days=1)), num_cols] 
+        # Converting df_to_spike from incident to cumsum array
+        base_nums = df_spiked.loc[df_spiked['date'].dt.date == (start_date - timedelta(days=1)), num_cols] 
         df_to_spike.loc[:, num_cols] = df_to_spike.loc[:, num_cols].cumsum() 
         df_to_spike.loc[:, num_cols] += base_nums.to_numpy()
 
-        df.loc[df['date'].isin(df_to_spike['date']), :] = df_to_spike
+        df_spiked.loc[df_spiked['date'].isin(df_to_spike['date']), :] = df_to_spike
 
-        df.loc[df['date'].dt.date == end_date, ['active', comp]] = \
-            df.loc[df['date'].dt.date == (end_date - timedelta(days=1)), ['active', comp]].to_numpy()
+        df_spiked.loc[df_spiked['date'].dt.date == end_date, comp] += spike
+        df_spiked.loc[df_spiked['date'].dt.date == end_date, 'active'] -= spike
 
-        df.loc[df['date'].dt.date == end_date, comp] += spike
-        df.loc[df['date'].dt.date == end_date, 'active'] -= spike
-
-        return df
+        return df_spiked
