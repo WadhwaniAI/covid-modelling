@@ -60,6 +60,18 @@ def plot_smoothing(orig_df_district, new_df_district, location_description,
     plt.tight_layout()
     return fig
 
+
+def plot_data(df, which_compartments=['active', 'total', 'recovered', 'deceased']):
+    fig, ax = plt.subplots(figsize=(12, 12))
+    for comp in which_compartments:
+        compartment = Columns.from_name(comp)
+        ax.plot(df[compartments['date'][0].name].to_numpy(),
+                df[compartment.name].to_numpy(),
+                '-o', color=compartment.color, label='{}'.format(compartment.label))
+    axis_formatter(ax)
+    plt.tight_layout()
+    return fig
+
 def plot(x, y, title, yaxis_name=None, log=False, scatter=False, savepath=None):
     plt.title(title)
     setup_plt(yaxis_name)
