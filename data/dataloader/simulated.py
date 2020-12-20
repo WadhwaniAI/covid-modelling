@@ -80,9 +80,12 @@ class SimulatedDataLoader(BaseLoader):
         df_to_spike = df_diff[(df_diff['date'].dt.date >= start_date)
                               & (df_diff['date'].dt.date <= end_date)]
         # Modifiying time frame dfs to report only fraction of cases
-        spike = np.sum(df_to_spike[comp]*(1-frac_to_report))
-        df_to_spike.loc[:, 'active'] += df_to_spike[comp]*(1-frac_to_report)
-        df_to_spike.loc[:, comp] -= df_to_spike[comp]*(1-frac_to_report)
+        daily_frac_to_report = np.random.beta(2, 6, size=len(df_to_spike))
+        spike = np.dot(df_to_spike[comp], 1-daily_frac_to_report)
+        df_to_spike.loc[:, 'active'] = df_to_spike.loc[:, 'active'] + \
+            np.multiply(df_to_spike[comp], 1-daily_frac_to_report)
+        df_to_spike.loc[:, comp] = df_to_spike.loc[:, comp] - \
+            np.multiply(df_to_spike[comp], 1-daily_frac_to_report)
 
         # Converting df_to_spike from incident to cumsum array
         base_nums = df_spiked.loc[df_spiked['date'].dt.date == (start_date - timedelta(days=1)), num_cols] 
