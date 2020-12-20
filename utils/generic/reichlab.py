@@ -369,6 +369,7 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                     df_forecast = df_forecast[df_forecast['date'].dt.date > now.date()]
                     if not ((now.strftime("%A") == 'Sunday') or (now.strftime("%A") == 'Monday')):
                         df_forecast = df_forecast.iloc[1:, :]
+                    df_forecast = df_forecast.iloc[:-1, :]
                 else:
                     now = datetime.now()
                 # Only keep those forecasts that correspond to the forecasts others submitted
@@ -393,7 +394,7 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                     if which_comp == 'death':
                         df_subm = df_subm_d
                     elif which_comp == 'case':
-                        df_subm = df_subm_d
+                        df_subm = df_subm_t
                     else:
                         raise ValueError('Incorrect option of which_comp given. ' + \
                             'which_comp can be either death/case')
@@ -409,13 +410,12 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                     df_subm['location'] = loc_name_to_key_dict[loc]
                 else:
                     df_subm['location'] = int(loc_name_to_key_dict[loc])
-                df_subm['model'] = 'Wadhwani_AI'
+                df_subm['model'] = 'Wadhwani_AI-BayesOpt'
                 df_subm['forecast_date'] = datetime.combine(now.date(),
                                                             datetime.min.time())
                 df_loc_submission = pd.concat([df_loc_submission, df_subm], 
                                               ignore_index=True)
         if formatting_mode == 'submission':
-            # _inc_sum_matches_cum_check(df_loc_submission, which_comp)
             if not _inc_sum_matches_cum_check(df_loc_submission, which_comp):
                 raise AssertionError('Sum of inc != cum for some forecasts')
             while(_qtiles_nondec_check(df_loc_submission)):
