@@ -79,9 +79,9 @@ def create_performance_table(df_mape, df_rank):
         pd.DataFrame: The performance talble
     """
     median_mape = df_mape.loc[:, np.logical_not(
-        df_mape.loc['Wadhwani_AI', :].isna())].median(axis=1).rename('median_mape')
+        df_mape.loc['Wadhwani_AI-BayesOpt', :].isna())].median(axis=1).rename('median_mape')
     median_rank = df_rank.loc[:, np.logical_not(
-        df_rank.loc['Wadhwani_AI', :].isna())].median(axis=1).rename('median_rank')
+        df_rank.loc['Wadhwani_AI-BayesOpt', :].isna())].median(axis=1).rename('median_rank')
     merged = pd.concat([median_mape, median_rank], axis=1)
     merged.reset_index(inplace=True)
     merged['model1'] = merged['model']
