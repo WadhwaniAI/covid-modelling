@@ -42,7 +42,7 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
             date = d1 - timedelta(days=day_number)
             offset = np.random.binomial(1, (big_jump%smoothing_length)/smoothing_length)
             df_district.loc[date, smoothing_var] += ((i+1)*big_jump)//smoothing_length + offset
-            df_district.loc[date, auxillary_var] -= aux_var_weight*(((i+1)*big_jump)//smoothing_length + offset)
+            df_district.loc[date, auxillary_var] += aux_var_weight*(((i+1)*big_jump)//smoothing_length + offset)
 
     elif 'weighted' in method:
         if method == 'weighted-recov':
