@@ -1,9 +1,7 @@
 import numpy as np
-import pandas as pd
 from hyperopt import hp, tpe, fmin, Trials
 from tqdm import tqdm
 
-from collections import OrderedDict
 import itertools
 import importlib
 import os
@@ -75,6 +73,8 @@ class Optimiser():
         
         solver = model(**params_dict)
         total_days = (end_date.date() - params_dict['starting_date']).days
+        if total_days < 0:
+            raise Exception('Number of days of prediction cannot be negative.')
         df_prediction = solver.predict(total_days=total_days)
         return df_prediction
 
@@ -224,7 +224,7 @@ class Optimiser():
 
     def bayes_opt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
                   loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
-                  prior='uniform', algo=tpe, **kwargs):
+                  algo=tpe, seed=42, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -262,10 +262,12 @@ class Optimiser():
 
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
         trials = Trials()
+        rstate = np.random.RandomState(seed)
         best = fmin(partial_solve_and_compute_loss,
                     space=variable_param_ranges,
                     algo=algo_module.suggest,
                     max_evals=num_evals,
+                    rstate=rstate,
                     trials=trials)
         selected_ACC = params_from_trials(trials)
         df_train = df_train[loss_indices[0]:loss_indices[1]]

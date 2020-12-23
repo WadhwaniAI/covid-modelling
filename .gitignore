@@ -2,14 +2,17 @@
 *csv
 *pdf
 *png
+*jpg
+*eps
 *pkl
 *pyc
 *pickle
 *txt
 *json
 *sh
+*log
 
-# Configs with some number in them will not be put on git
+# Configs with some number in the filename will not be put on git
 *[0-9]*.yaml
 
 # Junk / Hidden Files
@@ -21,6 +24,7 @@ sftp-configjson
 *DS_Store
 
 # Folders (on Home dir and otherwise)
+data/data/shapefiles/
 *plots/
 **plots/
 *outputs/

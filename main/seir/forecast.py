@@ -1,24 +1,12 @@
 import os
-import json
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from adjustText import adjust_text
 
-from collections import OrderedDict, defaultdict
-import itertools
-from functools import partial
 from tqdm import tqdm
 import datetime
-from joblib import Parallel, delayed
 import copy
 
-from data.processing.whatifs import scale_up_acc_to_testing
 from models.seir import SEIRHD
-from main.seir.optimiser import Optimiser
-
-from utils.generic.enums import Columns, SEIRParams
-
 
 def get_forecast(predictions_dict: dict, forecast_days: int = 37, train_end_date=None, train_fit='m2', model=SEIRHD,
                  best_params=None, verbose=True, lockdown_removal_date=None):
@@ -244,43 +232,6 @@ def forecast_all_trials(predictions_dict, model=SEIRHD, train_fit='m2', train_en
         'params': params
     }
     return return_dict
-
-def scale_up_testing_and_forecast(predictions_dict, which_fit='m2', model=SEIRHD, scenario_on_which_df='best', 
-                                  testing_scaling_factor=1.5, time_window_to_scale=14):
-    
-    df_whatif = scale_up_acc_to_testing(predictions_dict, scenario_on_which_df=scenario_on_which_df, 
-                                        testing_scaling_factor=testing_scaling_factor,
-                                        time_window_to_scale=time_window_to_scale)
-
-    optimiser = Optimiser()
-    extra_params = optimiser.init_default_params(df_whatif, N=1e7, 
-                                                 train_period=time_window_to_scale)
-    best_params = copy.copy(predictions_dict[which_fit]['best_params'])
-    del best_params['T_inf']
-    del best_params['E_hosp_ratio']
-    del best_params['I_hosp_ratio']
-    default_params = {**extra_params, **best_params}
-
-    total_days = (df_whatif.iloc[-1, :]['date'] - default_params['starting_date']).days
-    variable_param_ranges = {
-        'T_inf': (0.01, 10),
-        'E_hosp_ratio': (0, 2),
-        'I_hosp_ratio': (0, 1)
-    }
-    variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges)
-    best, trials = optimiser.bayes_opt(df_whatif, default_params, variable_param_ranges, model=model,
-                                       total_days=total_days, method='mape', num_evals=500, 
-                                       loss_indices=[-time_window_to_scale, None], 
-                                       which_compartments=['total'])
-
-    df_unscaled_forecast = predictions_dict[which_fit]['forecasts'][scenario_on_which_df]
-
-    df_prediction = optimiser.solve(best, default_params, 
-                                    predictions_dict[which_fit]['df_train'], 
-                                    end_date=df_unscaled_forecast.iloc[-1, :]['date'], 
-                                    model=model)
-    return df_prediction
-
 
 def set_r0_multiplier(params_dict, mul):
     """[summary]

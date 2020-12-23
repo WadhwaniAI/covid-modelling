@@ -207,8 +207,8 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
     mdFile, filename = _create_md_file(predictions_dict, config, ROOT_DIR)
     _log_hyperparams(mdFile, predictions_dict, config)
 
-    if m1_dict['plots']['smoothing'] is not None:
-       _log_smoothing(mdFile, ROOT_DIR, m1_dict)
+    if 'smoothing' in m1_dict and m1_dict['plots']['smoothing'] is not None:
+        _log_smoothing(mdFile, ROOT_DIR, m1_dict)
 
     mdFile.new_header(level=1, title=f'FITS')
     _log_fits(mdFile, ROOT_DIR, m1_dict, which_fit='M1')
