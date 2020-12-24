@@ -16,7 +16,7 @@ fitting:
             2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
+            2020-06-15: [null, deceased, active, FALSE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
             center: TRUE
@@ -44,8 +44,8 @@ fitting:
         seed: 42
     #Choose Fitting Periods and num evaluations
     split:
-        start_date: null
-        end_date: 2020-08-31
+        start_date: 2020-09-22
+        end_date: null
         train_period: 21
         val_period: 7
         test_period: 0
