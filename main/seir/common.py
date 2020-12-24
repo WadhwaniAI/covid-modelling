@@ -1,5 +1,8 @@
 import copy
 import datetime
+import sys
+
+sys.path.append('../..')
 
 from main.seir.fitting import single_fitting_cycle
 from main.seir.forecast import get_forecast
