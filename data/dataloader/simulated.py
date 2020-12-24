@@ -70,7 +70,7 @@ class SimulatedDataLoader(BaseLoader):
                 f'{save_dir}params_{config["output_file_name"]}', index=False)
         return {"data_frame": df_result, "actual_params": actual_params} 
 
-    def simulate_spike(self, df, comp, start_date, end_date, frac_to_report):
+    def simulate_spike(self, df, comp, start_date, end_date):
         df_spiked = copy.deepcopy(df)
         df_diff = copy.deepcopy(df)
         # Create incident cases dataframe
@@ -80,7 +80,7 @@ class SimulatedDataLoader(BaseLoader):
         df_to_spike = df_diff[(df_diff['date'].dt.date >= start_date)
                               & (df_diff['date'].dt.date <= end_date)]
         # Modifiying time frame dfs to report only fraction of cases
-        daily_frac_to_report = np.random.beta(2, 6, size=len(df_to_spike))
+        daily_frac_to_report = np.random.beta(2, 2, size=len(df_to_spike))
         spike = np.dot(df_to_spike[comp], 1-daily_frac_to_report)
         df_to_spike.loc[:, 'active'] = df_to_spike.loc[:, 'active'] + \
             np.multiply(df_to_spike[comp], 1-daily_frac_to_report)
