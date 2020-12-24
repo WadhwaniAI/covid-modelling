@@ -197,7 +197,7 @@ class Loss_Calculator():
             err['rmsle'] = None
         return err
 
-    def create_loss_dataframe_region(self, df_train, df_val, df_prediction, train_period, 
+    def create_loss_dataframe_region(self, df_train, df_val,df_test, df_prediction, train_period, 
                                      which_compartments=['active', 'total']):
         """Helper function for calculating loss in training pipeline
 
@@ -213,11 +213,11 @@ class Loss_Calculator():
         Returns:
             pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
         """
-        df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
-
+        df_loss = pd.DataFrame(columns=['train', 'val','test'], index=which_compartments)
         df_temp = df_prediction.loc[df_prediction['date'].isin(
             df_train['date']), ['date']+which_compartments]
         df_temp.reset_index(inplace=True, drop=True)
+        
         df_train = df_train.loc[df_train['date'].isin(df_temp['date']), :]
         df_temp = df_temp.sort_values('date')
         df_train = df_train.sort_values('date')
@@ -225,7 +225,6 @@ class Loss_Calculator():
         for compartment in df_loss.index:
             df_loss.loc[compartment, 'train'] = self._calc_mape(
                 np.array(df_temp[compartment]), np.array(df_train[compartment]))
-
         if isinstance(df_val, pd.DataFrame):
             df_temp = df_prediction.loc[df_prediction['date'].isin(
                 df_val['date']), ['date']+which_compartments]
@@ -236,8 +235,18 @@ class Loss_Calculator():
                     np.array(df_temp[compartment]), np.array(df_val[compartment]))
         else:
             del df_loss['val']
+        if isinstance(df_test, pd.DataFrame):
+            df_temp = df_prediction.loc[df_prediction['date'].isin(
+                df_test['date']), ['date']+which_compartments]
+            df_temp.reset_index(inplace=True, drop=True)
+            df_test.reset_index(inplace=True, drop=True)
+            for compartment in df_loss.index:
+                df_loss.loc[compartment, 'test'] = self._calc_mape(
+                    np.array(df_temp[compartment]), np.array(df_test[compartment]))
+        else:
+            del df_loss['test']
         return df_loss
-    def create_loss_dataframe_region_perc(self, df_train, df_val, df_prediction, train_period, perc,
+    def create_loss_dataframe_region_perc(self, df_train, df_val,df_test, df_prediction, train_period, perc,
                     which_compartments=['active', 'total']):
         """Helper function for calculating loss in training pipeline
 
@@ -272,10 +281,20 @@ class Loss_Calculator():
             df_temp.reset_index(inplace=True, drop=True)
             df_val.reset_index(inplace=True, drop=True)
             for compartment in df_loss.index:
-                df_loss.loc[compartment, 'val'] = self._calc_mape(
-                    np.array(df_temp[compartment]), np.array(df_val[compartment]))
+                df_loss.loc[compartment, 'val'] = self._calc_mape_perc(
+                    np.array(df_temp[compartment]), np.array(df_val[compartment]),perc)
         else:
             del df_loss['val']
+        if isinstance(df_test, pd.DataFrame):
+            df_temp = df_prediction.loc[df_prediction['date'].isin(
+                df_test['date']), ['date']+which_compartments]
+            df_temp.reset_index(inplace=True, drop=True)
+            df_test.reset_index(inplace=True, drop=True)
+            for compartment in df_loss.index:
+                df_loss.loc[compartment, 'test'] = self._calc_mape_perc(
+                    np.array(df_temp[compartment]), np.array(df_test[compartment]),perc)
+        else:
+            del df_loss['test']
         return df_loss
 
     def backtesting_loss_week_by_week(self, df_prediction, df_true, method='mape', round_precision=2):

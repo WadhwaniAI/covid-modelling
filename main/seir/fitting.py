@@ -62,24 +62,24 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
      
     rap = rolling_average_params
     if rolling_average:
-        df_train, df_val, _ = train_val_test_split(
+        df_train, df_val, df_test = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
             test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
             window_size=rap['window_size'], center=rap['center'], 
             win_type=rap['win_type'], min_periods=rap['min_periods'])
     else:
-        df_train, df_val, _ = train_val_test_split(
+        df_train, df_val, df_test = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
             test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
             window_size=1)
 
-    df_train_nora, df_val_nora, _ = train_val_test_split(
+    df_train_nora, df_val_nora, df_test_nora = train_val_test_split(
         df_district, train_period=split['train_period'], val_period=split['val_period'],
         test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
         window_size=1)
 
     observed_dataframes = {}
-    for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
+    for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora','df_test','df_test_nora']:
         observed_dataframes[name] = eval(name)
     if 'ideal_params' in data_dict:
         return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing, "ideal_params" : data_dict['ideal_params']}
@@ -108,7 +108,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
         dict -- Dict of all predictions
     """
 
-    df_district, df_train, df_val, df_train_nora, df_val_nora = [
+    df_district, df_train, df_val, df_train_nora, df_val_nora,df_test,df_test_nora = [
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
 
     # Initialise Optimiser
@@ -130,7 +130,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
                                     model=model)
     
     lc = Loss_Calculator()
-    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'], 
+    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora,df_test_nora, df_prediction, split['train_period'], 
                                               which_compartments=loss['loss_compartments'])
     
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
@@ -142,7 +142,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
     for name in ['best_params', 'default_params', 'variable_param_ranges', 'optimiser', 
-                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'trials', 'data_last_date']:
+                 'df_prediction', 'df_district', 'df_train', 'df_val','df_test', 'df_loss', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
     results_dict['metric'] = metric
     return results_dict

@@ -50,6 +50,7 @@ class MCUncertainty(Uncertainty):
         # Finding Best Beta
         if(fitting_type == 'mcmc'):
             self.beta = 0
+            self.beta_loss = 0
         else:
             self.beta, self.dict_of_trials = self.find_beta(
                 fitting_method, fitting_method_params, variable_param_ranges)
@@ -126,8 +127,9 @@ class MCUncertainty(Uncertainty):
         # while df_district has no rolling average
         df_val = self.predictions_dict['m1']['df_district'].set_index('date') \
             .loc[self.predictions_dict['m1']['df_val']['date'],:]
+        df_test = self.predictions_dict['m1']['df_district'].set_index('date') \
+            .loc[self.predictions_dict['m1']['df_test']['date'],:]
         beta_loss = np.exp(-beta*losses)
-
         predictions = self.predictions_dict['m1']['trials_processed']['predictions']
         loss_cols = self.loss_compartments
         allcols = ['total', 'active', 'recovered', 'deceased', 'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator',
@@ -143,13 +145,13 @@ class MCUncertainty(Uncertainty):
         weighted_pred_df = pd.DataFrame(data=weighted_pred, columns=allcols)
         weighted_pred_df['date'] = predictions[0]['date']
         weighted_pred_df.set_index('date', inplace=True)
-        weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
+        weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_test.index), :]
         lc = Loss_Calculator()
         if return_dict:
             return lc.calc_loss_dict(weighted_pred_df_loss, df_val, method=self.loss_method)
         if return_ensemble_mean_forecast:
             weighted_pred_df.reset_index(inplace=True)
-            return {'df_prediction':weighted_pred_df,'df_loss':lc.calc_loss_dict(weighted_pred_df_loss, df_val, method = self.loss_method)}
+            return {'df_prediction':weighted_pred_df,'df_loss':lc.calc_loss_dict(weighted_pred_df_loss, df_test, method = self.loss_method)}
         return lc.calc_loss(weighted_pred_df_loss, df_val, method=self.loss_method,
                             which_compartments=loss_cols, loss_weights=self.loss_weights)
 
@@ -252,6 +254,10 @@ class MCUncertainty(Uncertainty):
         df_district = self.predictions_dict[self.which_fit]['df_district']
         df_train_nora = df_district.set_index('date').loc[
             self.predictions_dict[self.which_fit]['df_train']['date'], :].reset_index()
+        df_val_nora = df_district.set_index('date').loc[
+            self.predictions_dict[self.which_fit]['df_val']['date'], :].reset_index()
+        df_test_nora = df_district.set_index('date').loc[
+            self.predictions_dict[self.which_fit]['df_test']['date'], :].reset_index()
         for ptile in df_ptile_idxs.columns:
             deciles_forecast[ptile] = {}
             if self.construct_percentiles_day_wise:
@@ -266,10 +272,10 @@ class MCUncertainty(Uncertainty):
             if not self.construct_percentiles_day_wise:
                 deciles_forecast[ptile]['params'] = params[df_ptile_idxs.iloc[0][ptile]]
             deciles_forecast[ptile]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
-                df_train_nora, None, df_prediction, train_period=self.fitting_config['split']['val_period'],
+                df_train_nora, df_val_nora,df_test_nora, df_prediction, train_period=self.fitting_config['split']['val_period'],
                 which_compartments=['total'])
             deciles_forecast[ptile]['df_loss_perc'] = Loss_Calculator().create_loss_dataframe_region_perc(
-                df_train_nora, None, df_prediction, train_period=7,perc=ptile/100,
+                df_train_nora, df_val_nora ,df_test_nora, df_prediction, train_period=7,perc=ptile/100,
                 which_compartments=['total'])
         return deciles_forecast
 
