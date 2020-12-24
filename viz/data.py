@@ -1,6 +1,4 @@
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import pandas as pd
 
 from utils.generic.enums.columns import *
 from viz.utils import setup_plt, axis_formatter
