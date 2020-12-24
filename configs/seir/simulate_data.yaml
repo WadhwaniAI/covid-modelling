@@ -4,14 +4,13 @@ fitting:
         stratified_data: FALSE
         dataloading_params:
             generate: TRUE
-            config_file: seirhd_fixed.yaml
-            simulate_spike: FALSE
+            config_file: seirhd_variable.yaml
+            simulate_spike: TRUE
             simulate_spike_params:
                 comp: recovered
                 start_date: 2020-07-18
                 end_date: 2020-07-31
-                frac_to_report: 0.2
-        smooth_jump: FALSE
+        smooth_jump: TRUE
         smooth_jump_params: 
             2020-07-30: [2020-07-18, recovered, active, FALSE, weighted-mag]
         rolling_average: FALSE
