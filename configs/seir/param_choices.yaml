@@ -5,8 +5,8 @@ fitting:
         stratified_data: FALSE
         dataloading_params:
             reload_data: FALSE
-            region: Maharashtra
-            sub_region: Mumbai
+            state: Maharashtra
+            district: Mumbai
             use_dataframe: data_all
         smooth_jump: FALSE
         smooth_jump_params:
