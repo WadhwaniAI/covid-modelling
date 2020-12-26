@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import os
 import pickle
@@ -10,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from joblib import Parallel, delayed
 from tqdm import tqdm
+import multiprocessing
 
 sys.path.append('../../')
 
@@ -27,7 +29,42 @@ regions = [
 ]
 
 
+def create_output(predictions_dict, output_folder, tag):
+    """Custom output generation function"""
+    directory = f'{output_folder}/{tag}'
+    if not os.path.exists(directory):
+        os.mkdir(directory)
+    d = {}
+    for outer in ['m1', 'm2']:
+        for inner in ['variable_param_ranges', 'best_params', 'beta_loss']:
+            if inner in predictions_dict[outer]:
+                with open(f'{directory}/{outer}_{inner}.json', 'w') as f:
+                    json.dump(predictions_dict[outer][inner], f, indent=4)
+        for inner in ['df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'df_district_unsmoothed']:
+            if inner in predictions_dict[outer] and predictions_dict[outer][inner] is not None:
+                predictions_dict[outer][inner].to_csv(f'{directory}/{outer}_{inner}.csv')
+        for inner in ['trials', 'run_params', 'optimiser', 'plots', 'smoothing_description', 'default_params', ]:
+            with open(f'{directory}/{outer}_{inner}.pkl', 'wb') as f:
+                pickle.dump(predictions_dict[outer][inner], f)
+        if 'ensemble_mean' in predictions_dict[outer]['forecasts']:
+            predictions_dict[outer]['forecasts']['ensemble_mean'].to_csv(
+                f'{directory}/{outer}_ensemble_mean_forecast.csv')
+        predictions_dict[outer]['trials_processed']['predictions'][0].to_csv(
+            f'{directory}/{outer}_trials_processed_predictions.csv')
+        np.save(f'{directory}/{outer}_trials_processed_params.npy',
+                predictions_dict[outer]['trials_processed']['params'])
+        np.save(f'{directory}/{outer}_trials_processed_losses.npy',
+                predictions_dict[outer]['trials_processed']['losses'])
+        d[f'{outer}_data_last_date'] = predictions_dict[outer]['data_last_date']
+
+    d['fitting_date'] = predictions_dict['fitting_date']
+    np.save(f'{directory}/m2_beta.npy', predictions_dict['m2']['beta'])
+    with open(f'{directory}/other.json', 'w') as f:
+        json.dump(d, f, indent=4)
+
+
 def get_experiment(which, regionwise=True):
+    """Get experiment configuration"""
     logging.info('Getting experiment choices')
     configs = {}
     if which == 'train_lengths':
@@ -42,6 +79,9 @@ def get_experiment(which, regionwise=True):
                           }
                 configs[region['label'] + f'-{tl[0]}-{tl[1]}'] = config
 
+    elif which == 'num_trials':
+        pass
+
     if regionwise:
         configs_regionwise = {}
         for region in regions:
@@ -52,6 +92,7 @@ def get_experiment(which, regionwise=True):
 
 
 def run(config):
+    """Run single experiment for given config"""
     predictions_dict = {}
     fitting(predictions_dict, config)
     predictions_dict['m1']['forecasts'] = {}
@@ -63,6 +104,7 @@ def run(config):
 
 
 def run_parallel(run_name, params, base_config_filename):
+    """Read config and run corresponding experiment"""
     config = read_config(base_config_filename, preprocess=False)
     config = update_dict(config, params)
     config = process_config(config)
@@ -77,6 +119,7 @@ def run_parallel(run_name, params, base_config_filename):
 
 
 def chunked(it, size):
+    """Divide dictionary into chunks"""
     it = iter(it)
     while True:
         p = dict(itertools.islice(it, size))
@@ -86,12 +129,13 @@ def chunked(it, size):
 
 
 def perform_batch_runs(base_config_filename='param_choices.yaml', experiment_name='train_lengths', output_folder=None):
+    """Run all experiments"""
     # Specifying the folder where checkpoints will be saved
     timestamp = datetime.datetime.now().strftime("%Y_%m%d_%H%M%S")
     if output_folder is None:
         output_folder = f'../../outputs/param_choices/{timestamp}'
     os.makedirs(output_folder, exist_ok=True)
-    n_jobs = 4
+    n_jobs = multiprocessing.cpu_count()
 
     # Get experiment choices
     what_to_vary = get_experiment(experiment_name, regionwise=False)
@@ -105,7 +149,8 @@ def perform_batch_runs(base_config_filename='param_choices.yaml', experiment_nam
             delayed(partial_run_parallel)(key, config) for key, config in tqdm(chunk.items()))
 
         for j, key in tqdm(enumerate(chunk.keys())):
-            if type(predictions_arr[j]) == dict:
+            if isinstance(predictions_arr[j], dict):
+                create_output(predictions_arr[j], output_folder, key)
                 with open(f'{output_folder}/{key}_predictions_dict.pkl', 'wb') as f:
                     pickle.dump(predictions_arr[j], f)
 
