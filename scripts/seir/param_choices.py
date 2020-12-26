@@ -1,10 +1,10 @@
 import argparse
-import itertools
 import logging
 import os
 import pickle
 import sys
 from functools import partial
+import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,7 +32,7 @@ def get_experiment(which, regionwise=True):
     configs = {}
     if which == 'train_lengths':
         for region in regions:
-            for tl in itertools.product(np.arange(6, 45, 3), np.arange(2, 6, 1)):
+            for tl in itertools.product(np.arange(6, 45, 3), np.arange(2, 7, 1)):
                 config = {'fitting':
                               {'data':
                                    {'dataloading_params': region},
@@ -76,27 +76,38 @@ def run_parallel(run_name, params, base_config_filename):
     return x
 
 
+def chunked(it, size):
+    it = iter(it)
+    while True:
+        p = dict(itertools.islice(it, size))
+        if not p:
+            break
+        yield p
+
+
 def perform_batch_runs(base_config_filename='param_choices.yaml', experiment_name='train_lengths', output_folder=None):
     # Specifying the folder where checkpoints will be saved
     timestamp = datetime.datetime.now().strftime("%Y_%m%d_%H%M%S")
     if output_folder is None:
         output_folder = f'../../outputs/param_choices/{timestamp}'
     os.makedirs(output_folder, exist_ok=True)
+    n_jobs = 4
 
     # Get experiment choices
-    what_to_vary = get_experiment(experiment_name)
-    for k, v in what_to_vary.items():
+    what_to_vary = get_experiment(experiment_name, regionwise=False)
+
+    # Run experiments
+    for i, chunk in enumerate(chunked(what_to_vary.items(), n_jobs)):
+        print(f'Group {i}')
         partial_run_parallel = partial(run_parallel, base_config_filename=base_config_filename)
         logging.info('Start batch runs')
-        predictions_arr = Parallel(n_jobs=4)(
-            delayed(partial_run_parallel)(key, config) for key, config in tqdm(v.items()))
+        predictions_arr = Parallel(n_jobs=n_jobs)(
+            delayed(partial_run_parallel)(key, config) for key, config in tqdm(chunk.items()))
 
-        predictions_dict = {}
-        for i, (key, config) in tqdm(enumerate(v.items())):
-            if type(predictions_arr[i]) == dict:
-                predictions_dict[key] = predictions_arr[i]
-        with open(f'{output_folder}/{k}_predictions_dict.pkl', 'wb') as f:
-            pickle.dump(predictions_dict, f)
+        for j, key in tqdm(enumerate(chunk.keys())):
+            if type(predictions_arr[j]) == dict:
+                with open(f'{output_folder}/{key}_predictions_dict.pkl', 'wb') as f:
+                    pickle.dump(predictions_arr[j], f)
 
 
 if __name__ == '__main__':
