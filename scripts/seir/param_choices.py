@@ -16,7 +16,7 @@ import multiprocessing
 sys.path.append('../../')
 
 from main.seir.common import *
-from utils.fitting.util import update_dict
+from utils.fitting.util import update_dict, chunked
 from utils.generic.config import read_config, process_config
 
 regions = [
@@ -62,7 +62,7 @@ def create_output(predictions_dict, output_folder, tag):
         json.dump(d, f, indent=4)
 
 
-def get_experiment(which, regionwise=True):
+def get_experiment(which, regionwise=False):
     """Get experiment configuration"""
     logging.info('Getting experiment choices')
     configs = {}
@@ -78,7 +78,6 @@ def get_experiment(which, regionwise=True):
                 configs[region['label'] + f'-{tl[0]}-{tl[1]}'] = config
 
     elif which == 'num_trials':
-        configs = {}
         for region in regions:
             for num in [500 * i for i in range(1, 7)]:
                 config = {
@@ -88,6 +87,17 @@ def get_experiment(which, regionwise=True):
                     }
                 }
                 configs[region['label'] + f'-{num}'] = config
+
+    elif which == 'loss_method':
+        for region in regions:
+            for loss_method in ['mape', 'rmse', 'rmse_log']:
+                config = {
+                    'fitting': {
+                        'data': {'dataloading_params': region},
+                        'loss': {'loss_method': loss_method}
+                    }
+                }
+                configs[region['label'] + f'-{loss_method}'] = config
 
     if regionwise:
         configs_regionwise = {}
@@ -125,16 +135,6 @@ def run_parallel(run_name, params, base_config_filename):
     return x
 
 
-def chunked(it, size):
-    """Divide dictionary into chunks"""
-    it = iter(it)
-    while True:
-        p = dict(itertools.islice(it, size))
-        if not p:
-            break
-        yield p
-
-
 def perform_batch_runs(base_config_filename='param_choices.yaml', experiment_name='train_lengths', output_folder=None):
     """Run all experiments"""
     # Specifying the folder where checkpoints will be saved
@@ -145,7 +145,7 @@ def perform_batch_runs(base_config_filename='param_choices.yaml', experiment_nam
     n_jobs = multiprocessing.cpu_count()
 
     # Get experiment choices
-    what_to_vary = get_experiment(experiment_name, regionwise=False)
+    what_to_vary = get_experiment(experiment_name)
 
     # Run experiments
     for i, chunk in enumerate(chunked(what_to_vary.items(), n_jobs)):
