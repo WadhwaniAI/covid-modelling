@@ -24,8 +24,7 @@ regions = [
     {'label': 'Delhi', 'state': 'Delhi', 'district': None},
     {'label': 'Kerala', 'state': 'Kerala', 'district': None},
     {'label': 'Bengaluru', 'state': 'Karnataka', 'district': 'Bengaluru Urban'},
-    {'label': 'Pune', 'state': 'Maharashtra', 'district': 'Pune'},
-    {'label': 'Chennai', 'state': 'Tamilnadu', 'district': 'Chennai'}
+    {'label': 'Pune', 'state': 'Maharashtra', 'district': 'Pune'}
 ]
 
 
@@ -70,17 +69,25 @@ def get_experiment(which, regionwise=True):
     if which == 'train_lengths':
         for region in regions:
             for tl in itertools.product(np.arange(6, 45, 3), np.arange(2, 7, 1)):
-                config = {'fitting':
-                              {'data':
-                                   {'dataloading_params': region},
-                               'split':
-                                   {'train_period': tl[0], 'val_period': tl[1]}
-                               }
-                          }
+                config = {
+                    'fitting': {
+                        'data': {'dataloading_params': region},
+                        'split': {'train_period': tl[0], 'val_period': tl[1]}
+                    }
+                }
                 configs[region['label'] + f'-{tl[0]}-{tl[1]}'] = config
 
     elif which == 'num_trials':
-        pass
+        configs = {}
+        for region in regions:
+            for num in [500 * i for i in range(1, 7)]:
+                config = {
+                    'fitting': {
+                        'data': {'dataloading_params': region},
+                        'fitting_method_params': {'num_evals': num}
+                    }
+                }
+                configs[region['label'] + f'-{num}'] = config
 
     if regionwise:
         configs_regionwise = {}
