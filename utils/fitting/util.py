@@ -1,4 +1,5 @@
 import collections
+import itertools
 import os
 import sys
 from copy import deepcopy
@@ -50,3 +51,13 @@ def update_dict(dict_1, dict_2):
         else:
             new_dict[k] = v
     return new_dict
+
+
+def chunked(it, size):
+    """Divide dictionary into chunks"""
+    it = iter(it)
+    while True:
+        p = dict(itertools.islice(it, size))
+        if not p:
+            break
+        yield p
