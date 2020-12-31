@@ -79,14 +79,16 @@ def get_experiment(which, regionwise=False):
 
     elif which == 'num_trials':
         for region in regions:
-            for num in [500 * i for i in range(1, 7)]:
-                config = {
-                    'fitting': {
-                        'data': {'dataloading_params': region},
-                        'fitting_method_params': {'num_evals': num}
+            for tl in itertools.product([21, 30], [3]):
+                for num in [500 * i for i in range(1, 7)]:
+                    config = {
+                        'fitting': {
+                            'data': {'dataloading_params': region},
+                            'fitting_method_params': {'num_evals': num},
+                            'split': {'train_period': tl[0], 'val_period': tl[1]}
+                        }
                     }
-                }
-                configs[region['label'] + f'-{num}'] = config
+                    configs[region['label'] + f'-{tl[0]}-{tl[1]}' + f'-{num}'] = config
 
     elif which == 'loss_method':
         for region in regions:
