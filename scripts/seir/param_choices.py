@@ -160,8 +160,8 @@ def perform_batch_runs(base_config_filename='param_choices.yaml', experiment_nam
         for j, key in tqdm(enumerate(chunk.keys())):
             if isinstance(predictions_arr[j], dict):
                 create_output(predictions_arr[j], output_folder, key)
-                with open(f'{output_folder}/{key}_predictions_dict.pkl', 'wb') as f:
-                    pickle.dump(predictions_arr[j], f)
+                # with open(f'{output_folder}/{key}_predictions_dict.pkl', 'wb') as f:
+                #     pickle.dump(predictions_arr[j], f)
 
 
 if __name__ == '__main__':
