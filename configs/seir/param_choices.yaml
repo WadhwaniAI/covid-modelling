@@ -45,7 +45,7 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-10-31
+        end_date: 2020-06-30
         train_period: 21
         val_period: 7
         test_period: 0
@@ -76,7 +76,7 @@ uncertainty:
         variable_param_ranges:
             beta: [[0, 10], 101]
         construct_percentiles_day_wise: TRUE
-        date_of_sorting_trials: 2020-09-30
+        date_of_sorting_trials: 2020-07-30
         sort_trials_by_column: total
         loss:
             loss_method: mape
