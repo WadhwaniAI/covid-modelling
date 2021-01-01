@@ -80,7 +80,7 @@ def get_experiment(which, regionwise=False):
     elif which == 'num_trials':
         for region in regions:
             for tl in itertools.product([21, 30], [3]):
-                for num in [500 * i for i in range(1, 7)]:
+                for num in [5000]*5:
                     config = {
                         'fitting': {
                             'data': {'dataloading_params': region},
