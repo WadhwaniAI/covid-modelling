@@ -93,11 +93,11 @@ def get_experiment(which, regionwise=False):
     elif which == 'optimiser':
         for region in regions:
             for tl in itertools.product([21, 30], [3]):
-                for method in ['tpe', 'rand']:
+                for method, num in [('tpe', 3000), ('rand', 10000)]:
                     config = {
                         'fitting': {
                             'data': {'dataloading_params': region},
-                            'fitting_method_params': {'algo': method},
+                            'fitting_method_params': {'algo': method, 'num_evals': num},
                             'split': {'train_period': tl[0], 'val_period': tl[1]}
                         }
                     }
