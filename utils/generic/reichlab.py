@@ -72,7 +72,7 @@ def get_list_of_models(date_of_submission, comp, reichlab_path='../../../covid19
 
 
 def process_single_submission(model, date_of_submission, comp, df_true, reichlab_path='../../../covid19-forecast-hub', 
-                              read_from_github=False, location_filter=78, num_weeks_filter=4):
+                              read_from_github=False, location_id_filter=78, num_weeks_filter=4):
     """Processes the CSV file of a single submission (one model, one instance of time)
 
     Args:
@@ -84,6 +84,9 @@ def process_single_submission(model, date_of_submission, comp, df_true, reichlab
         Defaults to '../../../covid19-forecast-hub'.
         read_from_github (bool, optional): If true, reads files directly from github 
         instead of cloned repo. Defaults to False.
+        location_id_filter (int, optional): All location ids <= this will be kept. Defaults to 78.
+        num_weeks_filter (int, optional): Only forecasts num_weeks_filter weeks ahead 
+        will be kept. Defaults to 4.
 
     Returns:
         pd.DataFrame: model submssion processed dataframe
@@ -101,7 +104,7 @@ def process_single_submission(model, date_of_submission, comp, df_true, reichlab
     # Converting all locations to integers
     df['location'] = df['location'].apply(lambda x : int(x) if x != 'US' else 0)
     # Keeping only states and territories forecasts
-    df = df[df['location'] <= location_filter]
+    df = df[df['location'] <= location_id_filter]
     df['model'] = model
     
     # Only keeping the wk forecasts
@@ -150,7 +153,7 @@ def process_single_submission(model, date_of_submission, comp, df_true, reichlab
 
 
 def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_path='../../../covid19-forecast-hub', 
-                            read_from_github=False, location_filter=78, num_weeks_filter=4):
+                            read_from_github=False, location_id_filter=78, num_weeks_filter=4):
     """Process submissions for all models given as input and concatenate them
 
     Args:
@@ -161,25 +164,28 @@ def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_p
         Defaults to '../../../covid19-forecast-hub'.
         read_from_github (bool, optional): If true, reads files directly from github 
         instead of cloned repo. Defaults to False.
+        location_id_filter (int, optional): All location ids <= this will be kept. Defaults to 78.
+        num_weeks_filter (int, optional): Only forecasts num_weeks_filter weeks ahead 
+        will be kept. Defaults to 4.
 
     Returns:
-        [type]: [description]
+        pd.DataFrame: Dataframe with all submissions processed
     """
     dataframes = get_dataframes_cached(loader_class=JHULoader)
     df_true = dataframes['df_us_states']
     df_all_submissions = process_single_submission(
         list_of_models[0], date_of_submission, comp, df_true, reichlab_path, read_from_github,
-        location_filter, num_weeks_filter)
+        location_id_filter, num_weeks_filter)
     for model in list_of_models:
         df_model_subm = process_single_submission(
             model, date_of_submission, comp, df_true, reichlab_path, read_from_github, 
-            location_filter, num_weeks_filter)
+            location_id_filter, num_weeks_filter)
         df_all_submissions = pd.concat([df_all_submissions, df_model_subm], ignore_index=True)
 
     return df_all_submissions
 
 
-def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=False, location_filter=78):
+def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=False, location_id_filter=78):
     """Process gt file in reichlab repo. Aggregate by week, and truncate to dates models forecasted for.
 
     Args:
@@ -189,6 +195,7 @@ def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=F
         Defaults to '../../../covid19-forecast-hub'.
         read_from_github (bool, optional): If true, reads files directly from github 
         instead of cloned repo. Defaults to False.
+        location_id_filter (int, optional): All location ids <= this will be kept. Defaults to 78.
 
     Returns:
         [pd.DataFrame]*3, dict : gt df, gt df truncated to model prediction dates (daily), 
@@ -205,7 +212,7 @@ def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=F
     df_gt = pd.read_csv(f'{reichlab_path}/data-truth/truth-{truth_fname}.csv')
     df_gt['location'] = df_gt['location'].apply(
         lambda x: int(x) if x != 'US' else 0)
-    df_gt = df_gt[df_gt['location'] <= location_filter]
+    df_gt = df_gt[df_gt['location'] <= location_id_filter]
     df_gt['date'] = pd.to_datetime(df_gt['date'])
 
     target_end_dates = pd.unique(df_all_submissions['target_end_date'])
@@ -260,6 +267,15 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
 
 
 def _inc_sum_matches_cum_check(df_loc_submission, which_comp):
+    """Function for checking if the sum of incident cases matches cumulative
+
+    Args:
+        df_loc_submission (pd.DataFrame): The submission df for a particular location
+        which_comp (str): The name of the compartment
+
+    Returns:
+        bool: Whether of not sum(inc) == cum for all points in given df
+    """
     loc = df_loc_submission.iloc[0, :]['location']
     buggy_forecasts = []
     if which_comp is None:
@@ -285,6 +301,14 @@ def _inc_sum_matches_cum_check(df_loc_submission, which_comp):
 
 
 def _qtiles_nondec_check(df_loc_submission):
+    """Check if qtiles are non decreasing
+
+    Args:
+        df_loc_submission (pd.DataFrame): The submission dataframe for a particular location 
+
+    Returns:
+        bool: Whether or not qtiles are non decreasing in given df
+    """
     grouped = df_loc_submission[df_loc_submission['type']
                                 == 'quantile'].groupby('target')
     nondec_check = [sum(np.diff(group['value']) < 0) > 0 for _, group in grouped]
@@ -293,6 +317,14 @@ def _qtiles_nondec_check(df_loc_submission):
 
 
 def _qtiles_nondec_correct(df_loc_submission):
+    """If qtiles are not non decreasing, correct them
+
+    Args:
+        df_loc_submission (pd.DataFrame): The submission dataframe for a particular location
+
+    Returns:
+        pd.DataFrame: Corrected df
+    """
     grouped = df_loc_submission[df_loc_submission['type']
                                 == 'quantile'].groupby('target')
     for target, group in grouped:
