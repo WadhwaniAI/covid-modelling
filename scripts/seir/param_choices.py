@@ -80,7 +80,7 @@ def get_experiment(which, regionwise=False):
     elif which == 'num_trials':
         for region in regions:
             for tl in itertools.product([21, 30], [3]):
-                for num in [5000]*5:
+                for i, num in enumerate([5000]*5):
                     config = {
                         'fitting': {
                             'data': {'dataloading_params': region},
@@ -88,18 +88,32 @@ def get_experiment(which, regionwise=False):
                             'split': {'train_period': tl[0], 'val_period': tl[1]}
                         }
                     }
-                    configs[region['label'] + f'-{tl[0]}-{tl[1]}' + f'-{num}'] = config
+                    configs[region['label'] + f'-{tl[0]}-{tl[1]}' + f'-{num}-{i}'] = config
+
+    elif which == 'optimiser':
+        for region in regions:
+            for tl in itertools.product([21, 30], [3]):
+                for method in ['tpe', 'rand']:
+                    config = {
+                        'fitting': {
+                            'data': {'dataloading_params': region},
+                            'fitting_method_params': {'algo': method},
+                            'split': {'train_period': tl[0], 'val_period': tl[1]}
+                        }
+                    }
+                    configs[region['label'] + f'-{tl[0]}-{tl[1]}-{method}'] = config
 
     elif which == 'loss_method':
         for region in regions:
-            for loss_method in ['mape', 'rmse', 'rmse_log']:
-                config = {
-                    'fitting': {
-                        'data': {'dataloading_params': region},
-                        'loss': {'loss_method': loss_method}
+            for tl in itertools.product([21, 30], [3]):
+                for loss_method in ['mape', 'rmse', 'rmse_log']:
+                    config = {
+                        'fitting': {
+                            'data': {'dataloading_params': region},
+                            'loss': {'loss_method': loss_method}
+                        }
                     }
-                }
-                configs[region['label'] + f'-{loss_method}'] = config
+                    configs[region['label'] + f'-{tl[0]}-{tl[1]}-{loss_method}'] = config
 
     if regionwise:
         configs_regionwise = {}
