@@ -6,6 +6,7 @@ import copy
 import re
 
 from data.dataloader import JHULoader
+from utils.generic.config import read_config
 from data.processing.processing import get_dataframes_cached
 
 """
@@ -62,9 +63,10 @@ def get_list_of_models(date_of_submission, comp, reichlab_path='../../../covid19
 
     df_counts = df_eligible.groupby('model').count()
     
-    # Filter all models with > 50 submissions
+    # Filter all models with > num_submissions_filter submissions
     df_counts = df_counts[df_counts['overall_eligibility'] > num_submissions_filter]
     eligible_models = list(df_counts.index)
+    # Add Wadhwani_AI-BayesOpt incase it isn't a part of the list
     if ('Wadhwani_AI-BayesOpt' in all_models) & ('Wadhwani_AI-BayesOpt' not in eligible_models):
         eligible_models.append('Wadhwani_AI-BayesOpt')
     print(eligible_models)
@@ -185,7 +187,8 @@ def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_p
     return df_all_submissions
 
 
-def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=False, location_id_filter=78):
+def process_gt(comp, start_date, end_date, reichlab_path='../../../covid19-forecast-hub', 
+               read_from_github=False, location_id_filter=78):
     """Process gt file in reichlab repo. Aggregate by week, and truncate to dates models forecasted for.
 
     Args:
@@ -215,9 +218,7 @@ def process_gt(comp, df_all_submissions, reichlab_path='../', read_from_github=F
     df_gt = df_gt[df_gt['location'] <= location_id_filter]
     df_gt['date'] = pd.to_datetime(df_gt['date'])
 
-    target_end_dates = pd.unique(df_all_submissions['target_end_date'])
-    df_gt_loss = df_gt[(df_gt['date'] > target_end_dates[0] -
-                        np.timedelta64(7, 'D')) & (df_gt['date'] <= target_end_dates[-1])]
+    df_gt_loss = df_gt[(df_gt['date'] > start_date) & (df_gt['date'] <= end_date)]
 
     if 'inc' in comp:
         df_gt_loss_wk = df_gt_loss.groupby(['location', 'location_name']).resample(
@@ -488,3 +489,60 @@ def combine_wiai_subm_with_all(df_all_submissions, df_wiai_submission, comp):
     df_all =  pd.concat([df_all_submissions, df_wiai_submission], 
                         ignore_index=True)
     return df_all
+
+
+def end_to_end_comparison(hparam_source='predictions_dict', predictions_dict=None, config_filename=None, 
+                          comp=None, date_of_submission=None, process_wiai_submission=False, 
+                          which_fit='m2', use_as_point_forecast='ensemble_mean', drop_territories=True,
+                          num_submissions_filter=45, location_id_filter=78):
+    if hparam_source != 'input':
+        if hparam_source == 'predictions_dict':
+            config = predictions_dict[list(predictions_dict.keys())[0]]['m2']['run_params']
+        elif hparam_source == 'config':
+            config = read_config(config_filename)['fitting']
+        else:
+            raise ValueError('Please give correct input of hparam_source')
+
+        loss_comp = config['loss']['loss_compartments'][0]
+        data_last_date = config['split']['end_date']
+        date_of_submission = (data_last_date + timedelta(days=2)).strftime('%Y-%m-%d')
+        if loss_comp == 'deceased':
+            comp = 'cum_death'
+        if loss_comp == 'total':
+            comp = 'cum_case'
+    else:
+        if (comp is None) or (date_of_submission is None):
+            raise ValueError('comp and date_of_submission should not be None if hparam_source==input')
+    
+    print(comp, date_of_submission)
+
+    list_of_models = get_list_of_models(date_of_submission, comp,
+                                        num_submissions_filter=num_submissions_filter)
+    df_all_submissions = process_all_submissions(list_of_models, date_of_submission, comp)
+    target_end_dates = pd.unique(df_all_submissions['target_end_date'])
+    start_date = target_end_dates[0] - np.timedelta64(7, 'D')
+    end_date = target_end_dates[-1]
+    df_gt, df_gt_loss, df_gt_loss_wk = process_gt(comp, start_date, end_date)
+
+    if process_wiai_submission:
+        if predictions_dict is None:
+            raise ValueError('Please give predictions_dict file if process_wiai_submission = True')
+        loc_name_to_key_dict = get_mapping(which='location_name_to_code')
+        df_wiai_submission = format_wiai_submission(predictions_dict, loc_name_to_key_dict, 
+                                                    use_as_point_forecast=use_as_point_forecast, 
+                                                    which_fit=which_fit, skip_percentiles=False)
+
+        df_all_submissions = combine_wiai_subm_with_all(
+            df_all_submissions, df_wiai_submission, comp)
+
+    df_comb, df_mape, df_rank = compare_gt_pred(df_all_submissions, df_gt_loss_wk)
+    if drop_territories:
+        df_mape.drop(['Guam', 'Virgin Islands',
+                    'Northern Mariana Islands'], axis=1, inplace=True)
+        df_rank.drop(['Guam', 'Virgin Islands',
+                    'Northern Mariana Islands'], axis=1, inplace=True)
+
+    num_models = len(df_mape.median(axis=1))
+    print(f'Total # of models - {num_models}')
+
+    return df_comb, df_mape, df_rank
