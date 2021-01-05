@@ -119,8 +119,8 @@ def get_experiment(which, regionwise=False):
 
     elif which == 'loss_method':
         for region in regions:
-            for tl in itertools.product([21, 30], [3]):
-                for l1, l2 in itertools.product(loss_methods):
+            for tl in itertools.product([30], [3]):
+                for l1, l2 in itertools.product(loss_methods, loss_methods):
                     config = {
                         'fitting': {
                             'data': {'dataloading_params': region},
