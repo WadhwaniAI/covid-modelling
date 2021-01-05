@@ -4,7 +4,7 @@ base:
   data_source: jhu
   start_date: 02-19-2020
   params_from_csv: False
-  params_csv: italy_log_erf_params_3.csv
+  params_csv: null
   n_days_optimize: FALSE
   active_log_derf: FALSE
 priors:

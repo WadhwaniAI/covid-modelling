@@ -2,7 +2,7 @@ sub_region: New York City
 region: New York
 data_source: ny_times
 start_date: 03-01-2020
-end_date: 09-17-2020
+end_date: 12-31-2020
 params_from_csv: False
 params_csv: new_york_city_sir_synth_params.csv
 synth:

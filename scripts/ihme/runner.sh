@@ -6,24 +6,24 @@ regions=(
   delhi
   italy
   new_york_city
-  los_angeles
-  pune
+#  los_angeles
+#  pune
 )
 
 starts=(
-  0
-  0
-  0
-  0
-  0
-)
-
-ends=(
   142
   181
   170
   175
   114
+)
+
+ends=(
+  222
+  261
+  250
+  255
+  194
 )
 
 date=$(date '+%Y%m%d_%H%M%S')

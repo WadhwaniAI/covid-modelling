@@ -5,7 +5,7 @@ base:
   sd: FALSE # use social distancing covariate for beta
   scoring: mape
   min_days: 4 # min days to train on
-  train_size: 10 # train set + val set
+  train_size: 30 # train set + val set
   val_size: 6 # val set for hyperopt
   test_size: 30 # test set witheld from model entirely
   shift: 1

@@ -4,7 +4,7 @@ base:
   data_source: ny_times
   start_date: 03-01-2020
   params_from_csv: False
-  params_csv: new_york_city_log_erf_params.csv
+  params_csv: null
   n_days_optimize: FALSE
   active_log_derf: FALSE
 priors:
