@@ -1,3 +1,4 @@
+from utils.fitting.loss import Loss_Calculator
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -236,7 +237,7 @@ def process_gt(comp, start_date, end_date, reichlab_path='../../../covid19-forec
     return df_gt, df_gt_loss, df_gt_loss_wk
 
 
-def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
+def compare_gt_pred(df_all_submissions, df_gt_loss_wk, loss_fn='mape'):
     """Function for comparing all predictions to ground truth 
 
     Args:
@@ -252,15 +253,22 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk):
     df_comb = df_comb.rename({'value_x': 'forecast_value', 
                               'value_y': 'true_value'}, axis=1)
 
-    df_comb['mape'] = np.abs(df_comb['forecast_value'] - df_comb['true_value'])*100/(df_comb['true_value']+1e-8)
-    num_cols = ['mape', 'forecast_value']
+    lc = Loss_Calculator()
+    df_comb['mape'] = df_comb.apply(lambda row: lc._calc_mape(
+        np.array([row['forecast_value']]), np.array([row['true_value']])), axis=1)
+    df_comb['rmse'] = df_comb.apply(lambda row: lc._calc_rmse(
+        np.array([row['forecast_value']]), np.array([row['true_value']])), axis=1)
+    df_comb['mape_perc'] = df_comb.apply(lambda row: lc._calc_mape_perc(
+        np.array([row['forecast_value']]), np.array([row['true_value']]), 
+        row['quantile']) if row['type'] == 'quantile' else np.nan, axis=1)
+    num_cols = ['mape', 'rmse', 'mape_perc', 'forecast_value']
     df_comb.loc[:, num_cols] = df_comb.loc[:, num_cols].apply(pd.to_numeric)
     df_temp = df_comb[df_comb['type'] == 'point']
     df_mape = df_temp.groupby(['model', 'location',
                                'location_name']).mean().reset_index()
     
     df_mape = df_mape.pivot(index='model', columns='location_name', 
-                            values='mape')
+                            values=loss_fn)
 
     df_rank = df_mape.rank()
 
