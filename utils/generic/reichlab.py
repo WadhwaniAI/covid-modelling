@@ -498,6 +498,84 @@ def combine_wiai_subm_with_all(df_all_submissions, df_wiai_submission, comp):
                         ignore_index=True)
     return df_all
 
+def calculate_z_score(df_mape, df_rank, model_name='Wadhwani_AI-BayesOpt'):
+    """Function for calculating Z score and non param Z score
+
+    Args:
+        df_mape (pd.DataFrame): dataframes of mape values for all models, locations
+        df_rank (pd.DataFrame): dataframes of ranks values for all models, locations
+        model_name (str, optional): Which model to calculate Z scores for. Defaults to 'Wadhwani_AI-BayesOpt'.
+
+    Returns:
+        pd.DataFrame: dataframe with the calculated Z scores
+    """
+
+    df = pd.concat([df_mape.mean(axis=0), df_mape.std(axis=0), 
+                    df_mape.median(axis=0), df_mape.mad(axis=0),
+                    df_mape.loc[model_name, :], df_rank.loc[model_name, :]], axis=1)
+    df.columns = ['mean_mape', 'std_mape', 'median_mape',
+                  'mad_mape', 'model_mape', 'model_rank']
+    df['z_score'] = (df['model_mape'] - df['mean_mape'])/(df['std_mape'])
+    df['non_param_z_score'] = (df['model_mape'] - df['median_mape'])/df['mad_mape']
+    return df
+
+
+def combine_with_train_data(predictions_dict, df):
+    """Combine the Z score dataframe with the train error data from (read from predictions_dict file)
+
+    Args:
+        predictions_dict (dict): The predictions_dict output file
+        df (pd.DataFrame): Z Score dataframe
+
+    Returns:
+        pd.DataFrame: df with the z scores and train error
+    """
+    df_wadhwani = pd.DataFrame(index=list(predictions_dict.keys()),
+                               columns=['best_loss_train', 'test_loss',
+                                        'T_recov_fatal', 'P_fatal'])
+    for loc in predictions_dict.keys():
+        df_wadhwani.loc[loc, 'best_loss_train'] = predictions_dict[loc]['m2']['df_loss'].to_numpy()[
+            0][0]
+        df_wadhwani.loc[loc,
+                        'T_recov_fatal'] = predictions_dict[loc]['m2']['best_params']['T_recov_fatal']
+        df_wadhwani.loc[loc,
+                        'P_fatal'] = predictions_dict[loc]['m2']['best_params']['P_fatal']
+
+    df_wadhwani = df_wadhwani.merge(df, left_index=True, right_index=True)
+
+    df_wadhwani.drop(['Northern Mariana Islands', 'Guam',
+                      'Virgin Islands'], axis=0, inplace=True, errors='ignore')
+
+    return df_wadhwani
+
+def create_performance_table(df_mape, df_rank):
+    """Creates dataframe of all models sorted by MAPE value and rank, to compare relative performance 
+
+    Args:
+        df_mape (pd.DataFrame): df of MAPE values for all models, regions
+        df_rank (pd.DataFrame): df of ranks for all models, regions
+
+    Returns:
+        pd.DataFrame: The performance talble
+    """
+    median_mape = df_mape.loc[:, np.logical_not(
+        df_mape.loc['Wadhwani_AI-BayesOpt', :].isna())].median(axis=1).rename('median_mape')
+    median_rank = df_rank.loc[:, np.logical_not(
+        df_rank.loc['Wadhwani_AI-BayesOpt', :].isna())].median(axis=1).rename('median_rank')
+    merged = pd.concat([median_mape, median_rank], axis=1)
+    merged.reset_index(inplace=True)
+    merged['model1'] = merged['model']
+    merged = merged[['model', 'median_mape', 'model1', 'median_rank']]
+    merged = merged.sort_values('median_mape').round(2)
+    merged.reset_index(drop=True, inplace=True)
+    temp = copy(merged.loc[:, ['model1', 'median_rank']])
+    temp.sort_values('median_rank', inplace=True)
+    temp.reset_index(drop=True, inplace=True)
+    merged.loc[:, ['model1', 'median_rank']
+            ] = temp.loc[:, ['model1', 'median_rank']]
+    merged.index = merged.index + 1
+    return merged
+
 
 def end_to_end_comparison(hparam_source='predictions_dict', predictions_dict=None, config_filename=None, 
                           comp=None, date_of_submission=None, process_wiai_submission=False, 
