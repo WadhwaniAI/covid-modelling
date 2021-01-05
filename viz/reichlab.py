@@ -4,7 +4,6 @@ import matplotlib.colors as colors
 from matplotlib import cm
 from matplotlib.patches import Patch
 import geoplot as gplt
-import geoplot.crs as gcrs
 from shapely.geometry import MultiPolygon
 
 import pandas as pd
@@ -17,85 +16,6 @@ import statsmodels.api as sm
 import adjustText as aT
 
 from viz.utils import add_inset_subplot_to_axes
-
-def calculate_z_score(df_mape, df_rank, model_name='Wadhwani_AI'):
-    """Function for calculating Z score and non param Z score
-
-    Args:
-        df_mape (pd.DataFrame): dataframes of mape values for all models, locations
-        df_rank (pd.DataFrame): dataframes of ranks values for all models, locations
-        model_name (str, optional): Which model to calculate Z scores for. Defaults to 'Wadhwani_AI'.
-
-    Returns:
-        pd.DataFrame: dataframe with the calculated Z scores
-    """
-
-    df = pd.concat([df_mape.mean(axis=0), df_mape.std(axis=0), 
-                    df_mape.median(axis=0), df_mape.mad(axis=0),
-                    df_mape.loc[model_name, :], df_rank.loc[model_name, :]], axis=1)
-    df.columns = ['mean_mape', 'std_mape', 'median_mape',
-                  'mad_mape', 'model_mape', 'model_rank']
-    df['z_score'] = (df['model_mape'] - df['mean_mape'])/(df['std_mape'])
-    df['non_param_z_score'] = (df['model_mape'] - df['median_mape'])/df['mad_mape']
-    return df
-
-
-def combine_with_train_error(predictions_dict, df):
-    """Combine the Z score dataframe with the train error datafrom (read from predictions_dict file)
-
-    Args:
-        predictions_dict (dict): The predictions_dict output file
-        df (pd.DataFrame): Z Score dataframe
-
-    Returns:
-        pd.DataFrame: df with the z scores and train error
-    """
-    df_wadhwani = pd.DataFrame(index=list(predictions_dict.keys()),
-                               columns=['best_loss_train', 'test_loss',
-                                        'T_recov_fatal', 'P_fatal'])
-    for loc in predictions_dict.keys():
-        df_wadhwani.loc[loc, 'best_loss_train'] = predictions_dict[loc]['m2']['df_loss'].to_numpy()[
-            0][0]
-        df_wadhwani.loc[loc,
-                        'T_recov_fatal'] = predictions_dict[loc]['m2']['best_params']['T_recov_fatal']
-        df_wadhwani.loc[loc,
-                        'P_fatal'] = predictions_dict[loc]['m2']['best_params']['P_fatal']
-
-    df_wadhwani = df_wadhwani.merge(df, left_index=True, right_index=True)
-
-    df_wadhwani.drop(['Northern Mariana Islands', 'Guam',
-                      'Virgin Islands'], axis=0, inplace=True, errors='ignore')
-
-    return df_wadhwani
-
-def create_performance_table(df_mape, df_rank):
-    """Creates dataframe of all models sorted by MAPE value and rank, to compare relative performance 
-
-    Args:
-        df_mape (pd.DataFrame): df of MAPE values for all models, regions
-        df_rank (pd.DataFrame): df of ranks for all models, regions
-
-    Returns:
-        pd.DataFrame: The performance talble
-    """
-    median_mape = df_mape.loc[:, np.logical_not(
-        df_mape.loc['Wadhwani_AI-BayesOpt', :].isna())].median(axis=1).rename('median_mape')
-    median_rank = df_rank.loc[:, np.logical_not(
-        df_rank.loc['Wadhwani_AI-BayesOpt', :].isna())].median(axis=1).rename('median_rank')
-    merged = pd.concat([median_mape, median_rank], axis=1)
-    merged.reset_index(inplace=True)
-    merged['model1'] = merged['model']
-    merged = merged[['model', 'median_mape', 'model1', 'median_rank']]
-    merged = merged.sort_values('median_mape').round(2)
-    merged.reset_index(drop=True, inplace=True)
-    temp = copy(merged.loc[:, ['model1', 'median_rank']])
-    temp.sort_values('median_rank', inplace=True)
-    temp.reset_index(drop=True, inplace=True)
-    merged.loc[:, ['model1', 'median_rank']
-            ] = temp.loc[:, ['model1', 'median_rank']]
-    merged.index = merged.index + 1
-    return merged
-
 
 def preprocess_shape_file(filename='cb_2018_us_state_5m/cb_2018_us_state_5m.shp', 
                           root_dir='../../data/data/shapefiles'):
@@ -187,7 +107,7 @@ def _label_geographies(ax, df_geo, var, adjust_text=False, remove_ticks=True):
         ax.yaxis.set_ticks([])
 
 
-def create_single_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap='coolwarm', ax=None, gdf=None, 
+def plot_single_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap='coolwarm', ax=None, gdf=None, 
                              adjust_text=False):
     """Function for creating single choropleth for all US states
 
@@ -254,9 +174,9 @@ def plot_multiple_choropleths(df_wadhwani:pd.DataFrame, gdf:gpd.GeoDataFrame, va
     fig, axs = plt.subplots(figsize=(14, 7*len(vars_to_plot)), 
                             nrows=len(vars_to_plot), ncols=1)
     for i, (var, plotting_params) in enumerate(vars_to_plot.items()):
-        _ = create_single_choropleth(df_wadhwani, var=var, vcenter=plotting_params['vcenter'],
-                                     vmin=plotting_params['vmin'], vmax=plotting_params['vmax'],
-                                     cmap=plotting_params['cmap'], ax=axs.flat[i], gdf=gdf)
+        _ = plot_single_choropleth(df_wadhwani, var=var, vcenter=plotting_params['vcenter'],
+                                   vmin=plotting_params['vmin'], vmax=plotting_params['vmax'],
+                                   cmap=plotting_params['cmap'], ax=axs.flat[i], gdf=gdf)
         fig.colorbar(cm.ScalarMappable(norm=colors.TwoSlopeNorm(
             vmin=plotting_params['vmin'], vcenter=plotting_params['vcenter'], 
             vmax=plotting_params['vmax']), cmap=plotting_params['cmap']), ax=axs.flat[i])
@@ -340,14 +260,14 @@ def create_scatter_plot_zscores(df_wadhwani, annotate=False, us_states_abbv_dict
 
     return fig, ax
 
-def plot_ecdf_single_state(df_mape, state, ax, model='Wadhwani_AI'):
+def plot_ecdf_single_state(df_mape, state, ax, model='Wadhwani_AI-BayesOpt'):
     """Function for ECDF plot for a single region 
 
     Args:
         df_mape (pd.DataFrame): The dataframe with MAPE values for every model
         state (str): The state for which the plotting has to done
         ax (mpl.Axes): The axes object to make the plot in
-        model (str, optional): Which model to highlight via a vertical line. Defaults to 'Wadhwani_AI'.
+        model (str, optional): Which model to highlight via a vertical line. Defaults to 'Wadhwani_AI-BayesOpt'.
     """
     sns.ecdfplot(data=df_mape[state], ax=ax)
     ax.axvline(df_mape.loc[model, state], ls=':',
@@ -368,10 +288,10 @@ def plot_ecdf_all_states(df_mape):
     """
     fig, axs = plt.subplots(figsize=(21, 6*15), nrows=15, ncols=3)
     columns = df_mape.loc[:, np.logical_not(
-        df_mape.loc['Wadhwani_AI', :].isna())].columns
+        df_mape.loc['Wadhwani_AI-BayesOpt', :].isna())].columns
     for i, state in enumerate(columns):
         ax = axs.flat[i]
-        plot_ecdf_single_state(df_mape, state, ax, model='Wadhwani_AI')
+        plot_ecdf_single_state(df_mape, state, ax, model='Wadhwani_AI-BayesOpt')
     fig.suptitle('Emperical Cumulative Distribution Function Plots for all states')
     fig.subplots_adjust(top=0.97)
 
@@ -411,7 +331,7 @@ def plot_qq_all_states(df_mape, fit=True, df_wadhwani=None):
     """
     fig, axs = plt.subplots(figsize=(21, 6*15), nrows=15, ncols=3)
     columns = df_mape.loc[:, np.logical_not(
-        df_mape.loc['Wadhwani_AI', :].isna())].columns
+        df_mape.loc['Wadhwani_AI-BayesOpt', :].isna())].columns
     for i, state in enumerate(columns):
         ax = axs.flat[i]
         plot_qq_single_state(df_mape, state, ax, fit=fit,
@@ -441,19 +361,27 @@ def mape_heatmap_single_state(df_mape, state, cmap='Reds'):
     return fig, ax
 
 
-def qtile_barchart(df_comb, quant, color='C0', latex=False):
-    df_temp = df_comb[df_comb['quantile'] == quant]
+def error_barchart(df_comb, quant=None, color='C0', ftype='quantile', loss_fn='mape_perc', latex=False):
+    if ftype == 'quantile':
+        if quant is None:
+            raise ValueError('If ftype == quantile, quant must be given')
+        df_temp = df_comb[df_comb['quantile'] == quant]
+    elif ftype == 'point':
+        df_temp = df_comb[df_comb['type'] == ftype]
+    else:
+        raise ValueError('ftype can only be quantile or point')
 
     df_mape = df_temp.groupby(['model', 'location',
                                'location_name']).mean().reset_index()
 
     df_mape = df_mape.pivot(index='model', columns='location_name',
-                            values='perc_loss_mape')
+                            values=loss_fn)
 
     df_plot = pd.DataFrame([df_mape.median(axis=1)]).T
     df_plot.columns = ['median']
     df_plot['mad'] = median_abs_deviation(df_mape, axis=1, nan_policy='omit')
     df_plot = df_plot.sort_values('median')
+    import pdb; pdb.set_trace()
 
     fig, ax = plt.subplots(figsize=(12, 12))
 
@@ -463,8 +391,10 @@ def qtile_barchart(df_comb, quant, color='C0', latex=False):
     ax.set_yticks(y_pos)
     if latex:
         ax.set_yticklabels([x.replace('_', '\_') for x in df_plot.index])
+    else:
+        ax.set_yticklabels(df_plot.index)
     ax.invert_yaxis()  # labels read top-to-bottom
-    wai_idx = np.where(df_plot.index == 'Wadhwani_AI')[0][0]
+    wai_idx = np.where(df_plot.index == 'Wadhwani_AI-BayesOpt')[0][0]
     barlist[wai_idx].set_color('purple')
     ax.set_xlabel('Median of Quantile MAPE Loss aggregated across states')
     ax.set_title(
