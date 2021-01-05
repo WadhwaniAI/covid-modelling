@@ -40,7 +40,21 @@ def fit_beta(predictions_dict, config):
     return uncertainty
 
 
-def process_beta_fitting(predictions_dict, uncertainty):
+def process_uncertainty_fitting(predictions_dict, config, uncertainty):
+    predictions_dict['m2']['plots']['beta_loss'], _ = plot_beta_loss(
+        uncertainty.dict_of_trials)
+    uncertainty_forecasts = uncertainty.get_forecasts()
+    for key in uncertainty_forecasts.keys():
+        predictions_dict['m2']['forecasts'][key] = uncertainty_forecasts[key]['df_prediction']
+
+    predictions_dict['m2']['forecasts']['ensemble_mean'] = uncertainty.ensemble_mean_forecast
+
+    predictions_dict['m2']['beta'] = uncertainty.beta
+    predictions_dict['m2']['beta_loss'] = uncertainty.beta_loss
+    predictions_dict['m2']['deciles'] = uncertainty_forecasts
+
+
+def process_ensemble(predictions_dict, uncertainty):
     predictions_dict['m2']['plots']['beta_loss'], _ = plot_beta_loss(
         uncertainty.dict_of_trials)
 
@@ -50,7 +64,7 @@ def process_beta_fitting(predictions_dict, uncertainty):
     predictions_dict['m2']['beta_loss'] = uncertainty.beta_loss
 
 
-def process_uncertainty_fitting(predictions_dict, uncertainty):
+def process_uncertainty_forecasts(predictions_dict, uncertainty):
     uncertainty_forecasts = uncertainty.get_forecasts()
     for key in uncertainty_forecasts.keys():
         predictions_dict['m2']['forecasts'][key] = uncertainty_forecasts[key]['df_prediction']

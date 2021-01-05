@@ -150,7 +150,7 @@ def run(config):
     predictions_dict['m1']['forecasts'] = {}
     predictions_dict['m2']['forecasts'] = {}
     uncertainty = fit_beta(predictions_dict, config)
-    process_beta_fitting(predictions_dict, uncertainty)
+    process_ensemble(predictions_dict, uncertainty)
     plot_ensemble_forecasts(predictions_dict, config)
     return predictions_dict
 
