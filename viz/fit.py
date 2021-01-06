@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+from datetime import timedelta
 from matplotlib.lines import Line2D
 import seaborn as sns
 import pandas as pd
@@ -8,7 +8,6 @@ import copy
 import math
 from models.seir import * 
 
-from functools import reduce
 from scipy.stats import entropy
 
 from utils.generic.enums.columns import *
@@ -38,7 +37,8 @@ def plot_buckets(df_prediction, title, which_buckets=None):
     plt.show()
 
 def plot_fit(df_prediction, df_train, df_val, df_district, train_period, location_description,
-             which_compartments=['active', 'total'], description='', savepath=None):
+             which_compartments=['active', 'total'], description='', savepath=None, 
+             truncate_series=True, left_truncation_buffer=30):
     """Helper function for creating plots for the training pipeline
 
     Arguments:
@@ -66,6 +66,14 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, locatio
     df_true_plotting = copy.copy(df_district)
     df_predicted_plotting = df_prediction.loc[df_prediction['date'].isin(
         df_true_plotting['date']), ['date']+which_compartments]
+
+    if truncate_series:
+        df_true_plotting = df_true_plotting[df_true_plotting['date'] > \
+            (df_predicted_plotting['date'].iloc[0] - timedelta(days=left_truncation_buffer))]
+        df_true_plotting_rolling = df_true_plotting_rolling[df_true_plotting_rolling['date'] > \
+            (df_predicted_plotting['date'].iloc[0] - timedelta(days=left_truncation_buffer))]
+        df_true_plotting.reset_index(drop=True, inplace=True)
+        df_true_plotting_rolling.reset_index(drop=True, inplace=True)
 
     plot_ledger = {
         'base': True,
