@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+from datetime import timedelta
 from matplotlib.lines import Line2D
 import pandas as pd
 import numpy as np
@@ -13,7 +13,8 @@ from viz.utils import axis_formatter
 
 
 def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments=[Columns.active], 
-                plot_individual_curves=True, log_scale=False):
+                plot_individual_curves=True, log_scale=False, truncate_series=True, 
+                left_truncation_buffer=30):
     predictions = copy(predictions_dict[train_fit]['forecasts'])
     try:
         del predictions['best']
@@ -24,7 +25,15 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
     for df in list(predictions.values())[1:]:
         df_master = pd.concat([df_master, df], ignore_index=True)
     
+    train_period = predictions_dict[train_fit]['run_params']['split']['train_period']
+    val_period = predictions_dict[train_fit]['run_params']['split']['val_period']
+    val_period = 0 if val_period is None else val_period
     df_true = predictions_dict[train_fit]['df_district']
+    if truncate_series:
+        df_true = df_true[df_true['date'] >
+                          (list(predictions.values())[0]['date'].iloc[0] -
+                              timedelta(days=left_truncation_buffer))]
+        df_true.reset_index(drop=True, inplace=True)
 
     plots = {}
     for compartment in which_compartments:
@@ -45,6 +54,11 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
                 
         if vline:
             plt.axvline(datetime.datetime.strptime(vline, '%Y-%m-%d'))
+        
+        ax.axvline(x=list(predictions.values())[0].iloc[0, :]['date'],
+                   ls=':', color='brown', label='Train starts')
+        ax.axvline(x=list(predictions.values())[0].iloc[train_period+val_period-1, :]['date'],
+                ls=':', color='black', label='Data Last Date')
 
         ax.set_xlim(ax.get_xlim()[0], ax.get_xlim()[1] + 10)
         adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
