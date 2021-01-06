@@ -27,7 +27,6 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
     df_prediction[which_compartments] = df_prediction[which_compartments].apply(pd.to_numeric, axis=1)
     return df_prediction
 
-
 def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], which_fit='m2', log_scale=False, 
                   filename=None, which_compartments=['active', 'total', 'deceased', 'recovered'], 
                   fileformat='eps', error_bars=False, days=30):
@@ -46,8 +45,6 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     Returns:
         ax -- Matplotlib ax figure
     """
-
-
     legend_title_dict = {}
     deciles = np.sort(np.concatenate(( np.arange(10, 100, 10), np.array([2.5, 5, 95, 97.5] ))))
     for key in deciles:
@@ -72,7 +69,8 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         for i, df_prediction in enumerate(predictions):
             predictions[i] = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'],
                                                        which_compartments)
-
+                                
+        
     fig, ax = plt.subplots(figsize=(12, 12))
 
     for compartment in compartments['base']:
@@ -80,6 +78,11 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
             ax.plot(df_true[compartments['date'][0].name], df_true[compartment.name],
                     '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
             for i, df_prediction in enumerate(predictions):
+                if isinstance(df_prediction, pd.DataFrame):
+                    df_prediction = df_prediction.reset_index()
+                else:
+                    df_prediction = df_prediction['df_prediction']
+                
                 sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction,
                              ls='-', color=compartment.color, 
                              label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[i]]))

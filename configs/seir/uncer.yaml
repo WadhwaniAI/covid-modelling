@@ -50,15 +50,15 @@ fitting:
             E_hosp_ratio: .1
             I_hosp_ratio: .1
             gamma: .04
-        num_evals: 15000
+        num_evals: 25000
         algo: gaussian
         n_chains: 4
-        stride: 3
+        stride: 5
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
         end_date: 2020-11-21
-        train_period: 28
+        train_period: 30
         val_period: 3
         test_period: 21
     #Optimisation related parameters
@@ -77,7 +77,7 @@ forecast:
     forecast_days: 30
     num_trials_to_plot: 10
     plot_topk_trials_for_columns: [total, active]
-    plot_ptiles_for_columns: [total, active]
+    plot_ptiles_for_columns: [total]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
@@ -89,10 +89,20 @@ uncertainty:
         variable_param_ranges:
             beta: [[0, 10], 101]
         construct_percentiles_day_wise: TRUE
-        date_of_sorting_trials: 2020-10-21
+        date_of_sorting_trials: 2020-11-21
         sort_trials_by_column: total
         loss:
             loss_method: mape
             loss_compartments: [total, active, recovered, deceased]
             loss_weights: [0.25, 0.25, 0.25, 0.25]
-        percentiles: [2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 97.5]
+        percentiles: [ 2.43902439,   4.87804878,   7.31707317,
+         9.75609756,  12.19512195,  14.63414634,  17.07317073,
+        19.51219512,  21.95121951,  24.3902439 ,  26.82926829,
+        29.26829268,  31.70731707,  34.14634146,  36.58536585,
+        39.02439024,  41.46341463,  43.90243902,  46.34146341,
+        48.7804878 ,  51.2195122 ,  53.65853659,  56.09756098,
+        58.53658537,  60.97560976,  63.41463415,  65.85365854,
+        68.29268293,  70.73170732,  73.17073171,  75.6097561 ,
+        78.04878049,  80.48780488,  82.92682927,  85.36585366,
+        87.80487805,  90.24390244,  92.68292683,  95.12195122,
+        97.56097561]

@@ -145,12 +145,13 @@ class MCUncertainty(Uncertainty):
         weighted_pred_df = pd.DataFrame(data=weighted_pred, columns=allcols)
         weighted_pred_df['date'] = predictions[0]['date']
         weighted_pred_df.set_index('date', inplace=True)
+        weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_test.index), :]
         lc = Loss_Calculator()
         if return_dict:
+            weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
             return lc.calc_loss_dict(weighted_pred_df_loss, df_val, method=self.loss_method)
         if return_ensemble_mean_forecast:
             weighted_pred_df.reset_index(inplace=True)
-            weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_test.index), :]
             return {'df_prediction':weighted_pred_df,'df_loss':lc.calc_loss_dict(weighted_pred_df_loss, df_test, method = self.loss_method)}
         weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
         return lc.calc_loss(weighted_pred_df_loss, df_val, method=self.loss_method,

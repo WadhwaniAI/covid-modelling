@@ -198,7 +198,10 @@ def plot_comp_density_plots(predictions_dict,fig,axs):
                  kde_kws = {'shade': True, 'linewidth': 3},label = ['MCMC'] ,ax=ax)
         sns.distplot(params_dict_bo[param], hist = True, kde = False,bins= 100,
                  kde_kws = {'shade': True, 'linewidth': 3},hist_kws={'weights':W},label = ['BayesOpt'] ,ax=ax)
-        ax.set_title(f'Denisty Plot of parameter {param}')
+        if param == 'T_recov_fatal':
+            ax.set_title(f'Denisty Plot of parameter T_Death')
+        else:
+            ax.set_title(f'Denisty Plot of parameter {param}')
         ax.set_ylabel('Density')
         ax.legend()
     return fig,axs

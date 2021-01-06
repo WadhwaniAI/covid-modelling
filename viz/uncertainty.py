@@ -22,6 +22,10 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
 
     df_master = list(predictions.values())[0]
     for df in list(predictions.values())[1:]:
+        if isinstance(df, pd.DataFrame):
+           df = df.reset_index()
+        else:
+            df = df['df_prediction']
         df_master = pd.concat([df_master, df], ignore_index=True)
     
     df_true = predictions_dict[train_fit]['df_district']
@@ -34,6 +38,10 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
                 '-o', color='C0', label=f'{compartment.label} (Observed)')
         if plot_individual_curves == True:
             for i, (ptile, df_prediction) in enumerate(predictions.items()):
+                if isinstance(df_prediction, pd.DataFrame):
+                    df_prediction = df_prediction.reset_index()
+                else:
+                    df_prediction = df_prediction['df_prediction']
                 sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
                             ls='-', label=f'{compartment.label} Percentile :{ptile}')
                 texts.append(plt.text(
@@ -41,7 +49,7 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
                     y=df_prediction[compartment.name].iloc[-1], s=ptile))
         else:
             sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_master,
-                         ls='-', label=f'{compartment.label}')
+                         ls='-', label=f'{compartment.label}',ci=100)
                 
         if vline:
             plt.axvline(datetime.datetime.strptime(vline, '%Y-%m-%d'))
@@ -105,3 +113,47 @@ def plot_beta_loss(dict_of_trials):
     ax.set_xlabel('Beta value')
     ax.set_title('How the beta loss changes with beta')
     return fig, ax
+
+
+def plot_ptiles_comp(PD, train_fit='m1', vline=None, which_compartments=[Columns.active], 
+                plot_individual_curves=True, log_scale=False):
+    predictions_mcmc =  PD['MCMC']['uncertainty_forecasts']
+    predictions_bo =  PD['BO']['uncertainty_forecasts']
+    df_master_mcmc = list(predictions_mcmc.values())[0]['df_prediction']
+    for df in list(predictions_mcmc.values())[1:]:
+        if isinstance(df, pd.DataFrame):
+           df = df.reset_index()
+        else:
+            df = df['df_prediction']
+        df_master_mcmc = pd.concat([df_master_mcmc, df], ignore_index=True)
+    df_master_bo = list(predictions_bo.values())[0]['df_prediction']
+    for df in list(predictions_bo.values())[1:]:
+        if isinstance(df, pd.DataFrame):
+           df = df.reset_index()
+        else:
+            df = df['df_prediction']
+        df_master_bo = pd.concat([df_master_bo, df], ignore_index=True)
+    
+    df_true = PD['MCMC']['m1']['df_district']
+
+    plots = {}
+    for compartment in which_compartments:
+        fig, ax = plt.subplots(figsize=(12, 12))
+        texts = []
+        ax.plot(df_true[Columns.date.name].to_numpy(), df_true[compartment.name].to_numpy(),
+                '-o', color='C0', label=f'{compartment.label} (Observed)')
+        ax.set_xlim([datetime.date(2020, 9, 26), datetime.date(2021, 1, 5)])
+        sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_master_mcmc,
+                         ls='-', label='MCMC',ci = 100)
+        sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_master_bo,
+                         ls='-', label='BO',ci=100) 
+        if vline:
+            plt.axvline(datetime.datetime.strptime(vline, '%Y-%m-%d'))
+
+        ax.set_xlim(ax.get_xlim()[0], ax.get_xlim()[1] + 10)
+        adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
+        axis_formatter(ax, log_scale=log_scale)
+        fig.suptitle('Forecast of all deciles for {} '.format(compartment.name), fontsize=16)
+        plots[compartment] = fig
+    
+    return plots
