@@ -276,7 +276,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--region_config", help="region config file name", required=True)
     parser.add_argument("-f", "--output_folder", help="output folder name", required=True)
-    parser.add_argument("-n", "--num", help="number of periods to shift forward", required=False, default=1)
+    parser.add_argument("-n", "--num", help="number of periods to shift forward", required=False, default=0)
     parser.add_argument("-m", "--mode", help="mode", required=False, default='run')
     parser.add_argument("-s", "--start", help="start run", required=False, default=0)
     parser.add_argument("-e", "--end", help="end run", required=False, default=0)
