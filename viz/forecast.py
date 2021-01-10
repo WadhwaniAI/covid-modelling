@@ -177,7 +177,7 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_sc
     return plots
 
 
-def plot_r0_multipliers(region_dict, best_params_dict, predictions_mul_dict, multipliers, log_scale=False):
+def plot_r0_multipliers(region_dict, predictions_mul_dict, log_scale=False):
     df_true = region_dict['m2']['df_district']
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.plot(df_true['date'], df_true['active'],
