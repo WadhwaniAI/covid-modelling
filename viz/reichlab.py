@@ -361,7 +361,8 @@ def mape_heatmap_single_state(df_mape, state, cmap='Reds'):
     return fig, ax
 
 
-def error_barchart(df_comb, quant=None, color='C0', ftype='quantile', loss_fn='mape_perc', latex=False):
+def error_barchart(df_comb, quant=None, color='C0', ftype='quantile', loss_fn='mape_perc', latex=False,
+                   calc_median_over_wiai_states=True, plot_rank=False, ax=None):
     if ftype == 'quantile':
         if quant is None:
             raise ValueError('If ftype == quantile, quant must be given')
@@ -376,28 +377,42 @@ def error_barchart(df_comb, quant=None, color='C0', ftype='quantile', loss_fn='m
 
     df_mape = df_mape.pivot(index='model', columns='location_name',
                             values=loss_fn)
-
-    df_plot = pd.DataFrame([df_mape.median(axis=1)]).T
+    df_rank = df_mape.rank()
+    if plot_rank:
+        df_mape = df_rank
+    if calc_median_over_wiai_states:
+        df_temp = df_mape.loc[:, np.logical_not(df_mape.loc['Wadhwani_AI-BayesOpt', :].isna())]
+    else:
+        df_temp = df_mape
+    df_plot = pd.DataFrame([df_temp.median(axis=1)]).T
     df_plot.columns = ['median']
     df_plot['mad'] = median_abs_deviation(df_mape, axis=1, nan_policy='omit')
     df_plot = df_plot.sort_values('median')
-    import pdb; pdb.set_trace()
 
-    fig, ax = plt.subplots(figsize=(12, 12))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(12, 12))
+    else:
+        fig = None
 
     y_pos = np.arange(len(df_plot))
-    barlist = ax.barh(y_pos, df_plot['median'],
-                      xerr=df_plot['mad'], align='center', color=color)
+    barlist = ax.barh(y_pos, df_plot['median'], align='center', color=color, 
+                      ls='--')
     ax.set_yticks(y_pos)
     if latex:
         ax.set_yticklabels([x.replace('_', '\_') for x in df_plot.index])
     else:
-        ax.set_yticklabels(df_plot.index)
+        pass
+        # ax.set_yticklabels(df_plot.index)
     ax.invert_yaxis()  # labels read top-to-bottom
     wai_idx = np.where(df_plot.index == 'Wadhwani_AI-BayesOpt')[0][0]
     barlist[wai_idx].set_color('purple')
+    for i in range(len(y_pos)):
+        ax.text(df_plot.iloc[i]['median'], y_pos[i] + 0.125,
+                np.around(df_plot.iloc[i]['median'], 2))
+        ax.text(0, y_pos[i] + 0.125,
+                df_plot.index[i], color='white')
     ax.set_xlabel('Median of Quantile MAPE Loss aggregated across states')
-    ax.set_title(
-        f'Median Quantile MAPE loss for {int(quant*100)}th percentile for all models')
+    ax.set_title(f'Median Quantile MAPE loss for {int((quant if quant is not None else 0)*100)}th' + \
+        ' percentile for all models')
 
     return fig, ax
