@@ -556,7 +556,7 @@ def create_performance_table(df_mape, df_rank):
         df_rank (pd.DataFrame): df of ranks for all models, regions
 
     Returns:
-        pd.DataFrame: The performance talble
+        pd.DataFrame: The performance table
     """
     median_mape = df_mape.loc[:, np.logical_not(
         df_mape.loc['Wadhwani_AI-BayesOpt', :].isna())].median(axis=1).rename('median_mape')
@@ -566,9 +566,9 @@ def create_performance_table(df_mape, df_rank):
     merged.reset_index(inplace=True)
     merged['model1'] = merged['model']
     merged = merged[['model', 'median_mape', 'model1', 'median_rank']]
-    merged = merged.sort_values('median_mape').round(2)
+    merged = merged.sort_values('median_mape')
     merged.reset_index(drop=True, inplace=True)
-    temp = copy(merged.loc[:, ['model1', 'median_rank']])
+    temp = copy.copy(merged.loc[:, ['model1', 'median_rank']])
     temp.sort_values('median_rank', inplace=True)
     temp.reset_index(drop=True, inplace=True)
     merged.loc[:, ['model1', 'median_rank']
@@ -623,10 +623,12 @@ def end_to_end_comparison(hparam_source='predictions_dict', predictions_dict=Non
 
     df_comb, df_mape, df_rank = compare_gt_pred(df_all_submissions, df_gt_loss_wk)
     if drop_territories:
-        df_mape.drop(['Guam', 'Virgin Islands',
-                    'Northern Mariana Islands'], axis=1, inplace=True)
-        df_rank.drop(['Guam', 'Virgin Islands',
-                    'Northern Mariana Islands'], axis=1, inplace=True)
+        list_of_territories = ['Guam', 'Virgin Islands', 'American Samoa',
+                               'Puerto Rico', 'Northern Mariana Islands']
+        df_comb = df_comb[np.logical_not(
+            df_comb['location_name'].isin(list_of_territories))]
+        df_mape.drop(list_of_territories, axis=1, inplace=True)
+        df_rank.drop(list_of_territories, axis=1, inplace=True)
 
     num_models = len(df_mape.median(axis=1))
     print(f'Total # of models - {num_models}')
