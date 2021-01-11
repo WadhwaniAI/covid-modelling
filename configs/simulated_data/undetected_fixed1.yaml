@@ -1,0 +1,25 @@
+model: SEIR_Undetected
+starting_date: 2020-08-07
+total_days: 75
+initial_values:
+    recovered: 95000
+    deceased: 7500
+    active: 20000
+include_tests: True
+tests_done: '[10000 for i in range(75)]'
+fix_params: True
+params:
+    N: 1.0e+7
+    beta: 0.133
+    T_inc: 4
+    T_inf_D: 1
+    T_inf_U: 8
+    d: 0.4
+    T_recov: 15
+    T_recov_fatal: 25
+    P_fatal: 0.3
+    E_hosp_ratio: 2
+    I_D_hosp_ratio: 2
+    I_U_hosp_ratio: 3
+    psi: 1
+output_file_name: undetected1.csv
