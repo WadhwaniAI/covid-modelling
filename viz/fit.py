@@ -234,7 +234,7 @@ def plot_comp_density_plots(predictions_dict,fig,axs):
     # return fig,axs
     
 
-def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
+def plot_histogram(predictions_dict,true_val, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
                    savefig=False, filename=None, label=None):
     """Plots histograms for all the sampled params for a particular run in a particular fig.
        The ith subplot will have the histogram corresponding to the ith parameter
@@ -258,6 +258,7 @@ def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lin
         dict: a dict of histograms of all the params for a particular run
     """
     params_array, losses_array = _order_trials_by_loss(predictions_dict)
+
     params_dict = {param: [param_dict[param] for param_dict in params_array]
                    for param in params_array[0].keys()}
     if weighting == 'exp':
@@ -269,33 +270,18 @@ def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lin
 
     histograms = {}
     for i, param in enumerate(params_dict.keys()):
-        histograms[param] = {}
+        if (param == 'gamma'):
+            continue
         ax = axs.flat[i]
-        if plot_lines:
-            bar_heights, endpoints = np.histogram(params_dict[param], density=True, bins=20, weights=weights)
-            centers = (endpoints[1:] + endpoints[:-1]) / 2
-            ax.plot(centers, bar_heights, label=label)
+        ax.axvline(x=true_val[param],linewidth=4, color='r')
+        sns.distplot(params_dict[param], hist = True, kde = False,bins= 100,
+                 kde_kws = {'shade': True, 'linewidth': 3},label = ['MCMC'] ,ax=ax)
+        if param == 'T_recov_fatal':
+            ax.set_title(f'Denisty Plot of parameter T_Death')
         else:
-            if weighted:
-                histogram = ax.hist(params_dict[param], density=True, histtype='bar', bins=20, 
-                                    weights=weights, label=label, alpha=1)
-            else:
-                histogram = ax.hist(params_dict[param], density=True, histtype='bar', bins=20, 
-                                    label=label, alpha=1)
-            bar_heights, endpoints = histogram[0], histogram[1]
-            centers = (endpoints[1:] + endpoints[:-1]) / 2
-        
-        ax.set_title(f'Histogram of parameter {param}')
+            ax.set_title(f'Denisty Plot of parameter {param}')
         ax.set_ylabel('Density')
         ax.legend()
-            
-        histograms[param]['density'] = bar_heights
-        histograms[param]['endpoints'] = endpoints
-        histograms[param]['centers'] = centers
-        histograms[param]['probability'] = bar_heights*np.mean(np.diff(endpoints))
-        
-    if savefig:
-        fig.savefig(filename)
     return histograms
 
 def plot_all_histograms(predictions_dict, description, weighting='exp', beta=1):

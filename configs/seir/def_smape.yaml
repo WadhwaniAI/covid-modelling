@@ -1,15 +1,13 @@
 fitting:
     # Geographical Location
     data:
-        data_source: simulated
+        data_source: covid19india
         stratified_data: FALSE
-        add_noise: TRUE
         dataloading_params:
+            reload_data: FALSE
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
-            generate: TRUE
-            config_file: seirhd_fixed.yaml
         smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
@@ -19,7 +17,7 @@ fitting:
             2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
             2020-06-15: [null, deceased, total, TRUE, weighted-mag]
-        rolling_average: FALSE
+        rolling_average: TRUE
         rolling_average_params:
             center: TRUE
             window_size: 7
@@ -30,43 +28,31 @@ fitting:
     model: SEIRHD
     variable_param_ranges:
         lockdown_R0: [[0.7, 1.2], uniform]
-        T_inc: [[4.6, 5.6], uniform]
-        T_inf: [[0, 20], uniform]
-        T_recov: [[19, 23], uniform]
-        T_recov_fatal: [[23, 28], uniform]
-        P_fatal: [[0.072, 0.088], uniform]
-        E_hosp_ratio: [[1e-10, 3], uniform]
-        I_hosp_ratio: [[1e-10, 3], uniform]
-        gamma: [[1, 3],uniform]
+        T_inc: [[4, 5], uniform]
+        T_inf: [[3, 4], uniform]
+        T_recov: [[0, 40], uniform]
+        T_recov_fatal: [[0, 40], uniform]
+        P_fatal: [[0, 0.2], uniform]
+        E_hosp_ratio: [[0, 1], uniform]
+        I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
-    fitting_method: mcmc_opt
+    fitting_method: bayes_opt
 
     fitting_method_params:
-        proposal_sigmas:
-            lockdown_R0: 0.08
-            T_inc: 0.6
-            T_inf: 0.6
-            T_recov: 1
-            T_recov_fatal: .5
-            P_fatal: 0.01
-            E_hosp_ratio: .1
-            I_hosp_ratio: .1
-            gamma: .04
-        num_evals: 25000
-        algo: gaussian
-        n_chains: 4
-        stride: 5
+        num_evals: 2000
+        algo: tpe
+        seed: 42
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: null
+        end_date: 2020-11-21
         train_period: 30
         val_period: 3
-        test_period: 0
+        test_period: 21
     #Optimisation related parameters
     loss:
-        loss_method: mape
+        loss_method: smape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
 sensitivity:
@@ -80,12 +66,12 @@ forecast:
     forecast_days: 30
     num_trials_to_plot: 10
     plot_topk_trials_for_columns: [total, active]
-    plot_ptiles_for_columns: [total, active,recovered,deceased]
+    plot_ptiles_for_columns: [total,active,recovered,deceased]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
         which_fit: m1
-        fitting_type: mcmc
+        fitting_type: bo
         fitting_method: gridsearch
         fitting_method_params:
             parallelise: FALSE
@@ -93,10 +79,10 @@ uncertainty:
             beta: [[0, 10], 101]
         construct_percentiles_day_wise: TRUE
         date_of_sorting_trials: 2020-11-21
-        sort_trials_by_column: deceased
+        sort_trials_by_column: total
         loss:
             loss_method: mape
-            loss_compartments: [total, active, recovered, deceased]
+            loss_compartments:  [total, active,recovered,deceased]
             loss_weights: [0.25, 0.25, 0.25, 0.25]
         percentiles: [ 2.5,   4.87804878,   7.31707317,
          9.75609756,  12.19512195,  14.63414634,  17.07317073,
@@ -109,3 +95,6 @@ uncertainty:
         78.04878049,  80.48780488,  82.92682927,  85.36585366,
         87.80487805,  90.24390244,  92.68292683,  95.12195122,
         97.5]
+logging:
+    experiment_name: wiai-temp
+    run_name: null

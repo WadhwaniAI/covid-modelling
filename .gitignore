@@ -18,6 +18,8 @@
 # Junk / Hidden Files
 **ipynb_checkpoints/
 *ipynb_checkpoints/
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
 *vscode/
 sftp-configjson
 *__pycache__

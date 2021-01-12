@@ -1,13 +1,16 @@
 fitting:
     # Geographical Location
     data:
-        data_source: covid19india
+        data_source: simulated
         stratified_data: FALSE
+        add_noise: TRUE
         dataloading_params:
             reload_data: FALSE
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
+            generate: TRUE
+            config_file: seirhd_fixed.yaml
         smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
@@ -28,25 +31,25 @@ fitting:
     model: SEIRHD
     variable_param_ranges:
         lockdown_R0: [[0.7, 1.2], uniform]
-        T_inc: [[4, 5], uniform]
-        T_inf: [[3, 4], uniform]
-        T_recov: [[0, 40], uniform]
-        T_recov_fatal: [[0, 40], uniform]
-        P_fatal: [[0, 0.2], uniform]
-        E_hosp_ratio: [[0, 1], uniform]
-        I_hosp_ratio: [[0, 1], uniform]
+        T_inc: [[4.6, 5.6], uniform]
+        T_inf: [[3.3, 3.9], uniform]
+        T_recov: [[19, 23], uniform]
+        T_recov_fatal: [[23, 28], uniform]
+        P_fatal: [[0.072, 0.088], uniform]
+        E_hosp_ratio: [[.31, .37], uniform]
+        I_hosp_ratio: [[0.85, 1.03], uniform]
     default_params:
         N: 1.0e+7
     fitting_method: bayes_opt
 
     fitting_method_params:
-        num_evals: 2000
+        num_evals: 1000
         algo: tpe
         seed: 42
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-11-21
+        end_date: null
         train_period: 30
         val_period: 3
         test_period: 21
@@ -66,7 +69,7 @@ forecast:
     forecast_days: 30
     num_trials_to_plot: 10
     plot_topk_trials_for_columns: [total, active]
-    plot_ptiles_for_columns: [total]
+    plot_ptiles_for_columns: [total,active,recovered,deceased]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
@@ -84,7 +87,7 @@ uncertainty:
             loss_method: mape
             loss_compartments:  [total, active,recovered,deceased]
             loss_weights: [0.25, 0.25, 0.25, 0.25]
-        percentiles: [ 2.43902439,   4.87804878,   7.31707317,
+        percentiles: [ 2.5,   4.87804878,   7.31707317,
          9.75609756,  12.19512195,  14.63414634,  17.07317073,
         19.51219512,  21.95121951,  24.3902439 ,  26.82926829,
         29.26829268,  31.70731707,  34.14634146,  36.58536585,
@@ -94,7 +97,7 @@ uncertainty:
         68.29268293,  70.73170732,  73.17073171,  75.6097561 ,
         78.04878049,  80.48780488,  82.92682927,  85.36585366,
         87.80487805,  90.24390244,  92.68292683,  95.12195122,
-        97.56097561]
+        97.5]
 logging:
     experiment_name: wiai-temp
     run_name: null

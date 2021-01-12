@@ -78,7 +78,7 @@ class Loss_Calculator():
         y_pred = y_pred[y_true != 0]
         y_true = y_true[y_true != 0]
 
-        ape = np.abs((y_true - y_pred + 0) / np.mean(y_true,y_pred)) *  100
+        ape = np.abs((y_true - y_pred) / ((y_true+y_pred)/2)) *  100
         loss = np.mean(ape)
         return loss
     
@@ -110,7 +110,7 @@ class Loss_Calculator():
         """
         y_pred = y_pred[y_true != 0]
         y_true = y_true[y_true != 0]
-        ape = ((y_true - y_pred + 0) / y_true) *  100
+        ape = ((y_true - y_pred) / y_true) *  100
         A = np.multiply(ape,perc)
         B = np.multiply(ape,perc-1)
         perc_ape = np.maximum(A,B)
@@ -135,6 +135,7 @@ class Loss_Calculator():
         elif method == 'mape':
             calculate = lambda x, y : self._calc_mape(x, y)
         if method == 'smape':
+            
             calculate = lambda x, y : self._calc_smape(x, y)
         
         losses = {}

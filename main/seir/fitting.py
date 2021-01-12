@@ -8,10 +8,11 @@ from main.seir.optimiser import Optimiser
 from utils.fitting.loss import Loss_Calculator
 from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
 from viz import plot_smoothing, plot_fit
-
+import pandas as pd
+import numpy as np
 
 def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, smooth_jump_params, split,
-               loss_compartments, rolling_average, rolling_average_params, **kwargs):
+               loss_compartments, rolling_average, rolling_average_params,add_noise,**kwargs):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -32,7 +33,16 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     else:
         data_dict = get_data(data_source, dataloading_params)
         df_district = data_dict['data_frame']
-    
+    if add_noise:
+        columns_to_change = ['active', 'recovered', 'deceased']
+        for col in columns_to_change:
+            # a = np.ediff1d(df_district[col].to_list())
+            # noise = np.random.poisson(a)
+            # c_noise = np.cumsum(noise) + df_district[col].to_list()[0]
+            # c_noise.insert(0,df_district[col].to_list()[0])
+            # df_district[col] = pd.Series(c_noise)
+            df_district[col] = pd.Series(np.random.poisson(df_district[col].to_list()))
+        df_district['total'] = df_district['active'] + df_district['recovered'] + df_district['deceased']
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
 
