@@ -1,12 +1,12 @@
 model: SEIRHD
 starting_date: 2020-07-12
-total_days: 75
+total_days: 30
 initial_values:
     recovered: 95000
     deceased: 7500
     active: 20000
 include_tests: True
-tests_done: '[10000 for i in range(75)]'
+tests_done: '[10000 for i in range(30)]'
 fix_params: True
 params:
     N: 1.0e+7

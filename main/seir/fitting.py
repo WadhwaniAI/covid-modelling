@@ -21,7 +21,7 @@ from viz import plot_smoothing, plot_fit, plot_buckets
 
 
 def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, smooth_jump_params, split,
-               loss_compartments, rolling_average, rolling_average_params, **kwargs):
+               loss_compartments, rolling_average, rolling_average_params, add_noise=False, **kwargs):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
@@ -43,6 +43,19 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         data_dict = get_data(data_source, dataloading_params, **kwargs)
         df_district = data_dict['data_frame']
     
+    if add_noise:
+        columns_to_change = ['total', 'recovered', 'deceased']
+        daily_cases = df_district[columns_to_change] - df_district[columns_to_change].shift(1)
+        daily_cases[['date', 'tested']] = df_district[['date', 'tested']]
+        for col in columns_to_change:
+            daily_cases[col] = pd.Series([0] + list(np.random.poisson(daily_cases[col].to_list()[1:])))
+            daily_cases[col] = daily_cases[col].cumsum().add(df_district.loc[0, col])
+        daily_cases['active'] = daily_cases['total'] - daily_cases['recovered'] - daily_cases['deceased']
+        plot_smoothing(df_district, daily_cases, dataloading_params['state'], 
+                                        dataloading_params['district'], which_compartments=loss_compartments, 
+                                        description='Noise addition')
+        df_district = daily_cases
+
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
 

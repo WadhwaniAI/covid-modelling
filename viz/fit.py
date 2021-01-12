@@ -4,6 +4,7 @@ from matplotlib.lines import Line2D
 import seaborn as sns
 import pandas as pd
 import numpy as np
+import scipy.stats as st
 import copy
 import math
 import os
@@ -164,7 +165,25 @@ def plot_fit_multiple_preds(predictions_dict, which_fit='m1'):
     plt.tight_layout()
     return fig
 
-
+def plot_confidence_interval(scenario_dict, fig, axs, actual_params=None, ranges=None):
+    for run, run_dict in scenario_dict.items():
+        params_dict = {param: np.array(sorted([param_dict[param] for param_dict in run_dict]))
+                   for param in run_dict[0].keys()}
+        for i, param in enumerate(params_dict):
+            ax = axs.flat[i]
+            interval = st.t.interval(alpha=0.95, df=len(params_dict[param])-1, loc=np.mean(params_dict[param]), scale=st.sem(params_dict[param]))
+            interval = [abs(i - np.mean(params_dict[param])) for i in interval]
+            print (param, interval, np.mean(params_dict[param]))
+            ax.errorbar(x=[run], y=np.mean(params_dict[param]),yerr=np.array([list(interval)]).T, fmt='o')
+            ax.axhline(y=actual_params[param], ls='--', color='black')
+            if param == 'T_recov_fatal':
+                ax.set_title(f'parameter T_Death')
+            else:
+                ax.set_title(f'parameter {param}')
+            ax.set_ylabel('Density')
+            ax.set_ylim(ranges[param][0][0], ranges[param][0][1])
+            ax.legend()
+            
 def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
                    savefig=False, filename=None, label=None):
     """Plots histograms for all the sampled params for a particular run in a particular fig.
@@ -200,33 +219,17 @@ def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lin
 
     histograms = {}
     for i, param in enumerate(params_dict.keys()):
-        histograms[param] = {}
+        if (param == 'gamma'):
+            continue
         ax = axs.flat[i]
-        if plot_lines:
-            bar_heights, endpoints = np.histogram(params_dict[param], density=True, bins=20, weights=weights)
-            centers = (endpoints[1:] + endpoints[:-1]) / 2
-            ax.plot(centers, bar_heights, label=label)
+        sns.distplot(params_dict[param], hist = True, kde = False,bins= 100, norm_hist=True, color='y',
+                 kde_kws = {'shade': True, 'linewidth': 3}, label = ['bayes_opt'], ax=ax)
+        if param == 'T_recov_fatal':
+            ax.set_title(f'Denisty Plot of parameter T_Death')
         else:
-            if weighted:
-                histogram = ax.hist(params_dict[param], density=True, histtype='bar', bins=20, 
-                                    weights=weights, label=label, alpha=1)
-            else:
-                histogram = ax.hist(params_dict[param], density=True, histtype='bar', bins=20, 
-                                    label=label, alpha=1)
-            bar_heights, endpoints = histogram[0], histogram[1]
-            centers = (endpoints[1:] + endpoints[:-1]) / 2
-        
-        ax.set_title(f'Histogram of parameter {param}')
+            ax.set_title(f'Denisty Plot of parameter {param}')
         ax.set_ylabel('Density')
         ax.legend()
-            
-        histograms[param]['density'] = bar_heights
-        histograms[param]['endpoints'] = endpoints
-        histograms[param]['centers'] = centers
-        histograms[param]['probability'] = bar_heights*np.mean(np.diff(endpoints))
-        
-    if savefig:
-        fig.savefig(filename)
     return histograms
 
 def plot_all_histograms(predictions_dict, description, weighting='exp', beta=1):
