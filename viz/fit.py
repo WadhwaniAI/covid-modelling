@@ -166,14 +166,15 @@ def plot_fit_multiple_preds(predictions_dict, which_fit='m1'):
     return fig
 
 def plot_confidence_interval(scenario_dict, fig, axs, actual_params=None, ranges=None):
+    param_list = list(actual_params.keys())
+    param_list.remove('N')
     for run, run_dict in scenario_dict.items():
         params_dict = {param: np.array(sorted([param_dict[param] for param_dict in run_dict]))
-                   for param in run_dict[0].keys()}
-        for i, param in enumerate(params_dict):
+                   for param in param_list}
+        for i, param in enumerate(param_list):
             ax = axs.flat[i]
             interval = st.t.interval(alpha=0.95, df=len(params_dict[param])-1, loc=np.mean(params_dict[param]), scale=st.sem(params_dict[param]))
             interval = [abs(i - np.mean(params_dict[param])) for i in interval]
-            print (param, interval, np.mean(params_dict[param]))
             ax.errorbar(x=[run], y=np.mean(params_dict[param]),yerr=np.array([list(interval)]).T, fmt='o')
             ax.axhline(y=actual_params[param], ls='--', color='black')
             if param == 'T_recov_fatal':
@@ -181,8 +182,7 @@ def plot_confidence_interval(scenario_dict, fig, axs, actual_params=None, ranges
             else:
                 ax.set_title(f'parameter {param}')
             ax.set_ylabel('Density')
-            ax.set_ylim(ranges[param][0][0], ranges[param][0][1])
-            ax.legend()
+            ax.set_ylim(ranges[param][0], ranges[param][1])
             
 def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
                    savefig=False, filename=None, label=None):
