@@ -75,7 +75,7 @@ uncertainty:
         which_fit: m2
         variable_param_ranges:
             beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2021-01-01
+        date_of_sorting_trials: 2021-01-26
         sort_trials_by_column: active
         loss:
             loss_method: mape
