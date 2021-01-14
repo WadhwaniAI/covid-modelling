@@ -54,8 +54,14 @@ def get_list_of_models(date_of_submission, comp, reichlab_path='../../../covid19
         comp = 'inc_case'
     if read_from_github:
         reichlab_path = 'https://raw.githubusercontent.com/reichlab/covid19-forecast-hub/master'
-    df = pd.read_csv(f'{reichlab_path}/ensemble-metadata/' + \
-        f'{date_of_submission}-{comp}-model-eligibility.csv')
+    try:
+        df = pd.read_csv(f'{reichlab_path}/ensemble-metadata/' + \
+            f'{date_of_submission}-{comp}-model-eligibility.csv')
+    except:
+        date_convert = datetime.strptime(date_of_submission, '%Y-%m-%d')
+        date_of_filename = (date_convert - timedelta(days=1)).date()
+        df = pd.read_csv(f'{reichlab_path}/ensemble-metadata/' +
+                         f'{date_of_filename}-{comp}-model-eligibility.csv')
     df['location'] = df['location'].apply(lambda x : int(x) if x != 'US' else 0)
     all_models = list(df['model'])
 
@@ -102,8 +108,16 @@ def process_single_submission(model, date_of_submission, comp, df_true, reichlab
     except:
         date_convert = datetime.strptime(date_of_submission, '%Y-%m-%d')
         date_of_filename = date_convert - timedelta(days=1)
-        df = pd.read_csv(f'{reichlab_path}/data-processed/' + \
-            f'{model}/{date_of_filename.strftime("%Y-%m-%d")}-{model}.csv')
+        try:
+            df = pd.read_csv(f'{reichlab_path}/data-processed/' + \
+                f'{model}/{date_of_filename.strftime("%Y-%m-%d")}-{model}.csv')
+        except:
+            date_of_filename = date_of_filename - timedelta(days=1)
+            try:
+                df = pd.read_csv(f'{reichlab_path}/data-processed/' + \
+                    f'{model}/{date_of_filename.strftime("%Y-%m-%d")}-{model}.csv')
+            except:
+                return None
     # Converting all locations to integers
     df['location'] = df['location'].apply(lambda x : int(x) if x != 'US' else 0)
     # Keeping only states and territories forecasts
@@ -179,11 +193,15 @@ def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_p
     df_all_submissions = process_single_submission(
         list_of_models[0], date_of_submission, comp, df_true, reichlab_path, read_from_github,
         location_id_filter, num_weeks_filter)
+    if df_all_submissions is None:
+        raise AssertionError('list_of_models[0] has no submission on Monday, Sunday or Saturday' + \
+            '. Please skip it')
     for model in list_of_models:
         df_model_subm = process_single_submission(
             model, date_of_submission, comp, df_true, reichlab_path, read_from_github, 
             location_id_filter, num_weeks_filter)
-        df_all_submissions = pd.concat([df_all_submissions, df_model_subm], ignore_index=True)
+        if df_model_subm is not None:
+            df_all_submissions = pd.concat([df_all_submissions, df_model_subm], ignore_index=True)
 
     return df_all_submissions
 
@@ -445,7 +463,7 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                             'which_comp can be either death/case')
                 else:
                     df_subm = pd.concat([df_subm_d, df_subm_t], ignore_index=True)
-                if isinstance(percentile, str):
+                if percentile == use_as_point_forecast:
                     df_subm['type'] = 'point'
                     df_subm['quantile'] = np.nan
                 else:
@@ -455,7 +473,7 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                     df_subm['location'] = loc_name_to_key_dict[loc]
                 else:
                     df_subm['location'] = int(loc_name_to_key_dict[loc])
-                df_subm['model'] = 'Wadhwani_AI-BayesOpt'
+                df_subm['model'] = 'Wadhwani_AI-'
                 df_subm['forecast_date'] = datetime.combine(now.date(),
                                                             datetime.min.time())
                 df_loc_submission = pd.concat([df_loc_submission, df_subm], 
@@ -591,11 +609,14 @@ def end_to_end_comparison(hparam_source='predictions_dict', predictions_dict=Non
 
         loss_comp = config['loss']['loss_compartments'][0]
         data_last_date = config['split']['end_date']
-        date_of_submission = (data_last_date + timedelta(days=2)).strftime('%Y-%m-%d')
-        if loss_comp == 'deceased':
-            comp = 'cum_death'
-        if loss_comp == 'total':
-            comp = 'cum_case'
+
+        if date_of_submission is None:
+            date_of_submission = (data_last_date + timedelta(days=2)).strftime('%Y-%m-%d')
+        if comp is None:
+            if loss_comp == 'deceased':
+                comp = 'cum_death'
+            if loss_comp == 'total':
+                comp = 'cum_case'
     else:
         if (comp is None) or (date_of_submission is None):
             raise ValueError('comp and date_of_submission should not be None if hparam_source==input')
