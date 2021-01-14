@@ -163,7 +163,7 @@ def single_run_fn_for_parallel(state, base_config_filename):
 def perform_batch_runs(base_config_filename='us.yaml', username='sansiddh', output_folder=None):
     # Specifying the folder where checkpoints will be saved
     if output_folder is None:
-        output_folder = '/scratch/users/{}/covid-modelling/{}'.format(
+        output_folder = '/scratche/users/{}/covid-modelling/{}'.format(
             username, datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
     os.makedirs(output_folder, exist_ok=True)
 
