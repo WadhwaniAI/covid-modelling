@@ -14,7 +14,6 @@ sys.path.append('../../')
 
 from main.seir.fitting import single_fitting_cycle
 from main.seir.forecast import get_forecast
-from main.seir.sensitivity import calculate_sensitivity_and_plot
 from utils.generic.config import read_config, process_config, make_date_key_str
 from utils.generic.logging import log_wandb
 from viz import plot_forecast, plot_top_k_trials, plot_ptiles
@@ -33,12 +32,6 @@ def fitting(predictions_dict, config):
 
     predictions_dict['fitting_date'] = datetime.datetime.now().strftime(
         "%Y-%m-%d")
-
-def sensitivity(predictions_dict, config):
-    predictions_dict['m1']['plots']['sensitivity'], _, _ = calculate_sensitivity_and_plot(
-        predictions_dict, config, which_fit='m1')
-    predictions_dict['m2']['plots']['sensitivity'], _, _ = calculate_sensitivity_and_plot(
-        predictions_dict, config, which_fit='m2')
 
 def fit_beta(predictions_dict, config):
     uncertainty_args = {'predictions_dict': predictions_dict,
@@ -121,15 +114,10 @@ def plot_forecasts_ptiles(predictions_dict, config):
         predictions_dict['m2']['plots']['forecasts_ptiles'][column.name] = ptiles_plots[column]
 
 
-def run_single_config_end_to_end(config, wandb_config, run_name, perform_sensitivity=False, log_wandb_flag=False):
+def run_single_config_end_to_end(config, wandb_config, run_name, log_wandb_flag=False):
     predictions_dict = {}
 
-    output_folder = '../../misc/reports/{}'.format(
-        datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
-
     fitting(predictions_dict, config)
-    if perform_sensitivity:
-        sensitivity(predictions_dict, config)
     forecast_best(predictions_dict, config)
     uncertainty = fit_beta(predictions_dict, config)
     process_uncertainty_fitting(predictions_dict, config, uncertainty)
