@@ -26,8 +26,10 @@ def get_data(data_source, dataloading_params):
     """
     if data_source == 'filename':
         df_result = get_custom_data_from_file(**dataloading_params)
-    if data_source == 'athena':
+    elif data_source == 'athena':
         df_result = get_custom_data_from_db(**dataloading_params)
+    else:
+        raise ValueError('Given input of data_source is incorrect. please either give "athena" or "filename"')
     
     return df_result
 
