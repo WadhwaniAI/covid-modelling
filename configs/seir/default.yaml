@@ -44,28 +44,21 @@ fitting:
         seed: 42
     #Choose Fitting Periods and num evaluations
     split:
-        start_date: 2020-09-22
-        end_date: null
-        train_period: 21
-        val_period: 7
+        start_date: null
+        end_date: 2020-10-31
+        train_period: 30
+        val_period: 3
         test_period: 0
     #Optimisation related parameters
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
-sensitivity:
-    lockdown_R0: [[[0.5, 1.5], 101], total, null]
-    I_hosp_ratio: [[[0, 1], 201], total, null]
-    E_hosp_ratio: [[[0, 2], 201], total, null]
-    P_fatal: [[[0, 0.5], 201], deceased, total]
-    T_recov: [[[1, 100], 101], recovered, total]
-    T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
-    plot_topk_trials_for_columns: [total, active]
-    plot_ptiles_for_columns: [total, active]
+    plot_topk_trials_for_columns: [total, active, recovered, deceased]
+    plot_ptiles_for_columns: [total, active, recovered, deceased]
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
@@ -75,8 +68,8 @@ uncertainty:
             parallelise: FALSE
         variable_param_ranges:
             beta: [[0, 10], 101]
-        construct_percentiles_day_wise: TRUE
-        date_of_sorting_trials: 2020-09-30
+        construct_percentiles_day_wise: FALSE
+        date_of_sorting_trials: 2020-11-30
         sort_trials_by_column: total
         loss:
             loss_method: mape

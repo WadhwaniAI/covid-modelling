@@ -68,21 +68,6 @@ fitting:
         loss_compartments: [total, active, recovered, deceased, hq, icu, non_o2_beds, o2_beds, ventilator]
         loss_weights: [1, 1, 1, 1, 1, 1, 1, 1, 1]
     #Optimisation related parameters
-sensitivity:
-    lockdown_R0: [[[0.5, 1.5], 101], total, null]
-    I_hosp_ratio: [[[0, 1], 201], total, null]
-    E_hosp_ratio: [[[0, 2], 201], total, null]
-    P_non_oxy: [[[0, 0.7], 201], non_o2_beds, total]
-    P_oxy: [[[0, 0.5], 201], o2_beds, total]
-    P_icu: [[[0, 0.5], 201], icu, total]
-    P_vent: [[[0, 0.5], 201], ventilator, total]
-    P_fatal: [[[0, 0.3], 201], deceased, total]
-    T_recov_hq: [[[1, 100], 101], hq, total]
-    T_recov_non_oxy: [[[1, 100], 101], non_o2_beds, total]
-    T_recov_oxy: [[[1, 100], 101], o2_beds, total]
-    T_recov_icu: [[[1, 100], 101], icu, total]
-    T_recov_vent: [[[1, 100], 101], ventilator, total]
-    T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10

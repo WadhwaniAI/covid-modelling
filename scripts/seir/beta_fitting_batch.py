@@ -51,7 +51,7 @@ config = read_config(parsed_args.config_filename)
 wandb_config = read_config(parsed_args.config_filename, preprocess=False)
 wandb_config = make_date_key_str(wandb_config)
 
-predictions_pkl_filename = f'/scratch/users/{parsed_args.username}/covid-modelling/' + \
+predictions_pkl_filename = f'/scratche/users/{parsed_args.username}/covid-modelling/' + \
     f'{parsed_args.pdict_name}/predictions_dict.pkl'
 with open(predictions_pkl_filename, 'rb') as f:
     predictions_dict = pickle.load(f)
@@ -63,7 +63,7 @@ loc_dict_arr = Parallel(n_jobs=parsed_args.nthreads)(delayed(partial_run_beta_fi
 
 predictions_dict = dict(zip(predictions_dict.keys(), loc_dict_arr))
 
-output_folder = f'/scratch/users/{parsed_args.username}/covid-modelling/' + \
+output_folder = f'/scratche/users/{parsed_args.username}/covid-modelling/' + \
     f'{parsed_args.pdict_name}_beta'
 os.makedirs(output_folder, exist_ok=True)
 with open(f'{output_folder}/predictions_dict.pkl', 'wb') as f:

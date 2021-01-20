@@ -3,9 +3,9 @@
 It has 4 top level keys :
 
 - `fitting` : everything related to fitting
-- `sensitivity` : parameters related to the sensitivity of the fit
 - `forecast` : parameters related to forecasting
 - `uncertainty` : parameters related to uncertainty estimation
+- `logging` : parameters related to logging on ML Flow
 
 We may add a 5th key for `whatifs` scenarios, but that depends on how formally intergrated that becomes to the end to end pipeline.
 
