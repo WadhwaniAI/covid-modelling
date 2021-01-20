@@ -83,7 +83,8 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
         observed_dataframes[name] = eval(name)
     if 'ideal_params' in data_dict:
-        return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing, "ideal_params" : data_dict['ideal_params']}
+        return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing, 
+                "ideal_params" : data_dict['ideal_params']}
     return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing}
 
 
@@ -149,7 +150,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     return results_dict
 
 
-def single_fitting_cycle(data, model, variable_param_ranges, default_params, fitting_method, 
+def single_fitting_cycle(data, model_family, model, variable_param_ranges, default_params, fitting_method,
                          fitting_method_params, split, loss):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
