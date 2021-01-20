@@ -25,6 +25,7 @@ fitting:
             min_periods: 7
             split_after_rolling: FALSE
     #Choose Model and Ranges
+    model_family: seir
     model: SEIRHD
     variable_param_ranges:
         lockdown_R0: [[0.7, 1.2], uniform]
@@ -54,6 +55,11 @@ fitting:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
+plotting:
+    truncate_series: FALSE
+    left_truncation_buffer: 30
+    right_truncation_buffer: 30
+    separate_ax_separate_compartments: FALSE
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
