@@ -290,8 +290,9 @@ class MCMC(object):
         optimized = 0
         alpha_0 = 40
         beta_0 = 2/700
+        scipy.random.seed()
         for i in tqdm(range(iters)):
-            # scipy.random.seed()
+            
             theta_new = self.Gauss_proposal(theta)
             theta_new['gamma'] = np.sqrt(inv.rvs(a = alpha_0 + da  ,scale = beta_0 + db,size = 1)[0])
             
@@ -383,7 +384,7 @@ class MCMC(object):
             list: Description
         """
         paralell_bool = True
-        import pdb; pdb.set_trace()
+        
         if paralell_bool:
             print("Executing in Parallel")
             partial_metropolis = partial(self._metropolis, iters=self.iters)
