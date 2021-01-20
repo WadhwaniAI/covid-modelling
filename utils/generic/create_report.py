@@ -81,10 +81,6 @@ def _log_fits(mdFile, ROOT_DIR, fit_dict, which_fit='M1'):
     _log_plots_util(mdFile, ROOT_DIR, f'{which_fit.lower()}-fit.png',
                     fit_dict['plots']['fit'], f'{which_fit} Fit Curve')
 
-    mdFile.new_header(level=2, title=f'{which_fit} Sensitivity Curves')
-    _log_plots_util(mdFile, ROOT_DIR, f'{which_fit.lower()}-sensitivity.png',
-                    fit_dict['plots']['sensitivity'], f'{which_fit} Fit Sensitivity')
-
 
 def _log_uncertainty_fit(mdFile, fit_dict):
     mdFile.new_paragraph(f"beta - {fit_dict['beta']}")

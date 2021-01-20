@@ -1,4 +1,3 @@
-import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import datetime
@@ -6,13 +5,15 @@ import copy
 import os
 import pickle
 import argparse
+from functools import partial
+from joblib import Parallel, delayed
+from tqdm import tqdm
 
 import sys
 sys.path.append('../../')
 
 from main.seir.fitting import single_fitting_cycle
 from main.seir.forecast import get_forecast
-from main.seir.sensitivity import calculate_sensitivity_and_plot
 from utils.generic.config import read_config, process_config, make_date_key_str
 from utils.generic.logging import log_wandb
 from viz import plot_forecast, plot_top_k_trials, plot_ptiles
@@ -31,12 +32,6 @@ def fitting(predictions_dict, config):
 
     predictions_dict['fitting_date'] = datetime.datetime.now().strftime(
         "%Y-%m-%d")
-
-def sensitivity(predictions_dict, config):
-    predictions_dict['m1']['plots']['sensitivity'], _, _ = calculate_sensitivity_and_plot(
-        predictions_dict, config, which_fit='m1')
-    predictions_dict['m2']['plots']['sensitivity'], _, _ = calculate_sensitivity_and_plot(
-        predictions_dict, config, which_fit='m2')
 
 def fit_beta(predictions_dict, config):
     uncertainty_args = {'predictions_dict': predictions_dict,
@@ -119,15 +114,10 @@ def plot_forecasts_ptiles(predictions_dict, config):
         predictions_dict['m2']['plots']['forecasts_ptiles'][column.name] = ptiles_plots[column]
 
 
-def run_single_config_end_to_end(config, wandb_config, run_name, perform_sensitivity=False):
+def run_single_config_end_to_end(config, wandb_config, run_name, log_wandb_flag=False):
     predictions_dict = {}
 
-    output_folder = '../../misc/reports/{}'.format(
-        datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
-
     fitting(predictions_dict, config)
-    if perform_sensitivity:
-        sensitivity(predictions_dict, config)
     forecast_best(predictions_dict, config)
     uncertainty = fit_beta(predictions_dict, config)
     process_uncertainty_fitting(predictions_dict, config, uncertainty)
@@ -136,16 +126,32 @@ def run_single_config_end_to_end(config, wandb_config, run_name, perform_sensiti
     plot_forecasts_of_best_candidates(predictions_dict, config)
     plot_forecasts_ptiles(predictions_dict, config)
 
-    run = wandb.init(project="covid-modelling", reinit=True, 
-                     config=wandb_config, name=run_name)
-    log_wandb(predictions_dict)
-    run.finish()
+    if log_wandb_flag:
+        run = wandb.init(project="covid-modelling", reinit=True, 
+                        config=wandb_config, name=run_name)
+        log_wandb(predictions_dict)
+        run.finish()
     return predictions_dict
 
 
+def single_run_fn_for_parallel(state, base_config_filename):
+    wandb_config = read_config(base_config_filename, preprocess=False)
+    wandb_config['fitting']['data']['dataloading_params']['region'] = state
+    config = process_config(wandb_config)
+    wandb_config = make_date_key_str(wandb_config)
+    try:
+        x = run_single_config_end_to_end(
+            config, wandb_config, f'{state}', log_wandb_flag=False)
+        plt.close('all')
+    except Exception as e:
+        x = e
+    return x
+    
+
 def perform_batch_runs(base_config_filename='us.yaml', username='sansiddh', output_folder=None):
+    # Specifying the folder where checkpoints will be saved
     if output_folder is None:
-        output_folder = '/scratch/users/{}/covid-modelling/{}'.format(
+        output_folder = '/scratche/users/{}/covid-modelling/{}'.format(
             username, datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
     os.makedirs(output_folder, exist_ok=True)
 
@@ -155,26 +161,17 @@ def perform_batch_runs(base_config_filename='us.yaml', username='sansiddh', outp
     obj = JHULoader()
     df = obj._load_from_daily_reports()
     what_to_vary = pd.unique(df['Province_State']).tolist()
+    partial_single_run_fn_for_parallel = partial(
+        single_run_fn_for_parallel, base_config_filename=base_config_filename)
 
-    # Specifying the folder where checkpoints will be saved
+    predictions_arr = Parallel(n_jobs=40)(delayed(partial_single_run_fn_for_parallel)(state)
+                                          for state in tqdm(what_to_vary))
     predictions_dict = {}
-    for i, state in enumerate(what_to_vary):
-        # Update config with new state name
-        wandb_config = read_config(base_config_filename, preprocess=False)
-        wandb_config['fitting']['data']['dataloading_params']['region'] = state
-        config = process_config(wandb_config)
-        wandb_config = make_date_key_str(wandb_config)
-        print(f'Starting fitting, forecasting cycle for {state}, #{i+1}/{len(what_to_vary)}')
-        try:
-            predictions_dict[state] = run_single_config_end_to_end(
-                config, wandb_config, f'{state}')
-        except Exception as e:
-            print(e)
-        print(f'Finished cycle for {state}, #{i+1}/{len(what_to_vary)}')
-        with open(f'{output_folder}/predictions_dict.pkl', 'wb') as f:
-            pickle.dump(predictions_dict, f)
-        print(f'Saved predictions_dict. {i+1}/{len(what_to_vary)} done.')
-        plt.close('all')
+    for i, state in tqdm(enumerate(what_to_vary)):
+        if type(predictions_arr[i]) == dict:
+            predictions_dict[state] = predictions_arr[i]
+    with open(f'{output_folder}/predictions_dict.pkl', 'wb') as f:
+        pickle.dump(predictions_dict, f)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="SEIR Batch Running Script")

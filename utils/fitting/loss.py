@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_squared_error, mean_squared_log_error
-
 
 class Loss_Calculator():
 
@@ -66,7 +64,58 @@ class Loss_Calculator():
 
         return loss
 
-    # calls the bit loss functions
+    def _calc_smape(self, y_pred, y_true):
+        """Function for calculating symmetric mape
+
+        Args:
+            y_pred (np.array): predicted array
+            y_true (np.array): GT array
+
+        Returns:
+            float: SMAPE loss
+        """
+        y_pred = y_pred[y_true != 0]
+        y_true = y_true[y_true != 0]
+
+        ape = np.abs((y_true - y_pred + 0) / np.mean(y_true,y_pred)) *  100
+        loss = np.mean(ape)
+        return loss
+    
+    def _calc_l1_perc(self, y_pred, y_true,perc):
+        """Function for calculating L1 percentile loss
+
+        Args:
+            y_pred (np.array): Predicted array
+            y_true (np.array): GT array
+            perc (float): The percentile
+
+        Returns:
+            float: L1 Percentile Loss
+        """
+        e = y_true - y_pred
+        loss = np.sum(np.max(e*perc,(perc-1)*e))
+        return loss
+
+    def _calc_mape_perc(self, y_pred, y_true,perc):
+        """Function for calculating MAPE percentile loss
+
+        Args:
+            y_pred (np.array): Predicted array
+            y_true (np.array): GT Array
+            perc (float): percentile
+
+        Returns:
+            float: MAPE Percentile Loss
+        """
+        y_pred = y_pred[y_true != 0]
+        y_true = y_true[y_true != 0]
+        ape = ((y_true - y_pred + 0) / y_true) *  100
+        A = np.multiply(ape,perc)
+        B = np.multiply(ape,perc-1)
+        perc_ape = np.maximum(A,B)
+        loss = np.mean(perc_ape)
+        return loss
+
     def calc_loss_dict(self, df_prediction, df_true, df_data_weights, method='rmse'):
         """Caclculates dict of losses for each compartment using the method specified
 

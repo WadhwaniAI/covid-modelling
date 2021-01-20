@@ -4,8 +4,9 @@ fitting:
         data_source: jhu
         stratified_data: FALSE
         dataloading_params:
+            reload_data: FALSE
             dataframe: us_states
-            region: Wyoming
+            region: Kentucky
             sub_region: null
         smooth_jump: FALSE
         smooth_jump_params:
@@ -32,27 +33,21 @@ fitting:
         N: 1.0e+7
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 1000
+        num_evals: 2000
         algo: tpe
+        seed: null
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-09-26
-        train_period: 21
-        val_period: 4
+        end_date: 2020-12-21
+        train_period: 30
+        val_period: 3
         test_period: 0
     #Optimisation related parameters
     loss:
         loss_method: mape
         loss_compartments: [deceased]
         loss_weights: [1]
-sensitivity:
-    lockdown_R0: [[[0.5, 1.5], 101], total, null]
-    I_hosp_ratio: [[[0, 1], 201], total, null]
-    E_hosp_ratio: [[[0, 2], 201], total, null]
-    P_fatal: [[[0, 0.5], 201], deceased, total]
-    T_recov: [[[1, 100], 101], recovered, total]
-    T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
     forecast_days: 45
     num_trials_to_plot: 10
@@ -67,8 +62,9 @@ uncertainty:
             parallelise: FALSE
         variable_param_ranges:
             beta: [[0, 10], 101]
+        construct_percentiles_day_wise: TRUE
         date_of_sorting_trials: 2020-10-19
-        sort_trials_by_column: total
+        sort_trials_by_column: deceased
         loss:
             loss_method: mape
             loss_compartments: [deceased]

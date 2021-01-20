@@ -1,102 +1,142 @@
-import pandas as pd
-import geopandas as gpd
 import numpy as np
-import matplotlib.pyplot as plt
-import geoplot as gplt
-import geoplot.crs as gcrs
-import seaborn as sns
-import matplotlib.dates as mdates
+import argparse
+from functools import partial
+from tqdm import tqdm
+from joblib import Parallel, delayed
+import datetime
 
-from scipy.stats import zscore
+import sys
+sys.path.append('../../')
 
 import os
 import copy
 import pickle
-import re
-from datetime import datetime, date, timedelta
-from glob import glob
 
-from utils.generic.config import read_config, make_date_key_str
-from utils.generic.reichlab import *
-from viz.reichlab import *
+from utils.generic.config import read_config
+from viz import plot_ptiles
+from viz.uncertainty import plot_beta_loss
 
-us_states_abbv_df = pd.read_csv('../../data/data/us_states_abbv.csv')
-us_states_abbv_dict = dict(zip(us_states_abbv_df['state'], us_states_abbv_df['state_code']))
+# Load all predictions_dict files_load_all_pdicts(parsed_args)
+def _load_all_pdicts(parsed_args):
+    predictions_dict_list = []
+    for _, fname in enumerate(parsed_args.list_of_pdicts):
+        predictions_pkl_filename = f'/scratche/users/sansiddh/covid-modelling/{fname}/predictions_dict.pkl'
+        print(f'Reading pkl file of run {fname}')
+        with open(predictions_pkl_filename, 'rb') as f:
+            predictions_dict_list.append(pickle.load(f))
 
-predictions_pkl_filename = '/scratch/users/sansiddh/covid-modelling/2020_1102_210541/predictions_dict.pkl'
-print('Reading pkl file of run 2020_1102_210541')
-with open(predictions_pkl_filename, 'rb') as f:
-    predictions_dict_1 = pickle.load(f)
+    return predictions_dict_list
 
-predictions_pkl_filename = '/scratch/users/sansiddh/covid-modelling/2020_1103_013041/predictions_dict.pkl'
-print('Reading pkl file of run 2020_1103_013041')
-with open(predictions_pkl_filename, 'rb') as f:
-    predictions_dict_2 = pickle.load(f)
+# Create combined predictions_dict
+def _create_combined_pdict(predictions_dict_list, parsed_args):
+    predictions_dict_comb = {}
+    for loc in predictions_dict_list[0].keys():
+        predictions_dict_comb[loc] = {}
+        predictions_dict_comb[loc]['m1'] = {}
+        predictions_dict_comb[loc]['m2'] = {}
+        predictions_dict_comb[loc]['m2']['plots'] = {}
+        predictions_dict_comb[loc]['m2']['forecasts'] = {}
+        # Copy all params
+        predictions_dict_comb[loc]['m1']['run_params'] = copy.deepcopy(
+            predictions_dict_list[0][loc]['m1']['run_params'])
+        predictions_dict_comb[loc]['m2']['run_params'] = copy.deepcopy(
+            predictions_dict_list[0][loc]['m2']['run_params'])
+        # Copy all dataframes
+        predictions_dict_comb[loc]['m1']['df_district'] = copy.deepcopy(
+            predictions_dict_list[0][loc]['m1']['df_district'])
+        predictions_dict_comb[loc]['m1']['df_train'] = copy.deepcopy(
+            predictions_dict_list[0][loc]['m1']['df_train'])
+        predictions_dict_comb[loc]['m1']['df_val'] = copy.deepcopy(
+            predictions_dict_list[0][loc]['m1']['df_val'])
 
-predictions_pkl_filename = '/scratch/users/sansiddh/covid-modelling/2020_1103_043227/predictions_dict.pkl'
-print('Reading pkl file of run 2020_1103_043227')
-with open(predictions_pkl_filename, 'rb') as f:
-    predictions_dict_3 = pickle.load(f)
+        # Concatenate all predictions
+        predictions_arr, losses_arr, params_arr = ([], [], [])
+        for i, pdict in enumerate(predictions_dict_list):
+            predictions_arr += pdict[loc]['m1']['trials_processed']['predictions'][:parsed_args.num_trials]
 
-predictions_dict_comb = {}
-for loc, loc_dict in predictions_dict_1.items():
-    predictions_dict_comb[loc] = {}
-    predictions_dict_comb[loc]['m1'] = {}
-    predictions_dict_comb[loc]['m1']['df_district'] = copy.deepcopy(
-        predictions_dict_1[loc]['m1']['df_district']
-    )
-    predictions_dict_comb[loc]['m1']['df_train'] = copy.deepcopy(
-        predictions_dict_1[loc]['m1']['df_train']
-    )
-    predictions_dict_comb[loc]['m1']['df_val'] = copy.deepcopy(
-        predictions_dict_1[loc]['m1']['df_val']
-    )
-    predictions_dict_comb[loc]['m1']['trials_processed'] = {}
-    predictions_dict_comb[loc]['m1']['trials_processed']['predictions'] = \
-        predictions_dict_1[loc]['m1']['trials_processed']['predictions'] + \
-        predictions_dict_2[loc]['m1']['trials_processed']['predictions'] + \
-        predictions_dict_3[loc]['m1']['trials_processed']['predictions']
-    
-    predictions_dict_comb[loc]['m1']['trials_processed']['losses'] = np.concatenate(
-        (predictions_dict_1[loc]['m1']['trials_processed']['losses'],  
-         predictions_dict_2[loc]['m1']['trials_processed']['losses'], 
-         predictions_dict_3[loc]['m1']['trials_processed']['losses']), 
-        axis=None
-    )
-    
-    predictions_dict_comb[loc]['m1']['trials_processed']['params'] = np.concatenate(
-        (predictions_dict_1[loc]['m1']['trials_processed']['params'],  
-         predictions_dict_2[loc]['m1']['trials_processed']['params'], 
-         predictions_dict_3[loc]['m1']['trials_processed']['params']), 
-        axis=None
-    )
+            losses_arr.append(pdict[loc]['m1']['trials_processed']['losses'][:parsed_args.num_trials])
 
-config_filename = 'us2.yaml'
-config = read_config(config_filename)
+            params_arr.append(pdict[loc]['m1']['trials_processed']['params'][:parsed_args.num_trials])
+        
+        # Add them to predictions_dict_comb
+        predictions_dict_comb[loc]['m1']['trials_processed'] = {}
+        predictions_dict_comb[loc]['m1']['trials_processed']['predictions'] = predictions_arr
+        predictions_dict_comb[loc]['m1']['trials_processed']['losses'] = np.concatenate(
+            tuple(losses_arr), axis=None)
+        predictions_dict_comb[loc]['m1']['trials_processed']['params'] = np.concatenate(
+            tuple(params_arr), axis=None)
 
-wandb_config = read_config(config_filename, preprocess=False)
-wandb_config = make_date_key_str(wandb_config)
+    return predictions_dict_comb
 
-output_folder = '/scratch/users/{}/covid-modelling/{}'.format(
-    'sansiddh', 'aug22_combined')
-os.makedirs(output_folder, exist_ok=True)
 
-for i, (loc, loc_dict) in enumerate(predictions_dict_comb.items()):
+def _perform_beta_fitting(loc_dict, config):
     uncertainty_args = {'predictions_dict': loc_dict, 'fitting_config': config['fitting'],
                         'forecast_config': config['forecast'], 'process_trials': False,
                         **config['uncertainty']['uncertainty_params']}
-    print(f'Fitting beta for {loc}...')
     uncertainty = config['uncertainty']['method'](**uncertainty_args)
 
-    loc_dict['m2'] = {}
-    loc_dict['m2']['forecasts'] = {}
     uncertainty_forecasts = uncertainty.get_forecasts()
     for key in uncertainty_forecasts.keys():
         loc_dict['m2']['forecasts'][key] = uncertainty_forecasts[key]['df_prediction']
 
     loc_dict['m2']['forecasts']['ensemble_mean'] = uncertainty.ensemble_mean_forecast
-    print(f'Fitting done for {loc}. {i+1}/{len(predictions_dict_comb)} done.')
+
+    loc_dict['m2']['plots']['beta_loss'], _ = plot_beta_loss(
+        uncertainty.dict_of_trials)
+    loc_dict['m2']['beta'] = uncertainty.beta
+    loc_dict['m2']['beta_loss'] = uncertainty.beta_loss
+    loc_dict['m2']['deciles'] = uncertainty_forecasts
+    
+    # ptiles_plots = plot_ptiles(loc_dict, which_compartments=config['forecast']['plot_ptiles_for_columns'])
+
+    # loc_dict['m2']['plots']['forecasts_ptiles'] = {}
+    # for column in config['forecast']['plot_ptiles_for_columns']:
+    #     loc_dict['m2']['plots']['forecasts_ptiles'][column.name] = ptiles_plots[column]
+
+    return loc_dict
+
+if __name__ == '__main__':
+
+    # List of args
+    parser = argparse.ArgumentParser(description="SEIR Batch Beta Fitting Script")
+    parser.add_argument(
+        "--config_filename", type=str, required=True, help="config filename to use while running the script"
+    )
+    parser.add_argument(
+        "--list_of_pdicts", nargs='+', type=str, required=True,
+        help="The list of folder names with the predictions_dict file which have to be merged."
+    )
+    parser.add_argument(
+        "--username", type=str, default='sansiddh', help="Name of the user on odin/thor"
+    )
+    parser.add_argument(
+        "--nthreads", type=int, default=40, help="Number of threads in parallel"
+    )
+    parser.add_argument(
+        "--num_trials", type=int, default=2000, help="Number of trials for each predictions_dict to concatenate"
+    )
+    parsed_args = parser.parse_args()
+    print(parsed_args)
+
+    # Create folder
+    output_folder = '/scratche/users/{}/covid-modelling/{}_comb'.format(
+        parsed_args.username, datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Load and process all the args
+    config = read_config(parsed_args.config_filename)
+    predictions_dict_list = _load_all_pdicts(parsed_args)
+    predictions_dict_comb = _create_combined_pdict(predictions_dict_list, parsed_args)
+
+    # Do the actual fitting
+    partial_perform_beta_fitting = partial(_perform_beta_fitting, config=config)
+
+    loc_dict_arr = Parallel(n_jobs=parsed_args.nthreads)(delayed(partial_perform_beta_fitting)(
+        loc_dict) for _, loc_dict in tqdm(predictions_dict_comb.items()))
+
+    predictions_dict = dict(zip(predictions_dict_comb.keys(), loc_dict_arr))
+
     with open(f'{output_folder}/predictions_dict.pkl', 'wb') as f:
-        pickle.dump(predictions_dict_comb, f)
+        pickle.dump(predictions_dict, f)
     print(f'Saved predictions_dict.')
-        
+            

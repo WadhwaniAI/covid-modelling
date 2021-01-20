@@ -1,21 +1,36 @@
 fitting:
     # Geographical Location
     data:
-        data_source: simulated
+        data_source: athena
         stratified_data: FALSE
         dataloading_params:
             reload_data: FALSE
-            generate: TRUE
-            config_file: seirhd_fixed.yaml
-            filename: ../../data/data/simulated_data/simulated_data_1.csv
-        smooth_jump: FALSE
-        smooth_jump_params: None
-        rolling_average: FALSE
-        rolling_average_params: None
+            state: Maharashtra
+            district: Mumbai
+            tables: [bed_summaries, case_summaries, testing_summary]
+            schema: city_data_mumbai
+            staging_dir: mumbai
+            label: mumbai
+        smooth_jump: TRUE
+        smooth_jump_params:
+            2020-05-28: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-14: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
+        rolling_average: TRUE
+        rolling_average_params:
+            center: TRUE
+            window_size: 7
+            win_type: null
+            min_periods: 7
+            split_after_rolling: FALSE
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
-        lockdown_R0: [[0.7, 1.5], uniform]
+        lockdown_R0: [[0.7, 1.2], uniform]
         T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
         T_recov: [[0, 40], uniform]
@@ -24,11 +39,12 @@ fitting:
         E_hosp_ratio: [[0, 2], uniform]
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
-        N: 3.772e+7
+        N: 1.0e+7
     fitting_method: bayes_opt
     fitting_method_params:
         num_evals: 1000
         algo: tpe
+        seed: 42
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
@@ -41,16 +57,6 @@ fitting:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
-    # Variable data smoothing
-    data_weights:
-        if_weights: FALSE
-        start_date: 2020-10-02
-        end_date: 2020-10-14
-        weights:
-            total: [10.5, 10.5, 10.25, 10.25, 10.2, 0.2, -1, -1, -1, -1, -1, -1.5, -1.5]
-            active: [11.5, 11.5, 11.25, 11.25, 11.2, 11.2, -2, -2, -2, -2, -2, -2.5, -2.5]
-            recovered: [12.5, 12.5, 12.25, 12.25, 12.2, 2.2, -3, -3, -3, -3, -3, -3.5, -3.5]
-            deceased: [13.5, 13.5, 13.25, 13.25, 13.2, 13.2, 4, 4, -4, -4, -4, -4.5, -4.5]
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
@@ -59,10 +65,12 @@ forecast:
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
-        num_evals: 100
         which_fit: m1
+        fitting_method: gridsearch
+        fitting_method_params:
+            parallelise: FALSE
         variable_param_ranges:
-            beta: [[0, 10], uniform]
+            beta: [[0, 10], 101]
         construct_percentiles_day_wise: TRUE
         date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
@@ -71,7 +79,6 @@ uncertainty:
             loss_compartments: [total, active, recovered, deceased]
             loss_weights: [0.25, 0.25, 0.25, 0.25]
         percentiles: [2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 97.5]
-what_ifs:
-    percentile: 80
-    multipliers: [0.9, 1, 1.05, 1.1, 1.2, 1.25]
-
+logging:
+    experiment_name: wiai-temp
+    run_name: null
