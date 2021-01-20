@@ -53,9 +53,9 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         else:
             df_district, description = smooth_big_jump(df_district, smooth_jump_params)
 
-        smoothing_plot = plot_smoothing(orig_df_district, df_district, dataloading_params['state'], 
-                                        dataloading_params['district'], which_compartments=loss_compartments, 
-                                        description='Smoothing')
+        # smoothing_plot = plot_smoothing(orig_df_district, df_district, dataloading_params['state'], 
+        #                                 dataloading_params['district'], which_compartments=loss_compartments, 
+        #                                 description='Smoothing')
     df_district['daily_cases'] = df_district['total'].diff()
     df_district.dropna(axis=0, how='any', subset=['total'], 
                        inplace=True)
@@ -203,6 +203,8 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
     if not observed_dataframes['df_val'] is None:
         print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
+    if not observed_dataframes['df_test'] is None:
+        print('test\n', tabulate(observed_dataframes['df_test'].tail().round(2).T, headers='keys', tablefmt='psql'))
         
     predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
             default_params, fitting_method, fitting_method_params, split, loss)

@@ -71,7 +71,7 @@ class MCMC(object):
         #                                    self._default_params_old, optimiser)
         self.proposal_sigmas = proposal_sigmas
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
-
+        self.DIC = 0
 
     def _fetch_data(self):
         """
@@ -119,12 +119,12 @@ class MCMC(object):
         theta = defaultdict()
         for key in self.prior_ranges:
             theta[key] = np.random.uniform(float(self.prior_ranges[key][0][0]), self.prior_ranges[key][0][1])
-        oldLL,_,_ = self._log_likelihood(theta)
-        alpha = 500
-        beta =  2
+        oldLL,da,db = self._log_likelihood(theta)
+        alpha = 40
+        beta =  2/700
         from scipy.stats import invgamma as inv
         theta['gamma'] = np.sqrt(inv.rvs(a = alpha ,scale = beta , size = 1 )[0])
-        return theta,oldLL
+        return theta,oldLL,da,db
 
     def Gauss_proposal(self, theta_old):
         """
@@ -261,8 +261,8 @@ class MCMC(object):
             bool: whether or not to accept the new parameter set.
         """
         x_new,da,db= self._log_likelihood(theta_new)
-        x_old = oldLL
-        
+        x_old,_,_ = self._log_likelihood(theta_old)
+
         if (x_new) > (x_old):
             optimized+=1
             return True,explored,optimized,x_new,da,db
@@ -281,37 +281,33 @@ class MCMC(object):
         Returns:
             tuple: tuple containing a list of accepted and a list of rejected parameter values.
         """
-        scipy.random.seed()
-        theta , oldLL = self._param_init()
+        theta,oldLL,da,db = self._param_init()
         accepted = [theta]
         rejected = list()
         A = 0
         accepted_LIK = [oldLL]
         explored = 0
         optimized = 0
-        alpha = 500
-        beta = 2
+        alpha_0 = 40
+        beta_0 = 2/700
         for i in tqdm(range(iters)):
-
+            # scipy.random.seed()
             theta_new = self.Gauss_proposal(theta)
-            accept_choice,explored , optimized,LL,da,db = self._accept(theta, theta_new, explored, optimized,oldLL)
-            alpha += da
-            beta += db
-            theta_new['gamma'] = np.sqrt(inv.rvs(a = alpha,scale = beta,size = 1)[0])
+            theta_new['gamma'] = np.sqrt(inv.rvs(a = alpha_0 + da  ,scale = beta_0 + db,size = 1)[0])
+            
+            accept_choice,explored , optimized, LL , da, db = self._accept(theta, theta_new, explored, optimized,oldLL)
             if accept_choice:
                 oldLL = LL
-                theta = theta_new
+                theta = copy.deepcopy(theta_new)
                 A += 1
             else:
+                theta['gamma'] = theta_new['gamma']
                 rejected.append(theta_new)
-            # if i == 20:
-            #     import pdb; pdb.set_trace()
             accepted_LIK.append(oldLL)
-            accepted.append(theta)
+            accepted.append(copy.deepcopy(theta))
         print("The acceptance ratio is --------> ",A / iters )
         print("The explored steps are --------> ",explored )
         print("The optimized steps are --------> ",optimized )
-        #Confirm whether this is the correct implementation of acceptance ratio
         return accepted, rejected , accepted_LIK
 
     def _check_convergence(self):
@@ -345,16 +341,6 @@ class MCMC(object):
         pp.pprint(R_hat)
         self.R_hat = R_hat
 
-    def calc_DIC(self,selected_LIK,selected_ACC):
-        deviance = np.array(selected_LIK)*-2
-        mean_deviance = np.mean(deviance)
-        theta_dict_keys = list(selected_ACC[0].keys())
-        acc = [list(i.values()) for i in selected_ACC]
-        acc = np.array(acc)
-        m_acc = np.mean(acc,axis =0)
-        m_acc_sample = OrderedDict(zip(theta_dict_keys,m_acc))
-        deviance_at_mean =  self._log_likelihood(m_acc_sample)*-2
-        return 2 * mean_deviance - deviance_at_mean 
 
     def _get_trials(self):
         """Summary      
@@ -375,10 +361,6 @@ class MCMC(object):
         sample_indices = [int(i) for i in sample_indices]
         selected_LIK = [combined_LIK[i] for i in sample_indices]
         selected_ACC = [combined_acc[i] for i in sample_indices]
-        self.DIC = self.calc_DIC(selected_LIK,selected_ACC)
-        #total_days = len(self.df_train['date'])-1
-        #loss_indices = [-self.fit_days, None]
-
         losses = list()
         params = list()
         for i in tqdm(sample_indices):
@@ -400,11 +382,17 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        partial_metropolis = partial(self._metropolis, iters=self.iters)
-        self.chains = Parallel(n_jobs=self.n_chains)(
-            delayed(partial_metropolis)() for _ in range(self.n_chains))
-        # self.chains = []
-        # for i, run in enumerate(range(self.n_chains)):
-        #    self.chains.append(self._metropolis(self.iters))
+        paralell_bool = True
+        import pdb; pdb.set_trace()
+        if paralell_bool:
+            print("Executing in Parallel")
+            partial_metropolis = partial(self._metropolis, iters=self.iters)
+            self.chains = Parallel(n_jobs=self.n_chains)(
+                delayed(partial_metropolis)() for _ in range(self.n_chains))
+        else:
+            print("Executing in Serial")
+            self.chains = []
+            for i, run in enumerate(range(self.n_chains)):
+                self.chains.append(self._metropolis(self.iters))
         self._check_convergence()
         return self._get_trials()

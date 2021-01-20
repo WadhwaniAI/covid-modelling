@@ -157,6 +157,7 @@ class Loss_Calculator():
                 losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
             except Exception:
                 continue
+        losses['agg'] = np.mean(list(losses.items()))
         return losses
     def calc_loss(self, df_prediction, df_true, method='rmse', 
                   which_compartments=['active', 'recovered', 'total', 'deceased'], loss_weights=[1, 1, 1, 1]):

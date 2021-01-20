@@ -79,16 +79,19 @@ def plot_chains(mcmc: MCMC, out_dir: str):
     """
     color = plt.cm.rainbow(np.linspace(0, 1, mcmc.n_chains))
     params = [*mcmc.prior_ranges.keys()]
-
     for param in params:
         plt.figure(figsize=(20, 20))
         plt.subplot(2,1,1)
 
         for i, chain in enumerate(mcmc.chains):
-            df = pd.DataFrame(chain[0])
-            samples = np.array(df[param])
+            
+
+            df = pd.DataFrame(chain[0],dtype = np.float64)
+            samples = np.array(df[param],dtype=np.float64)
             # plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
             plt.plot(list(range(len(samples))), samples, label='chain {}'.format(i+1))
+
+
 
         plt.xlabel("iterations")
         plt.title("Accepted {} samples".format(param))

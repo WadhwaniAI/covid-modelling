@@ -37,11 +37,11 @@ from os.path import exists, join, splitext
 
 
 # %%
-models = {'MCMC':'uncer.yaml','BO':'default.yaml'}
+models = {'MCMC':'uncer_fixed.yaml','BO':'default.yaml'}
 
 
 # %%
-runs = 15
+runs = 10
 PD = {}
 for n in range(runs):
     print("The iteration number is ",n)
@@ -69,5 +69,5 @@ for n in range(runs):
 
 # %%
 import pickle as pkl
-with open('../../misc/predictions/test_mumbai.pickle', 'wb') as handle:
+with open('../../misc/predictions/final_mumbai.pickle', 'wb') as handle:
     pkl.dump(PD, handle)

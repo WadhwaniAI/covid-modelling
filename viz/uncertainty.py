@@ -10,7 +10,17 @@ from copy import copy
 
 from utils.generic.enums import Columns
 from viz.utils import axis_formatter
+import os
+import pdb
+import json
+import argparse
+np.random.seed(10)
+import pandas as pd
+from tqdm import tqdm
+from os.path import exists, join, splitext
 
+from uncertainty.mcmc import MCMC
+from uncertainty.mcmc_utils import predict, get_state
 
 def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments=[Columns.active], 
                 plot_individual_curves=True, log_scale=False, truncate_series=True, 
@@ -194,3 +204,54 @@ def plot_ptiles_comp(PD, train_fit='m1', vline=None, compartment=Columns.active,
     ax.set_title('Forecast of all deciles for {} '.format(compartment.name), fontsize=16)
     
     return fig,ax
+
+
+def plot_chains(mcmc: MCMC):
+    """Summary
+    
+    Args:
+        mcmc (MCMC): Description
+        out_dir (str): Description
+    """
+    color = plt.cm.rainbow(np.linspace(0, 1, mcmc.n_chains))
+    params = [*mcmc.prior_ranges.keys()]
+
+    for param in params:
+        plt.figure(figsize=(20, 20))
+        plt.subplot(2,1,1)
+
+        for i, chain in enumerate(mcmc.chains):
+            df = pd.DataFrame(chain[0])
+            samples = np.array(df[param])
+            # plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+            plt.plot(list(range(len(samples))), samples, label='chain {}'.format(i+1))
+
+        plt.xlabel("iterations")
+        plt.title("Accepted {} samples".format(param))
+        plt.legend()
+
+        plt.subplot(2,1,2)
+
+        for i, chain in enumerate(mcmc.chains):
+            df = pd.DataFrame(chain[1])
+            try:
+                samples = np.array(df[param])
+                # plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+                plt.scatter(list(range(len(samples))), samples, s=4, label='chain {}'.format(i+1))
+            except:
+                continue
+
+        plt.xlabel("iterations")
+        plt.title("Rejected {} samples".format(param))
+        plt.legend()
+
+    for param in params:
+        plt.figure(figsize=(20, 10))
+        for i, chain in enumerate(mcmc.chains):
+            df = pd.DataFrame(chain[0])
+            samples = np.array(df[param])
+            mean = np.mean(samples)
+            # plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
+            sns.kdeplot(np.array(samples), bw=0.005*mean)
+        plt.title("Density plot of {} samples".format(param))
+        plt.show()

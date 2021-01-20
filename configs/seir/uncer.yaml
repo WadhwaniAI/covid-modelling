@@ -30,13 +30,13 @@ fitting:
     model: SEIRHD
     variable_param_ranges:
         lockdown_R0: [[0.7, 1.2], uniform]
-        T_inc: [[4.6, 5.6], uniform]
-        T_inf: [[0, 20], uniform]
-        T_recov: [[19, 23], uniform]
-        T_recov_fatal: [[23, 28], uniform]
-        P_fatal: [[0.072, 0.088], uniform]
-        E_hosp_ratio: [[1e-10, 3], uniform]
-        I_hosp_ratio: [[1e-10, 3], uniform]
+        T_inc: [[3, 6], uniform]
+        T_inf: [[3, 6], uniform]
+        T_recov: [[1, 40], uniform]
+        T_recov_fatal: [[1, 40], uniform]
+        P_fatal: [[0.001, 0.1], uniform]
+        E_hosp_ratio: [[1e-10, 1.5], uniform]
+        I_hosp_ratio: [[1e-10, 1.5], uniform]
         gamma: [[1, 3],uniform]
     default_params:
         N: 1.0e+7
@@ -44,19 +44,19 @@ fitting:
 
     fitting_method_params:
         proposal_sigmas:
-            lockdown_R0: 0.08
-            T_inc: 0.6
-            T_inf: 0.6
-            T_recov: 1
-            T_recov_fatal: .5
-            P_fatal: 0.01
-            E_hosp_ratio: .1
-            I_hosp_ratio: .1
+           lockdown_R0: 0.08
+           T_inc: 0.6
+           T_inf: 0.2
+           T_recov: 1
+           T_recov_fatal: 5
+           P_fatal: 0.02
+           E_hosp_ratio: .1
+           I_hosp_ratio: .1
             gamma: .04
-        num_evals: 25000
+        num_evals: 15000
         algo: gaussian
-        n_chains: 4
-        stride: 5
+        n_chains: 1
+        stride: 1
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
