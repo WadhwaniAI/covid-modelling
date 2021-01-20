@@ -10,7 +10,7 @@ from scipy.stats import poisson
 from tqdm import tqdm
 import copy
 from data.processing.processing import get_data
-from uncertainty.mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
+from utils.fitting.mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
     avg_sum_multiple_chains, get_state, get_formatted_trials
 import pdb
 import scipy
@@ -383,7 +383,7 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        paralell_bool = True
+        paralell_bool = False
         
         if paralell_bool:
             print("Executing in Parallel")

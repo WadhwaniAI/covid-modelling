@@ -724,3 +724,36 @@ def plot_heatmap_distribution_sigmas(mean_var_dict, stat_measure='mean', cmap='R
     ax.set_title(f'Heatmap of sigma/mu values for all the {stat_measure}s calculated across all the identical runs')
 
     return fig, df_comparison
+
+def comp_bar(PD,loss_type,ax):
+    which_compartments = ['total', 'active', 'recovered', 'deceased','agg']
+    df_compiled = {"MCMC":[],"BO":[]}
+    for run,run_dict in PD.items():
+        for model,model_dict in run_dict.items():
+            if loss_type in ['train','test']:
+                df = model_dict['m1']['df_loss'][loss_type]
+                df['agg'] = df.mean()
+                df_compiled[model].append(df)
+            else:
+                df = model_dict['ensemble_mean_forecast']['df_loss']
+                df['agg'] = np.mean(list(df.values()))
+                df2 = {comp:df[comp] for comp in which_compartments}
+                df_compiled[model].append(df2)
+    stats = {}
+    stats['MCMC'] = (pd.DataFrame(df_compiled['MCMC']).describe()).loc[['mean','std']]
+    stats['BO'] = (pd.DataFrame(df_compiled['BO']).describe()).loc[['mean','std']]
+    barWidth = 0.3
+    bars1 = stats['MCMC'].loc[['mean']].values[0]
+    bars2 = stats['BO'].loc[['mean']].values[0]
+    yer1 = stats['MCMC'].loc[['std']].values[0]
+    yer2 = stats['BO'].loc[['std']].values[0]
+    r1 = np.arange(len(bars1))
+    r2 = [x + barWidth for x in r1]
+    ax.bar(r1, bars1, width = barWidth, color = 'blue', edgecolor = 'black', yerr=yer1, capsize=7, label='MCMC')
+    ax.bar(r2, bars2, width = barWidth, color = 'orange', edgecolor = 'black', yerr=yer2, capsize=7, label='BayesOpt')
+    ax.grid(b = True,axis = 'y')
+    ax.set_xticks([r + barWidth/2 for r in range(len(bars1))])
+    ax.set_xticklabels(which_compartments)
+    ax.set_ylabel('MAPE Loss')
+    ax.set_title(f'Best {loss_type} Loss')
+    ax.legend()
