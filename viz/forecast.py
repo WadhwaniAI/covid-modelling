@@ -29,7 +29,7 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
 
 def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], which_fit='m2', log_scale=False, 
                   filename=None, which_compartments=['active', 'total', 'deceased', 'recovered'], 
-                  fileformat='eps', error_bars=False, truncate_series=True, left_truncation_buffer=30):
+                  fileformat='eps', error_bars=False, plotting_config={}, figsize=(12, 12)):
     """Function for plotting forecasts (both best fit and uncertainty deciles)
 
     Arguments:
@@ -65,16 +65,19 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         raise ValueError('Cannot plot more than 5 forecasts together')
 
     predictions = []
-    for i, forecast in enumerate(fits_to_plot):
+    for i, _ in enumerate(fits_to_plot):
         predictions.append(predictions_dict[which_fit]['forecasts'][fits_to_plot[i]])
     
     train_period = predictions_dict[which_fit]['run_params']['split']['train_period']
     val_period = predictions_dict[which_fit]['run_params']['split']['val_period']
     val_period = 0 if val_period is None else val_period
     df_true = predictions_dict['m1']['df_district']
-    if truncate_series:
-        df_true = df_true[df_true['date'] > \
-                          (predictions[0]['date'].iloc[0] - timedelta(days=left_truncation_buffer))]
+    if plotting_config['truncate_series']:
+        df_true = df_true[df_true['date'] >
+                          (predictions[0]['date'].iloc[0] -
+                              timedelta(days=plotting_config['left_truncation_buffer']))]
+        if plotting_config['right_truncation_buffer'] == 'forecast_days':
+            df_true = df_true[df_true['date'] <= (predictions[0]['date'].iloc[-1])]
         df_true.reset_index(drop=True, inplace=True)
 
     if error_bars:
@@ -82,25 +85,41 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
             predictions[i] = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'],
                                                        which_compartments)
 
-    fig, ax = plt.subplots(figsize=(12, 12))
+    if plotting_config['separate_compartments_separate_ax']:
+        fig, axs = plt.subplots(figsize=(12, 12), nrows=2, ncols=2)
+    else:
+        fig, axs = plt.subplots(figsize=(12, 12))
 
-    for compartment in compartments['base']:
+    for i, compartment in enumerate(compartments['base']):
+        if plotting_config['separate_compartments_separate_ax']:
+            ax = axs.flat[i]
+        else:
+            ax = axs
         if compartment.name in which_compartments:
             ax.plot(df_true[compartments['date'][0].name], df_true[compartment.name],
                     '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-            for i, df_prediction in enumerate(predictions):
-                sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction,
-                             ls='-', color=compartment.color, 
-                             label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[i]]))
-                ax.lines[-1].set_linestyle(linestyles_arr[i])
-    ax.axvline(x=predictions[0].iloc[0, :]['date'],
-               ls=':', color='brown', label='Train starts')
-    ax.axvline(x=predictions[0].iloc[train_period+val_period-1, :]['date'],
-               ls=':', color='black', label='Data Last Date')
-    axis_formatter(ax, log_scale=log_scale)
-    fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
+            for j, df_prediction in enumerate(predictions):
+                ax.plot(df_prediction[compartments['date'][0].name], df_prediction[compartment.name],
+                        ls='-', color=compartment.color, label='{} ({} Forecast)'.format(
+                            compartment.label, legend_title_dict[fits_to_plot[j]]))
+                ax.lines[-1].set_linestyle(linestyles_arr[j])
+            
+            if plotting_config['separate_compartments_separate_ax']:
+                ax.axvline(x=predictions[0].iloc[0, :]['date'],
+                           ls=':', color='brown', label='Train starts')
+                ax.axvline(x=predictions[0].iloc[train_period+val_period-1, :]['date'],
+                           ls=':', color='black', label='Data Last Date')
+                axis_formatter(ax, log_scale=log_scale)
+    if not plotting_config['separate_compartments_separate_ax']:
+        axs.axvline(x=predictions[0].iloc[0, :]['date'],
+                          ls=':', color='brown', label='Train starts')
+        axs.axvline(x=predictions[0].iloc[train_period+val_period-1, :]['date'],
+                         ls=':', color='black', label='Data Last Date')
+        axis_formatter(axs, log_scale=log_scale)
+    fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=14)
+    fig.subplots_adjust(top=0.96)
     if filename != None:
-        plt.savefig(filename, format=fileformat)
+        fig.savefig(filename, format=fileformat)
 
     return fig
 
@@ -124,7 +143,7 @@ def plot_forecast_agnostic(df_true, df_prediction, region, log_scale=False, file
 
 def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_scale=False,
                       which_compartments=[Columns.active], plot_individual_curves=True,
-                      truncate_series=True, left_truncation_buffer=30):
+                      plotting_config={}):
                 
     trials_processed = predictions_dict[train_fit]['trials_processed']
     top_k_losses = trials_processed['losses'][:k]
@@ -135,9 +154,10 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_sc
     for i, df in enumerate(predictions[1:]):
         df_master = pd.concat([df_master, df], ignore_index=True)
     df_true = predictions_dict[train_fit]['df_district']
-    if truncate_series:
+    if plotting_config['truncate_series']:
         df_true = df_true[df_true['date'] >
-                          (predictions[0]['date'].iloc[0] - timedelta(days=left_truncation_buffer))]
+                          (predictions[0]['date'].iloc[0] - \
+                              timedelta(days=plotting_config['left_truncation_buffer']))]
         df_true.reset_index(drop=True, inplace=True)
 
     train_period = predictions_dict[train_fit]['run_params']['split']['train_period']
