@@ -12,21 +12,22 @@ from utils.fitting.ode import ODE_Solver
 
 class SEIR_Undetected(SEIR):
     def __init__(self, lockdown_R0=2.2, T_inf_D=3.3, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
-                 P_fatal=0.2, T_recov_severe=14, N=1e7, d=1.0, psi=1.00, starting_date='2020-03-09', 
+                 P_fatal=0.2, T_recov_severe=14, N=1e7, d=1.0, psi=1.00, beta=0.1, starting_date='2020-03-09', 
                  observed_values=None, E_hosp_ratio=0.5, I_D_hosp_ratio=0.5, I_U_hosp_ratio=0.5, **kwargs):
         """
-        This class implements SEIR + Hospitalisation + Severity Levels 
+        This class implements SEIR + Hospitalisation + Severity Levels + undetected population
 
         The state variables are : 
 
         S : No of susceptible people
         E : No of exposed people
-        I : No of infected people
-        R_mild : No of people recovering from a mild version of the infection
+        I_D : No of reported infected people
+        I_U : No of unreported infected people
+        P_U : No of unreported recovered or deceased people
         R_severe : No of people recovering from a severe version of the infection
         R_fatal : No of people recovering from a fatal version of the infection
-        C : No of recovered people
-        D : No of deceased people 
+        C : No of reported recovered people
+        D : No of reported deceased people 
 
         The sum total is is always N (total population)
 
@@ -39,16 +40,16 @@ class SEIR_Undetected(SEIR):
         lockdown_R0: R0 value during lockdown (float)
 
         Transmission parameters - 
+        Beta: Transmission rate
         T_inc: The incubation time of the infection (float)
-        T_inf: The duration for which an individual is infectious (float)
+        T_inf_D: The duration for which a reported individual is infectious (float)
+        T_inf_U: The duration for which an unreported individual is infectious (float)
 
         Probability of contracting different types of infections - 
-        P_mild: Probability of contracting a mild infection (float - [0, 1])
         P_severe: Probability of contracting a severe infection (float - [0, 1])
         P_fatal: Probability of contracting a fatal infection (float - [0, 1])
 
         Clinical time parameters - 
-        T_recov_mild: Time it takes for an individual with a mild infection to recover (float)
         T_recov_severe: Time it takes for an individual with a severe infection to recover (float)
         T_recov_fatal: Time it takes for an individual with a fatal infection to die (float)
 
@@ -79,10 +80,15 @@ class SEIR_Undetected(SEIR):
         self.T_inf_U = T_inf_U
         self.I_D_hosp_ratio = I_D_hosp_ratio
         self.I_U_hosp_ratio = I_U_hosp_ratio
-        
+        self.beta = beta
+        self.N = N
         self.state_init_values['I_D'] = self.I_D_hosp_ratio * observed_values['active'] / self.N
         self.state_init_values['I_U'] = self.I_U_hosp_ratio * observed_values['active'] / self.N
+
+        self.state_init_values['S'] = 0
         del self.state_init_values['I']
+        nonSsum = sum(self.state_init_values.values())
+        self.state_init_values['S'] = (1 - nonSsum)
 
 
     def get_derivative(self, t, y):
@@ -99,14 +105,14 @@ class SEIR_Undetected(SEIR):
 
         # Write differential equations
         dydt[0] = - (I_D + I_U) * S * self.beta  # S
-        dydt[1] = (I_D + I_U) * S * self.beta - (E/ self.T_inc)  # E
-        dydt[2] = (1 / self.T_inc)*(self.d*self.psi)*E - I_D / self.T_inf_D  # I_D
-        dydt[3] = (1 / self.T_inc)*(1 - self.d*self.psi)*E - I_U / self.T_inf_U  # I_U
+        dydt[1] = (I_D + I_U) * S * self.beta - (E / self.T_inc)  # E
+        dydt[2] = (1 / self.T_inc) * (self.d * self.psi) * E - I_D / self.T_inf_D  # I_D
+        dydt[3] = (1 / self.T_inc) * (1 - self.d * self.psi) * E - I_U / self.T_inf_U  # I_U
         dydt[4] = I_U / self.T_inf_U  # P_U
-        dydt[5] = (1/self.T_inf_D)*(self.P_severe*I_D) - R_severe/self.T_recov_severe #R_severe
-        dydt[6] = (1/self.T_inf_D)*(self.P_fatal*I_D) - R_fatal/self.T_recov_fatal # R_fatal
-        dydt[7] = R_severe/self.T_recov_severe   # C
-        dydt[8] = R_fatal/self.T_recov_fatal # D
+        dydt[5] = (1 / self.T_inf_D) * (self.P_severe * I_D) - R_severe / self.T_recov_severe #R_severe
+        dydt[6] = (1 / self.T_inf_D) * (self.P_fatal * I_D) - R_fatal / self.T_recov_fatal # R_fatal
+        dydt[7] = R_severe / self.T_recov_severe # C
+        dydt[8] = R_fatal / self.T_recov_fatal # D
 
         return dydt
 
