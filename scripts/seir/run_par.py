@@ -22,7 +22,7 @@ from viz import plot_forecast, plot_top_k_trials, plot_ptiles
 import yaml
 import wandb
 predictions_dict = {}
-config_filename = 'uncer_fixed.yaml'
+config_filename = 'uncer.yaml'
 config = read_config(config_filename)
 
 predictions_dict['m1'] = single_fitting_cycle(**copy.deepcopy(config['fitting']))                                           

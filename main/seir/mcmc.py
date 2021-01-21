@@ -67,47 +67,9 @@ class MCMC(object):
         self.iters = num_evals
         self.compartments = loss_compartments
         self._optimiser = optimiser
-        #self._optimiser, self._default_params = set_optimizer(self.df_train, df_train.size(), 
-        #                                    self._default_params_old, optimiser)
         self.proposal_sigmas = proposal_sigmas
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
         self.DIC = 0
-
-    def _fetch_data(self):
-        """
-        Fetches district data from either tracker or athena database.
-        
-        Returns:
-            pd.DataFrame: dataframe containing district data.
-        """
-        cfg = self.cfg
-        data_source = cfg['fitting']['data']['data_source']
-        dataloading_params = cfg['fitting']['data']['dataloading_params']
-
-        return get_data(data_source,dataloading_params)
-
-    def _split_data(self):
-        """
-        Splits self.df_district into train and val set as per number of test days specified
-        in the config.
-        """
-        self.test_days = self.cfg['fitting']['split']['val_period']
-        self.train_days = self.cfg['fitting']['split']['train_period']
-        self.end_date = self.cfg['fitting']['split']['end_date']
-        N = len(self.df_district)
-        drop = (self.df_district[-1:]['date'].item().date() - self.end_date).days
-        self.df_district = self.df_district[:N-drop]
-        N = len(self.df_district)
-        self.df_val = self.df_district.iloc[N - self.test_days:, :]
-        self.fit_days = N - self.test_days
-
-        self.fit_start = N - self.test_days - self.train_days
-        self.fit_end = N - self.test_days
-
-        self.df_train = self.df_district.iloc[self.fit_start : self.fit_end, :]
-        print("Train set:\n", self.df_train)
-        print("Val set:\n", self.df_val)
-
     def _param_init(self):
         """
         Samples the first value for each param from a uniform prior distribution with ranges
@@ -119,12 +81,12 @@ class MCMC(object):
         theta = defaultdict()
         for key in self.prior_ranges:
             theta[key] = np.random.uniform(float(self.prior_ranges[key][0][0]), self.prior_ranges[key][0][1])
-        oldLL,da,db = self._log_likelihood(theta)
+        _,da,db = self._log_likelihood(theta)
         alpha = 40
         beta =  2/700
         from scipy.stats import invgamma as inv
         theta['gamma'] = np.sqrt(inv.rvs(a = alpha ,scale = beta , size = 1 )[0])
-        return theta,oldLL,da,db
+        return theta,da,db
 
     def Gauss_proposal(self, theta_old):
         """
@@ -146,15 +108,12 @@ class MCMC(object):
             new_value = None
             lower_bound = (float(self.prior_ranges[param][0][0]))
             upper_bound = (self.prior_ranges[param][0][1])
-            #print(lower_bound, upper_bound)
             while new_value == None:
                 #Gaussian proposal
                 new_value = np.random.normal(loc = old_value, scale = self.proposal_sigmas[param])
-                # new_value = np.random.normal(loc=np.exp(old_value), scale=np.exp((self.proposal_sigmas[param])))
                 if new_value < lower_bound or new_value > upper_bound:
                     new_value = None
                     continue
-                # new_value = np.log(new_value)
             theta_new[param] = new_value
         return theta_new
 
@@ -175,21 +134,6 @@ class MCMC(object):
         ll = - (N * np.log(np.sqrt(2*np.pi) * sigma)) - (diff / (2 * sigma ** 2))
         return ll, N/2 ,diff/2
 
-    def _poisson_log_likelihood(self, true, pred, *ignored):
-        """
-        Calculates the log-likelihood of the data as per a poisson distribution.
-        
-        Args:
-            true (np.ndarray): array containing actual numbers.
-            pred (np.ndarray): array containing estimated numbers.
-        
-        Returns:
-            float: poisson log-likelihood of the data.
-        """
-        T = np.ediff1d(true)
-        P = np.ediff1d(pred)
-        ll = np.log(poisson.pmf(k = T, mu = P))
-        return np.sum(ll)
 
     def _log_likelihood(self, theta):
         """
@@ -248,7 +192,7 @@ class MCMC(object):
             multiplier_offset *= ( N.cdf((b-param_value)/sigma) -  N.cdf((a-param_value)/sigma) )
         return multiplier_offset
 
-    def _accept(self, theta_old, theta_new, explored , optimized,oldLL):    
+    def _accept(self, theta_old, theta_new, explored , optimized):    
         """
         Decides, using the likelihood function, whether a newly proposed set of param values should 
         be accepted and added to the MCMC chain.
@@ -281,11 +225,10 @@ class MCMC(object):
         Returns:
             tuple: tuple containing a list of accepted and a list of rejected parameter values.
         """
-        theta,oldLL,da,db = self._param_init()
+        theta,da,db = self._param_init()
         accepted = [theta]
         rejected = list()
         A = 0
-        accepted_LIK = [oldLL]
         explored = 0
         optimized = 0
         alpha_0 = 40
@@ -296,20 +239,18 @@ class MCMC(object):
             theta_new = self.Gauss_proposal(theta)
             theta_new['gamma'] = np.sqrt(inv.rvs(a = alpha_0 + da  ,scale = beta_0 + db,size = 1)[0])
             
-            accept_choice,explored , optimized, LL , da, db = self._accept(theta, theta_new, explored, optimized,oldLL)
+            accept_choice,explored , optimized, LL , da, db = self._accept(theta, theta_new, explored, optimized)
             if accept_choice:
-                oldLL = LL
                 theta = copy.deepcopy(theta_new)
                 A += 1
             else:
                 theta['gamma'] = theta_new['gamma']
                 rejected.append(theta_new)
-            accepted_LIK.append(oldLL)
             accepted.append(copy.deepcopy(theta))
         print("The acceptance ratio is --------> ",A / iters )
         print("The explored steps are --------> ",explored )
         print("The optimized steps are --------> ",optimized )
-        return accepted, rejected , accepted_LIK
+        return accepted, rejected
 
     def _check_convergence(self):
         """
@@ -351,17 +292,13 @@ class MCMC(object):
             TYPE: Description
         """
         combined_acc = list()
-        combined_LIK = list()
-        for k, run in enumerate(self.chains):
+        for _, run in enumerate(self.chains):
             burn_in = int(len(run) / 2)
             combined_acc += run[0][burn_in:][::self.stride]
-            combined_LIK += run[2][burn_in:][::self.stride]
         n_samples = 2000
         sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
         #Total day is 1 less than training_period
         sample_indices = [int(i) for i in sample_indices]
-        selected_LIK = [combined_LIK[i] for i in sample_indices]
-        selected_ACC = [combined_acc[i] for i in sample_indices]
         losses = list()
         params = list()
         for i in tqdm(sample_indices):
@@ -383,7 +320,7 @@ class MCMC(object):
         Returns:
             list: Description
         """
-        paralell_bool = False
+        paralell_bool = True
         
         if paralell_bool:
             print("Executing in Parallel")
