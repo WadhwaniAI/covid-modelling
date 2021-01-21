@@ -42,7 +42,7 @@ fitting:
     fitting_method_params:
         num_evals: 1000
         algo: tpe
-        seed: 42
+        seed: null
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
@@ -56,10 +56,10 @@ fitting:
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
 plotting:
-    truncate_series: FALSE
+    truncate_series: TRUE
     left_truncation_buffer: 30
-    right_truncation_buffer: 30
-    separate_ax_separate_compartments: FALSE
+    right_truncation_buffer: forecast_days
+    separate_compartments_separate_ax: TRUE
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
