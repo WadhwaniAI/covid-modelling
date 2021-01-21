@@ -89,7 +89,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
 
 
 def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_params, fitting_method,
-              fitting_method_params, split, loss):
+              fitting_method_params, split, loss, plotting_config):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -137,7 +137,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
                         location_description=data['dataloading_params']['location_description'],
-                        which_compartments=loss['loss_compartments'])
+                        which_compartments=loss['loss_compartments'], plotting_config=plotting_config)
 
     results_dict = {}
     results_dict['plots'] = {}
@@ -151,7 +151,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
 
 
 def single_fitting_cycle(data, model_family, model, variable_param_ranges, default_params, fitting_method,
-                         fitting_method_params, split, loss):
+                         fitting_method_params, split, loss, plotting_config):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -196,7 +196,8 @@ def single_fitting_cycle(data, model_family, model, variable_param_ranges, defau
         print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
         
     predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
-            default_params, fitting_method, fitting_method_params, split, loss)
+                                 default_params, fitting_method, fitting_method_params, split, 
+                                 loss, plotting_config)
 
     
     predictions_dict['plots']['smoothing'] = smoothing_plot
