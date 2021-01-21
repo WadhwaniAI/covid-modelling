@@ -14,8 +14,8 @@ from viz.utils import axis_formatter
 
 
 def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments=[Columns.active], 
-                plot_individual_curves=True, log_scale=False, truncate_series=True, 
-                left_truncation_buffer=30, ci_lb=2.5, ci_ub=97.5):
+                plot_individual_curves=True, log_scale=False, ci_lb=2.5, ci_ub=97.5,
+                plotting_config={}):
     predictions = copy(predictions_dict[train_fit]['forecasts'])
     try:
         del predictions['best']
@@ -30,10 +30,10 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
     val_period = predictions_dict[train_fit]['run_params']['split']['val_period']
     val_period = 0 if val_period is None else val_period
     df_true = predictions_dict[train_fit]['df_district']
-    if truncate_series:
+    if plotting_config['truncate_series']:
         df_true = df_true[df_true['date'] >
                           (list(predictions.values())[0]['date'].iloc[0] -
-                              timedelta(days=left_truncation_buffer))]
+                              timedelta(days=plotting_config['left_truncation_buffer']))]
         df_true.reset_index(drop=True, inplace=True)
 
     plots = {}
