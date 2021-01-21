@@ -21,7 +21,6 @@ import models
 
 from main.seir.fitting import single_fitting_cycle
 from main.seir.forecast import get_forecast, forecast_all_trials, create_all_trials_csv, create_decile_csv_new
-from main.seir.sensitivity import calculate_sensitivity_and_plot
 from utils.generic.create_report import save_dict_and_create_report
 from utils.generic.config import read_config
 from utils.generic.enums import Columns
