@@ -20,7 +20,7 @@ from viz.uncertainty import plot_beta_loss
 def _load_all_pdicts(parsed_args):
     predictions_dict_list = []
     for _, fname in enumerate(parsed_args.list_of_pdicts):
-        predictions_pkl_filename = f'/scratch/users/sansiddh/covid-modelling/{fname}/predictions_dict.pkl'
+        predictions_pkl_filename = f'/scratche/users/sansiddh/covid-modelling/{fname}/predictions_dict.pkl'
         print(f'Reading pkl file of run {fname}')
         with open(predictions_pkl_filename, 'rb') as f:
             predictions_dict_list.append(pickle.load(f))
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     print(parsed_args)
 
     # Create folder
-    output_folder = '/scratch/users/{}/covid-modelling/{}_comb'.format(
+    output_folder = '/scratche/users/{}/covid-modelling/{}_comb'.format(
         parsed_args.username, datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
     os.makedirs(output_folder, exist_ok=True)
 

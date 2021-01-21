@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from matplotlib.dates import MO, TU, WE, TH, FR, SA, SU
 import seaborn as sns
 from pandas.plotting import register_matplotlib_converters
 from matplotlib.lines import Line2D
@@ -12,7 +13,7 @@ def axis_formatter(ax, legend_elements=None, custom_legend=False, log_scale=Fals
         ax -- Matplotlib ax object
     """
     
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=7))
+    ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=SA))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     ax.set_ylabel('No of People')

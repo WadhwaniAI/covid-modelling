@@ -440,34 +440,20 @@ def mape_heatmap_single_state(df_mape, state, cmap='Reds'):
 
     return fig, ax
 
-
-def qtile_barchart(df_comb, quant, color='C0', latex=False):
-    df_temp = df_comb[df_comb['quantile'] == quant]
+        df_temp = df_comb[df_comb['quantile'] == quant]
+    elif ftype == 'point':
+        df_temp = df_comb[df_comb['type'] == ftype]
+    else:
+        raise ValueError('ftype can only be quantile or point')
 
     df_mape = df_temp.groupby(['model', 'location',
                                'location_name']).mean().reset_index()
 
-    df_mape = df_mape.pivot(index='model', columns='location_name',
                             values='perc_loss_mape')
 
     df_plot = pd.DataFrame([df_mape.median(axis=1)]).T
-    df_plot.columns = ['median']
-    df_plot['mad'] = median_abs_deviation(df_mape, axis=1, nan_policy='omit')
-    df_plot = df_plot.sort_values('median')
-
-    fig, ax = plt.subplots(figsize=(12, 12))
-
-    y_pos = np.arange(len(df_plot))
-    barlist = ax.barh(y_pos, df_plot['median'],
-                      xerr=df_plot['mad'], align='center', color=color)
-    ax.set_yticks(y_pos)
-    if latex:
-        ax.set_yticklabels([x.replace('_', '\_') for x in df_plot.index])
-    ax.invert_yaxis()  # labels read top-to-bottom
-    wai_idx = np.where(df_plot.index == 'Wadhwani_AI')[0][0]
-    barlist[wai_idx].set_color('purple')
+    for i in range(len(y_pos)):
+        ax.text(df_plot.iloc[i]['median'], y_pos[i] + 0.125,
+                np.around(df_plot.iloc[i]['median'], 2))
+        ax.text(0, y_pos[i] + 0.125,
     ax.set_xlabel('Median of Quantile MAPE Loss aggregated across states')
-    ax.set_title(
-        f'Median Quantile MAPE loss for {int(quant*100)}th percentile for all models')
-
-    return fig, ax
