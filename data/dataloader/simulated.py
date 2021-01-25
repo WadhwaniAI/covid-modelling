@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import copy
-from models.seir import SEIRHD, SEIR_Undetected, SEIR_PU
+from models.seir import *
 
 from data.dataloader.base import BaseLoader
 
