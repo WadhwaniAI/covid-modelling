@@ -1,0 +1,92 @@
+fitting:
+    data:
+        data_source: athena
+        stratified_data: TRUE
+        dataloading_params:
+            reload_data: FALSE
+            state: Maharashtra
+            district: Mumbai
+        smooth_jump: TRUE
+        smooth_jump_params:
+            2020-05-28: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-14: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
+            stratified_smoothing:
+                2020-05-31: [null, non_o2_beds, hq, FALSE, weighted-mag]
+                2020-06-15: [null, non_o2_beds, o2_beds, FALSE, weighted-mag]
+                2020-05-31: [null, icu, hq, FALSE, weighted-mag]
+                2020-06-15: [null, ventilator, hq, FALSE, weighted-mag]
+                2020-06-30: [2020-06-20, icu, hq, FALSE, weighted-mag]
+                2020-06-30: [2020-06-20, ventilator, hq, FALSE, weighted-mag]
+        rolling_average: TRUE
+        rolling_average_params:
+            center: TRUE
+            window_size: 7
+            win_type: null
+            split_after_rolling: TRUE # NOT IMPLEMENTED
+    #Choose Model and Ranges
+    model: SEIRHD_Bed
+    variable_param_ranges:
+        lockdown_R0: [[0.7, 1.2], uniform]
+        T_inc: [[4, 5], uniform]
+        T_inf: [[3, 4], uniform]
+        E_hosp_ratio: [[0, 2], uniform]
+        I_hosp_ratio: [[0, 1], uniform]
+        T_recov_hq: [[50, 70], uniform]
+        T_recov_non_oxy: [[5, 10], uniform]
+        T_recov_oxy: [[15, 25], uniform]
+        T_recov_icu: [[0, 20], uniform]
+        T_recov_vent: [[0, 10], uniform]
+        T_recov_fatal: [[20, 40], uniform]
+        P_non_oxy: [[0, 0.15], uniform]
+        P_oxy: [[0, 0.3], uniform]
+        P_icu: [[0, 0.1], uniform]
+        P_vent: [[0, 0.1], uniform]
+        P_fatal: [[0, 0.1], uniform]
+    default_params:
+        N: 1.0e+7
+        lockdown_date: 2020-03-25
+        lockdown_removal_date: 2020-08-30
+    fitting_method: bayes_opt
+    fitting_method_params:
+        num_evals: 1500
+        algo: tpe
+        seed: 42
+    #Choose Fitting Periods and num evaluations
+    split:
+        start_date: null # NOT IMPLEMENTED
+        end_date: null # NOT IMPLEMENTED
+        train_period: 14
+        val_period: 7
+        test_period: 0 # NOT IMPLEMENTED
+    loss:
+        loss_method: mape
+        loss_compartments: [total, active, recovered, deceased, hq, icu, non_o2_beds, o2_beds, ventilator]
+        loss_weights: [1, 1, 1, 1, 1, 1, 1, 1, 1]
+    #Optimisation related parameters
+forecast:
+    forecast_days: 30
+    num_trials_to_plot: 10
+    plot_topk_trials_for_columns: [total, active, icu, ventilator, non_o2_beds, o2_beds]
+    plot_ptiles_for_columns: [total, active, icu, ventilator, non_o2_beds, o2_beds]
+uncertainty:
+    method: MCUncertainty
+    uncertainty_params:
+        which_fit: m1
+        fitting_method: gridsearch
+        fitting_method_params:
+            parallelise: FALSE
+        variable_param_ranges:
+            beta: [[0, 10], 101]
+        construct_percentiles_day_wise: TRUE
+        date_of_sorting_trials: 2020-09-30
+        sort_trials_by_column: total
+        loss:
+            loss_method: mape
+            loss_compartments: [total, active, recovered, deceased]
+            loss_weights: [0.25, 0.25, 0.25, 0.25]
+        percentiles: [2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 97.5]

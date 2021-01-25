@@ -4,7 +4,7 @@ import datetime
 from abc import abstractmethod
 from collections import OrderedDict
 
-from utils.ode import ODE_Solver
+from utils.fitting.ode import ODE_Solver
 
 
 class SIRBase:

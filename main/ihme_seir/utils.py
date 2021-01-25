@@ -4,7 +4,7 @@ import pandas as pd
 import yaml
 
 from models.seir import SEIR_Testing, SIRD, SEIRHD, SIR
-from utils.util import update_dict
+from utils.fitting.util import update_dict
 
 
 def read_config(path, primary_config_name='base'):
@@ -79,8 +79,8 @@ def get_ihme_pointwise_loss(loss_dict, compartment, split, loss_fn):
 
 def create_pointwise_loss_csv_old(path, val_loss, val_period, model, compartment, start, end, outfile='test_loss'):
     val_loss = pd.concat(val_loss).to_frame()
-    run_num = [i for i in range(start, end + 1) for j in range(val_period)]
-    lookahead = [j for i in range(start, end + 1) for j in range(1, val_period+1)]
+    run_num = [i for i in range(start, end + 1) for _ in range(val_period)]
+    lookahead = [j for _ in range(start, end + 1) for j in range(1, val_period+1)]
     val_loss.insert(0, column='run', value=run_num)
     val_loss.insert(1, column='lookahead', value=lookahead)
     val_loss.to_csv(f'{path}/consolidated/{model}_{compartment}_{outfile}.csv')

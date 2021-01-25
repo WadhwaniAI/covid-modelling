@@ -11,16 +11,17 @@ from pathos.multiprocessing import ProcessingPool as Pool
 from data.processing.processing import train_val_test_split
 
 sys.path.append('../..')
-from utils.data import get_rates
-from data.processing import get_data_from_source
-from utils.util import get_subset
 
+from data.processing import get_data_from_source
+
+from utils.fitting.data import get_rates
+from utils.fitting.util import get_subset
 from models.ihme.model import IHME
-from utils.data import lograte_to_cumulative, rate_to_cumulative
-from utils.loss import Loss_Calculator
-from utils.enums import Columns
+from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative
+from utils.fitting.loss import Loss_Calculator
+from utils.generic.enums import Columns
 from main.ihme.optimiser import Optimiser
-from utils.smooth_jump import smooth_big_jump
+from utils.fitting.smooth_jump import smooth_big_jump
 
 
 def preprocess(timeseries, region, sub_region=None, area_names=None, trim_deceased=False):
@@ -364,9 +365,8 @@ def run_cycle(dataframes, model_params, forecast_days=30,
 
 
 def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.curve_fit_compartments(),
-                           forecast_days=30,
-                           max_evals=1000, num_hyperopt=1, val_size=7,
-                           min_days=7, scoring='mape', dtp=None, xform_func=None, log=True, **config):
+                           forecast_days=30, max_evals=1000, num_hyperopt=1, val_size=7, min_days=7, scoring='mape',
+                           dtp=None, log=True, **config):
     """
     runs fitting cycles for all compartments in which_compartments
     model_params['ycol'] is ignored here
@@ -382,7 +382,6 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
         min_days (int, optional): min train_period. Defaults to 7.
         scoring (str, optional): 'mape', 'rmse', or 'rmsle. Defaults to 'mape'.
         dtp ([type], optional): district total population. Defaults to None.
-        xform_func ([type], optional): function to transform the data back to # cases. Defaults to None.
         log (bool, optional): whether to fit to log(rate). Defaults to True.
 
     Returns:
@@ -478,4 +477,4 @@ def single_cycle(sub_region, region, area_names=None, model_params=None,
         dict: results_dict
     """
     dataframes, dtp, model_params = setup(sub_region, region, area_names, model_params, **config)
-    return run_cycle_compartments(dataframes, model_params, dtp=dtp, which_compartments=which_compartments, **config)
+    return run_cycle_compartments(dataframes, model_params, which_compartments=which_compartments, dtp=dtp, **config)

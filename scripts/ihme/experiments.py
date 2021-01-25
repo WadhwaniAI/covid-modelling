@@ -17,9 +17,9 @@ sys.path.append('../../')
 from main.ihme.fitting import single_cycle, calc_loss, get_regional_data
 from main.ihme_seir.utils import get_ihme_pointwise_loss, get_ihme_loss_dict, read_config, read_params_file, \
     create_output_folder, create_pointwise_loss_csv
-from utils.data import get_supported_regions, lograte_to_cumulative, rate_to_cumulative
-from utils.enums import Columns
-from utils.util import convert_date
+from utils.fitting.data import get_supported_regions, lograte_to_cumulative, rate_to_cumulative
+from utils.generic.enums import Columns
+from utils.fitting.util import convert_date
 from viz import plot_fit
 from viz.forecast import plot_forecast_agnostic
 
@@ -51,7 +51,7 @@ def run_experiments(config_path, output_folder, num):
         data_length -= 1
     if data_length == train_val_period:
         raise Exception('Insufficient data available')
-    base['start_date'] = convert_date(start_date, to_str=True, format='%m-%d-%Y')
+    base['start_date'] = convert_date(start_date, to_str=True, date_format='%m-%d-%Y')
     base['test_size'] = test_period
     base['val_size'] = 0.2 * train_val_period
     params_csv_path = base['params_csv']
@@ -105,11 +105,11 @@ def run_experiments(config_path, output_folder, num):
 
         fit_plot = plot_fit(
             predictions.reset_index(), results['df_train'], results['df_val'], results['df_district'],
-            train_val_period, region, sub_region, which_compartments=which_compartments,
+            train_val_period, (region, sub_region), which_compartments=which_compartments,
             description='Train and test')
 
         forecast_plot = plot_forecast_agnostic(
-            results['df_district'], predictions.reset_index(), model_name='IHME', dist=sub_region, state=region,
+            results['df_district'], predictions.reset_index(), region, model_name='IHME',
             which_compartments=which_compartments_enum)
 
         config_model_params['func'] = model
@@ -188,7 +188,6 @@ def forecast(path, start=0, end=0):
     # Get config
     with open(f'{path}/{start}/config.json', 'r') as infile:
         config = json.load(infile)
-    model_params = config['model_params']
     config = config['base']
     models = config['models']
     compartments = config['compartments']

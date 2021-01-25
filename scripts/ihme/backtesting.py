@@ -12,16 +12,16 @@ import pandas as pd
 
 sys.path.append('../..')
 from models.ihme.model import IHME
-from utils.data import lograte_to_cumulative, rate_to_cumulative
-from utils.population import get_district_population
-from utils.data import regions
+from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative
+from utils.fitting.population import get_district_population
+from utils.fitting.data import regions
 
 from main.ihme.backtesting import IHMEBacktest
 from main.ihme.fitting import setup, create_output_folder
 from viz import plot_backtest, plot_backtest_errors
-from utils.enums import Columns
+from utils.generic.enums import Columns
 
-from utils.util import read_config
+from utils.fitting.util import read_config
 
 import warnings
 pd.options.mode.chained_assignment = None
@@ -41,23 +41,20 @@ def backtest(dist, st, area_names, config, model_params, folder):
     which_compartments = Columns.curve_fit_compartments()
     backtester = IHMEBacktest(model, df, dist, st)
     xform_func = lograte_to_cumulative if config['log'] else rate_to_cumulative
-    res = backtester.test(future_days=config['forecast_days'], 
-        hyperopt_val_size=config['val_size'],
-        max_evals=config['max_evals'], increment=config['increment'], xform_func=xform_func,
-        dtp=dtp, min_days=config['min_days'], which_compartments=which_compartments)
+    res = backtester.test(increment=config['increment'], future_days=config['forecast_days'],
+                          hyperopt_val_size=config['val_size'], dtp=dtp, min_days=config['min_days'])
     picklefn = f'{output_folder}/backtesting.pkl'
     with open(picklefn, 'wb') as pickle_file:
             pickle.dump(res, pickle_file)
 
     for runday in res['results'].keys():
         pred = res['results'][runday]['df_prediction']
-        # res['results']['df_prediction'][Columns.active.name] = pred[Columns.stable_asymptomatic.name] + pred[Columns.stable_asymptomatic.name] + pred[Columns.critical.name]
+        # res['results']['df_prediction'][Columns.active.name] = pred[Columns.asymptomatic.name] + pred[Columns.asymptomatic.name] + pred[Columns.critical.name]
         res['results'][runday]['df_prediction'][Columns.confirmed.name] = pred[Columns.active.name] + pred[Columns.recovered.name] + pred[Columns.deceased.name]
     
     plt.clf()
-    plot_backtest(
-        res['results'], res['df'], dist, which_compartments=which_compartments,
-        scoring=config['scoring'], axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
+    plot_backtest(res['results'], res['df'], dist, which_compartments=which_compartments, scoring=config['scoring'],
+                  axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png')
     
     plt.clf()
     plot_backtest_errors(
@@ -94,9 +91,8 @@ def replot_backtest(dist, st, area_names, folder):
         results = pickle.load(pickle_file)
 
     plt.clf()
-    plot_backtest(
-        results['results'], results['df'], dist, 
-        scoring=config['scoring'], dtp=dtp, axis_name='cumulative deaths', savepath=f'{output_folder}/backtesting.png') 
+    plot_backtest(results['results'], results['df'], dist, scoring=config['scoring'], axis_name='cumulative deaths',
+                  savepath=f'{output_folder}/backtesting.png')
     plt.clf()
     plot_backtest_errors(
         results['results'], results['df'], dist, 

@@ -10,12 +10,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 sys.path.append('../..')
-from utils.data import regions
 
+from utils.fitting.data import regions
 from viz import plot_ihme_results
 from main.ihme.fitting import create_output_folder, single_cycle
-from utils.util import read_config
-from utils.enums import Columns
+from utils.generic.config import read_config
+from utils.generic.enums import Columns
 
 import warnings
 pd.options.mode.chained_assignment = None

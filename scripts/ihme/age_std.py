@@ -8,19 +8,18 @@ from datetime import datetime, timedelta
 from curvefit.core import functions
 
 sys.path.append('../..')
-from utils.data import regions
-from data.processing import jhu
-from utils.population import standardise_age
 
-from utils.data import lograte_to_cumulative, rate_to_cumulative
+from data.processing import jhu
+from utils.fitting.population import standardise_age
+
+from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative, regions
 from main.ihme.fitting import run_cycle, create_output_folder
-from utils.util import train_test_split, read_config
+from utils.fitting.util import train_test_split, read_config
 # -------------------
 
 def find_init(country, triple):
     country = country
     indian_district, indian_state, area_names = triple
-    fname = f'{country}_deaths_age_std_{indian_district}'
 
     timeseries = jhu(country.title())
     df, dtp = standardise_age(timeseries, country, indian_state, area_names)
@@ -39,9 +38,7 @@ def find_init(country, triple):
         print(f'smoothing {args.smoothing}')
         smoothedcol = f'{ycol}_smoothed'
         df[smoothedcol] = df[ycol].rolling(args.smoothing).mean()
-        ycol = smoothedcol
-    
-    startday = df['date'][df['mortality'].gt(1e-15).idxmax()]
+
     df = df.loc[df['mortality'].gt(1e-15).idxmax():,:]
     
     # output

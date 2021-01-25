@@ -17,9 +17,10 @@ sys.path.append('../../')
 from data.processing.processing import get_data_from_source, get_observed_dataframes
 from main.ihme_seir.utils import get_seir_pointwise_loss_dict, get_seir_pointwise_loss, read_config, read_params_file, \
     create_pointwise_loss_csv_old, create_output_folder, supported_models
-from main.seir.fitting import get_variable_param_ranges, run_cycle
-from utils.population import get_population
-from utils.util import get_subset, read_file
+from main.seir.fitting import run_cycle
+from main.seir.optimiser import Optimiser
+from utils.fitting.population import get_population
+from utils.fitting.util import get_subset, read_file
 
 
 def run_experiments(config_path, output_folder, num):
@@ -52,6 +53,8 @@ def run_experiments(config_path, output_folder, num):
     end_date = datetime.strptime(read_file('config/train_period.yaml')[region_name.lower()]['end_date'], '%m-%d-%Y')
     end_date = end_date + timedelta(shift*num)
 
+    optimiser = Optimiser()
+
     for i, model_dict in enumerate(supported_models):
         for train_period in range(4, 42, 2):
             start_date = end_date - timedelta(train_period)
@@ -78,7 +81,7 @@ def run_experiments(config_path, output_folder, num):
                     print("Variable param ranges")
                     print(variable_param_ranges)
                 output_config[f'variable_param_ranges_{name_prefix}'] = deepcopy(variable_param_ranges)
-                variable_param_ranges = get_variable_param_ranges(variable_param_ranges)
+                variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges)
 
                 # Get data
                 data = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source)

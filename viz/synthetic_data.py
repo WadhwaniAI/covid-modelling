@@ -4,7 +4,7 @@ import matplotlib.dates as mdates
 import pandas as pd
 from matplotlib.lines import Line2D
 
-from utils.enums.columns import *
+from utils.generic.enums.columns import *
 from viz.fit import axis_formatter
 
 

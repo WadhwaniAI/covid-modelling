@@ -14,8 +14,8 @@ sys.path.append('../../')
 
 from main.seir.forecast import get_forecast, create_region_csv, get_all_trials
 from main.seir.forecast import create_decile_csv
-from main.seir.fitting import calculate_loss, train_val_split
-from utils.enums import Columns
+from main.seir.fitting import calculate_loss, train_val_test_split
+from utils.generic.enums import Columns
 from viz import plot_r0_multipliers
 from utils.create_report import trials_to_df
 # -----
@@ -26,7 +26,7 @@ parser.add_argument("-f", "--folder", help="folder name", required=True, type=st
 parser.add_argument("-d", "--district", help="district name", required=True, type=str)
 args = parser.parse_args()   
 
-with open(f'../../reports/{args.folder}/predictions_dict.pkl', 'rb') as pkl:
+with open(f'../../misc/reports/{args.folder}/predictions_dict.pkl', 'rb') as pkl:
     region_dict = pickle.load(pkl)
 
 # predictions, losses, params = get_all_trials(region_dict, train_fit='m1')
@@ -40,7 +40,7 @@ with open(f'../../reports/{args.folder}/predictions_dict.pkl', 'rb') as pkl:
 # region_dict['m2']['predictions'] = predictions
 # region_dict['m2']['all_trials'] = trials_to_df(predictions, losses, params)
 
-# with open(f'../../reports/{args.folder}/predictions_dict.pkl', 'wb') as pkl:
+# with open(f'../../misc/reports/{args.folder}/predictions_dict.pkl', 'wb') as pkl:
 #     pickle.dump(region_dict, pkl)
 
 pune_deciles_idx = {
@@ -99,13 +99,13 @@ deciles_params = {key: val['params'] for key, val in deciles_forecast.items()}
 
 # deciles to csv
 df_output = create_decile_csv(deciles_forecast, df_reported, region_dict['dist'], 'district', icu_fraction=0.02)
-df_output.to_csv(f'../../reports/{args.folder}/deciles.csv')
-with open(f'../../reports/{args.folder}/deciles-params.json', 'w+') as params_json:
+df_output.to_csv(f'../../misc/reports/{args.folder}/deciles.csv')
+with open(f'../../misc/reports/{args.folder}/deciles-params.json', 'w+') as params_json:
     json.dump(deciles_params, params_json)
 
 # TODO: combine these two
-df_reported.to_csv(f'../../reports/{args.folder}/true.csv')
-region_dict['m2']['df_district'].to_csv(f'../../reports/{args.folder}/smoothed.csv')
+df_reported.to_csv(f'../../misc/reports/{args.folder}/true.csv')
+region_dict['m2']['df_district'].to_csv(f'../../misc/reports/{args.folder}/smoothed.csv')
 
 from main.seir.forecast import predict_r0_multipliers, save_r0_mul
 
@@ -114,6 +114,6 @@ predictions_mul_dict = predict_r0_multipliers(region_dict, params[deciles_idx[80
 save_r0_mul(predictions_mul_dict, folder=args.folder)
 
 ax = plot_r0_multipliers(region_dict, params[deciles_idx[80]], predictions_mul_dict, multipliers=[0.9, 1, 1.1, 1.25])
-ax.figure.savefig(f'../../reports/{args.folder}/what-ifs/what-ifs.png')
+ax.figure.savefig(f'../../misc/reports/{args.folder}/what-ifs/what-ifs.png')
 
-print(f"yuh. done: view files at ../../reports/{args.folder}/")
+print(f"yuh. done: view files at ../../misc/reports/{args.folder}/")

@@ -17,9 +17,9 @@ sys.path.append('../../')
 from main.ihme.fitting import single_cycle
 from main.ihme_seir.utils import get_ihme_pointwise_loss, get_ihme_loss_dict, read_config, read_params_file, \
     create_pointwise_loss_csv_old, create_output_folder
-from utils.data import get_supported_regions
-from utils.enums import Columns
-from utils.util import convert_date, read_file
+from utils.fitting.data import get_supported_regions
+from utils.generic.enums import Columns
+from utils.fitting.util import convert_date, read_file
 from viz import plot_fit
 from viz.forecast import plot_forecast_agnostic
 
@@ -71,7 +71,7 @@ def run_experiments(config_path, output_folder, num):
                 config_model_params['func'] = model
                 config_base['train_size'] = train_val_period
                 config_base['val_size'] = val_period
-                config_base['start_date'] = convert_date(start_date, to_str=True, format='%m-%d-%Y')
+                config_base['start_date'] = convert_date(start_date, to_str=True, date_format='%m-%d-%Y')
                 config_base['data_length'] = train_val_period + test_period
                 if model == 'log_expit':  # Predictive validity only supported by Gaussian family of functions
                     config_model_params['pipeline_args']['n_draws'] = 0
@@ -93,11 +93,11 @@ def run_experiments(config_path, output_folder, num):
 
                 fit_plot = plot_fit(
                     predictions.reset_index(), results['df_train'], results['df_val'], results['df_district'],
-                    train_val_period, region, sub_region, which_compartments=which_compartments,
+                    train_val_period, (region, sub_region), which_compartments=which_compartments,
                     description='Train and test')
 
                 forecast_plot = plot_forecast_agnostic(
-                    results['df_district'], predictions.reset_index(), model_name='IHME', dist=sub_region, state=region,
+                    results['df_district'], predictions.reset_index(), region, model_name='IHME',
                     which_compartments=which_compartments_enum)
 
                 config_model_params['func'] = model

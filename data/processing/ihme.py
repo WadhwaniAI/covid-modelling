@@ -1,13 +1,11 @@
 import sys
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import numpy as np
-import pickle
-import os
 
 sys.path.append('../..')
-from data.dataloader import Covid19IndiaLoader, JHULoader
-from data.processing import get_concat_data, get_data, get_dataframes_cached
+from data.dataloader import JHULoader
+from data.processing import get_data, get_dataframes_cached
 
 def bbmp():
     df = pd.read_csv('../../data/data/bbmp.csv')
@@ -17,7 +15,7 @@ def bbmp():
     # df.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
     df.rename(columns = {'Cumulative Deaths til Date':'deaths'}, inplace = True) 
     df.rename(columns = {'Cumulative Cases Til Date':'cases'}, inplace = True) 
-    df.loc[:, 'group'] = pd.Series([1 for i in range(len(df))])
+    df.loc[:, 'group'] = pd.Series([1 for _ in range(len(df))])
     return df
 
 def india_all():

@@ -1,28 +1,34 @@
 # Fileformats
-*.csv
-*.pdf
-*.png
-*.pkl
-*.pyc
-*.pickle
-*.txt
-*.json
+*csv
+*pdf
+*png
+*jpg
+*eps
+*pkl
+*pyc
+*pickle
+*txt
+*json
+*sh
+*log
+
+# Configs with some number in the filename will not be put on git
+*[0-9]*.yaml
 
 # Junk / Hidden Files
-**.ipynb_checkpoints/
-*.ipynb_checkpoints/
-*.vscode/
-sftp-config.json
+**ipynb_checkpoints/
+*ipynb_checkpoints/
+*vscode/
+sftp-configjson
 *__pycache__
-*.DS_Store
+*DS_Store
 
 # Folders (on Home dir and otherwise)
+data/data/shapefiles/
 *plots/
 **plots/
 *outputs/
 **outputs/
-*reports/
-**reports/
 *reports/
 **reports/
 *misc/
@@ -39,8 +45,10 @@ cache/
 optim/
 
 # Exceptions
-!data/data/*.csv
-!data/data/mumbai/*.csv
+!data/data/*csv
+!data/data/mumbai/*csv
+!docs/model_diagrams/*pdf
+!docs/figures/*png
 *output/
 **output/
 **/output

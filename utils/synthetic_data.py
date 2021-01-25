@@ -2,8 +2,8 @@ from datetime import timedelta
 
 import pandas as pd
 
-from utils.enums import Columns
-from utils.util import train_test_split
+from utils.generic.enums import Columns
+from utils.fitting.util import train_test_split
 
 
 def create_custom_dataset(df_actual, df_synthetic, use_actual=True, use_synthetic=True,

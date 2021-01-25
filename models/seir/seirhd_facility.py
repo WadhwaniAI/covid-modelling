@@ -8,20 +8,20 @@ import datetime
 import copy
 
 from models.seir.seir import SEIR
-from utils.ode import ODE_Solver
+from utils.fitting.ode import ODE_Solver
 
 class SEIRHD_Facility(SEIR):
     def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2,
                  P_nonoxy=0.4, P_oxy=0.2, P_icu=0.02, P_vent=0.02, P_fatal=0.02, 
                  T_recov_hq=14, T_recov_nonoxy=14, T_recov_oxy=14, T_recov_icu=14, T_recov_vent=14, T_recov_fatal=14,
                  N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', 
-                 initialisation='intermediate', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
+                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
         
         """
         This class implements SEIR + Hospitalisation + Severity Levels 
         The model further implements 
         - pre, post, and during lockdown behaviour 
-        - different initialisations : intermediate and starting 
+
 
         The state variables are : 
 
@@ -76,7 +76,6 @@ class SEIRHD_Facility(SEIR):
 
         Misc - 
         N: Total population
-        initialisation : method of initialisation ('intermediate'/'starting')
         """
         STATES = ['S', 'E', 'I', 'R_hq', 'R_nonoxy', 'R_oxy', 'R_icu', 'R_vent', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]
@@ -116,11 +115,11 @@ class SEIRHD_Facility(SEIR):
         dydt = np.zeros(y.shape)
 
         # Write differential equations
-        dydt[0] = - I * S / (self.T_trans)  # S
-        dydt[1] = I * S / (self.T_trans) - (E/ self.T_inc)  # E
+        dydt[0] = - I * S / self.T_trans  # S
+        dydt[1] = I * S / self.T_trans - (E / self.T_inc)  # E
         dydt[2] = E / self.T_inc - I / self.T_inf  # I
         dydt[3] = (1/self.T_inf)*(self.P_hq*I) - R_hq/self.T_recov_hq # R_hq
-        dydt[4] = (1/self.T_inf)*(self.P_nonoxy*I) - R_nonP_nonoxy/self.T_recov_nonP_nonoxy #R_nonP_nonoxy
+        dydt[4] = (1/self.T_inf)*(self.P_nonoxy*I) - R_nonoxy/self.T_recov_nonoxy #R_nonP_nonoxy
         dydt[5] = (1/self.T_inf)*(self.P_oxy*I) - R_oxy/self.T_recov_oxy #R_oxy
         dydt[6] = (1/self.T_inf)*(self.P_icu*I) - R_icu/self.T_recov_icu # R_icu
         dydt[7] = (1/self.T_inf)*(self.P_vent*I) - R_vent/self.T_recov_vent #R_vent
@@ -143,9 +142,9 @@ class SEIRHD_Facility(SEIR):
         df_prediction['o2_beds'] = df_prediction['R_oxy']
         df_prediction['icu'] = df_prediction['R_icu'] + df_prediction['R_vent']
         df_prediction['ventilator'] = df_prediction['R_vent']
-        df_prediction['hospitalised'] = df_prediction['hq'] + df_prediction['non_o2_beds'] + \
+        df_prediction['active'] = df_prediction['hq'] + df_prediction['non_o2_beds'] + \
             df_prediction['o2_beds'] + df_prediction['icu']
         df_prediction['recovered'] = df_prediction['C']
         df_prediction['deceased'] = df_prediction['D']
-        df_prediction['total_infected'] = df_prediction['hospitalised'] + df_prediction['recovered'] + df_prediction['deceased']
+        df_prediction['total'] = df_prediction['active'] + df_prediction['recovered'] + df_prediction['deceased']
         return df_prediction

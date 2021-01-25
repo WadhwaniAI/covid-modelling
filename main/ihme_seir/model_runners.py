@@ -10,9 +10,9 @@ from main.ihme.fitting import single_cycle
 from main.ihme_seir.utils import read_params_file
 from main.seir.fitting import run_cycle
 from models.seir import SEIR_Testing
-from utils.data import get_supported_regions
-from utils.enums import Columns
-from utils.util import read_config
+from utils.fitting.data import get_supported_regions
+from utils.generic.enums import Columns
+from utils.fitting.util import read_config
 from viz.fit import plot_fit
 from viz.forecast import plot_forecast_agnostic
 from viz.synthetic_data import plot_fit_uncertainty
@@ -75,12 +75,12 @@ def ihme_runner(sub_region, region, start_date, dataset_length, train_val_size, 
 
     plot_fit(
         predictions.reset_index(), ihme_res['df_train'], ihme_res['df_val'], ihme_res['df_district'],
-        train_val_size, region, sub_region, which_compartments=[c.name for c in which_compartments],
+        train_val_size, (region, sub_region), which_compartments=[c.name for c in which_compartments],
         description='Train and test',
         savepath=os.path.join(output_folder, f'ihme_i1_fit_{variant}.png'))
 
-    plot_forecast_agnostic(ihme_res['df_district'], predictions.reset_index(), model_name='IHME',
-                           dist=sub_region, state=region, which_compartments=which_compartments,
+    plot_forecast_agnostic(ihme_res['df_district'], predictions.reset_index(), region, model_name='IHME',
+                           which_compartments=which_compartments,
                            filename=os.path.join(output_folder, f'ihme_i1_forecast_{variant}.png'))
 
     for plot_col in which_compartments:

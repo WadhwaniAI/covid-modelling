@@ -4,10 +4,11 @@ from datetime import timedelta
 from main.ihme_seir.model_runners import ihme_runner, seir_runner, log_experiment_local
 from main.ihme_seir.utils import create_output_folder, get_variable_param_ranges_dict, read_region_config, \
     supported_models
-from main.seir.fitting import get_regional_data, get_variable_param_ranges
-from utils.enums import Columns
-from utils.loss import Loss_Calculator
-from utils.population import get_population
+from main.seir.fitting import get_regional_data
+from main.seir.optimiser import Optimiser
+from utils.generic.enums import Columns
+from utils.fitting.loss import Loss_Calculator
+from utils.fitting.population import get_population
 from utils.synthetic_data import insert_custom_dataset_into_dataframes, get_experiment_dataset
 from viz.synthetic_data import plot_all_experiments, plot_against_baseline
 
@@ -110,6 +111,8 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
         input_df = deepcopy(data)
     input_df['daily_cases'] = input_df['total_infected'].diff()
 
+    optimiser = Optimiser()
+
     for i, model_dict in enumerate(supported_models):
         name_prefix = model_dict['name_prefix']
         if name_prefix not in compartmental_models:
@@ -119,7 +122,7 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
         variable_param_ranges = get_variable_param_ranges_dict(sub_region, region,
                                                                model_type=name_prefix, train_period=c2_train_period)
         variable_param_ranges_copy = deepcopy(variable_param_ranges)
-        variable_param_ranges = get_variable_param_ranges(variable_param_ranges)
+        variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges)
 
         # Generate synthetic data using SEIR model
         input_df_c1 = deepcopy(input_df)

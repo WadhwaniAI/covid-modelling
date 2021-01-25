@@ -1,4 +1,8 @@
 import sys
+
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+from utils.fitting.loss import Loss_Calculator
+
 from copy import copy
 from datetime import timedelta
 
@@ -7,10 +11,10 @@ import pandas as pd
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 
 from models.ihme.model import IHME
-from utils.loss import Loss_Calculator
+from utils.fitting.loss import Loss_Calculator
 
 sys.path.append('../..')
-from utils.util import HidePrints, train_test_split
+from utils.fitting.util import HidePrints, train_test_split
 
 
 class Optimiser():

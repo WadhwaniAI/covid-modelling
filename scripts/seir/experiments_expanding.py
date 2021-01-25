@@ -17,9 +17,10 @@ sys.path.append('../../')
 from data.processing.processing import get_data_from_source, get_observed_dataframes
 from main.ihme_seir.utils import get_seir_pointwise_loss_dict, get_seir_pointwise_loss, read_config, read_params_file, \
     create_pointwise_loss_csv_old, create_output_folder, supported_models
-from main.seir.fitting import get_variable_param_ranges, run_cycle
-from utils.population import get_population
-from utils.util import get_subset
+from main.seir.fitting import run_cycle
+from main.seir.optimiser import Optimiser
+from utils.fitting.population import get_population
+from utils.fitting.util import get_subset
 
 
 def run_experiments(config_path, output_folder, num):
@@ -60,6 +61,8 @@ def run_experiments(config_path, output_folder, num):
         print(region_name, ": Run no. ", num + 1, " with shift of ", shift * num)
     output_folder = create_output_folder(f'{experiment_name}/{root_folder}/')
 
+    optimiser = Optimiser()
+
     for i, model_dict in enumerate(supported_models):
         name_prefix = model_dict['name_prefix']
         if name_prefix not in models:
@@ -72,7 +75,7 @@ def run_experiments(config_path, output_folder, num):
         else:
             variable_param_ranges = deepcopy(config[f'params_{name_prefix}'])
         output_config[f'variable_param_ranges_{name_prefix}'] = deepcopy(variable_param_ranges)
-        variable_param_ranges = get_variable_param_ranges(variable_param_ranges)
+        variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges)
 
         # Get data
         data = get_data_from_source(region=region, sub_region=sub_region, data_source=data_source)

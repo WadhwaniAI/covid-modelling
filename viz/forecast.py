@@ -1,6 +1,6 @@
 
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+from datetime import timedelta
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -8,15 +8,13 @@ from adjustText import adjust_text
 import datetime
 import copy
 
-from main.seir.forecast import get_forecast, forecast_top_k_trials
-from utils.enums import Columns, SEIRParams
-from utils.enums.columns import *
+from utils.generic.enums import Columns
+from utils.generic.enums.columns import *
 from viz.utils import axis_formatter
 
 
-
 def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame,
-                              which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered']):
+                              which_compartments=['active', 'total', 'deceased', 'recovered']):
     df_temp = copy.copy(df_prediction)
     df_temp.loc[:, which_compartments] = df_prediction.loc[:,
                                                            which_compartments]*(1 - 0.01*df_loss['val'])
@@ -25,12 +23,13 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
     df_temp.loc[:, which_compartments] = df_prediction.loc[:,
                                                            which_compartments]*(1 + 0.01*df_loss['val'])
     df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
+    df_prediction[which_compartments] = df_prediction[which_compartments].apply(pd.to_numeric, axis=1)
     return df_prediction
 
 
-def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], log_scale=False, filename=None,
-                  which_compartments=['hospitalised', 'total_infected', 'deceased', 'recovered'],
-                  fileformat='eps', error_bars=False, days=30):
+def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], which_fit='m2', log_scale=False, 
+                  filename=None, which_compartments=['active', 'total', 'deceased', 'recovered'], 
+                  fileformat='eps', error_bars=False, truncate_series=True, left_truncation_buffer=30):
     """Function for plotting forecasts (both best fit and uncertainty deciles)
 
     Arguments:
@@ -38,7 +37,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         region {tuple} -- Region Name eg : ('Maharashtra', 'Mumbai')
 
     Keyword Argument
-        which_compartments {list} -- Which compartments to plot (default: {['hospitalised', 'total_infected', 'deceased', 'recovered']})
+        which_compartments {list} -- Which compartments to plot (default: {['active', 'total', 'deceased', 'recovered']})
         df_prediction {pd.DataFrame} -- DataFrame of predictions (default: {None})
         both_forecasts {bool} -- If true, plot both forecasts (default: {False})
         log_scale {bool} -- If true, y is in log scale (default: {False})
@@ -56,13 +55,9 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     for key in deciles:
         legend_title_dict[key] = '{}th Decile'.format(int(key))
 
-    legend_title_dict['best'] = 'Best M2'
+    legend_title_dict['best'] = 'Best'
     legend_title_dict['mean'] = 'Mean'
-
-    legend_title_dict['testing_12'] = 'Testing Becomes 1.2x'
-    legend_title_dict['testing_15'] = 'Testing Becomes 1.5x'
-    legend_title_dict['testing_18'] = 'Testing Becomes 1.8x'
-    legend_title_dict['testing_20'] = 'Testing Becomes 2.0x'
+    legend_title_dict['ensemble_mean'] = 'Ensemble Mean'
 
     linestyles_arr = ['-', '--', '-.', ':', '-x']
 
@@ -71,9 +66,16 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
 
     predictions = []
     for i, forecast in enumerate(fits_to_plot):
-        predictions.append(predictions_dict['m2']['forecasts'][fits_to_plot[i]])
+        predictions.append(predictions_dict[which_fit]['forecasts'][fits_to_plot[i]])
     
+    train_period = predictions_dict[which_fit]['run_params']['split']['train_period']
+    val_period = predictions_dict[which_fit]['run_params']['split']['val_period']
+    val_period = 0 if val_period is None else val_period
     df_true = predictions_dict['m1']['df_district']
+    if truncate_series:
+        df_true = df_true[df_true['date'] > \
+                          (predictions[0]['date'].iloc[0] - timedelta(days=left_truncation_buffer))]
+        df_true.reset_index(drop=True, inplace=True)
 
     if error_bars:
         for i, df_prediction in enumerate(predictions):
@@ -91,15 +93,18 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
                              ls='-', color=compartment.color, 
                              label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[i]]))
                 ax.lines[-1].set_linestyle(linestyles_arr[i])
-    
+    ax.axvline(x=predictions[0].iloc[0, :]['date'],
+               ls=':', color='brown', label='Train starts')
+    ax.axvline(x=predictions[0].iloc[train_period+val_period-1, :]['date'],
+               ls=':', color='black', label='Data Last Date')
     axis_formatter(ax, log_scale=log_scale)
     fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
-    if filename != None:
+    if filename is not None:
         plt.savefig(filename, format=fileformat)
 
     return fig
 
-def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False, filename=None,
+def plot_forecast_agnostic(df_true, df_prediction, region, log_scale=False, filename=None,
                            model_name='M2', which_compartments=Columns.which_compartments()):
     fig, ax = plt.subplots(figsize=(12, 12))
     for col in Columns.which_compartments():
@@ -110,18 +115,18 @@ def plot_forecast_agnostic(df_true, df_prediction, dist, state, log_scale=False,
                      ls='-', color=col.color, label=f'{col.label} ({model_name} Forecast)')
 
     axis_formatter(ax, log_scale=log_scale)
-    fig.suptitle('Forecast - ({} {})'.format(dist, state), fontsize=16)
-    if filename != None:
+    fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
+    if filename is not None:
         plt.savefig(filename)
 
     return fig
 
 
-def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=None, vline=None, log_scale=False,
-                      which_compartments=[Columns.active], plot_individual_curves=True):
+def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_scale=False,
+                      which_compartments=[Columns.active], plot_individual_curves=True,
+                      truncate_series=True, left_truncation_buffer=30):
                 
-    if trials_processed is None:
-        trials_processed = forecast_top_k_trials(predictions_dict, k=k, train_fit=train_fit)
+    trials_processed = predictions_dict[train_fit]['trials_processed']
     top_k_losses = trials_processed['losses'][:k]
     top_k_params = trials_processed['params'][:k]
     predictions = trials_processed['predictions'][:k]
@@ -130,13 +135,22 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=N
     for i, df in enumerate(predictions[1:]):
         df_master = pd.concat([df_master, df], ignore_index=True)
     df_true = predictions_dict[train_fit]['df_district']
+    if truncate_series:
+        df_true = df_true[df_true['date'] >
+                          (predictions[0]['date'].iloc[0] - timedelta(days=left_truncation_buffer))]
+        df_true.reset_index(drop=True, inplace=True)
+
+    train_period = predictions_dict[train_fit]['run_params']['split']['train_period']
+    val_period = predictions_dict[train_fit]['run_params']['split']['val_period']
+    val_period = 0 if val_period is None else val_period
+
     plots = {}
     for compartment in which_compartments:
         fig, ax = plt.subplots(figsize=(12, 12))
         texts = []
         ax.plot(df_true[Columns.date.name].to_numpy(), df_true[compartment.name].to_numpy(),
                 '-o', color='C0', label=f'{compartment.label} (Observed)')
-        if plot_individual_curves == True:
+        if plot_individual_curves:
             for i, df_prediction in enumerate(predictions):
                 loss_value = np.around(top_k_losses[i], 2)
                 r0 = np.around(top_k_params[i]['lockdown_R0'], 2)
@@ -153,15 +167,20 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, trials_processed=N
             plt.axvline(datetime.datetime.strptime(vline, '%Y-%m-%d'))
         ax.set_xlim(ax.get_xlim()[0], ax.get_xlim()[1] + 10)
         adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
+        ax.axvline(x=predictions[0].iloc[0, :]['date'],
+                   ls=':', color='brown', label='Train starts')
+        ax.axvline(x=predictions[0].iloc[train_period+val_period-1, :]['date'],
+                ls=':', color='black', label='Data Last Date')
         axis_formatter(ax, log_scale=log_scale)
         fig.suptitle('Forecast of top {} trials for {} '.format(k, compartment.name), fontsize=16)
         plots[compartment] = fig
     return plots
 
-def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, multipliers):
+
+def plot_r0_multipliers(region_dict, predictions_mul_dict, log_scale=False):
     df_true = region_dict['m2']['df_district']
     fig, ax = plt.subplots(figsize=(12, 12))
-    ax.plot(df_true['date'], df_true['hospitalised'],
+    ax.plot(df_true['date'], df_true['active'],
         '-o', color='orange', label='Active Cases (Observed)')
     for i, (mul, mul_dict) in enumerate(predictions_mul_dict.items()):
         df_prediction = mul_dict['df_prediction']
@@ -170,7 +189,7 @@ def plot_r0_multipliers(region_dict,best_params_dict, predictions_mul_dict, mult
                     ls='-', label=f'Active Cases ({mul} - R0 {true_r0})')
         plt.text(
             x=df_prediction['date'].iloc[-1],
-            y=df_prediction['hospitalised'].iloc[-1], s=true_r0
+            y=df_prediction['active'].iloc[-1], s=true_r0
         )
     axis_formatter(ax, log_scale=log_scale)
     state, dist = region_dict['state'], region_dict['dist']
