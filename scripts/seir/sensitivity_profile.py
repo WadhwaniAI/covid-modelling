@@ -44,7 +44,6 @@ def run_bo(param,test_value):
     config_params['default_params'][param] = test_value
     config_params['fitting_method_params']['num_evals'] = 250
     predictions_dict = single_fitting_cycle(**config_params)
-    predictions_dict = single_fitting_cycle(**copy.deepcopy(config['fitting']))
     output = predictions_dict['df_loss']
     return output
 
@@ -66,9 +65,10 @@ for param,val in required_params.items():
         losses[param][perc_change] = []
         test_value = val + val*perc_change
         scenario_losses = Parallel(n_jobs=2)(
-            delayed(run_bo)() for _ in range(n_iters)
+            delayed(run_bo)(param,test_value) for _ in range(n_iters)
         )
         losses[param][perc_change] = scenario_losses
+    break
 
 save_dir = '../../misc/predictions/sens_prof/'    
 if not os.path.exists(save_dir):
