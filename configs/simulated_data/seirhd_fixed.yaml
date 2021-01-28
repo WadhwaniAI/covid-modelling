@@ -1,6 +1,6 @@
 model: SEIRHD
 starting_date: 2020-09-16
-total_days: 32
+total_days: 35
 initial_values:
     recovered: 95000
     deceased: 7500

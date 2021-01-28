@@ -26,6 +26,21 @@ class Loss_Calculator():
             y_true = np.log(y_true[y_true > 0])
         loss = np.sqrt(np.mean((y_true - y_pred)**2))
         return loss
+    def _calc__logdiff_rmse(self, y_pred, y_true):
+        """Calculate RMSE  logdiff Loss
+
+        Args:
+            y_pred (np.array): predicted array
+            y_true (np.array): true array
+            log (bool, optional): If true, computes log rmse. Defaults to False.
+
+        Returns:
+            float: RMSE loss
+        """
+        T = np.ediff1d(np.log(y_true))
+        P = np.ediff1d(np.log(y_pred))
+        loss = np.sqrt(np.mean((T - P)**2))
+        return loss
 
     def _calc_mape(self, y_pred, y_true):
         """Calculate MAPE loss
@@ -131,11 +146,10 @@ class Loss_Calculator():
         if method == 'rmse':
             calculate = lambda x, y : self._calc_rmse(x, y)
         elif method == 'rmse_log':
-            calculate = lambda x, y : self._calc_rmse(x, y, log=True)
+            calculate = lambda x, y : self._calc__logdiff_rmse(x, y)
         elif method == 'mape':
             calculate = lambda x, y : self._calc_mape(x, y)
         if method == 'smape':
-            
             calculate = lambda x, y : self._calc_smape(x, y)
         
         losses = {}

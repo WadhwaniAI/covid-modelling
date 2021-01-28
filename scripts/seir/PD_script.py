@@ -40,7 +40,7 @@ models = {'MCMC':'uncer.yaml','BO':'default.yaml'}
 
 
 # %%
-runs = 10
+runs = 2
 PD = {}
 for n in range(runs):
     print("The iteration number is ",n)
@@ -68,5 +68,5 @@ for n in range(runs):
 
 # %%
 import pickle as pkl
-with open('../../misc/predictions/final_mumbai_20.pickle', 'wb') as handle:
+with open('../../misc/predictions/test_mumbai_logdiff.pickle', 'wb') as handle:
     pkl.dump(PD, handle)

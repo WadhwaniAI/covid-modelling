@@ -201,24 +201,21 @@ def plot_ptiles_comp(PD, train_fit='m1', vline=None, compartment=Columns.active,
     
     texts = []
     sns.set_color_codes()
+    df_true = df_true[(df_true['date'] >= PD['BO']['ensemble_mean_forecast']['df_prediction']['date'][0]) & (df_true['date']<=PD['BO']['ensemble_mean_forecast']['df_prediction']['date'].iloc[-1])]
     ax.plot(df_true[Columns.date.name].to_numpy(), df_true[compartment.name].to_numpy(),
             '-o', color=compartment.color, label=f'{compartment.label} (Observed)')
     print(compartment.name)
-    ax.plot(list(predictions_mcmc.values())[0]['df_prediction']['date'],list(predictions_mcmc.values())[0]['df_prediction'][compartment.name],c = 'r',lw =0.1)
-    ax.plot(list(predictions_mcmc.values())[0]['df_prediction']['date'],list(predictions_mcmc.values())[-1]['df_prediction'][compartment.name],c = 'r',lw =0.1)
-    ax.plot(PD['MCMC']['ensemble_mean_forecast']['df_prediction']['date'],PD['MCMC']['ensemble_mean_forecast']['df_prediction'][compartment.name],c ='r',lw = 3,label='MCMC Ensemble Mean')
-    ax.fill_between(list(predictions_mcmc.values())[0]['df_prediction']['date'],list(predictions_mcmc.values())[0]['df_prediction'][compartment.name],list(predictions_mcmc.values())[-1]['df_prediction'][compartment.name],color='r',alpha = 0.4,label='MCMC 95% CI')
-    ax.plot(list(predictions_mcmc.values())[0]['df_prediction']['date'],list(predictions_bo.values())[0]['df_prediction'][compartment.name],c = 'b',lw =0.1)
-    ax.plot(list(predictions_mcmc.values())[0]['df_prediction']['date'],list(predictions_bo.values())[-1]['df_prediction'][compartment.name],c = 'b',lw =0.1)
-    ax.fill_between(list(predictions_mcmc.values())[0]['df_prediction']['date'],list(predictions_bo.values())[0]['df_prediction'][compartment.name],list(predictions_bo.values())[-1]['df_prediction'][compartment.name],color='b',alpha = 0.4,label='BO 95% CI')
-    ax.plot(PD['BO']['ensemble_mean_forecast']['df_prediction']['date'],PD['BO']['ensemble_mean_forecast']['df_prediction'][compartment.name],c ='b',lw = 3,label='BO Ensemble Mean')
+    ax.plot(PD['MCMC']['ensemble_mean_forecast']['df_prediction']['date'],PD['MCMC']['ensemble_mean_forecast']['df_prediction'][compartment.name],c ='tab:blue',lw = 5,label='MCMC Ensemble Mean')
+    ax.fill_between(list(predictions_mcmc.values())[0]['df_prediction']['date'],list(predictions_bo.values())[0]['df_prediction'][compartment.name],list(predictions_bo.values())[-1]['df_prediction'][compartment.name],color='tab:orange',alpha = .3,label='BO 95 CI',lw = 0.01)
+    ax.fill_between(list(predictions_mcmc.values())[0]['df_prediction']['date'],list(predictions_mcmc.values())[0]['df_prediction'][compartment.name],list(predictions_mcmc.values())[-1]['df_prediction'][compartment.name],color='tab:blue',alpha = 0.3,label='MCMC 95 CI',lw = 0.01)
+    ax.plot(PD['BO']['ensemble_mean_forecast']['df_prediction']['date'],PD['BO']['ensemble_mean_forecast']['df_prediction'][compartment.name],c ='tab:orange',lw = 5,label='BO Ensemble Mean')
     if vline:
         plt.axvline(datetime.datetime.strptime(vline, '%Y-%m-%d'))
-
-    ax.set_xlim([datetime.date(2020, 9, 26), datetime.date(2021, 1, 5)])
     adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
     axis_formatter(ax, log_scale=log_scale)
-    ax.set_title('Forecast of all deciles for {} '.format(compartment.name), fontsize=16)
+    ax.grid(False)
+    ax.set_xlabel("")
+    ax.set_title(compartment.name.title())
     
     return fig,ax
 

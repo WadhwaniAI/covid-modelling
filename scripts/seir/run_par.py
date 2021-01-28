@@ -21,12 +21,12 @@ from viz import plot_forecast, plot_top_k_trials, plot_ptiles
 import yaml
 import wandb
 predictions_dict = {}
-config_filename = 'uncer.yaml'
+config_filename = 'uncer_sim.yaml'
 config = read_config(config_filename)
 
 predictions_dict['m1'] = single_fitting_cycle(**copy.deepcopy(config['fitting']))                                           
 
 # %%
 import pickle as pkl
-with open('../../misc/predictions/mcmc_correct.pickle', 'wb') as handle:
+with open('../../misc/predictions/exp_set_free.pickle', 'wb') as handle:
     pkl.dump(predictions_dict, handle)

@@ -196,22 +196,28 @@ def plot_comp_density_plots(predictions_dict,fig,axs):
                 params_dict_bo[param].append(param_set[param])
     
     weights = np.exp(-1*np.array(loss_arr))
-    W =  (len(weights)*weights) / np.sum(weights)
+    W =  weights / np.sum(weights)
     params_dict_bo['W'] = W
+    latex  = {"lockdown_R0": "$R_0$",
+    "T_inc": "$T_{inc}$",
+    "T_inf": "$T_{inf}$",
+    "T_recov": "$T_{recov}$",
+    "T_recov_fatal": "$T_{fatal}$" ,
+    "P_fatal": "$P_{fatal}$",
+    "E_hosp_ratio": "$E_{hosp\_ratio}$",
+    "I_hosp_ratio": "$I_{hosp\_ratio}$"}
     for i, param in enumerate(params_dict_mcmc.keys()):
         if (param == 'gamma'):
             continue
         ax = axs.flat[i]
-        sns.distplot(params_dict_mcmc[param], hist = True, kde = False,bins= 100,
-                 kde_kws = {'shade': True, 'linewidth': 3},label = ['MCMC'] ,ax=ax)
-        sns.distplot(params_dict_bo[param], hist = True, kde = False,bins= 100,
-                 kde_kws = {'shade': True, 'linewidth': 3},hist_kws={'weights':W},label = ['BayesOpt'] ,ax=ax)
-        if param == 'T_recov_fatal':
-            ax.set_title(f'Denisty Plot of parameter T_Death')
-        else:
-            ax.set_title(f'Denisty Plot of parameter {param}')
+        a = min(params_dict_mcmc[param])
+        b = max(params_dict_mcmc[param])
+        sns.distplot(params_dict_mcmc[param], hist = True,bins= 100,hist_kws={'weights':np.ones(len(W))/len(W),"range":[a,b],"alpha":0.5},color = 'tab:blue',kde = False,label = ['MCMC'] ,ax=ax)
+        sns.distplot(params_dict_bo[param], hist = True,bins= 100,hist_kws={'weights':W,"range":[a,b],"alpha":0.5},color = 'tab:orange',kde = False,label = ['BayesOpt'] ,ax=ax)
+        ax.set_xlabel(latex[param])
         ax.set_ylabel('Density')
-        ax.legend()
+        if(param == 'E_hosp_ratio'):
+            ax.legend()
     return fig,axs
     #     params_array_mcmc, loss_mcmc = _order_trials_by_loss(predictions_dict['MCMC']['m1'])
     # params_dict_mcmc = {param: [param_dict[param] for param_dict in params_array_mcmc]
@@ -234,7 +240,7 @@ def plot_comp_density_plots(predictions_dict,fig,axs):
     # return fig,axs
     
 
-def plot_histogram(predictions_dict,true_val, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
+def plot_histogram(predictions_dict,arr,true_val, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
                    savefig=False, filename=None, label=None):
     """Plots histograms for all the sampled params for a particular run in a particular fig.
        The ith subplot will have the histogram corresponding to the ith parameter
@@ -260,16 +266,16 @@ def plot_histogram(predictions_dict,true_val, fig, axs, weighting='exp', beta=1,
     params_array, losses_array = _order_trials_by_loss(predictions_dict)
 
     params_dict = {param: [param_dict[param] for param_dict in params_array]
-                   for param in params_array[0].keys()}
-    if weighting == 'exp':
-        weights = np.exp(-np.array(losses_array))
-    elif weighting == 'inverse':
-        weights = 1/np.array(losses_array)
-    else:
-        weights = np.ones(np.array(losses_array).shape)
+                   for param in arr}
+    # if weighting == 'exp':
+    #     weights = np.exp(-np.array(losses_array))
+    # elif weighting == 'inverse':
+    #     weights = 1/np.array(losses_array)
+    # else:
+    #     weights = np.ones(np.array(losses_array).shape)
 
     histograms = {}
-    for i, param in enumerate(params_dict.keys()):
+    for i, param in enumerate(arr):
         if (param == 'gamma'):
             continue
         ax = axs.flat[i]
@@ -749,11 +755,15 @@ def comp_bar(PD,loss_type,ax):
     yer2 = stats['BO'].loc[['std']].values[0]
     r1 = np.arange(len(bars1))
     r2 = [x + barWidth for x in r1]
-    ax.bar(r1, bars1, width = barWidth, color = 'blue', edgecolor = 'black', yerr=yer1, capsize=7, label='MCMC')
-    ax.bar(r2, bars2, width = barWidth, color = 'orange', edgecolor = 'black', yerr=yer2, capsize=7, label='BayesOpt')
-    ax.grid(b = True,axis = 'y')
+    ax.bar(r1, bars1, width = barWidth, color = 'tab:blue', edgecolor = 'tab:blue', yerr=yer1, capsize=7, label='MCMC',alpha = 0.7)
+    ax.bar(r2, bars2, width = barWidth, color = 'tab:orange', edgecolor = 'tab:orange', yerr=yer2, capsize=7, label='BayesOpt',alpha = 0.7)
     ax.set_xticks([r + barWidth/2 for r in range(len(bars1))])
     ax.set_xticklabels(which_compartments)
     ax.set_ylabel('MAPE Loss')
-    ax.set_title(f'Best {loss_type} Loss')
+    if(loss_type == 'train'):
+        ax.text(.025,4.25,'\\textbf{(a)}',fontweight='bold')
+    elif(loss_type == 'test'):
+        ax.text(.025,30,'\\textbf{(b)}',fontweight='bold')
+    else:
+        ax.text(.025,17.3,'\\textbf{(c)}',fontweight='bold')
     ax.legend()
