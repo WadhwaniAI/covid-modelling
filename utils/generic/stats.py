@@ -3,11 +3,33 @@ import numpy as np
 from main.seir.forecast import _order_trials_by_loss
 
 def get_best_param_dist(model_dict):
+    """Computes mean and variance of the best fit params accross different runs
+
+    Args:
+        model_dict (dict): Dict containing the predictions dict for all the runs for a given 
+            scenario, config setting
+        
+    Returns:
+        dataframe containing mean, std for all the parameters 
+    """
     best_param_vals = [run_dict['best_params'] for _, run_dict in model_dict.items()]
     df = pd.DataFrame(best_param_vals).describe()
     return df.loc[['mean', 'std']]
 
 def get_ensemble_combined(model_dict, weighting='exp', beta=1):
+    """Computes ensemble mean and variance of all the params accross different runs
+
+    Args:
+        model_dict (dict): Dict containing the predictions dict for all the runs for a given 
+            scenario, config setting
+        weighting (str, optional): The weighting function. 
+            If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+            If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
+        beta (float, optional): beta param for exponential weighting 
+
+    Returns:
+        dataframe containing mean, std for all the parameters 
+    """
     params_dict = { k: np.array([]) for k in model_dict[list(model_dict.keys())[0]]['best_params'].keys() }
     losses_array = np.array([])
     for _, run_dict in model_dict.items():
@@ -36,12 +58,40 @@ def get_ensemble_combined(model_dict, weighting='exp', beta=1):
     return df.loc[['mean','std']]
 
 def get_param_stats(model_dict, method='best', weighting='exp'):
+    """Computes mean and variance for all the params accross different runs based on the method mentioned
+
+    Args:
+        model_dict (dict): Dict containing the predictions dict for all the runs for a given 
+            scenario, config setting
+        method (str, optional): The method of aggregation of different runs ('best' or 'ensemble')
+        weighting (str, optional): The weighting function. 
+            If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+            If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
+        
+    Returns:
+        dataframe containing mean, std for all the parameters 
+    """
     if method == 'best':
         return get_best_param_dist(model_dict)
     elif method == 'ensemble':
         return get_ensemble_combined(model_dict, weighting=weighting)
 
 def get_loss_stats(model_dict, which_loss='train',method='best_loss_nora',weighting='exp',beta=1.0):
+    """Computes mean and variance of loss values accross all the compartments for different runs
+
+    Args:
+        model_dict (dict): Dict containing the predictions dict for all the runs for a given 
+            scenario, config setting
+        which_losses: Which losses have to considered? train or val
+        method (str, optional): The method of aggregation of different runs. 
+            possible values: 'best_loss_nora', 'best_loss_ra', 'ensemble_loss_ra'
+        weighting (str, optional): The weighting function. 
+            If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+            If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
+        
+    Returns:
+        dataframe containing mean, std loss values for all the compartments  
+    """
     if method == 'best_loss_nora':
         loss_vals = []
         for _, run_dict in model_dict.items():
