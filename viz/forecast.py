@@ -28,7 +28,7 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
 
 
 def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], which_fit='m2', log_scale=False, 
-                  filename=None, which_compartments=['active', 'total', 'deceased', 'recovered'], 
+                  filename=None, which_compartments=['active', 'total', 'deceased', 'recovered'], smoothed_gt=True,
                   fileformat='eps', error_bars=False, plotting_config={}, figsize=(12, 12)):
     """Function for plotting forecasts (both best fit and uncertainty deciles)
 
@@ -71,7 +71,11 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     train_period = predictions_dict[which_fit]['run_params']['split']['train_period']
     val_period = predictions_dict[which_fit]['run_params']['split']['val_period']
     val_period = 0 if val_period is None else val_period
-    df_true = predictions_dict['m1']['df_district']
+    
+    if smoothed_gt:
+        df_true = predictions_dict['m1']['df_district']
+    else:
+        df_true = predictions_dict['m1']['df_district_unsmoothed']
     if plotting_config['truncate_series']:
         df_true = df_true[df_true['date'] >
                           (predictions[0]['date'].iloc[0] -
@@ -121,7 +125,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     if filename != None:
         fig.savefig(filename, format=fileformat)
 
-    return fig
+    return fig, axs
 
 def plot_forecast_agnostic(df_true, df_prediction, region, log_scale=False, filename=None,
                            model_name='M2', which_compartments=Columns.which_compartments()):
