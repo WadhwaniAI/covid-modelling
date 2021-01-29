@@ -473,7 +473,7 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                     df_subm['location'] = loc_name_to_key_dict[loc]
                 else:
                     df_subm['location'] = int(loc_name_to_key_dict[loc])
-                df_subm['model'] = 'Wadhwani_AI-'
+                df_subm['model'] = 'Wadhwani_AI-BayesOpt'
                 df_subm['forecast_date'] = datetime.combine(now.date(),
                                                             datetime.min.time())
                 df_loc_submission = pd.concat([df_loc_submission, df_subm], 
