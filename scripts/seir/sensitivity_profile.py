@@ -6,7 +6,6 @@ from scipy.stats import entropy
 import datetime
 import copy
 import time
-import wandb
 import pickle as pkl
 import sys
 sys.path.append('../../')
@@ -42,38 +41,45 @@ def run_bo(param,test_value):
     if param in config_params['variable_param_ranges']:
         del config_params['variable_param_ranges'][param] 
     config_params['default_params'][param] = test_value
-    config_params['fitting_method_params']['num_evals'] = 250
+    config_params['fitting_method_params']['num_evals'] = 3000
     predictions_dict = single_fitting_cycle(**config_params)
-    output = predictions_dict['df_loss']
+    output = {}
+    output['losses'] = predictions_dict['df_loss']
+    output['best_params'] = predictions_dict['best_params']
     return output
 
 
 
-# varying_perc = np.array([-0.1,-0.25,-0.4,-0.5,-0.6,-0.75,-0.9])
-varying_perc = np.array([-0.4,-0.5,-0.6])
+# varying_perc = np.array([-0.1,-0.2,-0.25,-0.4,-0.5,-0.75,-0.9])
+varying_perc = np.array([-0.1,-0.25,-0.5,-0.9])
+# varying_perc = np.array([-0.4,-0.5,-0.6])
 # varying_perc = np.array([-0.5])
 varying_perc = np.concatenate([np.flipud(varying_perc),[0],-1*varying_perc])
 
-n_iters = 2
+n_iters = 10
 required_params = actual_params.copy()
 del required_params['N']
 losses = {}
 
+count = 0
 for param,val in required_params.items():
+    count += 1
+    # if(count > 3):
+        # break
     losses[param] = {}
     for perc_change in varying_perc : 
+        print('param count : ',count,' perc_change: ',perc_change)
         losses[param][perc_change] = []
         test_value = val + val*perc_change
-        scenario_losses = Parallel(n_jobs=2)(
+        scenario_losses = Parallel(n_jobs=10)(
             delayed(run_bo)(param,test_value) for _ in range(n_iters)
         )
         losses[param][perc_change] = scenario_losses
-    break
 
 save_dir = '../../misc/predictions/sens_prof/'    
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
-with open(os.path.join(save_dir, "losses.pickle"), 'wb') as handle:
+with open(os.path.join(save_dir, "losses_latent_fixed.pickle"), 'wb') as handle:
     pkl.dump(losses, handle)
 
 
