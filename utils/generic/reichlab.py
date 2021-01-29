@@ -561,9 +561,6 @@ def combine_with_train_data(predictions_dict, df):
 
     df_wadhwani = df_wadhwani.merge(df, left_index=True, right_index=True)
 
-    df_wadhwani.drop(['Northern Mariana Islands', 'Guam',
-                      'Virgin Islands'], axis=0, inplace=True, errors='ignore')
-
     return df_wadhwani
 
 def create_performance_table(df_mape, df_rank):
