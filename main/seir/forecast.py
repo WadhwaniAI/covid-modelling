@@ -147,7 +147,7 @@ def write_csv(df_final: pd.DataFrame, filename:str=None):
         filename = '../../output-{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     df_final.to_csv(filename, index=False)
 
-def _order_trials_by_loss(m_dict: dict):
+def _order_trials_by_loss(m_dict: dict, is_input_pdict=True):
     """Orders a set of trials by their corresponding loss value
 
     Args:
@@ -157,13 +157,17 @@ def _order_trials_by_loss(m_dict: dict):
         array, array: Array of params and loss values resp
     """
     params_array = []
-    for trial in m_dict['trials']:
+    if is_input_pdict:
+        trials = m_dict['trials']
+    else:
+        trials = m_dict
+    for trial in trials:
         params_dict = copy.copy(trial['misc']['vals'])
         for key in params_dict.keys():
             params_dict[key] = params_dict[key][0]
         params_array.append(params_dict)
     params_array = np.array(params_array)
-    losses_array = np.array([trial['result']['loss'] for trial in m_dict['trials']])
+    losses_array = np.array([trial['result']['loss'] for trial in trials])
     
     least_losses_indices = np.argsort(losses_array)
     losses_array = losses_array[least_losses_indices]
