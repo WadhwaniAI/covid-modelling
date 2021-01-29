@@ -96,7 +96,7 @@ def _label_geographies(ax, df_geo, var, adjust_text=False, remove_ticks=True):
         if (not row['centroid'] is None) & (not pd.isna(row[var])):
             label = np.around(row[var], 2)
             texts.append(ax.text(row['centroid'].x,
-                                 row['centroid'].y, label, fontsize=10))
+                                 row['centroid'].y, label, fontsize=12))
 
     if adjust_text:
         aT.adjust_text(texts, force_points=0.3, force_text=0.8, expand_points=(1, 1), 
@@ -155,7 +155,7 @@ def plot_single_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap='
     _label_geographies(subax_1, copy(df_noncontigous[df_noncontigous['state'] == 'Hawaii']), var, adjust_text)
     _label_geographies(subax_2, copy(df_noncontigous[df_noncontigous['state'] == 'Alaska']), var, adjust_text)
 
-    ax.set_title(f'Choropleth for {var.replace("_", " ")}')
+    # ax.set_title(f'Choropleth for {var.replace("_", " ")}')
     legend_elements = [Patch(facecolor='silver', edgecolor='r', hatch="///", label='Did Not Forecast')]
     ax.legend(handles=legend_elements)
     return fig
@@ -174,12 +174,17 @@ def plot_multiple_choropleths(df_wadhwani:pd.DataFrame, gdf:gpd.GeoDataFrame, va
     fig, axs = plt.subplots(figsize=(14, 7*len(vars_to_plot)), 
                             nrows=len(vars_to_plot), ncols=1)
     for i, (var, plotting_params) in enumerate(vars_to_plot.items()):
+        if len(vars_to_plot) == 1:
+            single_ax = axs
+        else:
+            single_ax = axs.flat[i]
         _ = plot_single_choropleth(df_wadhwani, var=var, vcenter=plotting_params['vcenter'],
                                    vmin=plotting_params['vmin'], vmax=plotting_params['vmax'],
-                                   cmap=plotting_params['cmap'], ax=axs.flat[i], gdf=gdf)
-        fig.colorbar(cm.ScalarMappable(norm=colors.TwoSlopeNorm(
+                                   cmap=plotting_params['cmap'], ax=single_ax, gdf=gdf)
+        cbar = fig.colorbar(cm.ScalarMappable(norm=colors.TwoSlopeNorm(
             vmin=plotting_params['vmin'], vcenter=plotting_params['vcenter'], 
-            vmax=plotting_params['vmax']), cmap=plotting_params['cmap']), ax=axs.flat[i])
+            vmax=plotting_params['vmax']), cmap=plotting_params['cmap']), ax=single_ax)
+        cbar.ax.set_ylabel(var.replace("_", " ").title(), labelpad=15)
     
     return fig, axs
 
