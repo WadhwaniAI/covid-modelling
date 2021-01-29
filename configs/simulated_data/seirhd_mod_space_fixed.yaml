@@ -1,0 +1,21 @@
+model: SEIRHD_mod_space
+starting_date: 2020-07-12
+total_days: 30
+initial_values:
+    recovered: 95000
+    deceased: 7500
+    active: 20000
+include_tests: True
+tests_done: '[10000 for i in range(30)]'
+fix_params: True
+params:
+    N: 1.0e+7
+    lockdown_R0: 0.8
+    S_inc: 0.196
+    S_inf: 0.278
+    S_recov: 0.0466
+    S_recov_fatal: 0.0392 
+    P_fatal: 0.08
+    E_hosp_ratio: 0.34
+    I_hosp_ratio: 0.94
+output_file_name: seirhd_mod_space.csv
