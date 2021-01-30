@@ -90,9 +90,9 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
                                                        which_compartments)
 
     if plotting_config['separate_compartments_separate_ax']:
-        fig, axs = plt.subplots(figsize=(12, 12), nrows=2, ncols=2)
+        fig, axs = plt.subplots(figsize=figsize, nrows=2, ncols=2)
     else:
-        fig, axs = plt.subplots(figsize=(12, 12))
+        fig, axs = plt.subplots(figsize=figsize)
 
     for i, compartment in enumerate(compartments['base']):
         if plotting_config['separate_compartments_separate_ax']:
@@ -110,17 +110,17 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
             
             if plotting_config['separate_compartments_separate_ax']:
                 ax.axvline(x=predictions[0].iloc[0, :]['date'],
-                           ls=':', color='brown', label='Train starts')
+                           ls=':', color='black', label='Training Range')
                 ax.axvline(x=predictions[0].iloc[train_period+val_period-1, :]['date'],
-                           ls=':', color='black', label='Data Last Date')
+                           ls=':', color='black')
                 axis_formatter(ax, log_scale=log_scale)
     if not plotting_config['separate_compartments_separate_ax']:
         axs.axvline(x=predictions[0].iloc[0, :]['date'],
-                          ls=':', color='brown', label='Train starts')
+                    ls=':', color='black', label='Training Range')
         axs.axvline(x=predictions[0].iloc[train_period+val_period-1, :]['date'],
-                         ls=':', color='black', label='Data Last Date')
+                         ls=':', color='black')
         axis_formatter(axs, log_scale=log_scale)
-    fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=14)
+    fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]))
     fig.subplots_adjust(top=0.96)
     if filename != None:
         fig.savefig(filename, format=fileformat)
