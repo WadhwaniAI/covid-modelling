@@ -29,7 +29,7 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
 
 def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], which_fit='m2', log_scale=False, 
                   filename=None, which_compartments=['active', 'total', 'deceased', 'recovered'], smoothed_gt=True,
-                  fileformat='eps', error_bars=False, plotting_config={}, figsize=(12, 12)):
+                  fileformat='eps', error_bars=False, plotting_config={}, figsize=(12, 12), axs=None):
     """Function for plotting forecasts (both best fit and uncertainty deciles)
 
     Arguments:
@@ -88,11 +88,13 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         for i, df_prediction in enumerate(predictions):
             predictions[i] = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'],
                                                        which_compartments)
-
-    if plotting_config['separate_compartments_separate_ax']:
-        fig, axs = plt.subplots(figsize=figsize, nrows=2, ncols=2)
+    if axs is None:
+        if plotting_config['separate_compartments_separate_ax']:
+            fig, axs = plt.subplots(figsize=figsize, nrows=2, ncols=2)
+        else:
+            fig, axs = plt.subplots(figsize=figsize)
     else:
-        fig, axs = plt.subplots(figsize=figsize)
+        fig = None
 
     for i, compartment in enumerate(compartments['base']):
         if plotting_config['separate_compartments_separate_ax']:
@@ -104,15 +106,17 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
                     '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
             for j, df_prediction in enumerate(predictions):
                 ax.plot(df_prediction[compartments['date'][0].name], df_prediction[compartment.name],
-                        ls='-', color=compartment.color, label='{} ({} Forecast)'.format(
+                        ls='-', color=compartment.color, label='{} (EM Forecast)'.format(
                             compartment.label, legend_title_dict[fits_to_plot[j]]))
                 ax.lines[-1].set_linestyle(linestyles_arr[j])
             
             if plotting_config['separate_compartments_separate_ax']:
                 ax.axvline(x=predictions[0].iloc[0, :]['date'],
-                           ls=':', color='black', label='Training Range')
+                           ls='--', color='black', label='Training Range')
                 ax.axvline(x=predictions[0].iloc[train_period+val_period-1, :]['date'],
-                           ls=':', color='black')
+                           ls='--', color='black')
+                ax.set_title(compartment.name.title(), fontsize=20)
+                ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 5))
                 axis_formatter(ax, log_scale=log_scale)
     if not plotting_config['separate_compartments_separate_ax']:
         axs.axvline(x=predictions[0].iloc[0, :]['date'],
@@ -120,8 +124,8 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         axs.axvline(x=predictions[0].iloc[train_period+val_period-1, :]['date'],
                          ls=':', color='black')
         axis_formatter(axs, log_scale=log_scale)
-    fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]))
-    fig.subplots_adjust(top=0.96)
+    # fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]))
+    # fig.subplots_adjust(top=0.96)
     if filename != None:
         fig.savefig(filename, format=fileformat)
 
