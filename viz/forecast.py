@@ -13,23 +13,9 @@ from utils.generic.enums.columns import *
 from viz.utils import axis_formatter
 
 
-def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame,
-                              which_compartments=['active', 'total', 'deceased', 'recovered']):
-    df_temp = copy.copy(df_prediction)
-    df_temp.loc[:, which_compartments] = df_prediction.loc[:,
-                                                           which_compartments]*(1 - 0.01*df_loss['val'])
-    df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
-    df_temp = copy.copy(df_prediction)
-    df_temp.loc[:, which_compartments] = df_prediction.loc[:,
-                                                           which_compartments]*(1 + 0.01*df_loss['val'])
-    df_prediction = pd.concat([df_prediction, df_temp], ignore_index=True)
-    df_prediction[which_compartments] = df_prediction[which_compartments].apply(pd.to_numeric, axis=1)
-    return df_prediction
-
-
 def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], which_fit='m2', log_scale=False, 
                   filename=None, which_compartments=['active', 'total', 'deceased', 'recovered'], smoothed_gt=True,
-                  fileformat='eps', error_bars=False, plotting_config={}, figsize=(12, 12), axs=None):
+                  fileformat='eps', plotting_config={}, figsize=(12, 12), axs=None):
     """Function for plotting forecasts (both best fit and uncertainty deciles)
 
     Arguments:
@@ -84,10 +70,6 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
             df_true = df_true[df_true['date'] <= (predictions[0]['date'].iloc[-1])]
         df_true.reset_index(drop=True, inplace=True)
 
-    if error_bars:
-        for i, df_prediction in enumerate(predictions):
-            predictions[i] = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'],
-                                                       which_compartments)
     if axs is None:
         if plotting_config['separate_compartments_separate_ax']:
             fig, axs = plt.subplots(figsize=figsize, nrows=2, ncols=2)
