@@ -29,12 +29,13 @@ import os
 simulate_configs = {'seirhd':'seirhd_fixed.yaml'}
 model_configs = {'seirhd':'default.yaml'}
 
+# params_to_fix = ['T_recov_fatal', 'T_inf', 'T_inc', 'lockdown_R0', 'T_recov', 'E_hosp_ratio']
 params_to_fix = ['T_recov_fatal', 'T_inf', 'T_inc', 'lockdown_R0', 'T_recov', 'E_hosp_ratio']
-out_file = 'losses_fixed_fatal_inf'
+out_file = 'losses_trial'
 model_used = 'seirhd'
-n_iters = 1
+n_iters = 4
 n_jobs = 2
-n_trials = 100
+n_trials = 500
 varying_perc = np.array([-0.1])
 progress_filename = "./progress/" + out_file + ".txt"
 log_file = open(progress_filename, 'wb')
@@ -50,8 +51,11 @@ config = read_config(config_filename)
 
 
 def run_bo(config_params,param,test_value, perc_change, r_iter):
-    param, perc_change, test_value, r_iter = run
-    log_file.write(str(param) + " " + str(perc_change) + " " + str(r_iter) + "\n")
+    # param, perc_change, test_value, r_iter = run
+    print(str(param))
+    print(str(perc_change))
+    print(str(r_iter))
+    # log_file.write(str(param) + " " + str(perc_change) + " " + str(r_iter) + "\n")
     print (str(param) + " " + str(perc_change) + " " + str(r_iter) + "\n")
     conf = copy.deepcopy(config_params)
     if param in conf['variable_param_ranges']:
@@ -87,7 +91,7 @@ for param, val in required_params.items():
             run_tuple.append((param, perc_change, test_value, i))
 
 losses = Parallel(n_jobs=n_jobs)(
-    delayed(run_bo)(config_params, run_tuple[i]) for i in range(len(run_tuple))
+    delayed(run_bo)(config_params, run_tuple[i][0], run_tuple[i][1], run_tuple[i][2], run_tuple[i][3]) for i in range(len(run_tuple))
 )
 
 output_dict = {}
