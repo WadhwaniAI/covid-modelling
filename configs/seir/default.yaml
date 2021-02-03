@@ -30,18 +30,20 @@ fitting:
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
-        lockdown_R0: [[0.1, 2.5], uniform]
-        T_inc: [[1, 20], uniform]
-        T_inf: [[1, 20], uniform]
-        T_recov: [[1, 40], uniform]
-        T_recov_fatal: [[1, 40], uniform]
-        P_fatal: [[0, 0.5], uniform]
-        # E_hosp_ratio: [[0, 2], uniform]
-        # I_hosp_ratio: [[0, 2], uniform]
+        lockdown_R0: [[0.1, 9.5], uniform]
+        T_inc: [[1, 100], uniform]
+        T_inf: [[1, 100], uniform]
+        T_recov: [[1, 250], uniform]
+        T_recov_fatal: [[1, 250], uniform]
+        P_fatal: [[0, 1], uniform]
+        E_hosp_ratio: [[0, 5], uniform]
+        I_hosp_ratio: [[0, 5], uniform]
     default_params:
         N: 1.0e+7
-        E_hosp_ratio: 'true'
-        I_hosp_ratio: 'true'
+        # T_recov_fatal: 25.5
+        # T_inf: 3.6
+        # E_hosp_ratio: 'true'
+        # I_hosp_ratio: 'true'
     fitting_method: bayes_opt
     fitting_method_params:
         num_evals: 1000

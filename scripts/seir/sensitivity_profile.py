@@ -27,38 +27,49 @@ from joblib import delayed, Parallel
 import os
 
 
-simulated_config_filename = 'seirhd_fixed.yaml'
+simulate_configs = {'seirhd':'seirhd_fixed.yaml'}
+model_configs = {'seirhd':'default.yaml'}
+
+params_to_fix = ['T_recov_fatal','T_inf']
+out_file = 'losses_fixed_fatal_inf'
+model_used = 'seirhd'
+n_iters = 10
+n_jobs = 10
+n_trials = 6000
+varying_perc = np.array([-0.1,-0.25,-0.5,-0.9])
+# varying_perc = np.array([-0.1,-0.2,-0.25,-0.4,-0.5,-0.75,-0.9])
+
+simulated_config_filename = simulate_configs[model_used]
 with open(os.path.join("../../configs/simulated_data/", simulated_config_filename)) as configfile:
     simulated_config = yaml.load(configfile, Loader=yaml.SafeLoader)    
 actual_params = simulated_config['params']
 
-config_filename = 'default.yaml'
+config_filename = model_configs[model_used]
 config = read_config(config_filename)
 
 
-def run_bo(param,test_value):
-    config_params = copy.deepcopy(config['fitting'])
-    if param in config_params['variable_param_ranges']:
-        del config_params['variable_param_ranges'][param] 
-    config_params['default_params'][param] = test_value
-    config_params['fitting_method_params']['num_evals'] = 3000
-    predictions_dict = single_fitting_cycle(**config_params)
+def run_bo(config_params,param,test_value):
+    conf = copy.deepcopy(config_params)
+    if param in conf['variable_param_ranges']:
+        del conf['variable_param_ranges'][param] 
+    conf['default_params'][param] = test_value
+    conf['fitting_method_params']['num_evals'] = n_trials
+    predictions_dict = single_fitting_cycle(**conf)
     output = {}
     output['losses'] = predictions_dict['df_loss']
     output['best_params'] = predictions_dict['best_params']
     return output
 
-
-
-# varying_perc = np.array([-0.1,-0.2,-0.25,-0.4,-0.5,-0.75,-0.9])
-varying_perc = np.array([-0.1,-0.25,-0.5,-0.9])
-# varying_perc = np.array([-0.4,-0.5,-0.6])
-# varying_perc = np.array([-0.5])
 varying_perc = np.concatenate([np.flipud(varying_perc),[0],-1*varying_perc])
-
-n_iters = 10
 required_params = actual_params.copy()
+config_params = copy.deepcopy(config['fitting'])
 del required_params['N']
+for param in params_to_fix : 
+    if param in config_params['variable_param_ranges']:
+        del config_params['variable_param_ranges'][param]
+    config_params['default_params'][param] = 'true' if 'hosp_ratio' in param else required_params[param]
+    del required_params[param]
+
 losses = {}
 
 count = 0
@@ -70,16 +81,19 @@ for param,val in required_params.items():
     for perc_change in varying_perc : 
         print('param count : ',count,' perc_change: ',perc_change)
         losses[param][perc_change] = []
-        test_value = val + val*perc_change
-        scenario_losses = Parallel(n_jobs=10)(
-            delayed(run_bo)(param,test_value) for _ in range(n_iters)
+        if 'hosp_ratio' in param : 
+            test_value = 'true'+str(perc_change)
+        else : 
+            test_value = val + val*perc_change
+        scenario_losses = Parallel(n_jobs=n_jobs)(
+            delayed(run_bo)(config_params,param,test_value) for _ in range(n_iters)
         )
         losses[param][perc_change] = scenario_losses
 
 save_dir = '../../misc/predictions/sens_prof/'    
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
-with open(os.path.join(save_dir, "losses_latent_fixed.pickle"), 'wb') as handle:
+with open(os.path.join(save_dir, out_file+".pickle"), 'wb') as handle:
     pkl.dump(losses, handle)
 
 

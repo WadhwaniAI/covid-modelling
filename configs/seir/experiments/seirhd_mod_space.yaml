@@ -29,12 +29,12 @@ fitting:
     #Choose Model and Ranges
     model: SEIRHD_mod_space
     variable_param_ranges:
-        lockdown_R0: [[0.5, 1.5], uniform]
+        lockdown_R0: [[0.5, 5.5], uniform]
         S_inc: [[0, 1], uniform]
         S_inf: [[0, 1], uniform]
         S_recov: [[0, 1], uniform]
         S_recov_fatal: [[0, 1], uniform]
-        P_fatal: [[0, 0.5], uniform]
+        P_fatal: [[0, 1.0], uniform]
         E_hosp_ratio: [[0, 3], uniform]
         I_hosp_ratio: [[0, 3], uniform]
     default_params:

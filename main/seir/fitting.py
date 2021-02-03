@@ -54,7 +54,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
         plot_smoothing(df_district, daily_cases, dataloading_params['state'], 
                                         dataloading_params['district'], which_compartments=loss_compartments, 
                                         description='Noise addition')
-        df_district = daily_cases
+        df_district[columns_to_change+['active']] = daily_cases[columns_to_change+['active']]
 
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)

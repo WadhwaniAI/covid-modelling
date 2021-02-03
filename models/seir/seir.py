@@ -54,8 +54,18 @@ class SEIR(Model):
         state_init_values['C'] = observed_values['recovered']
         state_init_values['D'] = observed_values['deceased']
 
-        state_init_values['E'] = observed_values['E'] if self.E_hosp_ratio=='true' else self.E_hosp_ratio * observed_values['active']
-        state_init_values['I'] = observed_values['I'] if self.I_hosp_ratio=='true' else self.I_hosp_ratio * observed_values['active']
+        if 'true' in self.E_hosp_ratio:
+            perc_change = 0 if self.E_hosp_ratio=='true' else float(self.E_hosp_ratio.replace('true',''))
+            state_init_values['E'] = observed_values['E']*(1+perc_change)
+        else:
+            state_init_values['E'] = self.E_hosp_ratio * observed_values['active']
+        if 'true' in self.I_hosp_ratio:
+            perc_change = 0 if self.I_hosp_ratio=='true' else float(self.I_hosp_ratio.replace('true',''))
+            state_init_values['I'] = observed_values['I']*(1+perc_change)
+        else:
+            state_init_values['I'] = self.I_hosp_ratio * observed_values['active']
+        # state_init_values['E'] = observed_values['E'] if self.E_hosp_ratio=='true' else self.E_hosp_ratio * observed_values['active']
+        # state_init_values['I'] = observed_values['I'] if self.I_hosp_ratio=='true' else self.I_hosp_ratio * observed_values['active']
         
         nonSsum = sum(state_init_values.values())
         state_init_values['S'] = (self.N - nonSsum)
