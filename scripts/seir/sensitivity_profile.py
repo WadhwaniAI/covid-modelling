@@ -26,17 +26,18 @@ from data.dataloader import SimulatedDataLoader
 from joblib import delayed, Parallel
 import os
 
-
 simulate_configs = {'seirhd':'seirhd_fixed.yaml'}
 model_configs = {'seirhd':'default.yaml'}
 
-params_to_fix = ['T_recov_fatal','T_inf']
+params_to_fix = ['T_recov_fatal', 'T_inf', 'T_inc', 'lockdown_R0', 'T_recov', 'E_hosp_ratio']
 out_file = 'losses_fixed_fatal_inf'
 model_used = 'seirhd'
-n_iters = 10
-n_jobs = 10
-n_trials = 6000
-varying_perc = np.array([-0.1,-0.25,-0.5,-0.9])
+n_iters = 1
+n_jobs = 2
+n_trials = 100
+varying_perc = np.array([-0.1])
+progress_filename = "./progress/" + out_file + ".txt"
+log_file = open(progress_filename, 'wb')
 # varying_perc = np.array([-0.1,-0.2,-0.25,-0.4,-0.5,-0.75,-0.9])
 
 simulated_config_filename = simulate_configs[model_used]
@@ -48,7 +49,10 @@ config_filename = model_configs[model_used]
 config = read_config(config_filename)
 
 
-def run_bo(config_params,param,test_value):
+def run_bo(config_params,param,test_value, perc_change, r_iter):
+    param, perc_change, test_value, r_iter = run
+    log_file.write(str(param) + " " + str(perc_change) + " " + str(r_iter) + "\n")
+    print (str(param) + " " + str(perc_change) + " " + str(r_iter) + "\n")
     conf = copy.deepcopy(config_params)
     if param in conf['variable_param_ranges']:
         del conf['variable_param_ranges'][param] 
@@ -58,6 +62,8 @@ def run_bo(config_params,param,test_value):
     output = {}
     output['losses'] = predictions_dict['df_loss']
     output['best_params'] = predictions_dict['best_params']
+    output['fixed_param'] = param
+    output['perc_change'] = perc_change
     return output
 
 varying_perc = np.concatenate([np.flipud(varying_perc),[0],-1*varying_perc])
@@ -70,30 +76,32 @@ for param in params_to_fix :
     config_params['default_params'][param] = 'true' if 'hosp_ratio' in param else required_params[param]
     del required_params[param]
 
-losses = {}
-
-count = 0
-for param,val in required_params.items():
-    count += 1
-    # if(count > 3):
-        # break
-    losses[param] = {}
+run_tuple = []
+for param, val in required_params.items():
     for perc_change in varying_perc : 
-        print('param count : ',count,' perc_change: ',perc_change)
-        losses[param][perc_change] = []
         if 'hosp_ratio' in param : 
             test_value = 'true'+str(perc_change)
         else : 
             test_value = val + val*perc_change
-        scenario_losses = Parallel(n_jobs=n_jobs)(
-            delayed(run_bo)(config_params,param,test_value) for _ in range(n_iters)
-        )
-        losses[param][perc_change] = scenario_losses
+        for i in range(n_iters):
+            run_tuple.append((param, perc_change, test_value, i))
 
-save_dir = '../../misc/predictions/sens_prof/'    
-if not os.path.exists(save_dir):
-    os.makedirs(save_dir)
-with open(os.path.join(save_dir, out_file+".pickle"), 'wb') as handle:
-    pkl.dump(losses, handle)
+losses = Parallel(n_jobs=n_jobs)(
+    delayed(run_bo)(config_params, run_tuple[i]) for i in range(len(run_tuple))
+)
 
+output_dict = {}
+output_dict['data_config'] = simulated_config
+output_dict['model_config'] = config
+output_dict['params_to_fix'] = params_to_fix
+output_dict['losses'] = losses
 
+print (output_dict)
+
+# save_dir = '../../misc/predictions/sens_prof/'    
+# if not os.path.exists(save_dir):
+#     os.makedirs(save_dir)
+# with open(os.path.join(save_dir, out_file+".pickle"), 'wb') as handle:
+#     pkl.dump(output_dict, handle)
+
+log_file.close()
