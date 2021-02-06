@@ -14,8 +14,8 @@ from viz.utils import axis_formatter
 
 
 def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], which_fit='m2', log_scale=False, 
-                  filename=None, which_compartments=['active', 'total', 'deceased', 'recovered'], smoothed_gt=True,
-                  fileformat='eps', plotting_config={}, figsize=(12, 12), axs=None):
+                  which_compartments=['active', 'total', 'deceased', 'recovered'], smoothed_gt=True,
+                  plotting_config={}, twin_axes=False, figsize=(12, 12), axs=None):
     """Function for plotting forecasts (both best fit and uncertainty deciles)
 
     Arguments:
@@ -78,19 +78,30 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     else:
         fig = None
 
+    if axs is not None:
+        if twin_axes:
+            ax2 = axs.twinx()
+
     for i, compartment in enumerate(compartments['base']):
         if plotting_config['separate_compartments_separate_ax']:
             ax = axs.flat[i]
         else:
             ax = axs
         if compartment.name in which_compartments:
-            ax.plot(df_true[compartments['date'][0].name], df_true[compartment.name],
+            if twin_axes:
+                if compartment.name in ['active', 'deceased']:
+                    plot_ax = ax2
+                else:
+                    plot_ax = ax
+            else:
+                plot_ax = ax
+            plot_ax.plot(df_true[compartments['date'][0].name], df_true[compartment.name],
                     '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
             for j, df_prediction in enumerate(predictions):
-                ax.plot(df_prediction[compartments['date'][0].name], df_prediction[compartment.name],
+                plot_ax.plot(df_prediction[compartments['date'][0].name], df_prediction[compartment.name],
                         ls='-', color=compartment.color, label='{} (EM Forecast)'.format(
                             compartment.label, legend_title_dict[fits_to_plot[j]]))
-                ax.lines[-1].set_linestyle(linestyles_arr[j])
+                plot_ax.lines[-1].set_linestyle(linestyles_arr[j])
             
             if plotting_config['separate_compartments_separate_ax']:
                 ax.axvline(x=predictions[0].iloc[0, :]['date'],
@@ -108,9 +119,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         axis_formatter(axs, log_scale=log_scale)
     # fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]))
     # fig.subplots_adjust(top=0.96)
-    if filename != None:
-        fig.savefig(filename, format=fileformat)
-
+    
     return fig, axs
 
 def plot_forecast_agnostic(df_true, df_prediction, region, log_scale=False, filename=None,
