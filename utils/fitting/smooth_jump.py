@@ -3,6 +3,11 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 import copy
+import yaml
+import os
+
+from data.dataloader import SimulatedDataLoader
+from utils.fitting.loss import Loss_Calculator
 
 def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=None, smoothing_length=None, 
                            method='uniform', t_recov=14, description="", aux_var_add=False):
@@ -134,3 +139,67 @@ def smooth_big_jump_stratified(df_strat, df_not_strat, smooth_jump_params):
             description=description, aux_var_add=aux_var_add)
 
     return df_strat_smoothed, description
+
+
+def perform_smoothing_experiment(config, smoothing_method='weighted-mag', mode='experiment', comp='recovered'):
+    """Function for performing Smoothing Experiment for the paper
+
+    Args:
+        config (dict): Processed config object
+        smoothing_method (str, optional): Smoothing Method to use. Defaults to 'weighted-mag'.
+        mode (str, optional): What mode is it in. If experiment, error is returned. 
+        Otherwise dict of dataframes are returned. Defaults to 'experiment'.
+        comp (str, optional): Which compartment is smoothed. Defaults to 'recovered'.
+
+    Returns:
+        dict/list: Depends of input of mode
+    """
+    # Load synthetic data config file
+    config_file = config['fitting']['data']['dataloading_params']['config_file']
+    with open(os.path.join("../../configs/simulated_data/", config_file)) as configfile:
+        sim_config = yaml.load(configfile, Loader=yaml.SafeLoader)
+    # Generate synthetic data
+    loader = SimulatedDataLoader()
+    res = loader.load_data(**sim_config)
+    df = res['data_frame']
+
+    # Perform smoothing
+    dl_params = copy.deepcopy(config['fitting']['data']['dataloading_params'])
+    dl_params['simulate_spike'] = True
+    # Randomly generate frac_to_report and smoothing length params
+    start_date = dl_params['simulate_spike_params']['start_date']
+    spike_days = np.random.randint(low=14, high=28)
+    # Simulate Spike
+    dl_params['simulate_spike_params']['end_date'] = start_date + \
+        timedelta(days=spike_days)
+    print('spike generation params', dl_params['simulate_spike_params'])
+    df_spike = loader.simulate_spike(
+        df=df, **dl_params['simulate_spike_params'])
+
+    # Create smoothing params on the basis of start and end date of spikes
+    comp = dl_params['simulate_spike_params']['comp']
+    edate = dl_params['simulate_spike_params']['end_date']
+    sdate = dl_params['simulate_spike_params']['start_date']
+    smooth_params = {}
+    smooth_params[edate - timedelta(days=1)] = [sdate,
+                                                comp, 'active', False, smoothing_method]
+
+    # Perform smoothing
+    print('smoothing params', smooth_params)
+    df_spike_smooth, _ = smooth_big_jump(df_spike, smooth_params)
+
+    if mode == 'experiment':
+        # Compare df_spike_smooth and df
+        processed_vals = df_spike_smooth.loc[(
+            df_spike_smooth['date'].dt.date >= sdate) & (
+                df_spike_smooth['date'].dt.date <= edate), ['active', comp]].to_numpy()
+        true_vals = df.loc[(df['date'].dt.date >= sdate) & (
+            df['date'].dt.date <= edate), ['active', comp]].to_numpy()
+
+        lc = Loss_Calculator()
+        loss = [lc._calc_mape(processed_vals[:, 0], true_vals[:, 0]), 
+            lc._calc_mape(processed_vals[:, 1], true_vals[:, 1])]
+        # (np.mean(np.abs(processed_vals - true_vals)/true_vals, axis=0)*100).tolist()
+        return loss
+    if mode == 'plotting':
+        return {'df': df, 'df_spike': df_spike, 'df_spike_smooth': df_spike_smooth}
