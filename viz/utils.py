@@ -15,11 +15,11 @@ def axis_formatter(ax, legend_elements=None, custom_legend=False, append_leg_ele
     
     ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=SA))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax.set_ylabel('No of Cases')
-    ax.set_xlabel('Time')
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+    # ax.set_ylabel('No of Cases')
+    # ax.set_xlabel('Time')
     ax.tick_params('x', labelrotation=45)
-    ax.grid()
+    ax.grid(alpha=0.3)
     if log_scale:
         ax.set_yscale('log')
     if custom_legend:
@@ -33,7 +33,8 @@ def axis_formatter(ax, legend_elements=None, custom_legend=False, append_leg_ele
                 ]
         ax.legend(handles=legend_elements)
     else:
-        ax.legend()
+        pass
+        # ax.legend()
 
 
 def add_inset_subplot_to_axes(ax, rect):
