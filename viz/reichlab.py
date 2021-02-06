@@ -137,7 +137,7 @@ def plot_single_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap='
     df_geo = df_geo[np.logical_not(df_geo['state'].isin(['Alaska', 'Hawaii']))]
     df_geo.plot(column=var, cmap=cmap, linewidth=0.8,
                 ax=ax, edgecolor='silver', norm=norm, 
-                missing_kwds={"color": "darkgrey", "edgecolor": "red",
+                missing_kwds={"color": "darkgrey", "edgecolor": "white",
                               "hatch": "///"})
     subax_1 = add_inset_subplot_to_axes(ax, [0.2, 0.014, 0.12, 0.12])
     df_noncontigous[df_noncontigous['state'] == 'Hawaii'].plot(
@@ -156,7 +156,8 @@ def plot_single_choropleth(df, var='z_score', vcenter=0, vmin=-1, vmax=1, cmap='
     _label_geographies(subax_2, copy(df_noncontigous[df_noncontigous['state'] == 'Alaska']), var, adjust_text)
 
     # ax.set_title(f'Choropleth for {var.replace("_", " ")}')
-    legend_elements = [Patch(facecolor='silver', edgecolor='r', hatch="///", label='Did Not Forecast')]
+    legend_elements = [Patch(
+        facecolor='silver', edgecolor='white', hatch="///", label='Did Not Forecast')]
     ax.legend(handles=legend_elements)
     return fig
 
