@@ -1,0 +1,21 @@
+model: SEIRHD_Beta
+starting_date: 2020-01-01
+total_days: 270
+initial_values:
+    recovered: 0
+    deceased: 0
+    active: 5
+include_tests: False
+tests_done: '[300 for i in range(300)]'
+fix_params: True
+params:
+    N: 1.0e+7
+    beta: 0.35
+    T_inc: 5.1
+    T_inf: 6.6
+    T_recov: 14
+    T_recov_fatal: 10 
+    P_fatal: 0.03
+    E_hosp_ratio: 1.0
+    I_hosp_ratio: 1.0
+output_file_name: seirhd_beta.csv

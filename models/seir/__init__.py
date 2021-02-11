@@ -11,3 +11,4 @@ from models.seir.seirhd_bed import SEIRHD_Bed
 from models.seir.seir_undetected_testing import SEIR_Undetected_Testing
 from models.seir.seir_pu import SEIR_PU
 from models.seir.seir_pu_testing import SEIR_PU_Testing
+from models.seir.seirhd_beta import SEIRHD_Beta
