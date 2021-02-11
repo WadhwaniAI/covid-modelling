@@ -1,6 +1,6 @@
 model: SEIRHD_Beta
 starting_date: 2020-01-01
-total_days: 270
+total_days: 400
 initial_values:
     recovered: 0
     deceased: 0
@@ -10,7 +10,7 @@ tests_done: '[300 for i in range(300)]'
 fix_params: True
 params:
     N: 1.0e+7
-    beta: 0.35
+    beta: 0.25
     T_inc: 5.1
     T_inf: 6.6
     T_recov: 14
