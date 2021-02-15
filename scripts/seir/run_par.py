@@ -21,7 +21,7 @@ from viz import plot_forecast, plot_top_k_trials, plot_ptiles
 import yaml
 import wandb
 predictions_dict = {}
-config_filename = 'exp12.yaml'
+config_filename = 'exp_simulate_1.yaml'
 print(config_filename)
 config = read_config(config_filename)
 
@@ -29,6 +29,6 @@ predictions_dict['m1'] = single_fitting_cycle(**copy.deepcopy(config['fitting'])
 
 # %%
 import pickle as pkl
-with open('../../misc/predictions/exp_12.pickle', 'wb') as handle:
+with open('../../misc/predictions/exp_simulate_1_70.pickle', 'wb') as handle:
     pkl.dump(predictions_dict, handle)
 # %%
