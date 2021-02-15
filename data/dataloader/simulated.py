@@ -9,10 +9,9 @@ from data.dataloader.base import BaseLoader
 class SimulatedDataLoader(BaseLoader):
     def __init__(self):
         super().__init__()
-    
-    def generate_simulated_data(**config):
-        """generates simulated data using the input params in config
 
+    def load_data(self, **config):
+        """generates simulated data using the input params in config
         Keyword Arguments
         -----------------
             config {dict} -- keys required:
@@ -24,22 +23,20 @@ class SimulatedDataLoader(BaseLoader):
         
         Returns
         -------
-            pd.DataFrame -- dataframe of cases for a particular state, district with 5 columns : 
-                ['date', 'total', 'active', 'deceased', 'recovered']
-            dict -- parameter values used to create the simulated data
+            dict:
+                data_frame {pd.DataFrame} -- dataframe of cases for a particular state, district with 5 columns : 
+                    ['date', 'total', 'active', 'deceased', 'recovered']
+                actual_params {dict} -- parameter values used to create the simulated data
         """
-        # np.random.seed(0)
-        ideal_params = {}
         if (not config['fix_params']):
             for param in config['params']:
                 if param == 'N':
                     continue
                 config['params'][param] = getattr(np.random, config['params'][param][1])(config['params'][param][0][0], config['params'][param][0][1])
-                ideal_params[param] = config['params'][param]
+        actual_params = copy.deepcopy(config['params'])
+        del actual_params['N']
+        print ("parameters used to generate data:", actual_params)
 
-        ideal_params = copy.deepcopy(config['params'])
-        del ideal_params['N']
-        print (ideal_params)
         model_params = config['params']
         model_params['starting_date'] = config['starting_date']
 
@@ -48,12 +45,15 @@ class SimulatedDataLoader(BaseLoader):
         observed_values['total'] = sum(observed_values.values())
         observed_values['date'] =  config['starting_date']
         model_params['observed_values'] = pd.DataFrame.from_dict([observed_values]).iloc[0,:]
-        
         solver = eval(config['model'])(**model_params)
         if (config['total_days']):
             df_result = solver.predict(total_days=config['total_days'])
         else:
             df_result = solver.predict()
-        df_result.to_csv(os.path.join('../../data/data/simulated_data/', config['output_file_name']))
-        pd.Series((ideal_params)).to_csv(os.path.join('../../data/data/simulated_data/', 'params_'+config['output_file_name']))
-        return df_result, ideal_params
+
+        save_dir = '../../data/data/simulated_data/'    
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        df_result.to_csv(os.path.join(save_dir, config['output_file_name']))
+        pd.DataFrame([actual_params]).to_csv(os.path.join(save_dir, 'params_'+config['output_file_name']), index=False)
+        return {"data_frame": df_result, "actual_params": actual_params} 

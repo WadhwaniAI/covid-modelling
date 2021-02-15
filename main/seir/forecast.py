@@ -1,26 +1,14 @@
 import os
-import json
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from adjustText import adjust_text
 
-from collections import OrderedDict, defaultdict
-import itertools
-from functools import partial
 from tqdm import tqdm
 import datetime
-from joblib import Parallel, delayed
 import copy
 
-from data.processing.whatifs import scale_up_acc_to_testing
-from main.seir.fitting import *
 from models.seir import SEIRHD
-from main.seir.optimiser import Optimiser
 
-from utils.generic.enums import Columns, SEIRParams
-
-def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train_fit='m2', model=SEIRHD,
+def get_forecast(predictions_dict: dict, forecast_days: int = 37, train_end_date=None, train_fit='m2', model=SEIRHD,
                  best_params=None, verbose=True, lockdown_removal_date=None):
     """Returns the forecasts for a given set of params of a particular geographical area
 
@@ -28,7 +16,7 @@ def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train
         predictions_dict {dict} -- [description]
 
     Keyword Arguments:
-        simulate_till {[type]} -- [description] (default: {None})
+        train_end_date {[type]} -- [description] (default: {None})
         train_fit {str} -- [description] (default: {'m2'})
         best_params {[type]} -- [description] (default: {None})
 
@@ -37,9 +25,12 @@ def get_forecast(predictions_dict: dict, days: int=37, simulate_till=None, train
     """
     if verbose:
         print("getting forecasts ..")
-    if simulate_till == None:
-        simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + \
-            datetime.timedelta(days=days)
+    if train_end_date is None:
+        simulate_till = predictions_dict[train_fit]['df_district'].iloc[-1]['date'] + \
+            datetime.timedelta(days=forecast_days)
+    else:
+        simulate_till = train_end_date + datetime.timedelta(days=forecast_days)
+        simulate_till = datetime.datetime.combine(simulate_till, datetime.datetime.min.time())
     if best_params == None:
         best_params = predictions_dict[train_fit]['best_params']
 
@@ -192,7 +183,9 @@ def _get_top_k_trials(m_dict: dict, k=10):
     params_array, losses_array = _order_trials_by_loss(m_dict)
     return params_array[:k], losses_array[:k]
 
-def forecast_top_k_trials(predictions_dict: dict, model=SEIRHD, k=10, train_fit='m2', forecast_days=37):
+
+def forecast_top_k_trials(predictions_dict: dict, model=SEIRHD, k=10, train_fit='m2', train_end_date=None, 
+                          forecast_days=37):
     """Creates forecasts for the top k Bayesian Opt trials (ordered by loss) for a specified number of days
 
     Args:
@@ -206,16 +199,15 @@ def forecast_top_k_trials(predictions_dict: dict, model=SEIRHD, k=10, train_fit=
     """
     top_k_params, top_k_losses = _get_top_k_trials(predictions_dict[train_fit], k=k)
     predictions = []
-    simulate_till = datetime.datetime.strptime(predictions_dict[train_fit]['data_last_date'], '%Y-%m-%d') + \
-        datetime.timedelta(days=forecast_days)
     print("getting forecasts ..")
     for i, params_dict in tqdm(enumerate(top_k_params)):
         predictions.append(get_forecast(predictions_dict, best_params=params_dict, model=model, 
-                                        train_fit=train_fit, simulate_till=simulate_till, verbose=False))
+                                        train_fit=train_fit, train_end_date=train_end_date, 
+                                        forecast_days=forecast_days, verbose=False))
     return predictions, top_k_losses, top_k_params
 
 
-def forecast_all_trials(predictions_dict, model=SEIRHD, train_fit='m2', forecast_days=37):
+def forecast_all_trials(predictions_dict, model=SEIRHD, train_fit='m2', train_end_date=None, forecast_days=37):
     """Forecasts all trials in a particular train_fit, in predictions dict
 
     Args:
@@ -231,6 +223,7 @@ def forecast_all_trials(predictions_dict, model=SEIRHD, train_fit='m2', forecast
         k=len(predictions_dict[train_fit]['trials']), 
         model=model,
         train_fit=train_fit,
+        train_end_date=train_end_date,
         forecast_days=forecast_days
     )
     return_dict = {
@@ -239,43 +232,6 @@ def forecast_all_trials(predictions_dict, model=SEIRHD, train_fit='m2', forecast
         'params': params
     }
     return return_dict
-
-def scale_up_testing_and_forecast(predictions_dict, which_fit='m2', model=SEIRHD, scenario_on_which_df='best', 
-                                  testing_scaling_factor=1.5, time_window_to_scale=14):
-    
-    df_whatif = scale_up_acc_to_testing(predictions_dict, scenario_on_which_df=scenario_on_which_df, 
-                                        testing_scaling_factor=testing_scaling_factor,
-                                        time_window_to_scale=time_window_to_scale)
-
-    optimiser = Optimiser()
-    extra_params = optimiser.init_default_params(df_whatif, N=1e7, 
-                                                 train_period=time_window_to_scale)
-    best_params = copy.copy(predictions_dict[which_fit]['best_params'])
-    del best_params['T_inf']
-    del best_params['E_hosp_ratio']
-    del best_params['I_hosp_ratio']
-    default_params = {**extra_params, **best_params}
-
-    total_days = (df_whatif.iloc[-1, :]['date'] - default_params['starting_date']).days
-    variable_param_ranges = {
-        'T_inf': (0.01, 10),
-        'E_hosp_ratio': (0, 2),
-        'I_hosp_ratio': (0, 1)
-    }
-    variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges)
-    best, trials = optimiser.bayes_opt(df_whatif, default_params, variable_param_ranges, model=model,
-                                       total_days=total_days, method='mape', num_evals=500, 
-                                       loss_indices=[-time_window_to_scale, None], 
-                                       which_compartments=['total'])
-
-    df_unscaled_forecast = predictions_dict[which_fit]['forecasts'][scenario_on_which_df]
-
-    df_prediction = optimiser.solve(best, default_params, 
-                                    predictions_dict[which_fit]['df_train'], 
-                                    end_date=df_unscaled_forecast.iloc[-1, :]['date'], 
-                                    model=model)
-    return df_prediction
-
 
 def set_r0_multiplier(params_dict, mul):
     """[summary]

@@ -3,6 +3,7 @@ fitting:
         data_source: athena
         stratified_data: TRUE
         dataloading_params:
+            reload_data: FALSE
             state: Maharashtra
             district: Mumbai
         smooth_jump: TRUE
@@ -25,7 +26,7 @@ fitting:
             center: TRUE
             window_size: 7
             win_type: null
-            split_after_rolling: TRUE # NOT IMPLEMENTED
+            split_after_rolling: TRUE
     #Choose Model and Ranges
     model: SEIRHD_Severity
     variable_param_ranges:  
@@ -48,29 +49,19 @@ fitting:
     fitting_method_params:
         num_evals: 1000
         algo: tpe
+        seed: 42
     #Choose Fitting Periods and num evaluations
     split:
-        start_date: null # NOT IMPLEMENTED
-        end_date: null # NOT IMPLEMENTED
+        start_date: null
+        end_date: null
         train_period: 21
         val_period: 7
-        test_period: 0 # NOT IMPLEMENTED
+        test_period: 0
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased, asymptomatic, symptomatic, critical]
         loss_weights: [1, 1, 1, 1, 1, 1, 1]
     #Optimisation related parameters
-sensitivity:
-    lockdown_R0: [[[0.5, 1.5], 101], total, null]
-    I_hosp_ratio: [[[0, 1], 201], total, null]
-    E_hosp_ratio: [[[0, 2], 201], total, null]
-    P_moderate: [[[0, 0.5], 201], symptomatic, total]
-    P_severe: [[[0, 0.5], 201], critical, total]
-    P_fatal: [[[0, 0.5], 201], deceased, total]
-    T_recov_mild: [[[1, 100], 101], asymptomatic, total]
-    T_recov_moderate: [[[1, 100], 101], symptomatic, total]
-    T_recov_severe: [[[1, 100], 101], recovered, total]
-    T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
@@ -79,10 +70,14 @@ forecast:
 uncertainty:
     method: MCUncertainty
     uncertainty_params:
-        num_evals: 100
+        which_fit: m1
+        fitting_method: gridsearch
+        fitting_method_params:
+            parallelise: FALSE
         variable_param_ranges:
-            beta: [[0, 10], uniform]
-        date_of_sorting_trials: 2020-08-31
+            beta: [[0, 10], 101]
+        construct_percentiles_day_wise: TRUE
+        date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:
             loss_method: mape

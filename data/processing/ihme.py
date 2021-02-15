@@ -1,13 +1,11 @@
 import sys
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import numpy as np
-import pickle
-import os
 
 sys.path.append('../..')
-from data.dataloader import Covid19IndiaLoader, JHULoader
-from data.processing import get_concat_data, get_data, get_dataframes_cached
+from data.dataloader import JHULoader
+from data.processing import get_data, get_dataframes_cached
 
 def bbmp():
     df = pd.read_csv('../../data/data/bbmp.csv')

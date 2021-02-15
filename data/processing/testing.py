@@ -1,12 +1,8 @@
 import sys
 sys.path.append('../../')
 
-import requests
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import copy
-import datetime
 
 from data.dataloader import AthenaLoader
 from data.processing.processing import get_dataframes_cached

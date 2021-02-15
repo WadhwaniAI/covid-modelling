@@ -4,9 +4,6 @@ from datetime import datetime, timedelta
 
 import copy
 
-from data.processing import processing
-
-
 def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=None, smoothing_length=None, 
                            method='uniform', t_recov=14, description="", aux_var_add=False):
     """Helper function for performing smoothing of big jumps
@@ -31,6 +28,9 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
     df_district = df_district.set_index('date')
     if d2 == None:
         d2 = d1 + timedelta(days=1)
+
+    d1 = datetime.combine(d1, datetime.min.time())
+    d2 = datetime.combine(d2, datetime.min.time())
     big_jump = df_district.loc[d2, smoothing_var] - df_district.loc[d1, smoothing_var]
     aux_var_weight = (int(aux_var_add) - 0.5)*2
 
