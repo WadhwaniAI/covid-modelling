@@ -17,7 +17,6 @@ from viz import plot_forecast
 
 import wandb
 
-
 def plot_forecasts_of_best_candidates(predictions_dict, config):
     predictions_dict['m2']['plots']['forecast_best_50'] = plot_forecast(
         predictions_dict,
@@ -41,15 +40,10 @@ def plot_forecasts_of_best_candidates(predictions_dict, config):
     )
 
 
-def run_single_config_end_to_end(config, wandb_config, run_name, perform_sensitivity=False, log_wandb_flag=False):
+def run_single_config_end_to_end(config, wandb_config, run_name, log_wandb_flag=False):
     predictions_dict = {}
 
-    output_folder = '../../misc/reports/{}'.format(
-        datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
-
     fitting(predictions_dict, config)
-    if perform_sensitivity:
-        sensitivity(predictions_dict, config)
     forecast_best(predictions_dict, config)
     uncertainty = fit_beta(predictions_dict, config)
     process_uncertainty_fitting(predictions_dict, config, uncertainty)
@@ -83,7 +77,7 @@ def single_run_fn_for_parallel(state, base_config_filename):
 def perform_batch_runs(base_config_filename='us.yaml', username='sansiddh', output_folder=None):
     # Specifying the folder where checkpoints will be saved
     if output_folder is None:
-        output_folder = '/scratch/users/{}/covid-modelling/{}'.format(
+        output_folder = '/scratche/users/{}/covid-modelling/{}'.format(
             username, datetime.datetime.now().strftime("%Y_%m%d_%H%M%S"))
     os.makedirs(output_folder, exist_ok=True)
 

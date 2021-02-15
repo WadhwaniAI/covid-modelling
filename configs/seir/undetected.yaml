@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: simulated
+        data_source: covid19india
         stratified_data: FALSE
         dataloading_params:
             reload_data: FALSE
@@ -22,17 +22,17 @@ fitting:
             center: TRUE
             window_size: 7
             win_type: null
+            min_periods: 1
             split_after_rolling: TRUE
     #Choose Model and Ranges
     model: SEIR_Undetected
     variable_param_ranges:
-        # lockdown_R0: [[0.7, 1.2], uniform]
         T_inc: [[4, 6], uniform]
         T_inf_D: [[3, 5], uniform]
         T_inf_U: [[4, 6], uniform]
         T_recov_severe: [[0, 40], uniform]
         T_recov_fatal: [[0, 40], uniform]
-        P_fatal: [[0, 0.1], uniform]
+        P_fatal: [[0, 0.5], uniform]
         E_hosp_ratio: [[0, 2], uniform]
         I_D_hosp_ratio: [[0, 1], uniform]
         I_U_hosp_ratio: [[0, 1], uniform]
@@ -45,7 +45,7 @@ fitting:
         lockdown_removal_date: 2020-08-30
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 100
+        num_evals: 1000
         algo: tpe
         seed: 42
     #Choose Fitting Periods and num evaluations
@@ -60,13 +60,6 @@ fitting:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
-sensitivity:
-    lockdown_R0: [[[0.5, 1.5], 101], total, null]
-    I_hosp_ratio: [[[0, 1], 201], total, null]
-    E_hosp_ratio: [[[0, 2], 201], total, null]
-    P_fatal: [[[0, 0.5], 201], deceased, total]
-    T_recov: [[[1, 100], 101], recovered, total]
-    T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
