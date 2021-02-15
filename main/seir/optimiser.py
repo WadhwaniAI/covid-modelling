@@ -305,7 +305,7 @@ class Optimiser():
         mcmc_fit = MCMC(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
                  algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,loss_weights)
         mcmc_fit.run()
-        plot_mcmc_chains = False
+        plot_mcmc_chains = True
         if plot_mcmc_chains :
             plot_chains(mcmc_fit)
         metric = {"DIC":mcmc_fit.DIC,"GR-ratio":mcmc_fit.R_hat}

@@ -308,7 +308,7 @@ class MCMC(object):
         Returns:
             list: best params and set of trials mimicing bayesopt trials object
         """
-        paralell_bool = True
+        paralell_bool = False
         
         if paralell_bool:
             print("Executing in Parallel")

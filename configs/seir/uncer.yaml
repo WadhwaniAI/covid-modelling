@@ -51,10 +51,10 @@ fitting:
             E_hosp_ratio: .1
             I_hosp_ratio: .1
             gamma: .02
-        num_evals: 25000
+        num_evals: 2500
         algo: gaussian
-        n_chains: 4
-        stride: 5
+        n_chains: 1
+        stride: 1
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
