@@ -23,9 +23,10 @@ class SimulatedDataLoader(BaseLoader):
         
         Returns
         -------
-            pd.DataFrame -- dataframe of cases for a particular state, district with 5 columns : 
-                ['date', 'total', 'active', 'deceased', 'recovered']
-            dict -- parameter values used to create the simulated data
+            dict:
+                data_frame {pd.DataFrame} -- dataframe of cases for a particular state, district with 5 columns : 
+                    ['date', 'total', 'active', 'deceased', 'recovered']
+                actual_params {dict} -- parameter values used to create the simulated data
         """
         if not config['fix_params']:
             for param in config['params']:
