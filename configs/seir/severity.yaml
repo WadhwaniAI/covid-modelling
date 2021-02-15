@@ -36,6 +36,7 @@ fitting:
         T_recov_mild: [[20, 30], uniform]
         T_recov_moderate: [[20, 30], uniform]
         T_recov_severe: [[0, 40], uniform]
+        T_recov_fatal: [[20, 40], uniform]
         P_moderate: [[0, 0.5], uniform]
         P_severe: [[0, 0.1], uniform]
         P_fatal: [[0, 0.1], uniform]
