@@ -26,16 +26,13 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
     df_prediction[which_compartments] = df_prediction[which_compartments].apply(pd.to_numeric, axis=1)
     return df_prediction
 
-
 def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], which_fit='m2', log_scale=False, 
                   filename=None, which_compartments=['active', 'total', 'deceased', 'recovered'], 
                   fileformat='eps', error_bars=False, truncate_series=True, left_truncation_buffer=30):
     """Function for plotting forecasts (both best fit and uncertainty deciles)
-
     Arguments:
         predictions_dict {dict} -- Dict of predictions for a particular district 
         region {tuple} -- Region Name eg : ('Maharashtra', 'Mumbai')
-
     Keyword Argument
         which_compartments {list} -- Which compartments to plot (default: {['active', 'total', 'deceased', 'recovered']})
         df_prediction {pd.DataFrame} -- DataFrame of predictions (default: {None})
@@ -44,12 +41,9 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         filename {str} -- If given, the plot is saved here (default: {None})
         fileformat {str} -- The format in which the plot will be saved (default: {'eps'})
         error_bars {bool} -- If true, error bars will be plotted (default: {False})
-
     Returns:
         ax -- Matplotlib ax figure
     """
-
-
     legend_title_dict = {}
     deciles = np.sort(np.concatenate(( np.arange(10, 100, 10), np.array([2.5, 5, 95, 97.5] ))))
     for key in deciles:
@@ -81,7 +75,8 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         for i, df_prediction in enumerate(predictions):
             predictions[i] = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'],
                                                        which_compartments)
-
+                                
+        
     fig, ax = plt.subplots(figsize=(12, 12))
 
     for compartment in compartments['base']:
@@ -89,6 +84,11 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
             ax.plot(df_true[compartments['date'][0].name], df_true[compartment.name],
                     '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
             for i, df_prediction in enumerate(predictions):
+                if isinstance(df_prediction, pd.DataFrame):
+                    df_prediction = df_prediction.reset_index()
+                else:
+                    df_prediction = df_prediction['df_prediction']
+                
                 sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction,
                              ls='-', color=compartment.color, 
                              label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[i]]))
@@ -153,9 +153,14 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_sc
         if plot_individual_curves == True:
             for i, df_prediction in enumerate(predictions):
                 loss_value = np.around(top_k_losses[i], 2)
-                r0 = np.around(top_k_params[i]['lockdown_R0'], 2)
-                sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
+                if 'lockdown_R0' in top_k_params[i]:
+                    r0 = np.around(top_k_params[i]['lockdown_R0'], 2)
+                    sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
                             ls='-', label=f'{compartment.label} R0:{r0} Loss:{loss_value}')
+                else:
+                    beta = np.around(top_k_params[i]['beta'], 2)
+                    sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
+                            ls='-', label=f'{compartment.label} Beta:{beta} Loss:{loss_value}')
                 texts.append(plt.text(
                     x=df_prediction[Columns.date.name].iloc[-1], 
                     y=df_prediction[compartment.name].iloc[-1], s=loss_value))
