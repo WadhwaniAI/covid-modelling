@@ -69,7 +69,7 @@ class Loss_Calculator():
         return err
 
     def create_loss_dataframe_region(self, df_train, df_val, df_prediction, train_period, 
-                       which_compartments=['active', 'total']):
+                       which_compartments=['active', 'total'],multiple_val = []):
         """Helper function for calculating loss in training pipeline
 
         Arguments:
@@ -84,7 +84,11 @@ class Loss_Calculator():
         Returns:
             pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
         """
-        df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
+        columns_df = ['train', 'val']
+        for val in multiple_val : 
+            columns_df.append('val_'+str(val))
+        df_loss = pd.DataFrame(columns=columns_df, index=which_compartments)
+        # df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
 
         df_temp = df_prediction.loc[df_prediction['date'].isin(
             df_train['date']), ['date']+which_compartments]
@@ -105,6 +109,12 @@ class Loss_Calculator():
             for compartment in df_loss.index:
                 df_loss.loc[compartment, 'val'] = self._calc_mape(
                     np.array(df_temp[compartment]), np.array(df_val[compartment]))
+                if(len(multiple_val) > 0):
+                    arr_temp,arr_val = df_temp[compartment], np.array(df_val[compartment])
+                    # max_val_period = len(arr_val)
+                    for val in multiple_val : 
+                        col = 'val_'+str(val)
+                        df_loss.loc[compartment, col] = self._calc_mape(arr_temp[:val], arr_val[:val])
         else:
             del df_loss['val']
         return df_loss

@@ -166,8 +166,12 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     # plot_buckets(df_prediction, str(model))
     
     lc = Loss_Calculator()
+
+    multiple_val = []
+    if 'multiple_val' in split : 
+        multiple_val = split['multiple_val']
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'], 
-                                              which_compartments=loss['loss_compartments'])
+                                              which_compartments=loss['loss_compartments'],multiple_val = multiple_val)
 
     if 'state' in data['dataloading_params'].keys() and 'district' in data['dataloading_params'].keys():
         location_description = (data['dataloading_params']['state'],
