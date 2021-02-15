@@ -27,7 +27,8 @@ fitting:
             center: TRUE
             window_size: 7
             win_type: null
-            split_after_rolling: TRUE
+            min_periods: 7
+            split_after_rolling: FALSE
     #Choose Model and Ranges
     model_family: seir
     model: SEIRHD_Bed
@@ -60,8 +61,8 @@ fitting:
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: null
-        train_period: 14
+        end_date: 2020-08-31
+        train_period: 21
         val_period: 7
         test_period: 0
     loss:
