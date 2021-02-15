@@ -5,6 +5,7 @@ initial_values:
     recovered: 95000
     deceased: 7500
     active: 20000
+fix_params: True
 params:
     N: 1.0e+7
     beta: 0.211 
@@ -15,9 +16,9 @@ params:
     T_recov_severe: 21
     T_recov_fatal: 25
     P_fatal: 0.3
-    E_hosp_ratio: 2
-    I_D_hosp_ratio: 2
-    I_U_hosp_ratio: 3
+    E_hosp_ratio: 0.5
+    I_D_hosp_ratio: 0.5
+    I_U_hosp_ratio: 0.5
     psi: 1
 save: FALSE
 output_file_name: simulated_data_1.csv 
