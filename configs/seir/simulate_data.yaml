@@ -4,9 +4,7 @@ fitting:
         data_source: simulated
         stratified_data: FALSE
         dataloading_params:
-            state: Maharashtra
-            district: Mumbai
-            use_dataframe: data_all
+            reload_data: FALSE
             generate: TRUE
             config_file: seirhd_fixed.yaml
             filename: ../../data/data/simulated_data/simulated_data_1.csv
@@ -43,13 +41,6 @@ fitting:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
-sensitivity:
-    lockdown_R0: [[[0.5, 1.5], 101], total, null]
-    I_hosp_ratio: [[[0, 1], 201], total, null]
-    E_hosp_ratio: [[[0, 2], 201], total, null]
-    P_fatal: [[[0, 0.5], 201], deceased, total]
-    T_recov: [[[1, 100], 101], recovered, total]
-    T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
     forecast_days: 30
     num_trials_to_plot: 10
@@ -62,6 +53,7 @@ uncertainty:
         which_fit: m1
         variable_param_ranges:
             beta: [[0, 10], uniform]
+        construct_percentiles_day_wise: TRUE
         date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:

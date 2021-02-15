@@ -10,10 +10,10 @@ import copy
 from models.seir.seir import SEIR
 from utils.fitting.ode import ODE_Solver
 
-class SEIR_Undetected(SEIR):
-    def __init__(self, lockdown_R0=2.2, T_inf_D=3.3, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
+class SEIR_PU(SEIR):
+    def __init__(self, lockdown_R0=2.2, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
                  P_fatal=0.2, T_recov_severe=14, N=1e7, d=1.0, psi=1.00, beta=0.1, starting_date='2020-03-09', 
-                 observed_values=None, E_hosp_ratio=0.5, I_D_hosp_ratio=0.5, I_U_hosp_ratio=0.5, **kwargs):
+                 observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, Pu_pop_ratio=0.5, **kwargs):
         """
         This class implements SEIR + Hospitalisation + Severity Levels + undetected population
 
@@ -21,8 +21,7 @@ class SEIR_Undetected(SEIR):
 
         S : No of susceptible people
         E : No of exposed people
-        I_D : No of reported infected people
-        I_U : No of unreported infected people
+        I : No of infected people
         P_U : No of unreported recovered or deceased people
         R_severe : No of people recovering from a severe version of the infection
         R_fatal : No of people recovering from a fatal version of the infection
@@ -42,7 +41,6 @@ class SEIR_Undetected(SEIR):
         Transmission parameters - 
         Beta: Transmission rate
         T_inc: The incubation time of the infection (float)
-        T_inf_D: The duration for which a reported individual is infectious (float)
         T_inf_U: The duration for which an unreported individual is infectious (float)
 
         Probability of contracting different types of infections - 
@@ -61,7 +59,7 @@ class SEIR_Undetected(SEIR):
         d: Current Detection Ratio
         psi: effective sensititivity (based on antigen and rtpcr sensitive and their overall proportion)
         """
-        STATES = ['S', 'E', 'I_D', 'I_U', 'P_U', 'R_severe', 'R_fatal', 'C', 'D']
+        STATES = ['S', 'E', 'I', 'P_U', 'R_severe', 'R_fatal', 'C', 'D']
         R_STATES = [x for x in STATES if 'R_' in x]
         input_args = copy.deepcopy(locals())
         del input_args['self']
@@ -71,22 +69,17 @@ class SEIR_Undetected(SEIR):
         p_params['P_severe'] = 1 - p_params['P_fatal']
         input_args['p_params'] = p_params
         input_args['t_params'] = t_params
-        input_args['I_hosp_ratio'] = I_D_hosp_ratio + I_U_hosp_ratio
         super().__init__(**input_args)
 
         self.d = d
         self.psi = psi
-        self.T_inf_D = T_inf_D
-        self.T_inf_U = T_inf_U
-        self.I_D_hosp_ratio = I_D_hosp_ratio
-        self.I_U_hosp_ratio = I_U_hosp_ratio
         self.beta = beta
+        self.T_inf_U = T_inf_U
+        self.Pu_pop_ratio = Pu_pop_ratio
         self.N = N
-        self.state_init_values['I_D'] = self.I_D_hosp_ratio * observed_values['active'] / self.N
-        self.state_init_values['I_U'] = self.I_U_hosp_ratio * observed_values['active'] / self.N
+        self.state_init_values['P_U'] = self.Pu_pop_ratio
 
         self.state_init_values['S'] = 0
-        del self.state_init_values['I']
         nonSsum = sum(self.state_init_values.values())
         self.state_init_values['S'] = (1 - nonSsum)
 
@@ -98,21 +91,20 @@ class SEIR_Undetected(SEIR):
         # Init state variables
         for i, _ in enumerate(y):
             y[i] = max(y[i], 0)
-        S, E, I_D, I_U, P_U, R_severe, R_fatal, C, D = y
+        S, E, I, P_U, R_severe, R_fatal, C, D = y
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
 
         # Write differential equations
-        dydt[0] = - (I_D + I_U) * S * self.beta  # S
-        dydt[1] = (I_D + I_U) * S * self.beta - (E / self.T_inc)  # E
-        dydt[2] = (1 / self.T_inc) * (self.d * self.psi) * E - I_D / self.T_inf_D  # I_D
-        dydt[3] = (1 / self.T_inc) * (1 - self.d * self.psi) * E - I_U / self.T_inf_U  # I_U
-        dydt[4] = I_U / self.T_inf_U  # P_U
-        dydt[5] = (1 / self.T_inf_D) * (self.P_severe * I_D) - R_severe / self.T_recov_severe #R_severe
-        dydt[6] = (1 / self.T_inf_D) * (self.P_fatal * I_D) - R_fatal / self.T_recov_fatal # R_fatal
-        dydt[7] = R_severe / self.T_recov_severe # C
-        dydt[8] = R_fatal / self.T_recov_fatal # D
+        dydt[0] = - I * S * self.beta  # S
+        dydt[1] = I * S * self.beta - (E / self.T_inc)  # E
+        dydt[2] = (1 / self.T_inc) * E - I / self.T_inf_U - I * self.d * self.psi  # I
+        dydt[3] = I / self.T_inf_U  # P_U
+        dydt[4] = self.P_severe * I * self.d * self.psi - R_severe / self.T_recov_severe #R_severe
+        dydt[5] = self.P_fatal * I * self.d * self.psi - R_fatal / self.T_recov_fatal # R_fatal
+        dydt[6] = R_severe / self.T_recov_severe # C
+        dydt[7] = R_fatal / self.T_recov_fatal # D
 
         return dydt
 

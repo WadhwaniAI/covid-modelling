@@ -29,20 +29,25 @@ click==7.1.1
 click-plugins==1.1.1
 cligj==0.7.0
 cloudpickle==1.3.0
+colorama==0.4.4
 configparser==5.0.0
 constantly==15.1.0
 contextily==1.0.1
 covasim==0.22.3
+crayons==0.4.0
 cryptography==2.9
 cycler==0.10.0
+data==0.4
 databricks-cli==0.11.0
 decorator==4.4.2
 defusedxml==0.6.0
+Deprecated==1.2.10
 descartes==1.1.0
 dill==0.3.1.1
 distro==1.5.0
 docker==4.2.2
 docker-pycreds==0.4.0
+docopt==0.6.2
 docutils==0.15.2
 entrypoints==0.3
 et-xmlfile==1.0.1
@@ -50,8 +55,9 @@ Fiona==1.8.17
 Flask==1.1.2
 Flask-Login==0.5.0
 Flask-Session==0.3.1
+funcsigs==1.0.2
 future==0.18.2
-GDAL==3.1.4
+# GDAL==3.1.4
 geographiclib==1.50
 geopandas==0.8.1
 geoplot==0.4.1
@@ -94,7 +100,9 @@ jupyterlab-server==1.2.0
 kiwisolver==1.2.0
 kombu==4.6.8
 lab==6.0
+latex==0.7.0
 lazy-object-proxy==1.4.3
+lightgbm==3.1.0
 line-profiler==3.0.2
 llvmlite==0.31.0
 Mako==1.1.3
@@ -105,7 +113,7 @@ mccabe==0.6.1
 mdutils==1.2.1
 mercantile==1.1.6
 mistune==0.8.4
-mkl-service==2.3.0
+# mkl-service==2.3.0
 mlflow==1.10.0
 mpld3==0.3
 msrest==0.6.18
@@ -149,10 +157,14 @@ pyasn1-modules==0.2.8
 PyAthena==1.10.7
 pycodestyle==2.5.0
 pycparser==2.20
+PyGithub==1.53
 Pygments==2.6.1
 PyHamcrest==2.0.2
+# PyJWT==1.7.1
+pykwalify==1.7.0
 pylint==2.4.4
 pymc3==3.8
+pymmwr==0.2.2
 pyocr==0.7.2
 pyOpenSSL==19.1.0
 pypandoc==1.5
@@ -177,19 +189,23 @@ requests==2.23.0
 requests-oauthlib==1.3.0
 retrying==1.3.3
 rsa==4.0
-Rtree==0.9.4
+# Rtree==0.9.4
+ruamel.yaml==0.16.12
+ruamel.yaml.clib==0.2.2
 s3transfer==0.3.3
 scikit-learn==0.22.2.post1
-scipy==1.4.1
+scipy==1.5.4
 sciris==0.16.7
 scirisweb==0.16.6
-seaborn==0.10.0
+seaborn==0.11.0
 seirsplus==0.0.14
+selenium==3.141.0
 Send2Trash==1.5.0
 sentry-sdk==0.16.3
 service-identity==18.1.0
 Shapely==1.7.1
 shortuuid==1.0.1
+shutilwhich==1.1.0
 simplejson==3.17.0
 six==1.14.0
 sklearn==0.0
@@ -202,6 +218,7 @@ statsmodels==0.11.1
 subprocess32==3.5.4
 tabula-py==2.1.0
 tabulate==0.8.7
+tempdir==0.7.1
 tenacity==6.2.0
 terminado==0.8.3
 testpath==0.4.4
@@ -215,9 +232,10 @@ txt2tags==3.7
 urllib3==1.25.8
 vine==1.3.0
 Wand==0.5.9
-wandb==0.10.7
+wandb==0.10.12
 watchdog==0.10.3
 wcwidth==0.1.9
+webdriver-manager==3.2.2
 webencodings==0.5.1
 websocket-client==0.57.0
 Werkzeug==1.0.1
@@ -228,4 +246,5 @@ xarray==0.15.1
 xlrd==1.2.0
 XlsxWriter==1.2.8
 zipp==3.1.0
+zoltpy==0.0.4.dev0
 zope.interface==5.0.2

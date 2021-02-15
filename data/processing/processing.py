@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import copy
-import json
 import os
 import pickle
 import datetime
@@ -14,14 +13,17 @@ from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoad
 def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, label=None, **kwargs):
     if loader_class == Covid19IndiaLoader:
         loader_key = 'tracker'
-    if loader_class == AthenaLoader:
+    elif loader_class == AthenaLoader:
         loader_key = 'athena'
-    if loader_class == JHULoader:
+    elif loader_class == JHULoader:
         loader_key = 'jhu'
-    if loader_class == NYTLoader:
+    elif loader_class == NYTLoader:
         loader_key = 'nyt'
-    if loader_class == CovidTrackingLoader:
+    elif loader_class == CovidTrackingLoader:
         loader_key = 'covid_tracking'
+    else:
+        raise ValueError('loader_class must be one of following : Covid19IndiaLoader, AthenaLoader, ' +
+                         'JHULoader, NYTLoader, CovidTrackingLoader')
     os.makedirs("../../misc/cache/", exist_ok=True)
     label = '' if label is None else f'_{label}'
     picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}{label}.pkl".format(
@@ -90,10 +92,11 @@ def get_data(data_source, dataloading_params):
         else:
             return get_simulated_data_from_file(**dataloading_params)
 
-def get_custom_data_from_db(state='Maharashtra', district='Mumbai', **kwargs):
+
+def get_custom_data_from_db(state='Maharashtra', district='Mumbai', reload_data=False, **kwargs):
     print('fetching from athenadb...')
     label = kwargs.pop('label', None)
-    dataframes = get_dataframes_cached(loader_class=AthenaLoader, label=label, **kwargs)
+    dataframes = get_dataframes_cached(loader_class=AthenaLoader, reload_data=reload_data, label=label, **kwargs)
     df_result = copy.copy(dataframes['case_summaries'])
     df_result.rename(columns={'deaths': 'deceased', 'total cases': 'total',
                               'active cases': 'active', 'recoveries': 'recovered'}, inplace=True)
@@ -164,23 +167,26 @@ def get_custom_data_from_file(filename, data_format='new', **kwargs):
         df_result = df_result[['date', 'state', 'district', 'total', 'active', 'recovered', 'deceased']]
         df_result = df_result.dropna(subset=['date'], how='all')
         
-    if data_format == 'old':
+    elif data_format == 'old':
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
+    else:
+        raise ValueError('data_format can only be new or old')
         
     return {"data_frame": df_result}
 
 
-def get_data_from_tracker(state='Maharashtra', district='Mumbai', use_dataframe='data_all', **kwargs):
+def get_data_from_tracker(state='Maharashtra', district='Mumbai', use_dataframe='data_all', 
+                          reload_data=False, ** kwargs):
     if not district is None:
-        return {"data_frame": get_data_from_tracker_district(state, district, use_dataframe)}
+        return {"data_frame": get_data_from_tracker_district(state, district, use_dataframe, reload_data)}
     else:
-        return {"data_frame": get_data_from_tracker_state(state)}
+        return {"data_frame": get_data_from_tracker_state(state, reload_data)}
 
         
-def get_data_from_tracker_state(state='Delhi', **kwargs):
-    dataframes = get_dataframes_cached()
+def get_data_from_tracker_state(state='Delhi', reload_data=False, **kwargs):
+    dataframes = get_dataframes_cached(reload_data=reload_data)
     df_states = copy.copy(dataframes['df_states_all'])
     df_state = df_states[df_states['state'] == state]
     df_state['date'] = pd.to_datetime(df_state['date'])
@@ -188,8 +194,9 @@ def get_data_from_tracker_state(state='Delhi', **kwargs):
     df_state.reset_index(inplace=True, drop=True)
     return df_state
 
-def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_dataframe='raw_data', **kwargs):
-    dataframes = get_dataframes_cached()
+def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_dataframe='raw_data',
+                                   reload_data=False, **kwargs):
+    dataframes = get_dataframes_cached(reload_data=reload_data)
 
     if use_dataframe == 'data_all':
         df_districts = copy.copy(dataframes['df_districts_all'])
@@ -210,83 +217,9 @@ def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_
         df_district.reset_index(inplace=True, drop=True)
         return df_district
 
-    if use_dataframe == 'raw_data':
-        if type(dataframes) is dict:
-            df_raw_data_1 = copy.copy(dataframes['df_raw_data'])
-        else:
-            df_raw_data_1 = copy.copy(dataframes)
-        if state != None:
-            df_raw_data_1 = df_raw_data_1[df_raw_data_1['detectedstate'] == state]
-        if district != None:
-            df_raw_data_1 = df_raw_data_1[df_raw_data_1['detecteddistrict'] == district]
 
-        if len(df_raw_data_1) == 0:
-            out = pd.DataFrame({
-                'total':pd.Series([], dtype='int'), 
-                'active':pd.Series([], dtype='int'), 
-                'deceased':pd.Series([], dtype='int'), 
-                'recovered':pd.Series([], dtype='int'),
-                'district':pd.Series([], dtype='object'),
-                'state':pd.Series([], dtype='object'),
-                })
-            out.index.name = 'date'
-            return out.reset_index()
-        
-        df_raw_data_1['dateannounced'] = pd.to_datetime(df_raw_data_1['dateannounced'], format='%d/%m/%Y')
-
-        index = pd.date_range(np.min(df_raw_data_1['dateannounced']), np.max(df_raw_data_1['dateannounced']))
-
-        df_district = pd.DataFrame(columns=['total'], index=index)
-        df_district['total'] = [0]*len(index)
-        for _, row in df_raw_data_1.iterrows():
-            try:
-                df_district.loc[row['dateannounced']:, 'total'] += 1*int(row['numcases'])
-            except Exception:
-                df_district.loc[row['dateannounced']:, 'total'] += 1
-
-        df_district.reset_index(inplace=True)
-        df_district.columns = ['date', 'total']
-        df_district['active'] = [0]*len(df_district)
-        df_district['deceased'] = [0]*len(df_district)
-        df_district['recovered'] = [0]*len(df_district)
-        df_district['district'] = district
-        df_district['state'] = state
-        return df_district
-    
-    if use_dataframe == 'deaths_recovs':
-        df_deaths_recoveries = copy.copy(dataframes['df_deaths_recoveries'])
-        df_deaths_recoveries = df_deaths_recoveries[['date', 'district', 'state', 'patientstatus']]
-        df_deaths_recoveries = df_deaths_recoveries[df_deaths_recoveries['state'] == state]
-        unknown = df_deaths_recoveries[np.logical_and(df_deaths_recoveries['state'] == state, df_deaths_recoveries['district'] == '')]
-        unknown_count = len(unknown[unknown['patientstatus'] == 'Deceased']), len(unknown[unknown['patientstatus'] == 'Recovered'])
-        # df_deaths_recoveries.loc[unknown.index, 'district'] = district
-        print(f'{unknown_count[0]} deaths and {unknown_count[1]} recoveries in {state} with unknown district')
-        df_deaths_recoveries = df_deaths_recoveries[np.logical_and(df_deaths_recoveries['state'] == state, df_deaths_recoveries['district'] == district)]
-        if len(df_deaths_recoveries) == 0:
-            out = pd.DataFrame({
-                'deceased':pd.Series([], dtype='int'), 
-                'recovered':pd.Series([], dtype='int'),
-                'district':pd.Series([], dtype='object'),
-                'state':pd.Series([], dtype='object'),
-                })
-            out.index.name = 'date'
-            return out.reset_index()
-        df_deaths_recoveries['date'] = pd.to_datetime(df_deaths_recoveries['date'], format='%d/%m/%Y')
-        index = pd.date_range(np.min(df_deaths_recoveries['date']), np.max(df_deaths_recoveries['date']))
-        out = pd.DataFrame(0, columns=['deceased', 'recovered'], index=index)
-        for _, row in df_deaths_recoveries.iterrows():
-            if row['patientstatus'] == 'Deceased':
-                out.loc[row['date']:, 'deceased'] += 1
-            if row['patientstatus'] == 'Recovered':
-                out.loc[row['date']:, 'recovered'] += 1
-        out['district'] = district
-        out['state'] = state
-        out.index.name = 'date'
-        return out.reset_index()
-
-
-def get_data_from_jhu(dataframe, region, sub_region=None, **kwargs):
-    dataframes = get_dataframes_cached(loader_class=JHULoader)
+def get_data_from_jhu(dataframe, region, sub_region=None, reload_data=False, **kwargs):
+    dataframes = get_dataframes_cached(loader_class=JHULoader, reload_data=reload_data)
     df = dataframes[f'df_{dataframe}']
     if dataframe == 'global':
         df.rename(columns= {"ConfirmedCases": "total", "Deaths": "deceased",
@@ -330,8 +263,9 @@ def get_data_from_jhu(dataframe, region, sub_region=None, **kwargs):
     return {"data_frame": df}
 
 
-def get_data_from_ny_times(state, county=None, **kwargs):
-    dataframes = get_dataframes_cached(loader_class=NYTLoader)
+def get_data_from_ny_times(state, county=None, reload_data=False, **kwargs):
+    dataframes = get_dataframes_cached(
+        loader_class=NYTLoader, reload_data=reload_data)
     if county is not None:
         df = dataframes['counties']
         df = df[np.logical_and(df['state'] == state, df['county'] == county)]
@@ -345,8 +279,9 @@ def get_data_from_ny_times(state, county=None, **kwargs):
     return {"data_frame": df}
 
 
-def get_data_from_covid_tracking(state, **kwargs):
-    dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader)
+def get_data_from_covid_tracking(state, reload_data=False, **kwargs):
+    dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader, 
+                                       reload_data=reload_data)
     df_states = dataframes['df_states']
     df_states = df_states.loc[:, ['date', 'state', 'state_name', 'positive', 
                                   'active', 'recovered', 'death']]
