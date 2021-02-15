@@ -29,40 +29,6 @@ regions = [
 loss_methods = ['mape', 'rmse', 'rmse_log']
 
 
-def create_output(predictions_dict, output_folder, tag):
-    """Custom output generation function"""
-    directory = f'{output_folder}/{tag}'
-    if not os.path.exists(directory):
-        os.mkdir(directory)
-    d = {}
-    for outer in ['m1', 'm2']:
-        for inner in ['variable_param_ranges', 'best_params', 'beta_loss']:
-            if inner in predictions_dict[outer]:
-                with open(f'{directory}/{outer}_{inner}.json', 'w') as f:
-                    json.dump(predictions_dict[outer][inner], f, indent=4)
-        for inner in ['df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'df_district_unsmoothed']:
-            if inner in predictions_dict[outer] and predictions_dict[outer][inner] is not None:
-                predictions_dict[outer][inner].to_csv(f'{directory}/{outer}_{inner}.csv')
-        for inner in ['trials', 'run_params', 'optimiser', 'plots', 'smoothing_description', 'default_params', ]:
-            with open(f'{directory}/{outer}_{inner}.pkl', 'wb') as f:
-                pickle.dump(predictions_dict[outer][inner], f)
-        if 'ensemble_mean' in predictions_dict[outer]['forecasts']:
-            predictions_dict[outer]['forecasts']['ensemble_mean'].to_csv(
-                f'{directory}/{outer}_ensemble_mean_forecast.csv')
-        predictions_dict[outer]['trials_processed']['predictions'][0].to_csv(
-            f'{directory}/{outer}_trials_processed_predictions.csv')
-        np.save(f'{directory}/{outer}_trials_processed_params.npy',
-                predictions_dict[outer]['trials_processed']['params'])
-        np.save(f'{directory}/{outer}_trials_processed_losses.npy',
-                predictions_dict[outer]['trials_processed']['losses'])
-        d[f'{outer}_data_last_date'] = predictions_dict[outer]['data_last_date']
-
-    d['fitting_date'] = predictions_dict['fitting_date']
-    np.save(f'{directory}/m2_beta.npy', predictions_dict['m2']['beta'])
-    with open(f'{directory}/other.json', 'w') as f:
-        json.dump(d, f, indent=4)
-
-
 def get_experiment(which, regionwise=False):
     """Get experiment configuration"""
     logging.info('Getting experiment choices')
@@ -192,7 +158,6 @@ def perform_batch_runs(base_config_filename='param_choices.yaml', experiment_nam
 
         for j, key in tqdm(enumerate(chunk.keys())):
             if isinstance(predictions_arr[j], dict):
-                # create_output(predictions_arr[j], output_folder, key)
                 with open(f'{output_folder}/{key}_predictions_dict.pkl', 'wb') as f:
                     pickle.dump(predictions_arr[j], f)
 
