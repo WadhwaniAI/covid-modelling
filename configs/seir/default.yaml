@@ -13,9 +13,9 @@ fitting:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
             2020-06-15: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
-            2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
-            2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
+            2020-06-23: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-24: [null, recovered, active, FALSE, weighted-mag]
+            2020-07-01: [null, recovered, active, FALSE, weighted-mag]
             2020-06-15: [null, deceased, active, FALSE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
@@ -40,13 +40,13 @@ fitting:
         N: 1.0e+7
     fitting_method: bayes_opt
     fitting_method_params:
-        num_evals: 1000
+        num_evals: 2000
         algo: tpe
         seed: null
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-10-31
+        end_date: 2020-05-28
         train_period: 30
         val_period: 3
         test_period: 0
@@ -57,7 +57,7 @@ fitting:
         loss_weights: [0.25, 0.25, 0.25, 0.25]
 plotting:
     truncate_series: TRUE
-    left_truncation_buffer: 30
+    left_truncation_buffer: 7
     right_truncation_buffer: forecast_days
     separate_compartments_separate_ax: TRUE
 forecast:
@@ -73,9 +73,9 @@ uncertainty:
         fitting_method_params:
             parallelise: FALSE
         variable_param_ranges:
-            beta: [[0, 10], 101]
+            beta: [[0.1, 10], 101]
         construct_percentiles_day_wise: FALSE
-        date_of_sorting_trials: 2020-11-30
+        date_of_sorting_trials: 2020-06-14
         sort_trials_by_column: total
         loss:
             loss_method: mape
@@ -85,3 +85,5 @@ uncertainty:
 logging:
     experiment_name: wiai-temp
     run_name: null
+misc:
+    report_dir : ../../misc/reports
