@@ -6,9 +6,8 @@ from models.seir.sir_base import SIRBase
 
 class SIR(SIRBase):
 
-    def __init__(self, pre_lockdown_R0=3, lockdown_R0=2.2, post_lockdown_R0=None, T_inf=2.9, T_inc=5.2, T_fatal=7,
-                 N=7e6, lockdown_day=10, lockdown_removal_day=75, starting_date='2020-03-09', I_tot_ratio=0.5,
-                 initialisation='intermediate', observed_values=None, I_hosp_ratio=0.5, ** kwargs):
+    def __init__(self, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2, N=7e6,
+                 I_hosp_ratio=0.5, I_tot_ratio=0.5, starting_date='2020-03-09', observed_values=None):
         """
         This class implements SIR
         The model further implements
@@ -24,28 +23,6 @@ class SIR(SIRBase):
 
         The sum total is is always N (total population)
 
-        """
-
-        """
-        The parameters are : 
-
-        R0 values - 
-        lockdown_R0: R0 value during lockdown (float)
-
-        Transmission parameters - 
-        T_inc: The incubation time of the infection (float)
-        T_inf: The duration for which an individual is infectious (float)
-
-        Lockdown parameters - 
-        starting_date: Datetime value that corresponds to Day 0 of modelling (datetime/str)
-        lockdown_day: Number of days from the starting_date, after which lockdown is initiated (int)
-        lockdown_removal_day: Number of days from the starting_date, after which lockdown is removed (int)
-
-        Misc - 
-        N: Total population
-        initialisation : method of initialisation ('intermediate'/'starting')
-        E_hosp_ratio : Ratio for Exposed to hospitalised for initialisation
-        I_hosp_ratio : Ratio for Infected to hospitalised for initialisation
         """
 
         STATES = ['S', 'I', 'R']
@@ -69,8 +46,7 @@ class SIR(SIRBase):
             y[i] = max(y[i], 0)
         S, I, R = y
 
-        self.R0 = self.lockdown_R0
-        self.T_trans = self.T_inf/self.R0
+        self.T_trans = self.T_inf/self.lockdown_R0
 
         # Init derivative vector
         dydt = np.zeros(y.shape)
