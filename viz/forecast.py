@@ -108,7 +108,10 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
                            ls='--', color='black', label='Training Range')
                 ax.axvline(x=predictions[0].iloc[train_period+val_period-1, :]['date'],
                            ls='--', color='black')
-                ax.set_title(compartment.name.title(), fontsize=20)
+                ax.text(.5, .9, compartment.name.title(),
+                        horizontalalignment='center', fontsize=20, 
+                        transform=ax.transAxes, backgroundcolor='white')
+                # ax.set_title(compartment.name.title(), x=0.9, y=0.9, fontsize = 20)
                 ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 5))
                 axis_formatter(ax, log_scale=log_scale)
     if not plotting_config['separate_compartments_separate_ax']:

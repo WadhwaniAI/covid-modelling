@@ -185,7 +185,7 @@ def plot_multiple_choropleths(df_wadhwani:pd.DataFrame, gdf:gpd.GeoDataFrame, va
         cbar = fig.colorbar(cm.ScalarMappable(norm=colors.TwoSlopeNorm(
             vmin=plotting_params['vmin'], vcenter=plotting_params['vcenter'], 
             vmax=plotting_params['vmax']), cmap=plotting_params['cmap']), ax=single_ax)
-        cbar.ax.set_ylabel(var.replace("_", " ").title(), labelpad=15)
+        cbar.ax.set_ylabel('NMAPE', labelpad=15)
     
     return fig, axs
 

@@ -13,12 +13,12 @@ def axis_formatter(ax, legend_elements=None, custom_legend=False, append_leg_ele
         ax -- Matplotlib ax object
     """
     
-    ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=SA))
+    ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=WE, interval=2))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d %b'))
     # ax.set_ylabel('No of Cases')
     # ax.set_xlabel('Time')
-    ax.tick_params('x', labelrotation=45)
+    ax.tick_params('x')
     ax.grid(alpha=0.3)
     if log_scale:
         ax.set_yscale('log')
