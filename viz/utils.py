@@ -12,13 +12,15 @@ def axis_formatter(ax, legend_elements=None, custom_legend=False, log_scale=Fals
     Arguments:
         ax -- Matplotlib ax object
     """
-    
-    ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=SA))
+    ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=WE, interval=2))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax.set_ylabel('No of People')
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d %b'))
+    # ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=WE,interval=2))
+    # ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
+    # ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+    ax.set_ylabel('Case Count')
     ax.set_xlabel('Time')
-    ax.tick_params('x', labelrotation=45)
+    ax.tick_params('x')
     ax.grid()
     if log_scale:
         ax.set_yscale('log')
@@ -32,7 +34,7 @@ def axis_formatter(ax, legend_elements=None, custom_legend=False, log_scale=Fals
             ]
         ax.legend(handles=legend_elements)
     else:
-        ax.legend()
+        ax.legend(loc = [0.02,.78])
 
 
 def add_inset_subplot_to_axes(ax, rect):

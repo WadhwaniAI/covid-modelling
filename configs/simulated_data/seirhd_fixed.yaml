@@ -1,6 +1,6 @@
 model: SEIRHD
 starting_date: 2020-09-16
-total_days: 35
+total_days: 27
 initial_values:
     recovered: 95000
     deceased: 7500
@@ -13,7 +13,7 @@ params:
     T_inf: 3.6
     T_recov: 21.5
     T_recov_fatal: 25.5 
-    P_fatal: 0.08
+    P_fatal: 0.06
     E_hosp_ratio: 0.34
-    I_hosp_ratio: 0.94
+    I_hosp_ratio: 0.42
 output_file_name: simulated_data_1.csv 

@@ -51,14 +51,10 @@ class MCMC(object):
         self.state = 'Maharashtra'
         self.stride = stride
         self.loss_weights = loss_weights
-        #self.state = cfg['fitting']['data']['dataloading_params']['state']
-        #self.district = cfg['fitting']['data']['dataloading_params']['district']
-        #self.cfg  = cfg
-        #self.df_district = df_district if df_district is not None else self._fetch_data()
         self.loss_indices = loss_indices
         self.df_train  = df_train[loss_indices[0]:loss_indices[1]]
         self.loss_method = loss_method
-        #self.train_days = self.cfg['fitting']['split']['train_period']
+
         self.n_chains =  n_chains
         self.total_days = total_days
         self.likelihood = algo
@@ -90,7 +86,7 @@ class MCMC(object):
 
     def Gauss_proposal(self, theta_old):
         """
-        Proposes a new set of parameter values given the previous set.
+        Proposes a new set of parameter values given the previous set using gaussian noise.
         
         Args:
             theta_old (dict): dictionary of old param-value pairs.
@@ -163,24 +159,16 @@ class MCMC(object):
             db += d_beta
         return ll,da,db
 
-    def _log_prior(self, theta):
+    def truncated_gaussian(self,theta):
         """
-        Computes and returns the log-prior as per non-negative constraint on the parameters.
+        Calculates Multiplier offset to take care of truncated gaussian
         
         Args:
-            theta (OrderedDict): parameter-value pairs.
+            theta(OrderedDict): set of parameters
         
         Returns:
-            float: log-prior of the parameters.
+            float: Multiplier offset to take care of truncated gaussian 
         """
-        if (np.array([*theta.values()]) < 0).any():
-            prior = 0
-        else:
-            prior = 1
-        
-        return np.log(prior)
-
-    def truncated_gaussian(self,theta):
         multiplier_offset = 1
         for param in theta:
             if param == 'gamma':
@@ -286,7 +274,7 @@ class MCMC(object):
 
     def _get_trials(self):
         """Summary      
-
+        Modifies samples collected from MCMC to mimic trials object generated from BO
         
         Returns:
             TYPE: Description
@@ -315,10 +303,10 @@ class MCMC(object):
 
     def run(self):
         """
-        Runs all the metropolis-hastings chains in parallel.
+        Runs all the metropolis-hastings chains in parallel/serial.
         
         Returns:
-            list: Description
+            list: best params and set of trials mimicing bayesopt trials object
         """
         paralell_bool = True
         

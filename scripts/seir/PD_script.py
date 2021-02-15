@@ -37,10 +37,11 @@ from os.path import exists, join, splitext
 
 # %%
 models = {'MCMC':'uncer.yaml','BO':'default.yaml'}
+# models = {'BO':'default.yaml'}
 
 
 # %%
-runs = 2
+runs = 10
 PD = {}
 for n in range(runs):
     print("The iteration number is ",n)

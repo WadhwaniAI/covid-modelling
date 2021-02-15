@@ -150,9 +150,10 @@ class MCUncertainty(Uncertainty):
         if return_dict:
             weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
             return lc.calc_loss_dict(weighted_pred_df_loss, df_val, method=self.loss_method)
+        
         if return_ensemble_mean_forecast:
             weighted_pred_df.reset_index(inplace=True)
-            return {'df_prediction':weighted_pred_df,'df_loss':lc.calc_loss_dict(weighted_pred_df_loss, df_test, method = self.loss_method)}
+            return {'df_prediction':weighted_pred_df,'df_loss':lc.calc_loss_dict(weighted_pred_df_loss, df_test, method = 'mape')}
         weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
         return lc.calc_loss(weighted_pred_df_loss, df_val, method=self.loss_method,
                             which_compartments=loss_cols, loss_weights=self.loss_weights)
@@ -248,7 +249,6 @@ class MCUncertainty(Uncertainty):
             df_ptile_idxs = self.get_ptiles_idx(percentiles=percentiles)
                 
         deciles_forecast = {}
-        
         predictions = self.predictions_dict[self.which_fit]['trials_processed']['predictions']
         predictions = [df.loc[:, :'total'] for df in predictions]
         predictions_stacked = np.stack([df.to_numpy() for df in predictions], axis=0)
