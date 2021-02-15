@@ -4,12 +4,21 @@ from tqdm import tqdm
 
 import itertools
 import importlib
-from functools import partial
+import os
+
+from functools import partial, reduce
+import datetime
 from joblib import Parallel, delayed
+from os.path import exists, join, splitext
 
 from models.seir import SEIRHD
 from utils.fitting.loss import Loss_Calculator
-
+# from uncertainty.mcmc import MCMC
+from main.seir.mcmc import MCMC
+from viz.uncertainty import plot_chains
+from utils.fitting.mcmc_utils import predict
+from datetime import date
+from datetime import datetime
 class Optimiser():
     """Class which implements all optimisation related activites (training, evaluation, etc)
     """
@@ -35,11 +44,14 @@ class Optimiser():
                 formatted_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
                     key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
 
-        if fitting_method == 'gridsearch':
+        elif fitting_method == 'gridsearch':
             for key in variable_param_ranges.keys():
                 formatted_param_ranges[key] = np.linspace(variable_param_ranges[key][0][0],
                                                           variable_param_ranges[key][0][1], 
                                                           variable_param_ranges[key][1])
+        else:
+            formatted_param_ranges = variable_param_ranges
+
 
         return formatted_param_ranges
 
@@ -57,7 +69,7 @@ class Optimiser():
         Returns:
             pd.DataFrame -- DataFrame of predictions
         """
-
+        
         solver = model(**params_dict)
         total_days = (end_date.date() - params_dict['starting_date']).days
         if total_days < 0:
@@ -69,7 +81,7 @@ class Optimiser():
     # TODO add cross validation support
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIRHD,
                                loss_compartments=['active', 'recovered', 'total', 'deceased'], 
-                               loss_weights = [1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse', 
+                               loss_weights = [0.25, 0.25, 0.25, 0.25], loss_indices=[-20, -10], loss_method='rmse', 
                                debug=False):
         """The function that computes solves the ODE for a given set of input params and computes loss on train set
 
@@ -211,7 +223,7 @@ class Optimiser():
 
     def bayes_opt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
                   loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
-                  algo=tpe, seed=42, **kwargs):
+                  algo=tpe, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -249,12 +261,53 @@ class Optimiser():
 
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
         trials = Trials()
-        rstate = np.random.RandomState(seed)
         best = fmin(partial_solve_and_compute_loss,
                     space=variable_param_ranges,
                     algo=algo_module.suggest,
                     max_evals=num_evals,
-                    rstate=rstate,
                     trials=trials)
-        
-        return best, trials
+        metric = {}
+        return best,trials,metric
+
+
+    def mcmc_opt(self, df_train, default_params, variable_param_ranges, proposal_sigmas,end_date,model=SEIRHD, num_evals=10000, stride = 5, n_chains = 10,
+                loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
+                prior='uniform', algo = 'gaussian', **kwargs):
+        """Implements Bayesian Optimisation using hyperopt library
+
+        Arguments:
+            df_train {pd.DataFrame} -- The training dataset
+            default_params {str} -- Dict of default (static) params
+            variable_param_ranges {dict} -- The ranges for the variable params (the searchspace)
+
+        An example of variable_param_ranges : 
+        variable_param_ranges = {
+            'lockdown_R0' : hp.uniform('R0', 0, 2),
+            'T_inc' : hp.uniform('T_inc', 4, 5),
+            'T_inf' : hp.uniform('T_inf', 3, 4),
+            'T_recov_severe' : hp.uniform('T_recov_severe', 5, 60),
+            'P_severe' : hp.uniform('P_severe', 0.3, 0.99)
+        }
+
+        Keyword Arguments:
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
+            total_days {int} -- total days to simulate for (deprecated) (default: {None})
+            method {str} -- Loss Method (default: {'rmse'})
+            num_evals {int} -- Number of hyperopt evaluations (default: {3500})
+            loss_indices {list} -- The indices of the train set to apply the losses on (default: {[-20, -10]})
+            which_compartments {list} -- Which compartments to apply loss on (default: {['total']})
+
+        Returns:
+            dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
+        """
+        end_date = datetime.combine(df_train.iloc[-1, :]['date'].date(), datetime.min.time())
+        total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
+        mcmc_fit = MCMC(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
+                 algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,loss_weights)
+        mcmc_fit.run()
+        plot_mcmc_chains = False
+        if plot_mcmc_chains :
+            plot_chains(mcmc_fit)
+        metric = {"DIC":mcmc_fit.DIC,"GR-ratio":mcmc_fit.R_hat}
+        best,tri = mcmc_fit._get_trials()
+        return best,tri,metric
