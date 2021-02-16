@@ -111,10 +111,8 @@ def get_experiment(which, regionwise=False):
 
 def run(config):
     """Run single experiment for given config"""
-    predictions_dict = {}
-    fitting(predictions_dict, config)
-    predictions_dict['m1']['forecasts'] = {}
-    predictions_dict['m2']['forecasts'] = {}
+    predictions_dict = fitting(config)
+    predictions_dict['forecasts'] = {}
     uncertainty = fit_beta(predictions_dict, config)
     process_ensemble(predictions_dict, uncertainty)
     plot_ensemble_forecasts(predictions_dict, config)
