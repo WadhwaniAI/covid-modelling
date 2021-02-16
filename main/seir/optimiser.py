@@ -17,7 +17,7 @@ class Optimiser():
     def __init__(self):
         self.loss_calculator = Loss_Calculator()
 
-    def format_variable_param_ranges(self, variable_param_ranges, fitting_method='bayes_opt'):
+    def format_variable_param_ranges(self, variable_param_ranges, fitting_method='bo_hyperopt'):
         """Returns the ranges for the variable params in the search space
 
         Keyword Arguments:
@@ -30,7 +30,7 @@ class Optimiser():
         """
 
         formatted_param_ranges = {}
-        if fitting_method == 'bayes_opt':
+        if fitting_method == 'bo_hyperopt':
             for key in variable_param_ranges.keys():
                 formatted_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
                     key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
@@ -210,7 +210,7 @@ class Optimiser():
                     
         return loss_array, list_of_param_dicts
 
-    def bayes_opt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
+    def bo_hyperopt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
                   loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
                   algo=tpe, seed=42, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library

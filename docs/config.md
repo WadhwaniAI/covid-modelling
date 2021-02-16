@@ -20,7 +20,7 @@ We may add a 5th key for `whatifs` scenarios, but that depends on how formally i
 - `variable_param_ranges` :
 - `default_params` :
 - `fitting_method` :
-- `fitting_method_params` : str. Can be `gridsearch` or  `bayes_opt`
+- `fitting_method_params` : str. Can be `gridsearch` or  `bo_hyperopt`
     - `num_evals`: int
     - `algo`: str. Can be `tpe` (TPE), `atpe` (adaptive TPE), or `rand` (random search)
     - `seed`: int
@@ -51,7 +51,7 @@ Parameters for each uncertainty class come inside `uncertainty_params`.
 
 For ABMAUncertainty : 
 - `num_evals` : int
-- `fitting_method`: str. Can be `gridsearch` or  `bayes_opt`
+- `fitting_method`: str. Can be `gridsearch` or  `bo_hyperopt`
 For `gridsearch` -  
 - `fitting_method_params`:
     - `parallelise`: bool

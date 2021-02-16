@@ -44,7 +44,7 @@ fitting:
         psi: 1.0
         lockdown_date: 2020-03-25
         lockdown_removal_date: 2020-08-30
-    fitting_method: bayes_opt
+    fitting_method: bo_hyperopt
     fitting_method_params:
         num_evals: 1000
         algo: tpe

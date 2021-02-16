@@ -41,7 +41,7 @@ fitting:
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
-    fitting_method: bayes_opt
+    fitting_method: bo_hyperopt
     fitting_method_params:
         num_evals: 1000
         algo: tpe

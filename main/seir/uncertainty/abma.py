@@ -141,7 +141,7 @@ class ABMAUncertainty(Uncertainty):
         formatted_searchspace = op.format_variable_param_ranges(
             variable_param_ranges, fitting_method)
 
-        if fitting_method == 'bayes_opt':
+        if fitting_method == 'bo_hyperopt':
             trials = Trials()
             best = fmin(self.avg_weighted_error,
                         space=formatted_searchspace,
