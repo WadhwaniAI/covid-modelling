@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_squared_error, mean_squared_log_error
-
 
 class Loss_Calculator():
 
@@ -10,24 +8,35 @@ class Loss_Calculator():
                       'asymptomatic', 'symptomatic', 'critical',
                       'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator']
 
-    def _calc_rmse(self, y_pred, y_true, log=False):
+    def rmse(self, y_pred, y_true):
         """Calculate RMSE Loss
 
         Args:
             y_pred (np.array): predicted array
             y_true (np.array): true array
-            log (bool, optional): If true, computes log rmse. Defaults to False.
 
         Returns:
             float: RMSE loss
         """
-        if log:
-            y_pred = np.log(y_pred[y_true > 0])
-            y_true = np.log(y_true[y_true > 0])
         loss = np.sqrt(np.mean((y_true - y_pred)**2))
         return loss
 
-    def _calc_mape(self, y_pred, y_true):
+    def rmsle(self, y_pred, y_true):
+        """Calculate RMSLE Loss
+
+        Args:
+            y_pred (np.array): predicted array
+            y_true (np.array): true array
+
+        Returns:
+            float: RMSLE loss
+        """
+        y_pred = np.log(y_pred[y_true > 0])
+        y_true = np.log(y_true[y_true > 0])
+        loss = np.sqrt(np.mean((y_true - y_pred)**2))
+        return loss
+
+    def mape(self, y_pred, y_true):
         """Calculate MAPE loss
 
         Args:
@@ -44,7 +53,7 @@ class Loss_Calculator():
         loss = np.mean(ape)
         return loss
 
-    def _calc_smape(self, y_pred, y_true):
+    def smape(self, y_pred, y_true):
         """Function for calculating symmetric mape
 
         Args:
@@ -61,13 +70,13 @@ class Loss_Calculator():
         loss = np.mean(ape)
         return loss
     
-    def _calc_l1_perc(self, y_pred, y_true,perc):
-        """Function for calculating L1 percentile loss
+    def qtile_l1(self, y_pred, y_true, perc):
+        """Function for calculating L1 quantile loss
 
         Args:
             y_pred (np.array): Predicted array
             y_true (np.array): GT array
-            perc (float): The percentile
+            perc (float): The quantile
 
         Returns:
             float: L1 Percentile Loss
@@ -76,13 +85,13 @@ class Loss_Calculator():
         loss = np.sum(np.max(e*perc,(perc-1)*e))
         return loss
 
-    def _calc_mape_perc(self, y_pred, y_true,perc):
-        """Function for calculating MAPE percentile loss
+    def qtile_mape(self, y_pred, y_true, perc):
+        """Function for calculating MAPE quantile loss
 
         Args:
             y_pred (np.array): Predicted array
             y_true (np.array): GT Array
-            perc (float): percentile
+            perc (float): quantile
 
         Returns:
             float: MAPE Percentile Loss
@@ -107,25 +116,19 @@ class Loss_Calculator():
         Returns:
             dict: dict of loss values {compartment : loss_value}
         """
-        if method == 'rmse':
-            calculate = lambda x, y : self._calc_rmse(x, y)
-        elif method == 'rmse_log':
-            calculate = lambda x, y : self._calc_rmse(x, y, log=True)
-        elif method == 'mape':
-            calculate = lambda x, y : self._calc_mape(x, y)
-        else:
-            raise ValueError('Pleae inputted a supported loss fn (mape, rmse or rmsle)')
+        loss_fn = getattr(self, method)
         
         losses = {}
         for compartment in self.columns:
             try:
-                losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
+                losses[compartment] = loss_fn(df_prediction[compartment], df_true[compartment])
             except Exception:
                 continue
         return losses
 
     def calc_loss(self, df_prediction, df_true, method='rmse', 
-                  which_compartments=['active', 'recovered', 'total', 'deceased'], loss_weights=[1, 1, 1, 1]):
+                  which_compartments=['active', 'recovered', 'total', 'deceased'], 
+                  loss_weights=[1, 1, 1, 1]):
         """Calculates loss using specified method, averaged across specified compartments using specified weights
 
         Args:
@@ -164,40 +167,41 @@ class Loss_Calculator():
             err['rmsle'] = None
         return err
 
-    def create_loss_dataframe_region(self, df_train, df_val, df_prediction, train_period, 
-                                     which_compartments=['active', 'total']):
+    def create_loss_dataframe_region(self, df_train, df_val, df_prediction, loss_method='mape',
+                                     loss_compartments=['active', 'total']):
         """Helper function for calculating loss in training pipeline
 
         Arguments:
             df_train {pd.DataFrame} -- Train dataset
             df_val {pd.DataFrame} -- Val dataset
             df_prediction {pd.DataFrame} -- Model Prediction
-            train_period {int} -- Length of training Period
 
         Keyword Arguments:
-            which_compartments {list} -- List of buckets to calculate loss on (default: {['active', 'total']})
+            loss_compartments {list} -- List of buckets to calculate loss on (default: {['active', 'total']})
 
         Returns:
             pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
         """
-        df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
+        loss_fn = getattr(self, loss_method)
+
+        df_loss = pd.DataFrame(columns=['train', 'val'], index=loss_compartments)
 
         df_temp = df_prediction.loc[df_prediction['date'].isin(
-            df_train['date']), ['date']+which_compartments]
+            df_train['date']), ['date']+loss_compartments]
         df_temp.reset_index(inplace=True, drop=True)
         df_train = df_train.loc[df_train['date'].isin(df_temp['date']), :]
         df_train.reset_index(inplace=True, drop=True)
         for compartment in df_loss.index:
-            df_loss.loc[compartment, 'train'] = self._calc_mape(
+            df_loss.loc[compartment, 'train'] = loss_fn(
                 np.array(df_temp[compartment]), np.array(df_train[compartment]))
 
         if isinstance(df_val, pd.DataFrame):
             df_temp = df_prediction.loc[df_prediction['date'].isin(
-                df_val['date']), ['date']+which_compartments]
+                df_val['date']), ['date']+loss_compartments]
             df_temp.reset_index(inplace=True, drop=True)
             df_val.reset_index(inplace=True, drop=True)
             for compartment in df_loss.index:
-                df_loss.loc[compartment, 'val'] = self._calc_mape(
+                df_loss.loc[compartment, 'val'] = loss_fn(
                     np.array(df_temp[compartment]), np.array(df_val[compartment]))
         else:
             del df_loss['val']
