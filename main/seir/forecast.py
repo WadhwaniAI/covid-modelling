@@ -147,7 +147,8 @@ def write_csv(df_final: pd.DataFrame, filename:str=None):
         filename = '../../output-{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     df_final.to_csv(filename, index=False)
 
-def _order_trials_by_loss(m_dict: dict, is_input_pdict=True):
+
+def _order_trials_by_loss(m_dict: dict, is_input_pdict: bool = False, sort_trials: bool = True):
     """Orders a set of trials by their corresponding loss value
 
     Args:
@@ -167,11 +168,12 @@ def _order_trials_by_loss(m_dict: dict, is_input_pdict=True):
             params_dict[key] = params_dict[key][0]
         params_array.append(params_dict)
     params_array = np.array(params_array)
-    losses_array = np.array([trial['result']['loss'] for trial in trials])
-    
-    least_losses_indices = np.argsort(losses_array)
-    losses_array = losses_array[least_losses_indices]
-    params_array = params_array[least_losses_indices]
+    losses_array = np.array([trial['result']['loss'] for trial in m_dict['trials']])
+
+    if sort_trials:
+        least_losses_indices = np.argsort(losses_array)
+        losses_array = losses_array[least_losses_indices]
+        params_array = params_array[least_losses_indices]
     return params_array, losses_array
 
 def _get_top_k_trials(m_dict: dict, k=10):
