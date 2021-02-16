@@ -13,10 +13,10 @@ from utils.generic.enums import Columns
 from viz.utils import axis_formatter
 
 
-def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments=[Columns.active], 
+def plot_ptiles(predictions_dict, vline=None, which_compartments=[Columns.active], 
                 plot_individual_curves=True, log_scale=False, truncate_series=True, 
                 left_truncation_buffer=30, ci_lb=2.5, ci_ub=97.5):
-    predictions = copy(predictions_dict[train_fit]['forecasts'])
+    predictions = copy(predictions_dict['forecasts'])
     try:
         del predictions['best']
     except:
@@ -26,10 +26,10 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
     for df in list(predictions.values())[1:]:
         df_master = pd.concat([df_master, df], ignore_index=True)
     
-    train_period = predictions_dict[train_fit]['run_params']['split']['train_period']
-    val_period = predictions_dict[train_fit]['run_params']['split']['val_period']
+    train_period = predictions_dict['run_params']['split']['train_period']
+    val_period = predictions_dict['run_params']['split']['val_period']
     val_period = 0 if val_period is None else val_period
-    df_true = predictions_dict[train_fit]['df_district']
+    df_true = predictions_dict['df_district']
     if truncate_series:
         df_true = df_true[df_true['date'] >
                           (list(predictions.values())[0]['date'].iloc[0] -

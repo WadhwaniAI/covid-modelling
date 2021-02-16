@@ -27,7 +27,7 @@ def preprocess_for_error_plot(df_prediction: pd.DataFrame, df_loss: pd.DataFrame
     return df_prediction
 
 
-def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], which_fit='m2', log_scale=False, 
+def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], log_scale=False, 
                   filename=None, which_compartments=['active', 'total', 'deceased', 'recovered'], 
                   fileformat='eps', error_bars=False, truncate_series=True, left_truncation_buffer=30):
     """Function for plotting forecasts (both best fit and uncertainty deciles)
@@ -65,13 +65,13 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
         raise ValueError('Cannot plot more than 5 forecasts together')
 
     predictions = []
-    for i, forecast in enumerate(fits_to_plot):
-        predictions.append(predictions_dict[which_fit]['forecasts'][fits_to_plot[i]])
+    for i, _ in enumerate(fits_to_plot):
+        predictions.append(predictions_dict['forecasts'][fits_to_plot[i]])
     
-    train_period = predictions_dict[which_fit]['run_params']['split']['train_period']
-    val_period = predictions_dict[which_fit]['run_params']['split']['val_period']
+    train_period = predictions_dict['run_params']['split']['train_period']
+    val_period = predictions_dict['run_params']['split']['val_period']
     val_period = 0 if val_period is None else val_period
-    df_true = predictions_dict['m1']['df_district']
+    df_true = predictions_dict['df_district']
     if truncate_series:
         df_true = df_true[df_true['date'] > \
                           (predictions[0]['date'].iloc[0] - timedelta(days=left_truncation_buffer))]
@@ -79,7 +79,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
 
     if error_bars:
         for i, df_prediction in enumerate(predictions):
-            predictions[i] = preprocess_for_error_plot(df_prediction, predictions_dict['m1']['df_loss'],
+            predictions[i] = preprocess_for_error_plot(df_prediction, predictions_dict['df_loss'],
                                                        which_compartments)
 
     fig, ax = plt.subplots(figsize=(12, 12))
@@ -122,11 +122,11 @@ def plot_forecast_agnostic(df_true, df_prediction, region, log_scale=False, file
     return fig
 
 
-def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_scale=False,
+def plot_top_k_trials(predictions_dict, k=10, vline=None, log_scale=False,
                       which_compartments=[Columns.active], plot_individual_curves=True,
                       truncate_series=True, left_truncation_buffer=30):
                 
-    trials_processed = predictions_dict[train_fit]['trials_processed']
+    trials_processed = predictions_dict['trials_processed']
     top_k_losses = trials_processed['losses'][:k]
     top_k_params = trials_processed['params'][:k]
     predictions = trials_processed['predictions'][:k]
@@ -134,14 +134,14 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_sc
     df_master = predictions[0]
     for i, df in enumerate(predictions[1:]):
         df_master = pd.concat([df_master, df], ignore_index=True)
-    df_true = predictions_dict[train_fit]['df_district']
+    df_true = predictions_dict['df_district']
     if truncate_series:
         df_true = df_true[df_true['date'] >
                           (predictions[0]['date'].iloc[0] - timedelta(days=left_truncation_buffer))]
         df_true.reset_index(drop=True, inplace=True)
 
-    train_period = predictions_dict[train_fit]['run_params']['split']['train_period']
-    val_period = predictions_dict[train_fit]['run_params']['split']['val_period']
+    train_period = predictions_dict['run_params']['split']['train_period']
+    val_period = predictions_dict['run_params']['split']['val_period']
     val_period = 0 if val_period is None else val_period
 
     plots = {}
@@ -178,7 +178,7 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_sc
 
 
 def plot_r0_multipliers(region_dict, predictions_mul_dict, log_scale=False):
-    df_true = region_dict['m2']['df_district']
+    df_true = region_dict['df_district']
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.plot(df_true['date'], df_true['active'],
         '-o', color='orange', label='Active Cases (Observed)')

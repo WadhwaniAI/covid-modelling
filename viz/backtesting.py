@@ -1,17 +1,12 @@
 
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import matplotlib as mpl
 import pandas as pd
-import numpy as np
-import seaborn as sns
-from adjustText import adjust_text
-import datetime
 import copy
 from datetime import timedelta
 
 from viz.utils import setup_plt
-from utils.generic.enums import Columns, SEIRParams
+from utils.generic.enums import Columns
 from viz.utils import axis_formatter
 from data.processing.processing import get_data
 from utils.generic.enums.columns import *
@@ -102,9 +97,9 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
             raise ValueError('Please give a predictions_dict input, current input is None')
 
         df_prediction = copy.copy(
-            predictions_dict['m2']['forecasts'][which_forecast])
-        df_train = copy.copy(predictions_dict['m2']['df_train'])
-        train_period = predictions_dict['m2']['run_params']['split']['train_period']
+            predictions_dict['forecasts'][which_forecast])
+        df_train = copy.copy(predictions_dict['df_train'])
+        train_period = predictions_dict['run_params']['split']['train_period']
     else:
         raise ValueError('Please give legal preds_source : either filename or pickle')
 
