@@ -4,6 +4,7 @@ from tabulate import tabulate
 from data.processing.processing import get_data, train_val_test_split
 from data.processing import granular
 
+import datetime
 from main.seir.optimiser import Optimiser
 from utils.fitting.loss import Loss_Calculator
 from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
@@ -142,8 +143,10 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     results_dict['plots'] = {}
     results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
+
+    fitting_date = datetime.datetime.now().strftime("%Y-%m-%d")
     for name in ['best_params', 'default_params', 'df_prediction', 'df_district', 'df_train', 
-                 'df_val', 'df_loss', 'trials', 'data_last_date']:
+                 'df_val', 'df_loss', 'trials', 'data_last_date', 'fitting_date']:
         results_dict[name] = eval(name)
 
     return results_dict
