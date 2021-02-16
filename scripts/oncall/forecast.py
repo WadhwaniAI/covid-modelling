@@ -14,7 +14,7 @@ from utils.generic.create_report import save_dict_and_create_report
 from utils.generic.enums import Columns
 from utils.generic.config import read_config
 from viz import plot_ptiles, plot_r0_multipliers
-from main.seir.uncertainty import MCUncertainty
+from main.seir.uncertainty import ABMAUncertainty
 from main.seir.forecast import save_r0_mul, predict_r0_multipliers
 
 parser = argparse.ArgumentParser()
@@ -31,7 +31,7 @@ df_reported = region_dict['m2']['df_district_unsmoothed']
 date_of_interest = config['date_of_interest']
 
 # Calculate beta and ptiles indices
-uncertainty = MCUncertainty(region_dict, date_of_interest)
+uncertainty = ABMAUncertainty(region_dict, date_of_interest)
 deciles_idx = uncertainty.get_ptiles_idx()
 forecast_dict['beta'] = uncertainty.beta
 

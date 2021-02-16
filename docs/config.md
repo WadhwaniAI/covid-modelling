@@ -45,11 +45,11 @@ Giving train, val and test period is a must. If both start and end date are null
 
 ## Uncertainty
 
-- `method`: MCUncertainty, or MCMCUncertainty
+- `method`: ABMAUncertainty, or MCMCUncertainty
 
 Parameters for each uncertainty class come inside `uncertainty_params`. 
 
-For MCUncertainty : 
+For ABMAUncertainty : 
 - `num_evals` : int
 - `fitting_method`: str. Can be `gridsearch` or  `bayes_opt`
 For `gridsearch` -  

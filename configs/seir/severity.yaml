@@ -69,7 +69,7 @@ forecast:
     plot_topk_trials_for_columns: [total, active, symptomatic, asymptomatic]
     plot_ptiles_for_columns: [total, active, symptomatic, asymptomatic]
 uncertainty:
-    method: MCUncertainty
+    method: ABMAUncertainty
     uncertainty_params:
         which_fit: m1
         fitting_method: gridsearch

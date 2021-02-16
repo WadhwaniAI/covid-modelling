@@ -92,8 +92,8 @@ df_reported = region_dict['m2']['df_district_unsmoothed'] # change this to df_di
 
 params = region_dict['m2']['params']
 
-from main.seir.uncertainty import MCUncertainty
-uncertainty = MCUncertainty(region_dict, None)
+from main.seir.uncertainty import ABMAUncertainty
+uncertainty = ABMAUncertainty(region_dict, None)
 deciles_forecast = uncertainty.get_forecasts(ptile_dict=deciles_idx)
 deciles_params = {key: val['params'] for key, val in deciles_forecast.items()}
 

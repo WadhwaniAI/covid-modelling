@@ -75,7 +75,7 @@ forecast:
     plot_topk_trials_for_columns: [total, active, icu, ventilator, non_o2_beds, o2_beds]
     plot_ptiles_for_columns: [total, active, icu, ventilator, non_o2_beds, o2_beds]
 uncertainty:
-    method: MCUncertainty
+    method: ABMAUncertainty
     uncertainty_params:
         which_fit: m1
         fitting_method: gridsearch

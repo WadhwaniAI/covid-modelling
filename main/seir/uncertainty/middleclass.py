@@ -20,7 +20,7 @@ from .uncertainty_base import Uncertainty
 from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 
-class MCUncertainty(Uncertainty):
+class ABMAUncertainty(Uncertainty):
     def __init__(self, predictions_dict, fitting_config, forecast_config, variable_param_ranges, fitting_method, 
                  fitting_method_params, which_fit, construct_percentiles_day_wise, date_of_sorting_trials, 
                  sort_trials_by_column, loss, percentiles, process_trials=True):
