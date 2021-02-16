@@ -10,17 +10,17 @@ import pandas as pd
 import wandb
 
 
-def create_dataframes_for_logging(m2_dict):
+def create_dataframes_for_logging(fit_dict):
     """Function for creating dataframes of top k trials params, deciles params and deciles losses
-    Takes as input the dict of m2 fits, and returns 3 pd.DataFrames
+    Takes as input the dict of fits, and returns 3 pd.DataFrames
 
     Args:
-        m2_dict (dict): predictions_dict['m2'] as returned by generated_report.ipynb
+        fit_dict (dict): predictions_dict as returned by generated_report.ipynb
 
     Returns:
         pd.DataFrame, pd.DataFrame, pd.DataFrame: dataframes as described above
     """
-    trials_processed = copy.deepcopy(m2_dict['trials_processed'])
+    trials_processed = copy.deepcopy(fit_dict['trials_processed'])
     trials_processed['losses'] = np.around(trials_processed['losses'], 2)
     trials_processed['params'] = [{key: np.around(value, 2) for key, value in params_dict.items()}
                                    for params_dict in trials_processed['params']]
@@ -28,7 +28,7 @@ def create_dataframes_for_logging(m2_dict):
                                  for i in range(10)})
     df_trials_params = copy.deepcopy(df)
 
-    deciles = copy.deepcopy(m2_dict['deciles'])
+    deciles = copy.deepcopy(fit_dict['deciles'])
     for key in deciles.keys():
         deciles[key]['params'] = {param: np.around(value, 2) 
                                   for param, value in deciles[key]['params'].items()}
@@ -57,24 +57,23 @@ def log_wandb(predictions_dict):
     """
     # Logging all input data dataframes
     dataframes_to_log = ['df_train', 'df_val', 'df_district', 'df_district_unsmoothed']
-    for run in ['m1', 'm2']:
-        for df_name in dataframes_to_log:
-            df = copy.deepcopy(predictions_dict[run][df_name])
-            if df is not None:
-                df['date'] = df['date'].dt.strftime('%Y-%m-%d')
-            wandb.log({f"{run}/{df_name}": wandb.Table(dataframe=df)})
-        wandb.log({f"{run}/{'df_loss'}": wandb.Table(
-            dataframe=predictions_dict[run]['df_loss'].reset_index())})
+    for df_name in dataframes_to_log:
+        df = copy.deepcopy(predictions_dict[df_name])
+        if df is not None:
+            df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+        wandb.log({f"{df_name}": wandb.Table(dataframe=df)})
+    wandb.log({f"{'df_loss'}": wandb.Table(
+        dataframe=predictions_dict['df_loss'].reset_index())})
 
     # Logging all forecast data dataframes
-    for forecast_name in predictions_dict['m2']['forecasts'].keys():
-        df = copy.deepcopy(predictions_dict['m2']['forecasts'][forecast_name])
+    for forecast_name in predictions_dict['forecasts'].keys():
+        df = copy.deepcopy(predictions_dict['forecasts'][forecast_name])
         if df is not None:
             df['date'] = df['date'].dt.strftime('%Y-%m-%d')
         wandb.log({f"{'forecast_dataframes'}/{forecast_name}": wandb.Table(dataframe=df)})
 
     df_trials_params, df_deciles_params, df_decile_losses = create_dataframes_for_logging(
-        predictions_dict['m2'])
+        predictions_dict)
 
     wandb.log({f"{'deciles'}/{'trials_params'}": wandb.Table(
         dataframe=df_trials_params.reset_index())})
@@ -84,20 +83,19 @@ def log_wandb(predictions_dict):
         dataframe=df_decile_losses.reset_index())})
 
     # Logging all non forecast plots
-    for run in ['m1', 'm2']:
-        for key, value in predictions_dict[run]['plots'].items():
-            if type(value) == mpl.figure.Figure and 'forecast' not in key:
-                wandb.log({f"{run}/{key}": [wandb.Image(value)]})
+    for key, value in predictions_dict['plots'].items():
+        if type(value) == mpl.figure.Figure and 'forecast' not in key:
+            wandb.log({f"{key}": [wandb.Image(value)]})
 
     # Logging all forecast plots
-    for key, value in predictions_dict['m2']['plots'].items():
+    for key, value in predictions_dict['plots'].items():
         if type(value) == mpl.figure.Figure and 'forecast' in key:
             wandb.log({f"{'forecasts'}/{key}": [wandb.Image(value)]})
     
-    for key, value in predictions_dict['m2']['plots']['forecasts_topk'].items():
+    for key, value in predictions_dict['plots']['forecasts_topk'].items():
         wandb.log({f"{'forecasts'}/forecasts_topk_{key}": [wandb.Image(value)]})
 
-    for key, value in predictions_dict['m2']['plots']['forecasts_ptiles'].items():
+    for key, value in predictions_dict['plots']['forecasts_ptiles'].items():
         wandb.log({f"{'forecasts'}/forecasts_ptiles_{key}": [wandb.Image(value)]})
 
 

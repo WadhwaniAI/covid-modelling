@@ -1,8 +1,6 @@
 import os
-import datetime
 import pypandoc
 from mdutils.mdutils import MdUtils
-from mdutils import Html
 from pprint import pformat
 import pandas as pd
 import numpy as np
@@ -17,28 +15,25 @@ def _dump_predictions_dict(predictions_dict, ROOT_DIR):
         pickle.dump(predictions_dict, dump)
 
 
-def _dump_params(m1_dict, m2_dict, ROOT_DIR):
+def _dump_params(predictions_dict, m2_dict, ROOT_DIR):
     filepath = os.path.join(ROOT_DIR, 'params.json')
     with open(filepath, 'w+') as dump:
         run_params = {
-            'm1': copy.copy(m1_dict['run_params']),
+            'm1': copy.copy(predictions_dict['run_params']),
             'm2': copy.copy(m2_dict['run_params'])
         }
-        del run_params['m1']['model_class']
-        del run_params['m1']['variable_param_ranges']
-        del run_params['m2']['model_class']
-        del run_params['m2']['variable_param_ranges']
+        del run_params['model_class']
+        del run_params['variable_param_ranges']
 
         json.dump(run_params, dump, indent=4)
 
-def _save_trials(m1_dict, m2_dict, ROOT_DIR):
-    m1_dict['all_trials'].to_csv(os.path.join(ROOT_DIR, 'm1-trials.csv'))
-    m2_dict['all_trials'].to_csv(os.path.join(ROOT_DIR, 'm2-trials.csv'))
+def _save_trials(predictions_dict, ROOT_DIR):
+    predictions_dict['all_trials'].to_csv(os.path.join(ROOT_DIR, 'm1-trials.csv'))
 
 
 def _create_md_file(predictions_dict, config, ROOT_DIR):
     fitting_date = predictions_dict['fitting_date']
-    data_last_date = predictions_dict['m1']['data_last_date']
+    data_last_date = predictions_dict['data_last_date']
     state = config['fitting']['data']['dataloading_params']['state']
     dist = config['fitting']['data']['dataloading_params']['district']
     dist = '' if dist is None else dist
@@ -47,9 +42,9 @@ def _create_md_file(predictions_dict, config, ROOT_DIR):
     return mdFile, filename
 
 
-def _log_hyperparams(mdFile, predictions_dict, config):
+def _log_hyperparams(mdFile, predictions_dict):
     mdFile.new_paragraph("---")
-    mdFile.new_paragraph(f"Data available till: {predictions_dict['m2']['data_last_date']}")
+    mdFile.new_paragraph(f"Data available till: {predictions_dict['data_last_date']}")
     mdFile.new_paragraph(f"Fitting Date: {predictions_dict['fitting_date']}")
 
 
@@ -70,16 +65,16 @@ def _log_smoothing(mdFile, ROOT_DIR, fit_dict):
     mdFile.new_paragraph("")
 
 
-def _log_fits(mdFile, ROOT_DIR, fit_dict, which_fit='M1'):
-    mdFile.new_header(level=1, title=f'{which_fit} FIT')
+def _log_fits(mdFile, ROOT_DIR, fit_dict):
+    mdFile.new_header(level=1, title=f'FIT')
     mdFile.new_header(level=2, title=f'Optimal Parameters')
     mdFile.insert_code(pformat(fit_dict['best_params']))
     mdFile.new_header(level=2, title=f'MAPE Loss Values')
     mdFile.new_paragraph(fit_dict['df_loss'].to_markdown())
 
-    mdFile.new_header(level=2, title=f'{which_fit} Fit Curves')
-    _log_plots_util(mdFile, ROOT_DIR, f'{which_fit.lower()}-fit.png',
-                    fit_dict['plots']['fit'], f'{which_fit} Fit Curve')
+    mdFile.new_header(level=2, title=f'Fit Curves')
+    _log_plots_util(mdFile, ROOT_DIR, f'fit.png',
+                    fit_dict['plots']['fit'], f'Fit Curve')
 
 
 def _log_uncertainty_fit(mdFile, fit_dict):
@@ -161,9 +156,6 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
     if not os.path.exists(ROOT_DIR):
         os.makedirs(ROOT_DIR)
 
-    m1_dict = predictions_dict['m1']
-    m2_dict = predictions_dict['m2']
-
     _dump_predictions_dict(predictions_dict, ROOT_DIR)
 
     with open(f'{config_ROOT_DIR}/{config_filename}') as configfile:
@@ -172,28 +164,26 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
     os.system(f'cp {config_ROOT_DIR}/{config_filename} {ROOT_DIR}/{config_filename}')
     
     mdFile, filename = _create_md_file(predictions_dict, config, ROOT_DIR)
-    _log_hyperparams(mdFile, predictions_dict, config)
+    _log_hyperparams(mdFile, predictions_dict)
 
-    if 'smoothing' in m1_dict and m1_dict['plots']['smoothing'] is not None:
-        _log_smoothing(mdFile, ROOT_DIR, m1_dict)
+    if 'smoothing' in predictions_dict and predictions_dict['plots']['smoothing'] is not None:
+        _log_smoothing(mdFile, ROOT_DIR, predictions_dict)
 
-    mdFile.new_header(level=1, title=f'FITS')
-    _log_fits(mdFile, ROOT_DIR, m1_dict, which_fit='M1')
-    _log_fits(mdFile, ROOT_DIR, m2_dict, which_fit='M2')
+    mdFile.new_header(level=1, title=f'FIT')
+    _log_fits(mdFile, ROOT_DIR, predictions_dict)
 
     mdFile.new_header(level=2, title=f'Uncertainty Fitting')
-    _log_uncertainty_fit(mdFile, m2_dict)
+    _log_uncertainty_fit(mdFile, predictions_dict)
 
     mdFile.new_header(level=1, title=f'FORECASTS')
-    _log_forecasts(mdFile, ROOT_DIR, m2_dict)
+    _log_forecasts(mdFile, ROOT_DIR, predictions_dict)
     
     mdFile.new_header(level=1, title="Tables")
-    _log_tables(mdFile, m2_dict)
+    _log_tables(mdFile, predictions_dict)
 
     # Create a table of contents
     mdFile.new_table_of_contents(table_title='Contents', depth=2)
     mdFile.create_md_file()
 
     pypandoc.convert_file("{}.md".format(filename), 'docx', outputfile="{}.docx".format(filename))
-    #pypandoc.convert_file("{}.docx".format(filename), 'pdf', outputfile="{}.pdf".format(filename))
     # TODO: pdf conversion has some issues with order of images, low priority
