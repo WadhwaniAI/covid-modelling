@@ -142,8 +142,8 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     results_dict['plots'] = {}
     results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
-    for name in ['best_params', 'default_params', 'optimiser',
-                 'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'trials', 'data_last_date']:
+    for name in ['best_params', 'default_params', 'df_prediction', 'df_district', 'df_train', 
+                 'df_val', 'df_loss', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
 
     return results_dict
@@ -177,7 +177,7 @@ def single_fitting_cycle(data, model_family, model, variable_param_ranges, defau
     run_params['model'] = model.__name__
     run_params['model_class'] = model
     
-    print('Performing {} fit ..'.format('m2' if split['val_period'] == 0 else 'm1'))
+    print('Performing fit ..')
 
     # Get data
     params = {**data}

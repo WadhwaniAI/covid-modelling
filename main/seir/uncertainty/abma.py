@@ -50,16 +50,8 @@ class ABMAUncertainty(Uncertainty):
                                                               return_ensemble_mean_forecast=True)
 
     def process_trials(self, predictions_dict, fitting_config, forecast_config):
-        predictions_dict['m1']['trials_processed'] = forecast_all_trials(
-            predictions_dict, train_fit='m1',
-            model=fitting_config['model'],
-            train_end_date=fitting_config['split']['end_date'],
-            forecast_days=forecast_config['forecast_days']
-        )
-
-        predictions_dict['m2']['trials_processed'] = forecast_all_trials(
-            predictions_dict, train_fit='m2',
-            model=fitting_config['model'],
+        predictions_dict['trials_processed'] = forecast_all_trials(
+            predictions_dict, model=fitting_config['model'],
             train_end_date=fitting_config['split']['end_date'],
             forecast_days=forecast_config['forecast_days']
         )
@@ -95,14 +87,14 @@ class ABMAUncertainty(Uncertainty):
             float: average relative error calculated over trials and a val set
         """    
         beta = params['beta']
-        losses = self.predictions_dict['m1']['trials_processed']['losses']
+        losses = self.predictions_dict['trials_processed']['losses']
         # This is done as rolling average on df_val has already been calculated, 
         # while df_district has no rolling average
-        df_val = self.predictions_dict['m1']['df_district'].set_index('date') \
-            .loc[self.predictions_dict['m1']['df_val']['date'],:]
+        df_val = self.predictions_dict['df_district'].set_index('date') \
+            .loc[self.predictions_dict['df_val']['date'],:]
         beta_loss = np.exp(-beta*losses)
 
-        predictions = self.predictions_dict['m1']['trials_processed']['predictions']
+        predictions = self.predictions_dict['trials_processed']['predictions']
         loss_cols = self.loss_compartments
         allcols = ['total', 'active', 'recovered', 'deceased', 'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator',
                    'asymptomatic', 'symptomatic', 'critical']
@@ -120,16 +112,17 @@ class ABMAUncertainty(Uncertainty):
         weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
         lc = Loss_Calculator()
         if return_dict:
-            return lc.calc_loss_dict(weighted_pred_df_loss, df_val, method=self.loss_method)
+            return lc.calc_loss_dict(weighted_pred_df_loss, df_val, loss_method=self.loss_method, 
+                                     loss_compartments=loss_cols)
         if return_ensemble_mean_forecast:
             weighted_pred_df.reset_index(inplace=True)
             return weighted_pred_df
-        return lc.calc_loss(weighted_pred_df_loss, df_val, method=self.loss_method,
-                            which_compartments=loss_cols, loss_weights=self.loss_weights)
+        return lc.calc_loss(weighted_pred_df_loss, df_val, loss_method=self.loss_method,
+                            loss_compartments=loss_cols, loss_weights=self.loss_weights)
 
     def find_beta(self, fitting_method, fitting_method_params, variable_param_ranges):
         """
-        Runs a search over m1 trials to find best beta for a probability distro
+        Runs a search over trials to find best beta for a probability distro
 
         Args:
             num_evals (int, optional): number of iterations to run hyperopt. Defaults to 1000.
@@ -152,7 +145,8 @@ class ABMAUncertainty(Uncertainty):
             return best['beta'], trials
         elif fitting_method == 'gridsearch':
             if fitting_method_params['parallelise']:
-                loss_values = Parallel(n_jobs=40)(delayed(self.avg_weighted_error)(
+                n_jobs = fitting_method_params['n_jobs']
+                loss_values = Parallel(n_jobs=n_jobs)(delayed(self.avg_weighted_error)(
                     {'beta': beta_value}) for beta_value in tqdm(formatted_searchspace['beta']))
             else:
                 loss_values = [self.avg_weighted_error({'beta': beta_value})
@@ -168,7 +162,7 @@ class ABMAUncertainty(Uncertainty):
     def get_distribution(self):
         """
         Computes probability distribution based on given beta and date 
-        over the trials in predictions_dict[self.which_fit]['all_trials']
+        over the trials in predictions_dict['all_trials']
 
         Args:
 
@@ -184,10 +178,10 @@ class ABMAUncertainty(Uncertainty):
         """    
         
         df = pd.DataFrame(columns=['loss', 'weight', 'pdf'])
-        df['loss'] = self.predictions_dict[self.which_fit]['trials_processed']['losses']
+        df['loss'] = self.predictions_dict['trials_processed']['losses']
         df['weight'] = np.exp(-self.beta*df['loss'])
         df['pdf'] = df['weight'] / df['weight'].sum()
-        df_trials = self.trials_to_df(self.predictions_dict[self.which_fit]['trials_processed'], 
+        df_trials = self.trials_to_df(self.predictions_dict['trials_processed'], 
                                       self.sort_trials_by_column)
         # Removing non time stamp columns
         df_trials = df_trials.loc[:, [x for x in df_trials.columns if type(x) is pd.Timestamp]]
@@ -219,13 +213,13 @@ class ABMAUncertainty(Uncertainty):
                 
         deciles_forecast = {}
         
-        predictions = self.predictions_dict[self.which_fit]['trials_processed']['predictions']
+        predictions = self.predictions_dict['trials_processed']['predictions']
         predictions = [df.loc[:, :'total'] for df in predictions]
         predictions_stacked = np.stack([df.to_numpy() for df in predictions], axis=0)
-        params = self.predictions_dict[self.which_fit]['trials_processed']['params']
-        df_district = self.predictions_dict[self.which_fit]['df_district']
+        params = self.predictions_dict['trials_processed']['params']
+        df_district = self.predictions_dict['df_district']
         df_train_nora = df_district.set_index('date').loc[
-            self.predictions_dict[self.which_fit]['df_train']['date'], :].reset_index()
+            self.predictions_dict['df_train']['date'], :].reset_index()
         
         for ptile in df_ptile_idxs.columns:
             deciles_forecast[ptile] = {}
@@ -241,8 +235,7 @@ class ABMAUncertainty(Uncertainty):
             if not self.construct_percentiles_day_wise:
                 deciles_forecast[ptile]['params'] = params[df_ptile_idxs.iloc[0][ptile]]
             deciles_forecast[ptile]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
-                df_train_nora, None, df_prediction, train_period=self.fitting_config['split']['val_period'],
-                which_compartments=self.loss_compartments)
+                df_train_nora, None, df_prediction, loss_compartments=self.loss_compartments)
         return deciles_forecast
 
     def _ptile_idx_helper(self, percentiles, date):
