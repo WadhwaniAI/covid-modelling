@@ -73,6 +73,7 @@ uncertainty:
         fitting_method: gridsearch
         fitting_method_params:
             parallelise: FALSE
+            n_jobs: 10
         variable_param_ranges:
             beta: [[0, 10], 101]
         construct_percentiles_day_wise: TRUE
