@@ -1,5 +1,4 @@
 import yaml
-import os
 import copy
 
 import models
@@ -58,7 +57,8 @@ def process_config(config):
     nconfig = copy.deepcopy(config)
     create_location_description(nconfig)
     
-    nconfig['fitting']['model'] = getattr(models.seir, nconfig['fitting']['model'])
+    model_family = getattr(models, nconfig['fitting']['model_family'])
+    nconfig['fitting']['model'] = getattr(model_family, nconfig['fitting']['model'])
 
     nconfig['forecast']['plot_topk_trials_for_columns'] = [Columns.from_name(
         column) for column in nconfig['forecast']['plot_topk_trials_for_columns']]

@@ -149,8 +149,8 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     return results_dict
 
 
-def single_fitting_cycle(data, model, variable_param_ranges, default_params, fitting_method, 
-                         fitting_method_params, split, loss):
+def single_fitting_cycle(data, model_family, model, variable_param_ranges, default_params, 
+                         fitting_method, fitting_method_params, split, loss):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
