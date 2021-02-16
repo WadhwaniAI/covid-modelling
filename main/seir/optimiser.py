@@ -210,9 +210,10 @@ class Optimiser():
                     
         return loss_array, list_of_param_dicts
 
-    def bo_hyperopt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, num_evals=3500, 
-                  loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
-                  algo=tpe, seed=42, **kwargs):
+    def bo_hyperopt(self, df_train, default_params, variable_param_ranges, model=SEIRHD, 
+                    num_evals=3500, loss_method='rmse', loss_indices=[-20, -10], 
+                    loss_compartments=['total'], loss_weights=[1],
+                    algo=tpe, seed=42, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -259,3 +260,9 @@ class Optimiser():
                     trials=trials)
         
         return best, trials
+
+    def bo_smac3(self, *args, **kwargs):
+        """Implements Bayesian Optimisation using SMAC3 library
+        """
+        #TODO
+        pass
