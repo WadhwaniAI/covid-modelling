@@ -28,6 +28,7 @@ fitting:
             win_type: null
             split_after_rolling: TRUE
     #Choose Model and Ranges
+    model_family: seir
     model: SEIRHD_Severity
     variable_param_ranges:  
         lockdown_R0: [[0.7, 1.3], uniform]

@@ -27,6 +27,7 @@ fitting:
             min_periods: 1
             split_after_rolling: FALSE # NOT IMPLEMENTED
     #Choose Model and Ranges
+    model_family: seir
     model: SEIR_PU
     variable_param_ranges:
         T_inc: [[4, 6], uniform]
