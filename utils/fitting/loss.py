@@ -4,9 +4,7 @@ import pandas as pd
 class Loss_Calculator():
 
     def __init__(self):
-      self.columns = ['active', 'recovered', 'deceased', 'total', 
-                      'asymptomatic', 'symptomatic', 'critical',
-                      'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator']
+        pass
 
     def rmse(self, y_pred, y_true):
         """Calculate RMSE Loss
@@ -105,7 +103,7 @@ class Loss_Calculator():
         loss = np.mean(perc_ape)
         return loss
 
-    def calc_loss_dict(self, df_prediction, df_true, method='rmse'):
+    def calc_loss_dict(self, df_prediction, df_true, loss_compartments, loss_method='rmse'):
         """Caclculates dict of losses for each compartment using the method specified
 
         Args:
@@ -116,35 +114,33 @@ class Loss_Calculator():
         Returns:
             dict: dict of loss values {compartment : loss_value}
         """
-        loss_fn = getattr(self, method)
+        loss_fn = getattr(self, loss_method)
         
         losses = {}
-        for compartment in self.columns:
-            try:
+        for compartment in loss_compartments:
                 losses[compartment] = loss_fn(df_prediction[compartment], df_true[compartment])
-            except Exception:
-                continue
+        
         return losses
 
-    def calc_loss(self, df_prediction, df_true, method='rmse', 
-                  which_compartments=['active', 'recovered', 'total', 'deceased'], 
+    def calc_loss(self, df_prediction, df_true, loss_method='rmse', 
+                  loss_compartments=['active', 'recovered', 'total', 'deceased'], 
                   loss_weights=[1, 1, 1, 1]):
         """Calculates loss using specified method, averaged across specified compartments using specified weights
 
         Args:
             df_prediction (pd.DataFrame): prediction dataframe
             df_true (pd.DataFrame): gt dataframe
-            method (str, optional): loss method. Defaults to 'rmse'.
-            which_compartments (list, optional): Compartments to calculate loss on.
+            loss_method (str, optional): loss loss_method. Defaults to 'rmse'.
+            loss_compartments (list, optional): Compartments to calculate loss on.
             Defaults to ['active', 'recovered', 'total', 'deceased'].
             loss_weights (list, optional): Weights for corresponding compartments. Defaults to [1, 1, 1, 1].
 
         Returns:
             float: loss value
         """
-        losses = self.calc_loss_dict(df_prediction, df_true, method)
+        losses = self.calc_loss_dict(df_prediction, df_true, loss_compartments, loss_method)
         loss = 0
-        for i, compartment in enumerate(which_compartments):
+        for i, compartment in enumerate(loss_compartments):
             loss += loss_weights[i]*losses[compartment]
         return loss
 
@@ -159,10 +155,10 @@ class Loss_Calculator():
             dict: Dict of losses
         """
         err = {}
-        err['mape'] = self._calc_mape(y_true, y_pred)
-        err['rmse'] = self._calc_rmse(y_true, y_pred)
+        err['mape'] = self.mape(y_true, y_pred)
+        err['rmse'] = self.rmse(y_true, y_pred)
         try:
-            err['rmsle'] = self._calc_rmse(y_true, y_pred, log=True)
+            err['rmsle'] = self.rmse(y_true, y_pred, log=True)
         except:
             err['rmsle'] = None
         return err
@@ -247,16 +243,3 @@ class Loss_Calculator():
 
         df = pd.DataFrame.from_dict(forecast_errors_dict)
         return df
-
-    def create_loss_dataframe_master(self, predictions_dict, train_fit='m1'):
-        starting_key = list(predictions_dict.keys())[0]
-        loss_columns = pd.MultiIndex.from_product([predictions_dict[starting_key][train_fit]['df_loss'].columns, 
-                                                   predictions_dict[starting_key][train_fit]['df_loss'].index])
-        loss_index = predictions_dict.keys()
-
-        df_loss_master = pd.DataFrame(columns=loss_columns, index=loss_index)
-        for key in predictions_dict.keys():
-            df_loss_master.loc[key, :] = np.around(
-                predictions_dict[key][train_fit]['df_loss'].values.T.flatten().astype('float'), decimals=2)
-            
-        return df_loss_master

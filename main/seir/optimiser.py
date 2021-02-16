@@ -116,7 +116,8 @@ class Optimiser():
         df_prediction_slice.reset_index(inplace=True, drop=True)
         df_true_slice.reset_index(inplace=True, drop=True)
         loss = self.loss_calculator.calc_loss(df_prediction_slice, df_true_slice, 
-                                              which_compartments=loss_compartments, method=loss_method,
+                                              loss_compartments=loss_compartments, 
+                                              loss_method=loss_method,
                                               loss_weights=loss_weights)
         return loss
 
