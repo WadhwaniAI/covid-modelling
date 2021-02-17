@@ -91,7 +91,7 @@ class JHULoader(BaseLoader):
 
         return df_master
 
-    def pull_dataframes(self):
+    def pull_dataframes(self, **kwargs):
         dataframes = {}
         dataframes['df_us_states'] = self._load_from_daily_reports()
         dataframes['df_us_counties'] = self._load_data_from_time_series_us()
@@ -101,3 +101,49 @@ class JHULoader(BaseLoader):
 
     def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
+
+    def get_data(self, dataframe, region, sub_region=None, reload_data=False, **kwargs):
+        dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
+        df = dataframes[f'df_{dataframe}']
+        if dataframe == 'global':
+            df.rename(columns={"ConfirmedCases": "total", "Deaths": "deceased",
+                            "RecoveredCases": "recovered", "ActiveCases": "active",
+                            "Date": "date"}, inplace=True)
+            df.drop(["Lat", "Long"], axis=1, inplace=True)
+            df = df[df['Country/Region'] == region]
+            if sub_region is None:
+                df = df[pd.isna(df['Province/State'])]
+            else:
+                df = df[df['Province/State'] == sub_region]
+
+        elif dataframe == 'us_states':
+            drop_columns = ['Last_Update', 'Lat', 'Long_', 'FIPS', 'Incident_Rate',
+                            'People_Hospitalized', 'Mortality_Rate', 'UID', 'ISO3',
+                            'Testing_Rate', 'Hospitalization_Rate']
+            df.drop(drop_columns, axis=1, inplace=True)
+            df.rename(columns={"Confirmed": "total", "Deaths": "deceased",
+                            "Recovered": "recovered", "Active": "active",
+                            "People_Tested": "tested", "Date": "date"}, inplace=True)
+            df = df[['date', 'Province_State', 'Country_Region', 'total', 'active',
+                    'recovered', 'deceased', 'tested']]
+            df = df[df['Province_State'] == region]
+
+        elif dataframe == 'us_counties':
+            drop_columns = ['UID', 'iso2', 'iso3', 'code3', 'FIPS',
+                            'Lat', 'Long_']
+            df.drop(drop_columns, axis=1, inplace=True)
+            df.rename(columns={"ConfirmedCases": "total", "Deaths": "deceased",
+                            "Date": "date"}, inplace=True)
+            df = df[['date', 'Admin2', 'Province_State', 'Country_Region', 'Combined_Key',
+                    'Population', 'total', 'deceased']]
+            if sub_region is None:
+                raise ValueError(
+                    'Please provide a county name ie, the sub_region key')
+            df = df[(df['Province_State'] == region)
+                    & (df['Admin2'] == sub_region)]
+
+        else:
+            raise ValueError('Unknown dataframe type given as input to user')
+
+        df.reset_index(drop=True, inplace=True)
+        return {"data_frame": df}
