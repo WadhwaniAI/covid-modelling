@@ -264,7 +264,7 @@ def plot_log_density(predictions_dict,arr,true_val, fig, axs, weighting='exp', b
 
 def plot_histogram(predictions_dict,arr,true_val, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
                    savefig=False, filename=None, label=None):
-    param_range = {"beta": [0, 1],
+    param_range = {"lockdown_R0": [0, 10],
         "T_inc": [1, 100],
         "T_inf": [1, 100],
         "T_recov": [1, 100],
@@ -297,13 +297,13 @@ def plot_2_histogram(SD,key1,key2,arr,true_val, fig, axs, weighting='exp', beta=
                    savefig=False, filename=None, label=None):
     
     param_range = {"lockdown_R0": [0.5, 2],
-        "T_inc": [0, 15],
-        "T_inf": [0, 15],
-        "T_recov": [0, 40],
-        "T_recov_fatal": [0, 40],
-        "P_fatal": [0, 0.5],
-        'E_hosp_ratio': [0, 2],
-        'I_hosp_ratio': [0, 2]}
+        "T_inc": [0, 100],
+        "T_inf": [0, 100],
+        "T_recov": [0, 100],
+        "T_recov_fatal": [0, 100],
+        "P_fatal": [0, 1],
+        'E_hosp_ratio': [0, 5],
+        'I_hosp_ratio': [0, 5]}
     # cmap = {
     #     'exp0': 'y',
     #     'exp1':'b',
@@ -314,11 +314,11 @@ def plot_2_histogram(SD,key1,key2,arr,true_val, fig, axs, weighting='exp', beta=
     #     'exp6':'deeppink'
     # }
     cmap = {
-        'exp0': 'y',
+        'exp0': 'red',
         'exp1':'b',
         'exp2':'r',
         'exp3':'g',
-        'exp4':'orchid',
+        'exp4':'blue',
         'exp5':'saddlebrown',
         'exp6':'forestgreen'
     }
@@ -341,7 +341,7 @@ def plot_2_histogram(SD,key1,key2,arr,true_val, fig, axs, weighting='exp', beta=
         'exp1':[i for i in arr if i not in ['T_recov_fatal']],
         'exp2':[i for i in arr if i not in ['T_recov_fatal','T_inf']],
         'exp3':[i for i in arr if i not in ['T_recov_fatal','T_inc','T_inf']],
-        'exp4':[i for i in arr if i not in ['T_recov_fatal','T_inc','T_inf','T_recov']],
+        'exp4':arr,
         'exp5': arr,
         'exp6': arr
     }
@@ -353,10 +353,10 @@ def plot_2_histogram(SD,key1,key2,arr,true_val, fig, axs, weighting='exp', beta=
         ax.axvline(x=true_val[param],linewidth=2, color='black',label='True value',ls = '--')
         if(param in params_to_plot[key1]):
             # ax.axvline(x=np.mean(params_dict1[param]),linewidth=3,ls = '--', color=cmap[key1],label='Mean '+ key1)
-            sns.distplot(params_dict1[param],norm_hist = True, kde = False,bins= 80,ax=ax,color = cmap[key1],label = 'Constrained',hist_kws={"alpha":0.55,"range":(param_range[param][0],param_range[param][1])})
+            sns.distplot(params_dict1[param],norm_hist = True, kde = False,bins= 80,ax=ax,color = cmap[key1],label = 'Unconstrained',hist_kws={"alpha":0.55,"range":(param_range[param][0],param_range[param][1])})
         if(param in params_to_plot[key2]):
             # ax.axvline(x=np.mean(params_dict2[param]),linewidth=3,ls='--', color=cmap[key2],label='Mean '+key2)
-            sns.distplot(params_dict2[param],norm_hist = True, kde = False,bins= 80,ax=ax,color = cmap[key2],label = "Unconstrained",hist_kws={"alpha":0.4,'range':(param_range[param][0],param_range[param][1])})
+            sns.distplot(params_dict2[param],norm_hist = True, kde = False,bins= 80,ax=ax,color = cmap[key2],label = "Constrained",hist_kws={"alpha":0.4,'range':(param_range[param][0],param_range[param][1])})
         # y = ax.get_ylim()
         # ax.set_xlim(param_range[param][0],param_range[param][1])
         # ax.errorbar(x = np.mean(params_dict[param]),y = 0.5*y[1],xerr = np.std(params_dict[param]),fmt='*',capthick=2,capsize=y[1]*.05,color = 'purple',label = 'Mean and std')
@@ -365,7 +365,7 @@ def plot_2_histogram(SD,key1,key2,arr,true_val, fig, axs, weighting='exp', beta=
 
         if(param == 'I_hosp_ratio' or param == 'E_hosp_ratio'):
             ax.set_ylabel('Density')
-        if(param =='T_inc'):
+        if(param =='P_fatal'):
             ax.legend(prop={"size":15},loc ='upper right')
     return histograms
 

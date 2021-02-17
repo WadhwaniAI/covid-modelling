@@ -36,7 +36,7 @@ class MCMC(object):
     """
     
     def __init__(self, optimiser, df_train, default_params, variable_param_ranges, n_chains, total_days,
- algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,loss_weights, **ignored):
+ algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,loss_weights,model, **ignored):
         """
         Constructor. Fetches the data, initializes the optimizer and sets up the
         likelihood function.
@@ -63,6 +63,7 @@ class MCMC(object):
         self.iters = num_evals
         self.compartments = loss_compartments
         self._optimiser = optimiser
+        self.model = model
         self.proposal_sigmas = proposal_sigmas
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
         self.DIC = 0
@@ -145,7 +146,7 @@ class MCMC(object):
         da = 0
         db = 0
         params_dict = {**theta, **self._default_params}
-        df_prediction = self._optimiser.solve(params_dict,end_date = self.df_train[-1:]['date'].item())
+        df_prediction = self._optimiser.solve(params_dict,model = self.model,end_date = self.df_train[-1:]['date'].item())
         sigma = theta ['gamma']
 
         for compartment in self.compartments:
@@ -283,7 +284,7 @@ class MCMC(object):
         for _, run in enumerate(self.chains):
             burn_in = int(len(run) / 2)
             combined_acc += run[0][burn_in:][::self.stride]
-        n_samples = 2000
+        n_samples = 4000
         sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
         #Total day is 1 less than training_period
         sample_indices = [int(i) for i in sample_indices]
@@ -293,6 +294,7 @@ class MCMC(object):
             params.append(combined_acc[int(i)])
             losses.append(self._optimiser.solve_and_compute_loss(combined_acc[int(i)],self._default_params,
                                                                  self.df_train, self.total_days,
+                                                                 model = self.model,
                                                                  loss_indices=self.loss_indices,
                                                                  loss_method=self.loss_method))
 

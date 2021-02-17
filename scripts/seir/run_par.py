@@ -29,6 +29,6 @@ predictions_dict['m1'] = single_fitting_cycle(**copy.deepcopy(config['fitting'])
 
 # %%
 import pickle as pkl
-with open('../../misc/predictions/exp_simulate_1_70.pickle', 'wb') as handle:
+with open('../../misc/predictions/exp_simulate_1.pickle', 'wb') as handle:
     pkl.dump(predictions_dict, handle)
 # %%

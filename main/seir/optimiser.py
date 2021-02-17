@@ -303,7 +303,7 @@ class Optimiser():
         end_date = datetime.combine(df_train.iloc[-1, :]['date'].date(), datetime.min.time())
         total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
         mcmc_fit = MCMC(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
-                 algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,loss_weights)
+                 algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,loss_weights,model)
         mcmc_fit.run()
         plot_mcmc_chains = False
         if plot_mcmc_chains :
