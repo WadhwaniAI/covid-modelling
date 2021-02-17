@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: jhu
+        data_source: JHULoader
         stratified_data: FALSE
         dataloading_params:
             reload_data: FALSE
