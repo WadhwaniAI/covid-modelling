@@ -1,5 +1,5 @@
 import pandas as pd
-
+import numpy as np
 from data.dataloader.base import BaseLoader
 
 
@@ -8,7 +8,7 @@ class NYTLoader(BaseLoader):
         super().__init__()
 
     # Loads time series case data for US counties and states from the New York Times github repo
-    def pull_dataframes(self):
+    def pull_dataframes(self, **kwargs):
         """
         This function parses the us-states and us-counties CSVs on NY Times's github repo and converts them to pandas dataframes
         Returns dict of dataframes for states and counties
@@ -24,3 +24,17 @@ class NYTLoader(BaseLoader):
 
     def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
+
+    def get_data(self, state, county=None, reload_data=False, **kwargs):
+        dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
+        if county is not None:
+            df = dataframes['counties']
+            df = df[np.logical_and(df['state'] == state, df['county'] == county)]
+        else:
+            df = dataframes['states']
+            df = df[df['state'] == state]
+        df.loc[:, 'date'] = pd.to_datetime(df['date'])
+        df.rename(columns={"cases": "total", "deaths": "deceased"}, inplace=True)
+        df.drop('fips', axis=1, inplace=True)
+        df.reset_index(drop=True, inplace=True)
+        return {"data_frame": df}
