@@ -20,7 +20,7 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, la
     if reload_data:
         print("pulling from source")
         loader = loader_class()
-        dataframes = loader.load_data(**kwargs)
+        dataframes = loader.pull_dataframes(**kwargs)
     else:
         try:
             with open(picklefn, 'rb') as pickle_file:
@@ -29,7 +29,7 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, la
         except:
             print("pulling from source")
             loader = loader_class()
-            dataframes = loader.load_data(**kwargs)
+            dataframes = loader.pull_dataframes(**kwargs)
             with open(picklefn, 'wb+') as pickle_file:
                 pickle.dump(dataframes, pickle_file)
     return dataframes
@@ -71,8 +71,10 @@ def get_data(data_source, dataloading_params):
         dl_class = getattr(dl, data_source)
         dlobj = dl_class()
         return dlobj.get_data(**dataloading_params)
-    if data_source == 'jhu':
-        return get_data_from_jhu(**dataloading_params)
+    if data_source == 'JHULoader':
+        dl_class = getattr(dl, data_source)
+        dlobj = dl_class()
+        return dlobj.get_data(**dataloading_params)
     if data_source == 'nyt':
         return get_data_from_ny_times(**dataloading_params)
     if data_source == 'covid_tracking':
