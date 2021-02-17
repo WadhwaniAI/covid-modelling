@@ -85,26 +85,6 @@ def get_data(data_source, dataloading_params):
         else:
             return get_simulated_data_from_file(**dataloading_params)
 
-
-def get_custom_data_from_db(state='Maharashtra', district='Mumbai', reload_data=False, **kwargs):
-    print('fetching from athenadb...')
-    label = kwargs.pop('label', None)
-    dataframes = get_dataframes_cached(loader_class=AthenaLoader, reload_data=reload_data, label=label, **kwargs)
-    df_result = copy.copy(dataframes['case_summaries'])
-    df_result.rename(columns={'deaths': 'deceased', 'total cases': 'total',
-                              'active cases': 'active', 'recoveries': 'recovered'}, inplace=True)
-    df_result = df_result[np.logical_and(
-        df_result['state'] == state, df_result['district'] == district)]
-    df_result = df_result.loc[:, :'deceased']
-    df_result.dropna(axis=0, how='any', inplace=True)
-    df_result.loc[:, 'date'] = pd.to_datetime(df_result['date'])
-    df_result.reset_index(inplace=True, drop=True)
-    for col in df_result.columns:
-        if col in ['active', 'total', 'recovered', 'deceased']:
-            df_result[col] = df_result[col].astype('int64')
-
-    return {"data_frame": df_result}
-
 def generate_simulated_data(**dataloading_params):
     """generates simulated data using the input params in config file
     Keyword Arguments
@@ -168,47 +148,6 @@ def get_custom_data_from_file(filename, data_format='new', **kwargs):
         raise ValueError('data_format can only be new or old')
         
     return {"data_frame": df_result}
-
-
-def get_data_from_tracker(state='Maharashtra', district='Mumbai', use_dataframe='data_all', 
-                          reload_data=False, ** kwargs):
-    if not district is None:
-        return {"data_frame": get_data_from_tracker_district(state, district, use_dataframe, reload_data)}
-    else:
-        return {"data_frame": get_data_from_tracker_state(state, reload_data)}
-
-        
-def get_data_from_tracker_state(state='Delhi', reload_data=False, **kwargs):
-    dataframes = get_dataframes_cached(reload_data=reload_data)
-    df_states = copy.copy(dataframes['df_states_all'])
-    df_state = df_states[df_states['state'] == state]
-    df_state['date'] = pd.to_datetime(df_state['date'])
-    df_state = df_state.rename({'confirmed': 'total'}, axis='columns')
-    df_state.reset_index(inplace=True, drop=True)
-    return df_state
-
-def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_dataframe='raw_data',
-                                   reload_data=False, **kwargs):
-    dataframes = get_dataframes_cached(reload_data=reload_data)
-
-    if use_dataframe == 'data_all':
-        df_districts = copy.copy(dataframes['df_districts_all'])
-        df_district = df_districts.loc[(df_districts['state'] == state) & (df_districts['district'] == district)]
-        df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
-        df_district = df_district.rename({'confirmed': 'total'}, axis='columns')
-        del df_district['migrated']
-        df_district.reset_index(inplace=True, drop=True)
-        return df_district
-    
-    if use_dataframe == 'districts_daily':
-        df_districts = copy.copy(dataframes['df_districts'])
-        df_district = df_districts.loc[(df_districts['state'] == state) & (df_districts['district'] == district)]
-        del df_district['notes']
-        df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
-        df_district = df_district.loc[df_district['date'] >= '2020-04-24', :]
-        df_district = df_district.rename({'confirmed': 'total'}, axis='columns')
-        df_district.reset_index(inplace=True, drop=True)
-        return df_district
 
 
 def get_data_from_jhu(dataframe, region, sub_region=None, reload_data=False, **kwargs):
