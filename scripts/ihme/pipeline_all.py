@@ -42,7 +42,7 @@ output_folder = create_output_folder(f'forecast/{folder}')
 start_time = time.time()
 
 which_compartments = Columns.curve_fit_compartments()
-# m1
+# 
 m1_results = single_cycle(dist, st, area_names, copy(model_params), which_compartments=which_compartments, **config)
 df_train, df_val = m1_results['df_train'], m1_results['df_val']
 df_train_nora, df_val_nora = m1_results['df_train_nora'], m1_results['df_val_nora']
