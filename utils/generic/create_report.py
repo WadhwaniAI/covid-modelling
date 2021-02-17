@@ -15,12 +15,11 @@ def _dump_predictions_dict(predictions_dict, ROOT_DIR):
         pickle.dump(predictions_dict, dump)
 
 
-def _dump_params(predictions_dict, m2_dict, ROOT_DIR):
+def _dump_params(predictions_dict, ROOT_DIR):
     filepath = os.path.join(ROOT_DIR, 'params.json')
     with open(filepath, 'w+') as dump:
         run_params = {
             'm1': copy.copy(predictions_dict['run_params']),
-            'm2': copy.copy(m2_dict['run_params'])
         }
         del run_params['model_class']
         del run_params['variable_param_ranges']
@@ -83,35 +82,35 @@ def _log_uncertainty_fit(mdFile, fit_dict):
     mdFile.insert_code(pformat(fit_dict['beta_loss']))
 
 
-def _log_forecasts(mdFile, ROOT_DIR, m2_dict):
+def _log_forecasts(mdFile, ROOT_DIR, fit_dict):
     _log_plots_util(mdFile, ROOT_DIR, 'forecast-best.png',
-                    m2_dict['plots']['forecast_best'], 'Forecast using M2 Best Params')
+                    fit_dict['plots']['forecast_best'], 'Forecast using M2 Best Params')
     _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-50.png',
-                    m2_dict['plots']['forecast_best_50'], 'Forecast using best fit, 50th decile params')
+                    fit_dict['plots']['forecast_best_50'], 'Forecast using best fit, 50th decile params')
     _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-80.png',
-                    m2_dict['plots']['forecast_best_80'], 'Forecast using best fit, 80th decile params')
+                    fit_dict['plots']['forecast_best_80'], 'Forecast using best fit, 80th decile params')
     _log_plots_util(mdFile, ROOT_DIR, 'forecast-ensemble-mean-50.png',
-                    m2_dict['plots']['forecast_ensemble_mean_50'], 'Forecast of ensemble fit, 50th decile')
+                    fit_dict['plots']['forecast_ensemble_mean_50'], 'Forecast of ensemble fit, 50th decile')
 
-    for column, figure in m2_dict['plots']['forecasts_topk'].items():
+    for column, figure in fit_dict['plots']['forecasts_topk'].items():
         _log_plots_util(mdFile, ROOT_DIR, f'forecast-topk-{column}.png',
                         figure, f'Forecast of top k trials for column {column}')
 
-    for column, figure in m2_dict['plots']['forecasts_ptiles'].items():
+    for column, figure in fit_dict['plots']['forecasts_ptiles'].items():
         _log_plots_util(mdFile, ROOT_DIR, f'forecast-ptiles-{column}.png',
                         figure, f'Forecast of all ptiles for column {column}')
 
-    if 'scenarios' in m2_dict['plots'].keys():
+    if 'scenarios' in fit_dict['plots'].keys():
         mdFile.new_header(level=1, title="What if Scenarios")
-        for column, figure in m2_dict['plots']['scenarios'].items():
+        for column, figure in fit_dict['plots']['scenarios'].items():
             _log_plots_util(mdFile, ROOT_DIR, f'forecast-scenarios-{column}.png',
                             figure, '')
 
     mdFile.new_paragraph("---")
 
 
-def _log_tables(mdFile, m2_dict):
-    trials_processed = copy.deepcopy(m2_dict['trials_processed'])
+def _log_tables(mdFile, fit_dict):
+    trials_processed = copy.deepcopy(fit_dict['trials_processed'])
     trials_processed['losses'] = np.around(trials_processed['losses'], 2)
     trials_processed['params'] = [{key: np.around(value, 2) for key, value in params_dict.items()}
                                   for params_dict in trials_processed['params']]
@@ -121,7 +120,7 @@ def _log_tables(mdFile, m2_dict):
     tbl = df.to_markdown()
     mdFile.new_paragraph(tbl)
 
-    deciles = copy.deepcopy(m2_dict['deciles'])
+    deciles = copy.deepcopy(fit_dict['deciles'])
     for key in deciles.keys():
         deciles[key]['params'] = {param: np.around(value, 2)
                                 for param, value in deciles[key]['params'].items()}

@@ -365,14 +365,13 @@ def _qtiles_nondec_correct(df_loc_submission):
 
     return df_loc_submission
 
-def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mode='analysis', which_fit='m2',
+def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mode='analysis',
                            use_as_point_forecast='ensemble_mean', which_comp=None, skip_percentiles=False):
     """Function for formatting our submission in the reichlab format 
 
     Args:
         predictions_dict (dict): Predictions dict of all locations
         loc_name_to_key_dict (dict): Dict mapping location names to location key
-        which_fit (str, optional): Which fit to use for forecasting ('m1'/'m2'). Defaults to 'm2'.
         use_as_point_forecast (str, optional): Which forecast to use as point forecast ('best'/'ensemble_mean'). 
         Defaults to 'ensemble_mean'.
         skip_percentiles (bool, optional): If true, processing of all percentiles is skipped. Defaults to False.
@@ -380,7 +379,7 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
     Returns:
         pd.DataFrame: Processed Wadhwani AI submission
     """
-    end_date = list(predictions_dict.values())[0]['m2']['run_params']['split']['end_date']
+    end_date = list(predictions_dict.values())[0]['run_params']['split']['end_date']
     columns = ['forecast_date', 'target', 'target_end_date', 'location', 'type',
                'quantile', 'value', 'model']
     df_wiai_submission = pd.DataFrame(columns=columns)
@@ -390,9 +389,7 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
         df_loc_submission = pd.DataFrame(columns=columns)
 
         # Loop across all percentiles
-        if not which_fit in predictions_dict[loc].keys():
-            continue
-        for percentile in predictions_dict[loc][which_fit]['forecasts'].keys():
+        for percentile in predictions_dict[loc]['forecasts'].keys():
             if isinstance(percentile, str):
                 # Skipping all point forecasts that are not what the user specified
                 if not percentile == use_as_point_forecast:
@@ -403,7 +400,7 @@ def format_wiai_submission(predictions_dict, loc_name_to_key_dict, formatting_mo
                     continue
             # Loop across cumulative and deceased
             for mode in ['cum', 'inc']:
-                df_forecast = copy.deepcopy(predictions_dict[loc][which_fit]['forecasts'][percentile])
+                df_forecast = copy.deepcopy(predictions_dict[loc]['forecasts'][percentile])
                 for comp in ['deceased', 'total']:
                     dec_indices = np.where(np.diff(df_forecast[comp]) < 0)[0]
                     if len(dec_indices) > 0:
@@ -552,12 +549,12 @@ def combine_with_train_data(predictions_dict, df):
                                columns=['best_loss_train', 'test_loss',
                                         'T_recov_fatal', 'P_fatal'])
     for loc in predictions_dict.keys():
-        df_wadhwani.loc[loc, 'best_loss_train'] = predictions_dict[loc]['m2']['df_loss'].to_numpy()[
+        df_wadhwani.loc[loc, 'best_loss_train'] = predictions_dict[loc]['df_loss'].to_numpy()[
             0][0]
         df_wadhwani.loc[loc,
-                        'T_recov_fatal'] = predictions_dict[loc]['m2']['best_params']['T_recov_fatal']
+                        'T_recov_fatal'] = predictions_dict[loc]['best_params']['T_recov_fatal']
         df_wadhwani.loc[loc,
-                        'P_fatal'] = predictions_dict[loc]['m2']['best_params']['P_fatal']
+                        'P_fatal'] = predictions_dict[loc]['best_params']['P_fatal']
 
     df_wadhwani = df_wadhwani.merge(df, left_index=True, right_index=True)
 
@@ -597,11 +594,11 @@ def create_performance_table(df_mape, df_rank):
 
 def end_to_end_comparison(hparam_source='predictions_dict', predictions_dict=None, config_filename=None, 
                           comp=None, date_of_submission=None, process_wiai_submission=False, 
-                          which_fit='m2', use_as_point_forecast='ensemble_mean', drop_territories=True,
+                          use_as_point_forecast='ensemble_mean', drop_territories=True,
                           num_submissions_filter=45, location_id_filter=78):
     if hparam_source != 'input':
         if hparam_source == 'predictions_dict':
-            config = predictions_dict[list(predictions_dict.keys())[0]]['m2']['run_params']
+            config = predictions_dict[list(predictions_dict.keys())[0]]['run_params']
         elif hparam_source == 'config':
             config = read_config(config_filename)['fitting']
         else:
@@ -637,7 +634,7 @@ def end_to_end_comparison(hparam_source='predictions_dict', predictions_dict=Non
         loc_name_to_key_dict = get_mapping(which='location_name_to_code')
         df_wiai_submission = format_wiai_submission(predictions_dict, loc_name_to_key_dict, 
                                                     use_as_point_forecast=use_as_point_forecast, 
-                                                    which_fit=which_fit, skip_percentiles=False)
+                                                    skip_percentiles=False)
 
         df_all_submissions = combine_wiai_subm_with_all(
             df_all_submissions, df_wiai_submission, comp)
