@@ -1,4 +1,7 @@
 from pyathena import connect
+import copy
+import pandas as pd
+import numpy as np
 from pyathena.pandas_cursor import PandasCursor
 
 from data.dataloader.base import BaseLoader
@@ -78,3 +81,22 @@ class AthenaLoader(BaseLoader):
 
     def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
+
+    def get_data(self, state='Maharashtra', district='Mumbai', reload_data=False, **kwargs):
+        print('fetching from athenadb...')
+        label = kwargs.pop('label', None)
+        dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
+        df_result = copy.copy(dataframes['case_summaries'])
+        df_result.rename(columns={'deaths': 'deceased', 'total cases': 'total',
+                                'active cases': 'active', 'recoveries': 'recovered'}, inplace=True)
+        df_result = df_result[np.logical_and(
+            df_result['state'] == state, df_result['district'] == district)]
+        df_result = df_result.loc[:, :'deceased']
+        df_result.dropna(axis=0, how='any', inplace=True)
+        df_result.loc[:, 'date'] = pd.to_datetime(df_result['date'])
+        df_result.reset_index(inplace=True, drop=True)
+        for col in df_result.columns:
+            if col in ['active', 'total', 'recovered', 'deceased']:
+                df_result[col] = df_result[col].astype('int64')
+
+        return {"data_frame": df_result}
