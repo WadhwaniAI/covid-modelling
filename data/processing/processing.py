@@ -63,29 +63,19 @@ def get_data(data_source, dataloading_params):
         (All columns are populated except using raw_data.json)
        
     """
-    if data_source == 'Covid19IndiaLoader':
+    try:
         dl_class = getattr(dl, data_source)
         dlobj = dl_class()
         return dlobj.get_data(**dataloading_params)
-    if data_source == 'AthenaLoader':
-        dl_class = getattr(dl, data_source)
-        dlobj = dl_class()
-        return dlobj.get_data(**dataloading_params)
-    if data_source == 'JHULoader':
-        dl_class = getattr(dl, data_source)
-        dlobj = dl_class()
-        return dlobj.get_data(**dataloading_params)
-    if data_source == 'nyt':
-        return get_data_from_ny_times(**dataloading_params)
-    if data_source == 'covid_tracking':
-        return get_data_from_covid_tracking(**dataloading_params)
-    if data_source == 'filename':
-        return get_custom_data_from_file(**dataloading_params)
-    if data_source == 'simulated':
-        if (dataloading_params['generate']):
-            return generate_simulated_data(**dataloading_params)
-        else:
-            return get_simulated_data_from_file(**dataloading_params)
+    except Exception as e:
+        print(e)
+        if data_source == 'filename':
+            return get_custom_data_from_file(**dataloading_params)
+        if data_source == 'simulated':
+            if (dataloading_params['generate']):
+                return generate_simulated_data(**dataloading_params)
+            else:
+                return get_simulated_data_from_file(**dataloading_params)
 
 def generate_simulated_data(**dataloading_params):
     """generates simulated data using the input params in config file
@@ -150,80 +140,6 @@ def get_custom_data_from_file(filename, data_format='new', **kwargs):
         raise ValueError('data_format can only be new or old')
         
     return {"data_frame": df_result}
-
-
-def get_data_from_jhu(dataframe, region, sub_region=None, reload_data=False, **kwargs):
-    dataframes = get_dataframes_cached(loader_class=JHULoader, reload_data=reload_data)
-    df = dataframes[f'df_{dataframe}']
-    if dataframe == 'global':
-        df.rename(columns= {"ConfirmedCases": "total", "Deaths": "deceased",
-                            "RecoveredCases": "recovered", "ActiveCases": "active", 
-                            "Date": "date"}, inplace=True)
-        df.drop(["Lat", "Long"], axis=1, inplace=True)
-        df = df[df['Country/Region'] == region]
-        if sub_region is None:
-            df = df[pd.isna(df['Province/State'])]
-        else:
-            df = df[df['Province/State'] == sub_region]
-
-    elif dataframe == 'us_states':
-        drop_columns = ['Last_Update', 'Lat', 'Long_', 'FIPS', 'Incident_Rate', 
-                        'People_Hospitalized', 'Mortality_Rate', 'UID', 'ISO3', 
-                        'Testing_Rate', 'Hospitalization_Rate']
-        df.drop(drop_columns, axis=1, inplace=True)
-        df.rename(columns={"Confirmed": "total", "Deaths": "deceased",
-                           "Recovered": "recovered", "Active": "active", 
-                           "People_Tested": "tested", "Date": "date"}, inplace=True)
-        df = df[['date', 'Province_State', 'Country_Region', 'total', 'active', 
-                 'recovered', 'deceased', 'tested']]
-        df = df[df['Province_State'] == region]    
-
-    elif dataframe == 'us_counties':
-        drop_columns = ['UID', 'iso2', 'iso3', 'code3', 'FIPS', 
-                        'Lat', 'Long_']
-        df.drop(drop_columns, axis=1, inplace=True)
-        df.rename(columns={"ConfirmedCases": "total", "Deaths": "deceased",
-                           "Date": "date"}, inplace=True)
-        df = df[['date', 'Admin2', 'Province_State', 'Country_Region', 'Combined_Key', 
-                 'Population', 'total', 'deceased']]
-        if sub_region is None:
-            raise ValueError('Please provide a county name ie, the sub_region key')
-        df = df[(df['Province_State'] == region) & (df['Admin2'] == sub_region)]
-        
-    else:
-        raise ValueError('Unknown dataframe type given as input to user')
-
-    df.reset_index(drop=True, inplace=True)
-    return {"data_frame": df}
-
-
-def get_data_from_ny_times(state, county=None, reload_data=False, **kwargs):
-    dataframes = get_dataframes_cached(
-        loader_class=NYTLoader, reload_data=reload_data)
-    if county is not None:
-        df = dataframes['counties']
-        df = df[np.logical_and(df['state'] == state, df['county'] == county)]
-    else:
-        df = dataframes['states']
-        df = df[df['state'] == state]
-    df.loc[:, 'date'] = pd.to_datetime(df['date'])
-    df.rename(columns={"cases": "total", "deaths": "deceased"}, inplace=True)
-    df.drop('fips', axis=1, inplace=True)
-    df.reset_index(drop=True, inplace=True)
-    return {"data_frame": df}
-
-
-def get_data_from_covid_tracking(state, reload_data=False, **kwargs):
-    dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader, 
-                                       reload_data=reload_data)
-    df_states = dataframes['df_states']
-    df_states = df_states.loc[:, ['date', 'state', 'state_name', 'positive', 
-                                  'active', 'recovered', 'death']]
-    df_states.rename(columns={"positive": "total",
-                              "death": "deceased"}, inplace=True)
-    df = df_states[df_states['state_name'] == state]
-    df.reset_index(drop=True, inplace=True)
-    return {"data_frame": df}
 
 
 def implement_rolling(df, window_size, center, win_type, min_periods):
