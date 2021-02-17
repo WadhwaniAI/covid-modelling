@@ -2,37 +2,11 @@ import pandas as pd
 import numpy as np
 import copy
 import os
-import pickle
 import datetime
-from collections import defaultdict
 import yaml
 
 from data.dataloader import *
-
-
-def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, label=None, **kwargs):
-    os.makedirs("../../misc/cache/", exist_ok=True)
-
-    loader_key = loader_class.__name__
-    label = '' if label is None else f'_{label}'
-    picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}{label}.pkl".format(
-        today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key, label=label)
-    if reload_data:
-        print("pulling from source")
-        loader = loader_class()
-        dataframes = loader.load_data(**kwargs)
-    else:
-        try:
-            with open(picklefn, 'rb') as pickle_file:
-                dataframes = pickle.load(pickle_file)
-            print(f'loading from {picklefn}')
-        except:
-            print("pulling from source")
-            loader = loader_class()
-            dataframes = loader.load_data(**kwargs)
-            with open(picklefn, 'wb+') as pickle_file:
-                pickle.dump(dataframes, pickle_file)
-    return dataframes
+import data.dataloader as dl
 
 
 def get_data(data_source, dataloading_params):
@@ -49,7 +23,7 @@ def get_data(data_source, dataloading_params):
     disable_tracker=True, filename == None : data loaded from AWS Athena Database
 
     Keyword Arguments:
-        dataframes {dict} -- dict of dataframes returned from the get_covid19india_api_data function (default: {None})
+        dataframes {dict} -- dict of dataframes returned from the function (default: {None})
         state {str} -- Name of state for which data to be loaded (in title case) (default: {None})
         district {str} -- Name of district for which data to be loaded (in title case) (default: {None})
         use_dataframe {str} -- If covid19india tracker being used, what json to use (default: {'districts_daily'})
@@ -63,8 +37,10 @@ def get_data(data_source, dataloading_params):
         (All columns are populated except using raw_data.json)
        
     """
-    if data_source == 'covid19india':
-        return get_data_from_tracker(**dataloading_params)
+    if data_source == 'Covid19IndiaLoader':
+        dl_class = getattr(dl, data_source)
+        dlobj = dl_class()
+        return dlobj.get_data(**dataloading_params)
     if data_source == 'athena':
         return get_custom_data_from_db(**dataloading_params)
     if data_source == 'jhu':
@@ -117,7 +93,7 @@ def generate_simulated_data(**dataloading_params):
         config = yaml.load(configfile, Loader=yaml.SafeLoader)
 
     loader = SimulatedDataLoader()
-    data_dict = loader.load_data(**config)
+    data_dict = loader.pull_dataframes(**config)
     df_result, params = data_dict['data_frame'], data_dict['actual_params']
 
     for col in df_result.columns:
