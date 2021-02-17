@@ -10,7 +10,7 @@ class RootnetLoader(BaseLoader):
     def __init__(self):
         super().__init__()
 
-    def load_data(self):
+    def pull_dataframes(self):
         """
         This function parses multiple JSONs from api.rootnet.in
         It then converts the data into pandas dataframes
@@ -52,6 +52,6 @@ class RootnetLoader(BaseLoader):
 
         return dataframes
 
-    def get_rootnet_api_data(self):
-        return self.load_data()
+    def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
+        return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
 

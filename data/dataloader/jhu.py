@@ -91,7 +91,7 @@ class JHULoader(BaseLoader):
 
         return df_master
 
-    def load_data(self):
+    def pull_dataframes(self):
         dataframes = {}
         dataframes['df_us_states'] = self._load_from_daily_reports()
         dataframes['df_us_counties'] = self._load_data_from_time_series_us()
@@ -99,9 +99,5 @@ class JHULoader(BaseLoader):
 
         return dataframes
 
-    def get_jhu_data(self):
-        return self.load_data()
-
-if __name__ == '__main__':
-    obj = JHULoader()
-    df_states = obj._load_data_from_time_series_us()
+    def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
+        return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)

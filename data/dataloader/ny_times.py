@@ -8,7 +8,7 @@ class NYTLoader(BaseLoader):
         super().__init__()
 
     # Loads time series case data for US counties and states from the New York Times github repo
-    def load_data(self):
+    def pull_dataframes(self):
         """
         This function parses the us-states and us-counties CSVs on NY Times's github repo and converts them to pandas dataframes
         Returns dict of dataframes for states and counties
@@ -22,5 +22,5 @@ class NYTLoader(BaseLoader):
         dataframes['states'] = df_states
         return dataframes
 
-    def get_jhu_data(self):
-        return self.load_data()
+    def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
+        return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)

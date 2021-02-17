@@ -10,7 +10,7 @@ class SimulatedDataLoader(BaseLoader):
     def __init__(self):
         super().__init__()
 
-    def load_data(self, **config):
+    def pull_dataframes(self, **config):
         """generates simulated data using the input params in config
         Keyword Arguments
         -----------------
@@ -57,4 +57,7 @@ class SimulatedDataLoader(BaseLoader):
             os.makedirs(save_dir)
         df_result.to_csv(os.path.join(save_dir, config['output_file_name']))
         pd.DataFrame([actual_params]).to_csv(os.path.join(save_dir, 'params_'+config['output_file_name']), index=False)
-        return {"data_frame": df_result, "actual_params": actual_params} 
+        return {"data_frame": df_result, "actual_params": actual_params}
+
+    def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
+        return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
