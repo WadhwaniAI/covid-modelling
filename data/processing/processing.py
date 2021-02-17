@@ -69,9 +69,9 @@ def get_data(data_source, dataloading_params):
         return dlobj.get_data(**dataloading_params)
     except Exception as e:
         print(e)
-        if data_source == 'filename':
+        if data_source == 'FileLoader':
             return get_custom_data_from_file(**dataloading_params)
-        if data_source == 'simulated':
+        if data_source == 'SimulatedDataLoader':
             if (dataloading_params['generate']):
                 return generate_simulated_data(**dataloading_params)
             else:
