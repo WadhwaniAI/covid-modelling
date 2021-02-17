@@ -12,7 +12,7 @@ from curvefit.core import functions
 sys.path.append('../..')
 from models.ihme.model import IHME
 from utils.fitting.data import get_rates
-from data.processing import get_district_timeseries_cached
+from data.processing import get_dataframes_cached
 from utils.fitting.util import train_test_split, rollingavg
 
 
@@ -43,7 +43,7 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
     Returns:
         dict: contains smoothed and unsmoothed dataframes: train, test, df
     """    
-    district_timeseries_nora = get_district_timeseries_cached(
+    district_timeseries_nora = get_dataframes_cached(
         dist, st, disable_tracker=disable_tracker)
     if smooth_jump:
         district_timeseries = smooth_big_jump(district_timeseries_nora, smooth_jump_days, not disable_tracker, method=smooth_jump_method)
