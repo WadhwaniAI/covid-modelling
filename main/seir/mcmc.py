@@ -292,10 +292,10 @@ class MCMC(object):
         params = list()
         for i in tqdm(sample_indices):
             params.append(combined_acc[int(i)])
-            losses.append(self._optimiser.solve_and_compute_loss(combined_acc[int(i)],model = self.model, self._default_params,
+            losses.append(self._optimiser.solve_and_compute_loss(combined_acc[int(i)], self._default_params,
                                                                  self.df_train, self.total_days,
                                                                  loss_indices=self.loss_indices,
-                                                                 loss_method=self.loss_method))
+                                                                 loss_method=self.loss_method,model = self.model))
 
         least_loss_index = np.argmin(losses)
         best_params = params[int(least_loss_index)]
