@@ -7,6 +7,10 @@ fitting:
             cache_dir: "../../misc/cache/"
             state: Maharashtra
             district: Mumbai
+            tables: [bed_summaries, case_summaries, testing_summary]
+            schema: city_data_mumbai
+            staging_dir: mumbai
+            label: mumbai
         smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
@@ -15,7 +19,7 @@ fitting:
             2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
+            2020-06-15: [null, deceased, total, FALSE, weighted-mag]
             stratified_smoothing:
                 2020-05-31: [null, non_o2_beds, hq, FALSE, weighted-mag]
                 2020-06-15: [null, non_o2_beds, o2_beds, FALSE, weighted-mag]

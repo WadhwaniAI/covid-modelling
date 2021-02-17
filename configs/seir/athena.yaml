@@ -20,7 +20,7 @@ fitting:
             2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
+            2020-06-15: [null, deceased, total, FALSE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
             center: TRUE
