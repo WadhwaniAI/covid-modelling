@@ -191,7 +191,7 @@ class Covid19IndiaLoader(BaseLoader):
         dataframes['df_states_all'] = df_states_all
         return dataframes
 
-    def load_data(self, load_raw_data=False, load_districts_daily=False):
+    def pull_dataframes(self, load_raw_data=False, load_districts_daily=False):
         """
         This function parses multiple JSONs from covid19india.org
         It then converts the data into pandas dataframes
@@ -203,7 +203,7 @@ class Covid19IndiaLoader(BaseLoader):
         - df_raw_data : Patient level information of cases
         - df_deaths_recoveries : Patient level information of deaths and recoveries
         - [NOT UPDATED ANYMORE] df_travel_history : Travel history of some patients (Unofficial : from newsarticles, twitter, etc)
-        - df_resources : Repository of testing labs, fundraising orgs, government helplines, etc
+        - df_resources : Repository of testing labs, fundraising orgs, government hel   plines, etc
         """
 
         # List of dataframes to return
@@ -220,5 +220,50 @@ class Covid19IndiaLoader(BaseLoader):
 
         return dataframes
 
-    def get_covid19india_api_data(self):
-        return self.load_data()
+    def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
+        return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
+
+    def get_data(self, state='Maharashtra', district='Mumbai', use_dataframe='data_all',
+                 reload_data=False, ** kwargs):
+        if not district is None:
+            return {"data_frame": self.get_data_district(state, district, 
+                                                         use_dataframe, reload_data)}
+        else:
+            return {"data_frame": self.get_data_state(state, reload_data)}
+
+
+    def get_data_state(self, state='Delhi', reload_data=False, **kwargs):
+        dataframes = self.pull_dataframes_cached(reload_data=reload_data)
+        df_states = copy.copy(dataframes['df_states_all'])
+        df_state = df_states[df_states['state'] == state]
+        df_state['date'] = pd.to_datetime(df_state['date'])
+        df_state = df_state.rename({'confirmed': 'total'}, axis='columns')
+        df_state.reset_index(inplace=True, drop=True)
+        return df_state
+
+    def get_data_district(self, state='Karnataka', district='Bengaluru', 
+                          use_dataframe='raw_data', reload_data=False, **kwargs):
+        dataframes = self.pull_dataframes_cached(reload_data=reload_data)
+
+        if use_dataframe == 'data_all':
+            df_districts = copy.copy(dataframes['df_districts_all'])
+            df_district = df_districts.loc[(df_districts['state'] == state) & (
+                df_districts['district'] == district)]
+            df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
+            df_district = df_district.rename(
+                {'confirmed': 'total'}, axis='columns')
+            del df_district['migrated']
+            df_district.reset_index(inplace=True, drop=True)
+            return df_district
+
+        if use_dataframe == 'districts_daily':
+            df_districts = copy.copy(dataframes['df_districts'])
+            df_district = df_districts.loc[(df_districts['state'] == state) & (
+                df_districts['district'] == district)]
+            del df_district['notes']
+            df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
+            df_district = df_district.loc[df_district['date'] >= '2020-04-24', :]
+            df_district = df_district.rename(
+                {'confirmed': 'total'}, axis='columns')
+            df_district.reset_index(inplace=True, drop=True)
+            return df_district
