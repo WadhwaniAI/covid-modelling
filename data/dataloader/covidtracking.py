@@ -8,7 +8,7 @@ class CovidTrackingLoader(BaseLoader):
         super().__init__()
 
     # Loads time series case data for US states from the Covid Tracking API 'https://covidtracking.com/data/api'
-    def pull_dataframes(self):
+    def pull_dataframes(self, **kwargs):
         """
         This function parses the us-states and us-counties CSVs on NY Times's github repo and converts them to pandas dataframes
         Returns dict of dataframes for states and counties
@@ -33,3 +33,14 @@ class CovidTrackingLoader(BaseLoader):
 
     def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
+
+    def get_data(self, state, reload_data=False, **kwargs):
+        dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
+        df_states = dataframes['df_states']
+        df_states = df_states.loc[:, ['date', 'state', 'state_name', 'positive',
+                                    'active', 'recovered', 'death']]
+        df_states.rename(columns={"positive": "total",
+                                "death": "deceased"}, inplace=True)
+        df = df_states[df_states['state_name'] == state]
+        df.reset_index(drop=True, inplace=True)
+        return {"data_frame": df}
