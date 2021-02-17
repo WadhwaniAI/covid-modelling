@@ -4,9 +4,35 @@ import copy
 import os
 import datetime
 import yaml
+import pickle
 
 from data.dataloader import *
 import data.dataloader as dl
+
+
+def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, label=None, **kwargs):
+    os.makedirs("../../misc/cache/", exist_ok=True)
+
+    loader_key = loader_class.__name__
+    label = '' if label is None else f'_{label}'
+    picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}{label}.pkl".format(
+        today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key, label=label)
+    if reload_data:
+        print("pulling from source")
+        loader = loader_class()
+        dataframes = loader.load_data(**kwargs)
+    else:
+        try:
+            with open(picklefn, 'rb') as pickle_file:
+                dataframes = pickle.load(pickle_file)
+            print(f'loading from {picklefn}')
+        except:
+            print("pulling from source")
+            loader = loader_class()
+            dataframes = loader.load_data(**kwargs)
+            with open(picklefn, 'wb+') as pickle_file:
+                pickle.dump(dataframes, pickle_file)
+    return dataframes
 
 
 def get_data(data_source, dataloading_params):
@@ -41,8 +67,10 @@ def get_data(data_source, dataloading_params):
         dl_class = getattr(dl, data_source)
         dlobj = dl_class()
         return dlobj.get_data(**dataloading_params)
-    if data_source == 'athena':
-        return get_custom_data_from_db(**dataloading_params)
+    if data_source == 'AthenaLoader':
+        dl_class = getattr(dl, data_source)
+        dlobj = dl_class()
+        return dlobj.get_data(**dataloading_params)
     if data_source == 'jhu':
         return get_data_from_jhu(**dataloading_params)
     if data_source == 'nyt':
