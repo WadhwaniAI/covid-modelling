@@ -224,16 +224,16 @@ class Covid19IndiaLoader(BaseLoader):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
 
     def get_data(self, state='Maharashtra', district='Mumbai', use_dataframe='data_all',
-                 reload_data=False, ** kwargs):
+                 reload_data=False, **kwargs):
         if not district is None:
-            return {"data_frame": self.get_data_district(state, district, 
-                                                         use_dataframe, reload_data)}
+            return {"data_frame": self.get_data_district(state, district, use_dataframe, 
+                                                         reload_data, **kwargs)}
         else:
-            return {"data_frame": self.get_data_state(state, reload_data)}
+            return {"data_frame": self.get_data_state(state, reload_data, **kwargs)}
 
 
     def get_data_state(self, state='Delhi', reload_data=False, **kwargs):
-        dataframes = self.pull_dataframes_cached(reload_data=reload_data)
+        dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
         df_states = copy.copy(dataframes['df_states_all'])
         df_state = df_states[df_states['state'] == state]
         df_state['date'] = pd.to_datetime(df_state['date'])
@@ -243,7 +243,7 @@ class Covid19IndiaLoader(BaseLoader):
 
     def get_data_district(self, state='Karnataka', district='Bengaluru', 
                           use_dataframe='raw_data', reload_data=False, **kwargs):
-        dataframes = self.pull_dataframes_cached(reload_data=reload_data)
+        dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
 
         if use_dataframe == 'data_all':
             df_districts = copy.copy(dataframes['df_districts_all'])
