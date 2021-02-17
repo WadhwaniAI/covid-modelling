@@ -264,7 +264,7 @@ def plot_log_density(predictions_dict,arr,true_val, fig, axs, weighting='exp', b
 
 def plot_histogram(predictions_dict,arr,true_val, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
                    savefig=False, filename=None, label=None):
-    param_range = {"lockdown_R0": [0, 10],
+    param_range = {"beta": [0, 1],
         "T_inc": [1, 100],
         "T_inf": [1, 100],
         "T_recov": [1, 100],
