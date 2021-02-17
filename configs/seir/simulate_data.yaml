@@ -5,6 +5,7 @@ fitting:
         stratified_data: FALSE
         dataloading_params:
             reload_data: FALSE
+            cache_dir: "../../misc/cache/"
             generate: TRUE
             config_file: seirhd_fixed.yaml
             filename: ../../data/data/simulated_data/simulated_data_1.csv

@@ -5,6 +5,7 @@ fitting:
         stratified_data: FALSE
         dataloading_params:
             reload_data: FALSE
+            cache_dir: "../../misc/cache/"
             state: Maharashtra
             district: Mumbai
             tables: [bed_summaries, case_summaries, testing_summary]

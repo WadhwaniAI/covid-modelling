@@ -4,6 +4,8 @@ fitting:
         data_source: simulated
         stratified_data: FALSE
         dataloading_params:
+            reload_data: FALSE
+            cache_dir: "../../misc/cache/"
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all

@@ -5,6 +5,7 @@ fitting:
         stratified_data: FALSE
         dataloading_params:
             reload_data: FALSE
+            cache_dir: "../../misc/cache/"
             dataframe: us_states
             region: Kentucky
             sub_region: null
