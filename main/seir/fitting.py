@@ -16,7 +16,7 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
     Arguments:
-        dataframes {dict(pd.Dataframe)} -- dict of dataframes from get_covid19india_api_data() 
+        dataframes {dict(pd.Dataframe)} -- dict of dataframes
         state {str} -- State name in title case
         district {str} -- District name in title case
         data_from_tracker {bool} -- Whether data is from tracker or not
@@ -157,7 +157,7 @@ def single_fitting_cycle(data, model_family, model, variable_param_ranges, defau
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
-        dataframes {dict(pd.DataFrame)} -- Dict of dataframes returned by the get_covid19india_api_data function
+        dataframes {dict(pd.DataFrame)} -- Dict of dataframes returned
         state {str} -- State Name
         district {str} -- District Name (in title case)
 
