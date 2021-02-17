@@ -17,16 +17,16 @@ def _perform_beta_fitting(loc_dict, config):
 
     uncertainty_forecasts = uncertainty.get_forecasts()
     for key in uncertainty_forecasts.keys():
-        loc_dict['m2']['forecasts'][key] = uncertainty_forecasts[key]['df_prediction']
+        loc_dict['forecasts'][key] = uncertainty_forecasts[key]['df_prediction']
 
-    loc_dict['m2']['forecasts']['ensemble_mean'] = uncertainty.ensemble_mean_forecast
+    loc_dict['forecasts']['ensemble_mean'] = uncertainty.ensemble_mean_forecast
 
     ptiles_plots = plot_ptiles(loc_dict,
                                which_compartments=config['forecast']['plot_ptiles_for_columns'])
 
-    loc_dict['m2']['plots']['forecasts_ptiles'] = {}
+    loc_dict['plots']['forecasts_ptiles'] = {}
     for column in config['forecast']['plot_ptiles_for_columns']:
-        loc_dict['m2']['plots']['forecasts_ptiles'][column.name] = ptiles_plots[column]
+        loc_dict['plots']['forecasts_ptiles'][column.name] = ptiles_plots[column]
     
     return loc_dict
 
