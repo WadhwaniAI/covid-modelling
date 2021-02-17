@@ -11,6 +11,8 @@
 *json
 *sh
 *log
+*xls
+*xlsx
 
 # Configs with some number in the filename will not be put on git
 *[0-9]*.yaml
@@ -24,7 +26,7 @@ sftp-configjson
 *DS_Store
 
 # Folders (on Home dir and otherwise)
-data/data/shapefiles/
+data/data/
 *plots/
 **plots/
 *outputs/
@@ -47,8 +49,6 @@ cache/
 optim/
 
 # Exceptions
-!data/data/*csv
-!data/data/mumbai/*csv
 !docs/model_diagrams/*pdf
 !docs/figures/*png
 *output/
