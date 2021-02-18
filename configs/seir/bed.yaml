@@ -1,16 +1,17 @@
 fitting:
     data:
         data_source: AthenaLoader
-        stratified_data: TRUE
         dataloading_params:
             reload_data: FALSE
             cache_dir: "../../misc/cache/"
+            stratified_data: TRUE
             state: Maharashtra
             district: Mumbai
             tables: [bed_summaries, case_summaries, testing_summary]
             schema: city_data_mumbai
             staging_dir: mumbai
             label: mumbai
+            pyathena_rc_path: '../../misc/pyathena/pyathena.rc'
         smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
