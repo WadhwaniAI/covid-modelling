@@ -1,9 +1,6 @@
-import pandas as pd
-import numpy as np
 import copy
 import os
 import datetime
-import yaml
 import pickle
 
 from data.dataloader import *
@@ -36,32 +33,8 @@ def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, la
 
 
 def get_data(data_source, dataloading_params):
-    """Handshake between data module and training module. Returns a dataframe of cases for a particular district/state
-       from multiple sources
+    """
 
-    If : 
-    state, dist are given, use_dataframe == 'districts_daily' : data loaded from covid19india tracker (districts_daily.json)
-    state, dist are given, use_dataframe == 'raw_data' : data loaded from covid19india tracker (raw_data.json)
-    dist given, state == None : state data loaded from rootnet tracker
-    disable_tracker=True, filename != None : data loaded from file (csv file)
-        data_format == new  : The new format used by Jerome/Vasudha
-        data_format == old  : The old format Puskar/Keshav used to supply data in
-    disable_tracker=True, filename == None : data loaded from AWS Athena Database
-
-    Keyword Arguments:
-        dataframes {dict} -- dict of dataframes returned from the function (default: {None})
-        state {str} -- Name of state for which data to be loaded (in title case) (default: {None})
-        district {str} -- Name of district for which data to be loaded (in title case) (default: {None})
-        use_dataframe {str} -- If covid19india tracker being used, what json to use (default: {'districts_daily'})
-        disable_tracker {bool} -- Flag to not use tracker (default: {False})
-        filename {str} -- Path to CSV file with data (only if disable_tracker == True) (default: {None})
-        data_format {str} -- Format of the CSV file (default: {'new'})
-
-    Returns:
-        pd.DataFrame -- dataframe of cases for a particular state, district with 4 columns : 
-        ['total', 'active', 'deceased', 'recovered']
-        (All columns are populated except using raw_data.json)
-       
     """
     try:
         dl_class = getattr(dl, data_source)
@@ -69,49 +42,6 @@ def get_data(data_source, dataloading_params):
         return dlobj.get_data(**dataloading_params)
     except Exception as e:
         print(e)
-        if data_source == 'SimulatedDataLoader':
-            if (dataloading_params['generate']):
-                return generate_simulated_data(**dataloading_params)
-            else:
-                return get_simulated_data_from_file(**dataloading_params)
-
-def generate_simulated_data(**dataloading_params):
-    """generates simulated data using the input params in config file
-    Keyword Arguments
-    -----------------
-        configfile {str} -- Name of config file (located at '../../configs/simulated_data/') required to generste the simulated data
-    
-    Returns
-    -------
-        pd.DataFrame -- dataframe of cases for a particular state, district with 5 columns : 
-            ['date', 'total', 'active', 'deceased', 'recovered']
-    """
-
-    with open(os.path.join("../../configs/simulated_data/", dataloading_params['config_file'])) as configfile:
-        config = yaml.load(configfile, Loader=yaml.SafeLoader)
-
-    loader = SimulatedDataLoader()
-    data_dict = loader.pull_dataframes(**config)
-    df_result, params = data_dict['data_frame'], data_dict['actual_params']
-
-    for col in df_result.columns:
-        if col in ['active', 'total', 'recovered', 'deceased']:
-            df_result[col] = df_result[col].astype('int64')    
-    return {"data_frame": df_result[['date', 'active', 'total', 'recovered', 'deceased']], "actual_params": params}
-
-#TODO add support of adding 0s column for the ones which don't exist
-def get_simulated_data_from_file(filename, params_filename=None, **kwargs):
-    params = {}
-    if params_filename:
-        params = pd.read_csv(params_filename).iloc[0,:].to_dict()
-    df_result = pd.read_csv(filename) 
-    df_result['date'] = pd.to_datetime(df_result['date'])
-    df_result.loc[:, ['total', 'active', 'recovered', 'deceased']] = df_result[[
-        'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
-    for col in df_result.columns:
-        if col in ['active', 'total', 'recovered', 'deceased']:
-            df_result[col] = df_result[col].astype('int64')
-    return {"data_frame": df_result[['date', 'active', 'total', 'recovered', 'deceased']], "actual_params": params}
 
 
 def implement_rolling(df, window_size, center, win_type, min_periods):
