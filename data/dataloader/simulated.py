@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+import yaml
 import copy
 from models.seir import *
 
@@ -61,3 +62,49 @@ class SimulatedDataLoader(BaseLoader):
 
     def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
+
+    def get_data(self, **dataloading_params):
+        if (dataloading_params['generate']):
+            return self.generate_data(**dataloading_params)
+        else:
+            return self.get_data_from_file(**dataloading_params)
+
+    def generate_data(self, config_file, generate=True, sim_data_configs_dir="../../configs/simulated_data/",
+                      columns=['total', 'active', 'deceased', 'recovered'], **kwargs):
+        """generates simulated data using the input params in config file
+        Keyword Arguments
+        -----------------
+            configfile {str} -- Name of config file (located at '../../configs/simulated_data/') 
+            required to generate the simulated data
+        
+        Returns
+        -------
+            pd.DataFrame -- dataframe of cases for a particular state, district with 5 columns : 
+                ['date', 'total', 'active', 'deceased', 'recovered']
+        """
+
+        with open(os.path.join(sim_data_configs_dir, config_file)) as configfile:
+            config = yaml.load(configfile, Loader=yaml.SafeLoader)
+
+        data_dict = self.pull_dataframes_cached(**config)
+        df_result, params = data_dict['data_frame'], data_dict['actual_params']
+
+        for col in df_result.columns:
+            if col in columns:
+                df_result[col] = df_result[col].astype('int64')
+        return {"data_frame": df_result[['date'] + columns],
+                "actual_params": params}
+
+    def get_data_from_file(self, filename, params_filename=None, generate=False, 
+                           columns=['total', 'active', 'deceased', 'recovered'], **kwargs):
+        params = {}
+        if params_filename:
+            params = pd.read_csv(params_filename).iloc[0, :].to_dict()
+        df_result = pd.read_csv(filename)
+        df_result['date'] = pd.to_datetime(df_result['date'])
+        df_result.loc[:, columns] = df_result[columns].apply(pd.to_numeric)
+        for col in df_result.columns:
+            if col in columns:
+                df_result[col] = df_result[col].astype('int64')
+        return {"data_frame": df_result[['date' + columns]],
+                "actual_params": params}
