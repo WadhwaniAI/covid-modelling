@@ -1,25 +1,12 @@
 import sys
 import pandas as pd
-from datetime import datetime
-import numpy as np
 
 sys.path.append('../..')
-from data.dataloader import JHULoader
-from data.processing import get_data, get_dataframes_cached
-
-def bbmp():
-    df = pd.read_csv('../../data/data/bbmp.csv')
-    df.loc[:, 'date'] = df['Date'].apply(lambda x: datetime.strptime(x, "%d.%m.%Y"))
-    df.drop("Date", axis=1, inplace=True)
-    df.loc[:, 'day'] = (df['date'] - df['date'].min()).dt.days
-    # df.loc[:, 'day'] = pd.Series([i+1 for i in range(len(df))])
-    df.rename(columns = {'Cumulative Deaths til Date':'deaths'}, inplace = True) 
-    df.rename(columns = {'Cumulative Cases Til Date':'cases'}, inplace = True) 
-    df.loc[:, 'group'] = pd.Series([1 for i in range(len(df))])
-    return df
+from data.dataloader import JHULoader, Covid19IndiaLoader
 
 def india_all():
-    dataframes = get_dataframes_cached()['df_india_time_series']
+    dlobj = Covid19IndiaLoader()
+    dataframes = dlobj.pull_dataframes_cached()['df_india_time_series']
     df = dataframes['df_india_time_series']
     # df.dtypes
     df = df[['date', 'totalconfirmed', 'totaldeceased','totalrecovered']]
@@ -27,34 +14,15 @@ def india_all():
     return df
 
 def india_all_state():
-    dataframes = get_dataframes_cached()['df_india_time_series']
+    dlobj = Covid19IndiaLoader()
+    dataframes = dlobj.pull_dataframes_cached()['df_india_time_series']
     df = dataframes['df_districts']
     df = df.groupby(['state', 'date']).sum()
     df.reset_index()
     return df
 
-def india_state(state):
-    return get_data(get_dataframes_cached(), state=state)
-
-def india_states(states):
-    dataframes = get_dataframes_cached()
-    all_states = get_data(dataframes, state=states[0])
-    for state in states[1:]:
-        pd.concat(all_states, get_data(dataframes, state=state))
-    return all_states
-
 def jhu(country):
     df_master = JHULoader().get_jhu_data()
-    # print(df_master['Country/Region'].unique())
-    # Province/State            object
-    # Country/Region            object
-    # Lat                      float64
-    # Long                     float64
-    # Date              datetime64[ns]
-    # ConfirmedCases            object
-    # Deaths                    object
-    # RecoveredCases            object
-    # ActiveCases               object
     df = df_master[df_master['Country/Region'] == country]
     df.loc[:, 'day'] = (df['Date'] - df['Date'].min()).dt.days
     df.loc[:, 'confirmed'] = pd.to_numeric(df['ConfirmedCases'])
