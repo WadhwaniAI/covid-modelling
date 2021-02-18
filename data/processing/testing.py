@@ -5,10 +5,10 @@ import pandas as pd
 import copy
 
 from data.dataloader import AthenaLoader
-from data.processing.processing import get_dataframes_cached
 
 def get_testing_data(state='Maharashtra', dist='Mumbai'):
-    dataframes = get_dataframes_cached(loader_class=AthenaLoader)
+    dlobj = AthenaLoader()
+    dataframes = dlobj.pull_dataframes_cached()
 
     df_testing = copy.copy(dataframes['testing_summary'])
     del df_testing['partition_0']

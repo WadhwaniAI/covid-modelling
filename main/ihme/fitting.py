@@ -12,10 +12,9 @@ from curvefit.core import functions
 sys.path.append('../..')
 from models.ihme.model import IHME
 from utils.fitting.data import get_rates
-from data.processing import get_dataframes_cached
 from utils.fitting.util import train_test_split, rollingavg
 
-
+from data.dataloader import Covid19IndiaLoader
 from models.ihme.model import IHME
 from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative
 from utils.fitting.loss import Loss_Calculator
@@ -42,9 +41,9 @@ def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disa
 
     Returns:
         dict: contains smoothed and unsmoothed dataframes: train, test, df
-    """    
-    district_timeseries_nora = get_dataframes_cached(
-        dist, st, disable_tracker=disable_tracker)
+    """
+    dlobj = Covid19IndiaLoader()
+    district_timeseries_nora = dlobj.pull_dataframes_cached()['data_all']
     if smooth_jump:
         district_timeseries = smooth_big_jump(district_timeseries_nora, smooth_jump_days, not disable_tracker, method=smooth_jump_method)
     df_nora, _ = get_rates(district_timeseries_nora, st, area_names)

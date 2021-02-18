@@ -8,7 +8,6 @@ import re
 
 from data.dataloader import JHULoader
 from utils.generic.config import read_config
-from data.processing.processing import get_dataframes_cached
 
 """
 Helper functions for processing different reichlab submissions, processing reichlab ground truth,
@@ -188,7 +187,8 @@ def process_all_submissions(list_of_models, date_of_submission, comp, reichlab_p
     Returns:
         pd.DataFrame: Dataframe with all submissions processed
     """
-    dataframes = get_dataframes_cached(loader_class=JHULoader)
+    dlobj = JHULoader()
+    dataframes = dlobj.pull_dataframes_cached()
     df_true = dataframes['df_us_states']
     df_all_submissions = process_single_submission(
         list_of_models[0], date_of_submission, comp, df_true, reichlab_path, read_from_github,

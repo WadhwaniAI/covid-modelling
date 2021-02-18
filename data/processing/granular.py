@@ -3,7 +3,6 @@ import numpy as np
 import copy
 
 from data.dataloader import AthenaLoader
-from data.processing.processing import get_dataframes_cached
 
 """
 The set of functions of processing data with more columns (Active split into multiple columns)
@@ -82,8 +81,8 @@ def get_custom_data_from_file(filename, state='Maharashtra', district='Mumbai'):
 
 def get_custom_data_from_db(state='Maharashtra', district='Mumbai', **kwargs):
     print('fetching from athenadb...')
-    label = kwargs.pop('label', None)
-    dataframes = get_dataframes_cached(loader_class=AthenaLoader, label=label, **kwargs)
+    dlobj = AthenaLoader()
+    dataframes = dlobj.pull_dataframes_cached(**kwargs)
     df = copy.copy(dataframes['case_summaries'])
     df_bed = copy.copy(dataframes['bed_summaries'])
     df.dropna(axis=0, how='any', inplace=True)
