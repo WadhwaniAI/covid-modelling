@@ -2,7 +2,6 @@ import copy
 from tabulate import tabulate
 
 from data.processing.processing import get_data, train_val_test_split
-from data.processing import granular
 
 import datetime
 from main.seir.optimiser import Optimiser
@@ -11,7 +10,7 @@ from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratifie
 from viz import plot_smoothing, plot_fit
 
 
-def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, smooth_jump_params, split,
+def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params, split,
                loss_compartments, rolling_average, rolling_average_params, **kwargs):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
@@ -26,19 +25,18 @@ def data_setup(data_source, stratified_data, dataloading_params, smooth_jump, sm
     Returns:
         pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
     """
-    if stratified_data:
-        data_dict = get_data(data_source, dataloading_params)
-        df_not_strat = data_dict['data_frame']
-        df_district = granular.get_data(data_source, dataloading_params)
-    else:
-        data_dict = get_data(data_source, dataloading_params)
-        df_district = data_dict['data_frame']
+    
+    data_dict = get_data(data_source, dataloading_params)
+    df_district = data_dict['data_frame']
     
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
 
     if smooth_jump:
-        if stratified_data:
+        if dataloading_params['stratified_data']:
+            df_params_copy = copy.copy(dataloading_params)
+            df_params_copy['stratified_data'] = False
+            df_not_strat = get_data(data_source, df_params_copy)['data_frame']
             df_district, description = smooth_big_jump_stratified(
                 df_district, df_not_strat, smooth_jump_params)
         else:
