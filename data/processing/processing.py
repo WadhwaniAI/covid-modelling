@@ -1,35 +1,8 @@
 import copy
-import os
 import datetime
-import pickle
 
 from data.dataloader import *
 import data.dataloader as dl
-
-
-def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, label=None, **kwargs):
-    os.makedirs("../../misc/cache/", exist_ok=True)
-
-    loader_key = loader_class.__name__
-    label = '' if label is None else f'_{label}'
-    picklefn = "../../misc/cache/dataframes_ts_{today}_{loader_key}{label}.pkl".format(
-        today=datetime.datetime.today().strftime("%d%m%Y"), loader_key=loader_key, label=label)
-    if reload_data:
-        print("pulling from source")
-        loader = loader_class()
-        dataframes = loader.pull_dataframes(**kwargs)
-    else:
-        try:
-            with open(picklefn, 'rb') as pickle_file:
-                dataframes = pickle.load(pickle_file)
-            print(f'loading from {picklefn}')
-        except:
-            print("pulling from source")
-            loader = loader_class()
-            dataframes = loader.pull_dataframes(**kwargs)
-            with open(picklefn, 'wb+') as pickle_file:
-                pickle.dump(dataframes, pickle_file)
-    return dataframes
 
 
 def get_data(data_source, dataloading_params):
