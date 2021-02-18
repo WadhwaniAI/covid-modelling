@@ -69,8 +69,6 @@ def get_data(data_source, dataloading_params):
         return dlobj.get_data(**dataloading_params)
     except Exception as e:
         print(e)
-        if data_source == 'FileLoader':
-            return get_custom_data_from_file(**dataloading_params)
         if data_source == 'SimulatedDataLoader':
             if (dataloading_params['generate']):
                 return generate_simulated_data(**dataloading_params)
@@ -114,32 +112,6 @@ def get_simulated_data_from_file(filename, params_filename=None, **kwargs):
         if col in ['active', 'total', 'recovered', 'deceased']:
             df_result[col] = df_result[col].astype('int64')
     return {"data_frame": df_result[['date', 'active', 'total', 'recovered', 'deceased']], "actual_params": params}
-
-#TODO add support of adding 0s column for the ones which don't exist
-def get_custom_data_from_file(filename, data_format='new', **kwargs):
-    if data_format == 'new':
-        df_result = pd.read_csv(filename) 
-        df_result = df_result.drop(['Ward/block name', 'Ward number (if applicable)', 'Mild cases (isolated)',
-                                    'Moderate cases (hospitalized)', 'Severe cases (In ICU)', 
-                                    'Critical cases (ventilated patients)'], axis=1)
-        df_result.columns = ['state', 'district', 'date', 'total', 'active', 'recovered', 'deceased']
-        df_result.drop(np.arange(3), inplace=True)
-        df_result['date'] = pd.to_datetime(df_result['date'], format='%m-%d-%Y')
-        df_result = df_result.dropna(subset=['state'], how='any')
-        df_result.reset_index(inplace=True, drop=True)
-        df_result.loc[:, ['total', 'active', 'recovered', 'deceased']] = df_result[[
-            'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
-        df_result = df_result[['date', 'state', 'district', 'total', 'active', 'recovered', 'deceased']]
-        df_result = df_result.dropna(subset=['date'], how='all')
-        
-    elif data_format == 'old':
-        df_result = pd.read_csv(filename)
-        df_result['date'] = pd.to_datetime(df_result['date'])
-        df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
-    else:
-        raise ValueError('data_format can only be new or old')
-        
-    return {"data_frame": df_result}
 
 
 def implement_rolling(df, window_size, center, win_type, min_periods):
