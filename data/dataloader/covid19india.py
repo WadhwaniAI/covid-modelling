@@ -144,7 +144,7 @@ class Covid19IndiaLoader(BaseLoader):
                     (df_date_state['recovered'] + df_date_state['deceased'])
                 df_date_state['state'] = statecode_to_state_dict[state]
                 df_date_state['date'] = date
-                df_districts_all = pd.concat([df_districts_all, df_date_state], ignore_index=True)
+                df_districts_all = pd.concat([df_districts_all, df_date_state], ignore_index=True, sort=False)
 
         numeric_cols = ['confirmed', 'active', 'recovered', 'deceased', 'tested', 'migrated']
         df_districts_all.loc[:, numeric_cols] = df_districts_all.loc[:, numeric_cols].apply(pd.to_numeric)

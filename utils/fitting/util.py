@@ -1,12 +1,17 @@
-import collections.abc
-import json
+import collections
+import itertools
 import os
 import sys
 from copy import deepcopy
-from datetime import datetime
+
+try:
+    collectionsAbc = collections.abc
+except AttributeError:
+    collectionsAbc = collections
+
 
 import numpy as np
-import yaml
+
 
 class HidePrints:
     def __enter__(self):
@@ -17,13 +22,16 @@ class HidePrints:
         sys.stdout.close()
         sys.stdout = self._original_stdout
 
+
 def train_test_split(df, threshold, threshold_col='date'):
     return df[df[threshold_col] <= threshold], df[df[threshold_col] > threshold]
 
+
 def smooth(y, smoothing_window):
-    box = np.ones(smoothing_window)/smoothing_window
+    box = np.ones(smoothing_window) / smoothing_window
     y_smooth = np.convolve(y, box, mode='same')
     return y_smooth
+
 
 def rollingavg(series, window):
     return series.rolling(window, center=True).mean()
@@ -45,19 +53,18 @@ def read_config(path, backtesting=False):
     config = config['base']
     return config, model_params
 
+
 def update_dict(dict_1, dict_2):
     """Update one nested dictionary with another
-
     Args:
         dict_1 (dict): dictionary which is updated
         dict_2 (dict): dictionary from values are copied
-
     Returns:
         dict: updated dictionary
     """
     new_dict = deepcopy(dict_1)
     for k, v in dict_2.items():
-        if isinstance(v, collections.abc.MutableMapping):
+        if isinstance(v, collectionsAbc.MutableMapping):
             new_dict[k] = update_dict(new_dict.get(k, {}), dict(v))
         else:
             new_dict[k] = v
@@ -107,3 +114,12 @@ class CustomEncoder(json.JSONEncoder):
             return obj.strftime('%m-%d-%Y')
         else:
             return super(CustomEncoder, self).default(obj)
+
+def chunked(it, size):
+    """Divide dictionary into chunks"""
+    it = iter(it)
+    while True:
+        p = dict(itertools.islice(it, size))
+        if not p:
+            break
+        yield p

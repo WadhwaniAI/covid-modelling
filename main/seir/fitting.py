@@ -103,7 +103,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     Returns:
         dict -- Dict of all predictions
     """
-
+    results_dict = {}
     df_district, df_train, df_val, df_train_nora, df_val_nora = [
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
 
@@ -115,6 +115,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     loss_indices = [-(split['train_period']), None]
     loss['loss_indices'] = loss_indices
     # Perform Bayesian Optimisation
+    results_dict['variable_param_ranges'] = variable_param_ranges
     variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges, fitting_method)
     args = {'df_train': df_train, 'default_params': default_params, 'variable_param_ranges': variable_param_ranges,
             'model': model, 'fitting_method': fitting_method, **fitting_method_params, **split, **loss}
@@ -133,11 +134,10 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
                         location_description=data['dataloading_params']['location_description'],
                         which_compartments=loss['loss_compartments'])
 
-    results_dict = {}
     results_dict['plots'] = {}
     results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
-    for name in ['best_params', 'default_params', 'variable_param_ranges', 'optimiser',
+    for name in ['best_params', 'default_params', 'optimiser',
                  'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'trials', 'data_last_date']:
         results_dict[name] = eval(name)
 
