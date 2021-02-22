@@ -1,8 +1,7 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from models.model import Model
 
 import pandas as pd
-import numpy as np
 
 from collections import OrderedDict
 import datetime
