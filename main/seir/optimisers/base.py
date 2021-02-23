@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from utils.fitting.loss import Loss_Calculator
+from datetime import datetime, timedelta
 
 class OptimiserBase(ABC):
     """Class which implements all optimisation related activites (training, evaluation, etc)
@@ -106,6 +107,14 @@ class OptimiserBase(ABC):
                                  loss_weights=loss_weights)
         return loss
 
+    @abstractmethod
+    def forecast(self, params, train_last_date, forecast_days, model):
+        simulate_till = train_last_date + timedelta(days=forecast_days)
+        simulate_till = datetime.combine(simulate_till, datetime.min.time())
+
+        df_prediction = self.solve({**params, **self.default_params}, model=model,
+                                   end_date=simulate_till)
+        return df_prediction
 
     @abstractmethod
     def optimise(*args, **kwargs):
