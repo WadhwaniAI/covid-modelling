@@ -4,7 +4,7 @@ from tabulate import tabulate
 from data.processing.processing import get_data, train_val_test_split
 
 import datetime
-from main.seir.optimiser import Optimiser
+import main.seir.optimisers as optimisers
 from utils.fitting.loss import Loss_Calculator
 from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
 from viz import plot_smoothing, plot_fit
@@ -86,7 +86,7 @@ def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params,
 
 
 def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_params, fitting_method,
-              fitting_method_params, split, loss):
+              fitting_method_params, split, loss, forecast):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -111,23 +111,20 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
 
     # Initialise Optimiser
-    optimiser = Optimiser()
+    optimiser = getattr(optimisers, fitting_method)()
     # Get the fixed params
-    default_params = optimiser.init_default_params(df_train, default_params, train_period=split['train_period'])
+    optimiser.init_default_params(df_train, default_params, train_period=split['train_period'])
     # Get/create searchspace of variable paramms
     loss_indices = [-(split['train_period']), None]
     loss['loss_indices'] = loss_indices
     # Perform Bayesian Optimisation
-    results_dict['variable_param_ranges'] = variable_param_ranges
-    variable_param_ranges = optimiser.format_variable_param_ranges(variable_param_ranges, fitting_method)
-    args = {'df_train': df_train, 'default_params': default_params, 'variable_param_ranges':variable_param_ranges,
-            'model':model, 'fitting_method': fitting_method, **fitting_method_params, **split, **loss}
-    best_params, trials = getattr(optimiser, fitting_method)(**args)
-    print('best parameters\n', best_params)
+    optimiser.set_variable_param_ranges(variable_param_ranges)
+    args = {'df_train': df_train, 'model': model, 
+            **fitting_method_params, **split, **loss, **forecast}
+    trials = optimiser.optimise(**args)
+    print('best parameters\n', trials['params'][0])
 
-    df_prediction = optimiser.solve({**best_params, **default_params}, 
-                                    end_date=df_district.iloc[-1, :]['date'], 
-                                    model=model)
+    df_prediction = trials['predictions'][0]
     
     lc = Loss_Calculator()
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, 
@@ -143,7 +140,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
 
     fitting_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    for name in ['best_params', 'default_params', 'df_prediction', 'df_district', 'df_train', 
+    for name in ['default_params', 'df_prediction', 'df_district', 'df_train', 
                  'df_val', 'df_loss', 'trials', 'data_last_date', 'fitting_date']:
         results_dict[name] = eval(name)
 
@@ -151,7 +148,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
 
 
 def single_fitting_cycle(data, model_family, model, variable_param_ranges, default_params, 
-                         fitting_method, fitting_method_params, split, loss):
+                         fitting_method, fitting_method_params, split, loss, forecast):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -196,7 +193,7 @@ def single_fitting_cycle(data, model_family, model, variable_param_ranges, defau
         print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
         
     predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
-            default_params, fitting_method, fitting_method_params, split, loss)
+            default_params, fitting_method, fitting_method_params, split, loss, forecast)
 
     
     predictions_dict['plots']['smoothing'] = smoothing_plot
