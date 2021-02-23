@@ -11,7 +11,7 @@ from scipy.stats import entropy
 
 from utils.generic.enums.columns import *
 from utils.generic.stats import *
-from main.seir.forecast import _order_trials_by_loss
+from main.seir.forecast import _order_trials_by_loss_hp
 from viz.utils import axis_formatter
 
 def plot_fit(df_prediction, df_train, df_val, df_district, train_period, location_description,
@@ -134,7 +134,7 @@ def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lin
     Returns:
         dict: a dict of histograms of all the params for a particular run
     """
-    params_array, losses_array = _order_trials_by_loss(predictions_dict)
+    params_array, losses_array = _order_trials_by_loss_hp(predictions_dict['trials'])
     params_dict = {param: [param_dict[param] for param_dict in params_array]
                    for param in params_array[0].keys()}
     if weighting == 'exp':
@@ -197,7 +197,7 @@ def plot_all_histograms(predictions_dict, description, weighting='exp', beta=1):
         mpl.Figure, mpl.Axes, pd.DataFrame: The matplotlib figure, matplotlib axes, 
         a dict of histograms of all the params for all the runs
     """
-    params_array, _ = _order_trials_by_loss(predictions_dict)
+    params_array, _ = _order_trials_by_loss_hp(predictions_dict['trials'])
 
     fig, axs = plt.subplots(nrows=round(len(params_array[0].keys())/2), ncols=2, 
                             figsize=(18, 6*round(len(params_array[0].keys())/2)))
@@ -233,14 +233,15 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
         mpl.Figure, mpl.Axes, pd.DataFrame: The matplotlib figure, matplotlib axes, 
         a dataframe of mean and variance values for all parameters and all runs
     """
-    params_array, _ = _order_trials_by_loss(predictions_dict)
+    params_array, _ = _order_trials_by_loss_hp(predictions_dict['trials'])
     params = list(params_array[0].keys())
     df_mean_var = pd.DataFrame(columns=list(predictions_dict.keys()),
                                index=pd.MultiIndex.from_product([params,
                                                                 ['mean', 'std']]))
 
     for run in predictions_dict.keys():
-        params_array, losses_array = _order_trials_by_loss(predictions_dict[run])
+        params_array, losses_array = _order_trials_by_loss_hp(
+            predictions_dict['trials'][run])
         params_dict = {param: [param_dict[param] for param_dict in params_array]
                        for param in params_array[0].keys()}
         if weighting == 'exp':

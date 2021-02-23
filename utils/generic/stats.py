@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from main.seir.forecast import _order_trials_by_loss
+from main.seir.forecast import _order_trials_by_loss_hp
 
 def get_best_param_dist(model_dict):
     """Computes mean and variance of the best fit params accross different runs
@@ -33,7 +33,7 @@ def get_ensemble_combined(model_dict, weighting='exp', beta=1):
     params_dict = { k: np.array([]) for k in model_dict[list(model_dict.keys())[0]]['best_params'].keys() }
     losses_array = np.array([])
     for _, run_dict in model_dict.items():
-        params_array, loss_array = _order_trials_by_loss(run_dict)
+        params_array, loss_array = _order_trials_by_loss_hp(run_dict['trials'])
         losses_array = np.concatenate((losses_array, loss_array), axis=0)
         for param in params_dict.keys():
             params_vals = np.array([param_dict[param] for param_dict in params_array])
@@ -104,7 +104,7 @@ def get_loss_stats(model_dict, which_loss='train',method='best_loss_nora',weight
     elif method == 'best_loss_ra':
         losses_array = np.array([])
         for _, run_dict in model_dict.items():
-            params_array, loss_array = _order_trials_by_loss(run_dict)
+            params_array, loss_array = _order_trials_by_loss_hp(run_dict['trials'])
             losses_array = np.append(losses_array, min(loss_array))
         df = pd.DataFrame(columns=['agg'],index=['mean','std'])
         df['agg']['mean'] = np.mean(losses_array)
@@ -114,7 +114,7 @@ def get_loss_stats(model_dict, which_loss='train',method='best_loss_nora',weight
     elif method == 'ensemble_loss_ra':
         losses_array = np.array([])
         for _, run_dict in model_dict.items():
-            params_array, loss_array = _order_trials_by_loss(run_dict)
+            params_array, loss_array = _order_trials_by_loss_hp(run_dict['trials'])
             losses_array = np.concatenate((losses_array, loss_array), axis=0)
         df = pd.DataFrame(columns=['agg'],index=['mean','std'])
         if weighting == 'exp':
