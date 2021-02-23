@@ -1,10 +1,9 @@
 fitting:
-    # Geographical Location
     data:
         data_source: Covid19IndiaLoader
-        stratified_data: FALSE
         dataloading_params:
             reload_data: FALSE
+            stratified_data: FALSE
             cache_dir: "../../misc/cache/"
             state: Maharashtra
             district: Mumbai
@@ -39,7 +38,7 @@ fitting:
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
-    fitting_method: bo_hyperopt
+    fitting_method: BO_Hyperopt
     fitting_method_params:
         num_evals: 1000
         algo: tpe
@@ -56,8 +55,13 @@ fitting:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
-forecast:
-    forecast_days: 30
+    forecast:
+        forecast_days: 30
+plotting:
+    truncate_series: TRUE
+    left_truncation_buffer: 7
+    right_truncation_buffer: forecast_days
+    separate_compartments_separate_ax: TRUE
     num_trials_to_plot: 10
     plot_topk_trials_for_columns: [total, active, recovered, deceased]
     plot_ptiles_for_columns: [total, active, recovered, deceased]
