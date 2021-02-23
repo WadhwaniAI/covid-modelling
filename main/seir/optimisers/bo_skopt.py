@@ -8,7 +8,7 @@ class BO_SKOpt(OptimiserBase):
     def __init__(self):
         self.lc = Loss_Calculator()
 
-    def format_variable_param_ranges(self, variable_param_ranges):
+    def set_variable_param_ranges(self, variable_param_ranges):
         pass
 
 

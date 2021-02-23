@@ -131,7 +131,7 @@ class ABMAUncertainty(Uncertainty):
             float: optimal beta value
         """
         op = Optimiser()
-        formatted_searchspace = op.format_variable_param_ranges(
+        formatted_searchspace = op.set_variable_param_ranges(
             variable_param_ranges, fitting_method)
 
         if fitting_method == 'bo_hyperopt':
