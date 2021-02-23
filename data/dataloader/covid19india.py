@@ -191,7 +191,7 @@ class Covid19IndiaLoader(BaseLoader):
         dataframes['df_states_all'] = df_states_all
         return dataframes
 
-    def pull_dataframes(self, load_raw_data=False, load_districts_daily=False):
+    def pull_dataframes(self, load_raw_data=False, load_districts_daily=False, **kwargs):
         """
         This function parses multiple JSONs from covid19india.org
         It then converts the data into pandas dataframes

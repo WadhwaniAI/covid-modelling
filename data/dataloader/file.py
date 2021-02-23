@@ -7,7 +7,7 @@ class FileLoader(BaseLoader):
     def __init__(self):
         pass
 
-    def pull_dataframes(self):
+    def pull_dataframes(self, **kwargs):
         return {}
 
     def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
