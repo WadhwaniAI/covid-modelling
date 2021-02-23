@@ -63,14 +63,14 @@ class IHME(Model):
         self.pipeline_args = model_parameters.get('pipeline_args')
         self.covs = model_parameters.get('covs')
 
-        self.param_names  = [ 'alpha', 'beta', 'p' ]
+        self.param_names = ['alpha', 'beta', 'p']
         self.predict_space = model_parameters.get('predict_space') if model_parameters.get('predict_space') else self.func
 
         # link functions
         identity_fun = lambda x: x
-        exp_fun = lambda x : np.exp(x)
-        self.link_fun = [ exp_fun, identity_fun, exp_fun ]
-        self.var_link_fun = [ identity_fun, identity_fun, identity_fun ]
+        exp_fun = lambda x: np.exp(x)
+        self.link_fun = [exp_fun, identity_fun, exp_fun]
+        self.var_link_fun = [identity_fun, identity_fun, identity_fun]
         
         self.pipeline = None
 
