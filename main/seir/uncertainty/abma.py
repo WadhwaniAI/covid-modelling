@@ -16,9 +16,9 @@ from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 
 class ABMAUncertainty(Uncertainty):
-    def __init__(self, predictions_dict, fitting_config, forecast_config, variable_param_ranges, fitting_method, 
+    def __init__(self, predictions_dict, fitting_config, variable_param_ranges, fitting_method, 
                  fitting_method_params, which_fit, construct_percentiles_day_wise, date_of_sorting_trials, 
-                 sort_trials_by_column, loss, percentiles, process_trials=True):
+                 sort_trials_by_column, loss, percentiles):
         """
         Initializes uncertainty object, finds beta for distribution
 
@@ -36,11 +36,8 @@ class ABMAUncertainty(Uncertainty):
             setattr(self, key, loss[key])
         self.percentiles = percentiles
         self.fitting_config = fitting_config
-        self.forecast_config = forecast_config
         self.construct_percentiles_day_wise = construct_percentiles_day_wise
         # Processing all trials
-        if process_trials:
-            self.process_trials(predictions_dict, fitting_config, forecast_config)
         # Finding Best Beta
         self.beta, self.dict_of_trials = self.find_beta(
             fitting_method, fitting_method_params, variable_param_ranges)
@@ -48,13 +45,6 @@ class ABMAUncertainty(Uncertainty):
         # Creating Ensemble Mean Forecast
         self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta}, return_dict=False,
                                                               return_ensemble_mean_forecast=True)
-
-    def process_trials(self, predictions_dict, fitting_config, forecast_config):
-        predictions_dict['trials_processed'] = forecast_all_trials(
-            predictions_dict, model=fitting_config['model'],
-            train_end_date=fitting_config['split']['end_date'],
-            forecast_days=forecast_config['forecast_days']
-        )
 
     def trials_to_df(self, trials_processed, column=Columns.active):
         predictions = trials_processed['predictions']
@@ -87,14 +77,14 @@ class ABMAUncertainty(Uncertainty):
             float: average relative error calculated over trials and a val set
         """    
         beta = params['beta']
-        losses = self.predictions_dict['trials_processed']['losses']
+        losses = self.predictions_dict['trials']['losses']
         # This is done as rolling average on df_val has already been calculated, 
         # while df_district has no rolling average
         df_val = self.predictions_dict['df_district'].set_index('date') \
             .loc[self.predictions_dict['df_val']['date'],:]
         beta_loss = np.exp(-beta*losses)
 
-        predictions = self.predictions_dict['trials_processed']['predictions']
+        predictions = self.predictions_dict['trials']['predictions']
         loss_cols = self.loss_compartments
         allcols = ['total', 'active', 'recovered', 'deceased', 'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator',
                    'asymptomatic', 'symptomatic', 'critical']
@@ -178,10 +168,10 @@ class ABMAUncertainty(Uncertainty):
         """    
         
         df = pd.DataFrame(columns=['loss', 'weight', 'pdf'])
-        df['loss'] = self.predictions_dict['trials_processed']['losses']
+        df['loss'] = self.predictions_dict['trials']['losses']
         df['weight'] = np.exp(-self.beta*df['loss'])
         df['pdf'] = df['weight'] / df['weight'].sum()
-        df_trials = self.trials_to_df(self.predictions_dict['trials_processed'], 
+        df_trials = self.trials_to_df(self.predictions_dict['trials'], 
                                       self.sort_trials_by_column)
         # Removing non time stamp columns
         df_trials = df_trials.loc[:, [x for x in df_trials.columns if type(x) is pd.Timestamp]]
@@ -213,10 +203,10 @@ class ABMAUncertainty(Uncertainty):
                 
         deciles_forecast = {}
         
-        predictions = self.predictions_dict['trials_processed']['predictions']
+        predictions = self.predictions_dict['trials']['predictions']
         predictions = [df.loc[:, :'total'] for df in predictions]
         predictions_stacked = np.stack([df.to_numpy() for df in predictions], axis=0)
-        params = self.predictions_dict['trials_processed']['params']
+        params = self.predictions_dict['trials']['params']
         df_district = self.predictions_dict['df_district']
         df_train_nora = df_district.set_index('date').loc[
             self.predictions_dict['df_train']['date'], :].reset_index()
