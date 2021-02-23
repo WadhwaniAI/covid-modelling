@@ -1,5 +1,11 @@
 import numpy as np
 
+from tqdm import tqdm
+
+import itertools
+from functools import partial
+from joblib import Parallel, delayed
+
 from main.seir.optimisers import OptimiserBase
 from utils.fitting.loss import Loss_Calculator
 
@@ -75,5 +81,69 @@ class GridSearch(OptimiserBase):
                                               model, loss_compartments, loss_weights, loss_indices,
                                               loss_method, debug)
 
-    def optimise(*args, **kwargs):
-        pass
+    def init_default_params(self, df_train, default_params, train_period):
+        return super().init_default_params(df_train, default_params, train_period)
+
+    def _create_dict(self, param_names, values):
+        """Helper function for creating dict of all parameters
+
+        Arguments:
+            param_names {arr} -- Names of the parameters
+            values {arr} -- Their corresponding values
+
+        Returns:
+            dict -- Dict of all parameters
+        """
+        params_dict = {param_names[i]: values[i] for i in range(len(values))}
+        return params_dict
+
+    def optimise(self, df_train, default_params, variable_param_ranges, model, loss_method='rmse',
+                 loss_indices=[-20, -10], loss_compartments=['total'], debug=False):
+        """Implements gridsearch based optimisation
+
+        Arguments:
+            df_train {pd.DataFrame} -- The train set
+            default_params {dict} -- Dict of default (fixed) params
+            variable_param_ranges {dict} -- The range of variable params (the searchspace)
+
+        An example of variable_param_ranges :
+        variable_param_ranges = {
+            'R0' : np.linspace(1.8, 3, 13),
+            'T_inc' : np.linspace(3, 5, 5),
+            'T_inf' : np.linspace(2.5, 3.5, 5),
+            'T_recov_severe' : np.linspace(11, 15, 10),
+            'P_severe' : np.linspace(0.3, 0.9, 25),
+            'intervention_amount' : np.linspace(0.4, 1, 31)
+        }
+
+        Keyword Arguments:
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
+            loss_method {str} -- The loss method (default: {'rmse'})
+            loss_indices {list} -- The indices on the train set to apply the loss on (default: {[-20, -10]})
+            loss_compartments {list} -- Which compartments to apply loss on (default: {['total']})
+            debug {bool} -- If debug is true, gridsearch is not parellelised. For debugging (default: {False})
+
+        Returns:
+            arr, list(dict) -- Array of loss values, and a list of parameter dicts
+        """
+        total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
+
+        rangelists = list(variable_param_ranges.values())
+        cartesian_product_tuples = itertools.product(*rangelists)
+        list_of_param_dicts = [self._create_dict(list(
+            variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
+
+        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
+                                                 df_true=df_train, total_days=total_days, model=model,
+                                                 loss_method=loss_method, loss_indices=loss_indices,
+                                                 loss_compartments=loss_compartments, debug=False)
+        
+        # If debugging is enabled the gridsearch is not parallelised
+        if debug:
+            loss_array = []
+            for params_dict in tqdm(list_of_param_dicts):
+                loss_array.append(partial_solve_and_compute_loss(variable_params=params_dict))
+        else:
+            loss_array = Parallel(n_jobs=40)(delayed(partial_solve_and_compute_loss)(params_dict) for params_dict in tqdm(list_of_param_dicts))
+                    
+        return loss_array, list_of_param_dicts
