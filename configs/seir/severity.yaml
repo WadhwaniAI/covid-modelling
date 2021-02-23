@@ -53,7 +53,7 @@ fitting:
         N: 1.0e+7
         lockdown_date: 2020-03-25
         lockdown_removal_date: 2020-08-30
-    fitting_method: bo_hyperopt
+    fitting_method: BO_Hyperopt
     fitting_method_params:
         num_evals: 1000
         algo: tpe
@@ -69,9 +69,13 @@ fitting:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased, asymptomatic, symptomatic, critical]
         loss_weights: [1, 1, 1, 1, 1, 1, 1]
-    #Optimisation related parameters
-forecast:
-    forecast_days: 30
+    forecast:
+        forecast_days: 30
+plotting:
+    truncate_series: TRUE
+    left_truncation_buffer: 7
+    right_truncation_buffer: forecast_days
+    separate_compartments_separate_ax: TRUE
     num_trials_to_plot: 10
     plot_topk_trials_for_columns: [total, active, symptomatic, asymptomatic]
     plot_ptiles_for_columns: [total, active, symptomatic, asymptomatic]

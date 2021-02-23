@@ -39,7 +39,7 @@ fitting:
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
-    fitting_method: bo_hyperopt
+    fitting_method: BO_Hyperopt
     fitting_method_params:
         num_evals: 3000
         algo: tpe
