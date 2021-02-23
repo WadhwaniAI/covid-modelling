@@ -42,8 +42,8 @@ class GridSearch(OptimiserBase):
 
         self.variable_param_ranges = formatted_param_ranges
 
-    def solve(self, params_dict: dict, model, end_date=None):
-        return super().solve(params_dict=params_dict, model=model, end_date=end_date)
+    def predict(self, params_dict: dict, model, end_date=None):
+        return super().predict(params_dict=params_dict, model=model, end_date=end_date)
 
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,
                                loss_compartments=['active', 'recovered', 'total', 'deceased'],

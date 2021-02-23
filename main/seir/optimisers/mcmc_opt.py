@@ -12,7 +12,7 @@ class MCMC_Opt(OptimiserBase):
         pass
 
 
-    def solve(self, params_dict: dict, model, end_date=None):
+    def predict(self, params_dict: dict, model, end_date=None):
         """This function solves the ODE for an input of params (but does not compute loss)
 
         Arguments:
@@ -27,7 +27,7 @@ class MCMC_Opt(OptimiserBase):
             pd.DataFrame -- DataFrame of predictions
         """
 
-        return super().solve(params_dict=params_dict, model=model, end_date=end_date)
+        return super().predict(params_dict=params_dict, model=model, end_date=end_date)
 
 
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,

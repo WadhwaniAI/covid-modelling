@@ -12,7 +12,7 @@ class BO_SMAC3(OptimiserBase):
     def set_variable_param_ranges(self, variable_param_ranges):
         pass
 
-    def solve(self, params_dict: dict, model, end_date=None):
+    def predict(self, params_dict: dict, model, end_date=None):
         """This function solves the ODE for an input of params (but does not compute loss)
 
         Arguments:
@@ -27,7 +27,7 @@ class BO_SMAC3(OptimiserBase):
             pd.DataFrame -- DataFrame of predictions
         """
 
-        return super().solve(params_dict=params_dict, model=model, end_date=end_date)
+        return super().predict(params_dict=params_dict, model=model, end_date=end_date)
 
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,
                                loss_compartments=[

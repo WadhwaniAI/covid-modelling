@@ -43,7 +43,7 @@ class Optimiser():
 
         return formatted_param_ranges
 
-    def solve(self, params_dict :dict, model=SEIRHD, end_date=None):
+    def predict(self, params_dict :dict, model=SEIRHD, end_date=None):
         """This function solves the ODE for an input of params (but does not compute loss)
 
         Arguments:

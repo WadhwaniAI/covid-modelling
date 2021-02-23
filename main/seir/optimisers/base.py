@@ -28,7 +28,7 @@ class OptimiserBase(ABC):
 
 
     @abstractmethod
-    def solve(self, params_dict: dict, model, end_date=None):
+    def predict(self, params_dict: dict, model, end_date=None):
         """This function solves the ODE for an input of params (but does not compute loss)
 
         Arguments:
@@ -112,8 +112,8 @@ class OptimiserBase(ABC):
         simulate_till = train_last_date + timedelta(days=forecast_days)
         simulate_till = datetime.combine(simulate_till, datetime.min.time())
 
-        df_prediction = self.solve({**params, **self.default_params}, model=model,
-                                   end_date=simulate_till)
+        df_prediction = self.predict({**params, **self.default_params}, model=model,
+                                     end_date=simulate_till)
         return df_prediction
 
     @abstractmethod
