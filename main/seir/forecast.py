@@ -1,5 +1,6 @@
 from main.seir.optimiser import Optimiser
 import os
+from hyperopt import Trials
 import numpy as np
 import pandas as pd
 
@@ -10,7 +11,7 @@ import copy
 from models.seir import SEIRHD
 
 def get_forecast(predictions_dict: dict, forecast_days: int = 37, train_end_date=None, model=SEIRHD,
-                 best_params=None, verbose=True):
+                 best_params=None):
     """Returns the forecasts for a given set of params of a particular geographical area
 
     Arguments:
@@ -23,8 +24,6 @@ def get_forecast(predictions_dict: dict, forecast_days: int = 37, train_end_date
     Returns:
         [type] -- [description]
     """
-    if verbose:
-        print("getting forecasts ..")
     if train_end_date is None:
         simulate_till = predictions_dict['df_district'].iloc[-1]['date'] + \
             datetime.timedelta(days=forecast_days)
@@ -85,7 +84,6 @@ def create_decile_csv_new(predictions_dict: dict):
     
     return df_output
 
-
 def create_decile_csv(predictions_dict: dict, region: str, regionType: str):
     print("compiling csv data ..")
     columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'predictionDate',
@@ -131,18 +129,8 @@ def create_decile_csv(predictions_dict: dict, region: str, regionType: str):
     df_output.columns = [x.replace('total_infected', 'total') for x in df_output.columns]
     return df_output
 
-def write_csv(df_final: pd.DataFrame, filename:str=None):
-    """Helper function for saving the CSV files
 
-    Arguments:
-        df_final {pd.DataFrame} -- the final CSV to be saved
-        filename {str} -- the name of the file
-    """
-    if filename == None:
-        filename = '../../output-{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-    df_final.to_csv(filename, index=False)
-
-def _order_trials_by_loss(m_dict: dict, sort_trials: bool=True):
+def _order_trials_by_loss_hp(trials_obj: Trials, sort_trials: bool = True):
     """Orders a set of trials by their corresponding loss value
 
     Args:
@@ -152,13 +140,13 @@ def _order_trials_by_loss(m_dict: dict, sort_trials: bool=True):
         array, array: Array of params and loss values resp
     """
     params_array = []
-    for trial in m_dict['trials']:
+    for trial in trials_obj:
         params_dict = copy.copy(trial['misc']['vals'])
         for key in params_dict.keys():
             params_dict[key] = params_dict[key][0]
         params_array.append(params_dict)
     params_array = np.array(params_array)
-    losses_array = np.array([trial['result']['loss'] for trial in m_dict['trials']])
+    losses_array = np.array([trial['result']['loss'] for trial in trials_obj])
 
     if sort_trials:
         least_losses_indices = np.argsort(losses_array)
@@ -166,7 +154,8 @@ def _order_trials_by_loss(m_dict: dict, sort_trials: bool=True):
         params_array = params_array[least_losses_indices]
     return params_array, losses_array
 
-def _get_top_k_trials(m_dict: dict, k=10):
+
+def _get_top_k_trials(trials_obj: Trials, k=10):
     """Returns Top k trials ordered by loss
 
     Args:
@@ -176,7 +165,7 @@ def _get_top_k_trials(m_dict: dict, k=10):
     Returns:
         array, array: array of params and losses resp (of len k each)
     """
-    params_array, losses_array = _order_trials_by_loss(m_dict)
+    params_array, losses_array = _order_trials_by_loss_hp(trials_obj)
     return params_array[:k], losses_array[:k]
 
 
@@ -242,7 +231,7 @@ def set_r0_multiplier(params_dict, mul):
 
 
 def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
-                           multipliers=[0.9, 1, 1.1, 1.25], lockdown_removal_date='2020-06-01'):
+                           multipliers=[0.9, 1, 1.1, 1.25]):
     """
     Function to predict what-if scenarios with different post-lockdown R0s
 
@@ -270,7 +259,6 @@ def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
         predictions_mul_dict[mul]['df_prediction'] = get_forecast(region_dict,
             model=model,
             best_params=new_params,
-            lockdown_removal_date=lockdown_removal_date,
             days=days)    
     return predictions_mul_dict
 
