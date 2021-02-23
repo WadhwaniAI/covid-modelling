@@ -62,10 +62,10 @@ def process_config(config):
     model_family = getattr(models, nconfig['fitting']['model_family'])
     nconfig['fitting']['model'] = getattr(model_family, nconfig['fitting']['model'])
 
-    nconfig['forecast']['plot_topk_trials_for_columns'] = [Columns.from_name(
-        column) for column in nconfig['forecast']['plot_topk_trials_for_columns']]
-    nconfig['forecast']['plot_ptiles_for_columns'] = [Columns.from_name(
-        column) for column in nconfig['forecast']['plot_ptiles_for_columns']]
+    nconfig['plotting']['plot_topk_trials_for_columns'] = [Columns.from_name(
+        column) for column in nconfig['plotting']['plot_topk_trials_for_columns']]
+    nconfig['plotting']['plot_ptiles_for_columns'] = [Columns.from_name(
+        column) for column in nconfig['plotting']['plot_ptiles_for_columns']]
 
     nconfig['uncertainty']['method'] = getattr(uncertainty_module, nconfig['uncertainty']['method'])
     nconfig['uncertainty']['uncertainty_params']['sort_trials_by_column'] = Columns.from_name(
