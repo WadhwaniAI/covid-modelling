@@ -1,4 +1,4 @@
-from main.seir.optimisers.base import OptimiserBase
+from main.seir.optimisers import OptimiserBase
 from utils.fitting.loss import Loss_Calculator
 
 class BO_SKOpt(OptimiserBase):
