@@ -1,5 +1,6 @@
 from hyperopt import hp, tpe, fmin, Trials
 from functools import partial
+from datetime import datetime, timedelta
 import importlib
 import numpy as np
 import copy
@@ -14,7 +15,7 @@ class BO_Hyperopt(OptimiserBase):
     def __init__(self):
         self.lc = Loss_Calculator()
 
-    def format_variable_param_ranges(self, variable_param_ranges):
+    def set_variable_param_ranges(self, variable_param_ranges):
         """Returns the ranges for the variable params in the search space
 
         Returns:
@@ -26,7 +27,7 @@ class BO_Hyperopt(OptimiserBase):
             formatted_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
                 key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
 
-        return formatted_param_ranges
+        self.variable_param_ranges = formatted_param_ranges
 
 
     def solve(self, params_dict: dict, model, end_date=None):
@@ -41,7 +42,7 @@ class BO_Hyperopt(OptimiserBase):
                                               loss_method, debug)
 
     def init_default_params(self, df_train, default_params, train_period):
-        return super().init_default_params(df_train, default_params, train_period)
+        super().init_default_params(df_train, default_params, train_period)
 
     def _order_trials_by_loss(self, trials_obj: Trials, sort_trials: bool = True):
         """Orders a set of trials by their corresponding loss value
@@ -67,10 +68,17 @@ class BO_Hyperopt(OptimiserBase):
             params_array = params_array[least_losses_indices]
         return params_array, losses_array
 
-    
-    def optimise(self, df_train, default_params, variable_param_ranges, model, num_evals=3500, 
-                 loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], 
-                 loss_weights=[1], algo=tpe, seed=42, **kwargs):
+    def forecast(self, params, train_last_date, forecast_days, model):
+        simulate_till = train_last_date + timedelta(days=forecast_days)
+        simulate_till = datetime.combine(simulate_till, datetime.min.time())
+
+        df_prediction = self.solve({**params, **self.default_params}, model=model,
+                                    end_date=simulate_till)
+        return df_prediction
+
+    def optimise(self, df_train, model, num_evals=3500, loss_method='rmse', loss_indices=[-20, -10], 
+                 loss_compartments=['total'], loss_weights=[1], algo=tpe, seed=42, 
+                 forecast_days=30, **kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -98,10 +106,11 @@ class BO_Hyperopt(OptimiserBase):
         Returns:
             dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
         """
-        total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
+        total_days = (df_train.iloc[-1, :]['date'].date() -
+                      self.default_params['starting_date']).days
         
         partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
-                                                 default_params=default_params, total_days=total_days,
+                                                 default_params=self.default_params, total_days=total_days,
                                                  loss_method=loss_method, loss_indices=loss_indices, 
                                                  loss_weights=loss_weights, df_true=df_train,
                                                  loss_compartments=loss_compartments)
@@ -110,7 +119,7 @@ class BO_Hyperopt(OptimiserBase):
         trials = Trials()
         rstate = np.random.RandomState(seed)
         best = fmin(partial_solve_and_compute_loss,
-                    space=variable_param_ranges,
+                    space=self.variable_param_ranges,
                     algo=algo_module.suggest,
                     max_evals=num_evals,
                     rstate=rstate,
@@ -118,4 +127,16 @@ class BO_Hyperopt(OptimiserBase):
         
         params_array, losses_array = self._order_trials_by_loss(trials)
 
-        return best, trials
+        partial_forecast = partial(self.forecast, 
+                                   train_last_date=df_train.iloc[-1, :]['date'].date(), 
+                                   forecast_days=forecast_days,
+                                   model=model)
+        predictions_array = [partial_forecast(param) for param in params_array]
+
+        return_dict = {
+            'params': params_array,
+            'predictions': predictions_array,
+            'losses': losses_array
+        }
+
+        return return_dict
