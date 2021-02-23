@@ -93,6 +93,19 @@ class OptimiserBase(ABC):
                                  loss_weights=loss_weights)
         return loss
 
+
+    @abstractmethod
+    def init_default_params(self, df_train, default_params, train_period):
+        observed_values = df_train.iloc[-train_period, :]
+        start_date = observed_values['date'].date()
+
+        extra_params = {
+            'starting_date': start_date,
+            'observed_values': observed_values
+        }
+
+        return {**default_params, **extra_params}
+
     @abstractmethod
     def optimise(*args, **kwargs):
         pass
