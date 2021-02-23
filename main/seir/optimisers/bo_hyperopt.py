@@ -1,4 +1,7 @@
 from hyperopt import hp, tpe, fmin, Trials
+from functools import partial
+import importlib
+import numpy as np
 
 from main.seir.optimisers import OptimiserBase
 from utils.fitting.loss import Loss_Calculator
@@ -26,50 +29,65 @@ class BO_Hyperopt(OptimiserBase):
 
 
     def solve(self, params_dict: dict, model, end_date=None):
-        """This function solves the ODE for an input of params (but does not compute loss)
-
-        Arguments:
-            variable_params {dict} -- The values for the params that are variable across the searchspace
-            default_params {dict} -- The values for the params that are fixed across the searchspace
-
-        Keyword Arguments:
-            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
-            end_date {str} -- Last date of projection (default: {None})
-
-        Returns:
-            pd.DataFrame -- DataFrame of predictions
-        """
-
         return super().solve(params_dict=params_dict, model=model, end_date=end_date)
-
 
     def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,
                                loss_compartments=['active', 'recovered', 'total', 'deceased'],
                                loss_weights=[1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse',
                                debug=False):
-        """The function that computes solves the ODE for a given set of input params and computes loss on train set
-
-        Arguments:
-            variable_params {dict} -- The values for the params that are variable across the searchspace
-            default_params {dict} -- The values of the params that are fixed across the searchspace
-            df_true {pd.DataFrame} -- The train set
-            total_days {int} -- Total number of days into the future for which we want to simulate
-
-        Keyword Arguments:
-            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
-            loss_compartments {list} -- Which compartments to apply loss on 
-            (default: {['active', 'recovered', 'total', 'deceased']})
-            loss_indices {list} -- Which indices of the train set to apply loss on (default: {[-20, -10]})
-            loss_method {str} -- Loss Method (default: {'rmse'})
-            return_dict {bool} -- If True, instead of returning single loss value, will return loss value 
-            for every compartment (default: {False})
-
-        Returns:
-            float -- The loss value
-        """
         return super().solve_and_compute_loss(variable_params, default_params, df_true, total_days, 
                                               model, loss_compartments, loss_weights, loss_indices, 
                                               loss_method, debug)
 
-    def optimise(*args, **kwargs):
-        pass
+    def init_default_params(self, df_train, default_params, train_period):
+        return super().init_default_params(df_train, default_params, train_period)
+
+    def optimise(self, df_train, default_params, variable_param_ranges, model, num_evals=3500, 
+                 loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], 
+                 loss_weights=[1], algo=tpe, seed=42, **kwargs):
+        """Implements Bayesian Optimisation using hyperopt library
+
+        Arguments:
+            df_train {pd.DataFrame} -- The training dataset
+            default_params {str} -- Dict of default (static) params
+            variable_param_ranges {dict} -- The ranges for the variable params (the searchspace)
+
+        An example of variable_param_ranges : 
+        variable_param_ranges = {
+            'lockdown_R0' : hp.uniform('R0', 0, 2),
+            'T_inc' : hp.uniform('T_inc', 4, 5),
+            'T_inf' : hp.uniform('T_inf', 3, 4),
+            'T_recov_severe' : hp.uniform('T_recov_severe', 5, 60),
+            'P_severe' : hp.uniform('P_severe', 0.3, 0.99)
+        }
+
+        Keyword Arguments:
+            model {class} -- The epi model class to be used for modelling (default: {SEIRHD})
+            total_days {int} -- total days to simulate for (deprecated) (default: {None})
+            method {str} -- Loss Method (default: {'rmse'})
+            num_evals {int} -- Number of hyperopt evaluations (default: {3500})
+            loss_indices {list} -- The indices of the train set to apply the losses on (default: {[-20, -10]})
+            which_compartments {list} -- Which compartments to apply loss on (default: {['total']})
+
+        Returns:
+            dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
+        """
+        total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
+        
+        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
+                                                 default_params=default_params, total_days=total_days,
+                                                 loss_method=loss_method, loss_indices=loss_indices, 
+                                                 loss_weights=loss_weights, df_true=df_train,
+                                                 loss_compartments=loss_compartments)
+
+        algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
+        trials = Trials()
+        rstate = np.random.RandomState(seed)
+        best = fmin(partial_solve_and_compute_loss,
+                    space=variable_param_ranges,
+                    algo=algo_module.suggest,
+                    max_evals=num_evals,
+                    rstate=rstate,
+                    trials=trials)
+        
+        return best, trials
