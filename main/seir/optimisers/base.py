@@ -53,7 +53,7 @@ class OptimiserBase(ABC):
 
     # TODO add cross validation support
     @abstractmethod
-    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,
+    def predict_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,
                                loss_compartments=['active', 'recovered', 'total', 'deceased'],
                                loss_weights=[1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse',
                                debug=False):

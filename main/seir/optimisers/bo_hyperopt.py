@@ -39,11 +39,11 @@ class BO_Hyperopt(OptimiserBase):
     def predict(self, params_dict: dict, model, end_date=None):
         return super().predict(params_dict=params_dict, model=model, end_date=end_date)
 
-    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,
+    def predict_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,
                                loss_compartments=['active', 'recovered', 'total', 'deceased'],
                                loss_weights=[1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse',
                                debug=False):
-        return super().solve_and_compute_loss(variable_params, default_params, df_true, total_days, 
+        return super().predict_and_compute_loss(variable_params, default_params, df_true, total_days, 
                                               model, loss_compartments, loss_weights, loss_indices, 
                                               loss_method, debug)
 
@@ -110,7 +110,7 @@ class BO_Hyperopt(OptimiserBase):
         total_days = (self.df_train.iloc[-1, :]['date'].date() -
                       self.default_params['starting_date']).days
         
-        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=self.model,
+        partial_predict_and_compute_loss = partial(self.predict_and_compute_loss, model=self.model,
                                                  default_params=self.default_params, total_days=total_days,
                                                  loss_method=loss_method, loss_indices=loss_indices, 
                                                  loss_weights=loss_weights, df_true=self.df_train,
@@ -119,7 +119,7 @@ class BO_Hyperopt(OptimiserBase):
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
         trials = Trials()
         rstate = np.random.RandomState(seed)
-        best = fmin(partial_solve_and_compute_loss,
+        best = fmin(partial_predict_and_compute_loss,
                     space=self.variable_param_ranges,
                     algo=algo_module.suggest,
                     max_evals=num_evals,

@@ -30,7 +30,7 @@ class BO_SKOpt(OptimiserBase):
         return super().predict(params_dict=params_dict, model=model, end_date=end_date)
 
 
-    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,
+    def predict_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,
                                loss_compartments=['active', 'recovered', 'total', 'deceased'],
                                loss_weights=[1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse',
                                debug=False):
@@ -54,7 +54,7 @@ class BO_SKOpt(OptimiserBase):
         Returns:
             float -- The loss value
         """
-        return super().solve_and_compute_loss(variable_params, default_params, df_true, total_days, 
+        return super().predict_and_compute_loss(variable_params, default_params, df_true, total_days, 
                                               model, loss_compartments, loss_weights, loss_indices, 
                                               loss_method, debug)
 

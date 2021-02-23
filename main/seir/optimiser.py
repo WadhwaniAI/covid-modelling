@@ -67,7 +67,7 @@ class Optimiser():
 
 
     # TODO add cross validation support
-    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIRHD,
+    def predict_and_compute_loss(self, variable_params, default_params, df_true, total_days, model=SEIRHD,
                                loss_compartments=['active', 'recovered', 'total', 'deceased'], 
                                loss_weights = [1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse', 
                                debug=False):
@@ -195,7 +195,7 @@ class Optimiser():
         list_of_param_dicts = [self._create_dict(list(
             variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
 
-        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
+        partial_predict_and_compute_loss = partial(self.predict_and_compute_loss, default_params=default_params,
                                                  df_true=df_train, total_days=total_days, model=model,
                                                  loss_method=loss_method, loss_indices=loss_indices,
                                                  loss_compartments=loss_compartments, debug=False)
@@ -204,9 +204,9 @@ class Optimiser():
         if debug:
             loss_array = []
             for params_dict in tqdm(list_of_param_dicts):
-                loss_array.append(partial_solve_and_compute_loss(variable_params=params_dict))
+                loss_array.append(partial_predict_and_compute_loss(variable_params=params_dict))
         else:
-            loss_array = Parallel(n_jobs=40)(delayed(partial_solve_and_compute_loss)(params_dict) for params_dict in tqdm(list_of_param_dicts))
+            loss_array = Parallel(n_jobs=40)(delayed(partial_predict_and_compute_loss)(params_dict) for params_dict in tqdm(list_of_param_dicts))
                     
         return loss_array, list_of_param_dicts
 
@@ -243,7 +243,7 @@ class Optimiser():
         """
         total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
         
-        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
+        partial_predict_and_compute_loss = partial(self.predict_and_compute_loss, model=model,
                                                  default_params=default_params, total_days=total_days,
                                                  loss_method=loss_method, loss_indices=loss_indices, 
                                                  loss_weights=loss_weights, df_true=df_train,
@@ -252,7 +252,7 @@ class Optimiser():
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
         trials = Trials()
         rstate = np.random.RandomState(seed)
-        best = fmin(partial_solve_and_compute_loss,
+        best = fmin(partial_predict_and_compute_loss,
                     space=variable_param_ranges,
                     algo=algo_module.suggest,
                     max_evals=num_evals,

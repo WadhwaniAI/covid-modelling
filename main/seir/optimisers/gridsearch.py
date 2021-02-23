@@ -42,19 +42,19 @@ class GridSearch(OptimiserBase):
 
         self.variable_param_ranges = formatted_param_ranges
 
+    def init_default_params(self, df_train, default_params, train_period):
+        return super().init_default_params(df_train, default_params, train_period)
+
     def predict(self, params_dict: dict, model, end_date=None):
         return super().predict(params_dict=params_dict, model=model, end_date=end_date)
 
-    def solve_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,
+    def predict_and_compute_loss(self, variable_params, default_params, df_true, total_days, model,
                                loss_compartments=['active', 'recovered', 'total', 'deceased'],
                                loss_weights=[1, 1, 1, 1], loss_indices=[-20, -10], loss_method='rmse',
                                debug=False):
-        return super().solve_and_compute_loss(variable_params, default_params, df_true, total_days,
+        return super().predict_and_compute_loss(variable_params, default_params, df_true, total_days,
                                               model, loss_compartments, loss_weights, loss_indices,
                                               loss_method, debug)
-
-    def init_default_params(self, df_train, default_params, train_period):
-        return super().init_default_params(df_train, default_params, train_period)
 
     def _create_dict(self, param_names, values):
         """Helper function for creating dict of all parameters
@@ -68,6 +68,9 @@ class GridSearch(OptimiserBase):
         """
         params_dict = {param_names[i]: values[i] for i in range(len(values))}
         return params_dict
+
+    def forecast(self, params, train_last_date, forecast_days, model):
+        return super().forecast(params, train_last_date, forecast_days, model)
 
     def optimise(self, loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], 
                  debug=False, forecast_days=30, **kwargs):
@@ -106,7 +109,7 @@ class GridSearch(OptimiserBase):
         params_array = [self._create_dict(list(
             self.variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
 
-        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, 
+        partial_predict_and_compute_loss = partial(self.predict_and_compute_loss, 
                                                  default_params=self.default_params,
                                                  df_true=self.df_train, total_days=total_days, 
                                                  model=self.model, loss_method=loss_method, 
@@ -117,9 +120,9 @@ class GridSearch(OptimiserBase):
         if debug:
             losses_array = []
             for params_dict in tqdm(params_array):
-                losses_array.append(partial_solve_and_compute_loss(variable_params=params_dict))
+                losses_array.append(partial_predict_and_compute_loss(variable_params=params_dict))
         else:
-            losses_array = Parallel(n_jobs=40)(delayed(partial_solve_and_compute_loss)(
+            losses_array = Parallel(n_jobs=40)(delayed(partial_predict_and_compute_loss)(
                 params_dict) for params_dict in tqdm(params_array))
 
         partial_forecast = partial(self.forecast,
