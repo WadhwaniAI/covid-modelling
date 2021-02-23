@@ -40,23 +40,6 @@ def get_daily_vals(df, col):
     return df[col] - df[col].shift(1)
 
 
-def get_rates(timeseries, region, sub_region=None, area_names=None):
-    data = timeseries.set_index('date')
-    if area_names is not None:
-        total_pop = get_district_population(region, area_names)
-    else:
-        total_pop = get_population(region, sub_region=sub_region)
-    for col in Columns.which_compartments():
-        if col.name in data.columns:
-            data[f'{col.name}_rate'] = data[col.name] / total_pop
-            data[f'log_{col.name}_rate'] = data[f'{col.name}_rate'].apply(lambda x: np.log(x))
-    data.loc[:, 'group'] = len(data) * [1.0]
-    data.loc[:, 'covs'] = len(data) * [1.0]
-    data = data.reset_index()
-    data['date'] = pd.to_datetime(data['date'])
-    return data, total_pop
-
-
 def lograte_to_cumulative(to_transform, population):
     cumulative = np.exp(to_transform) * population
     return cumulative
