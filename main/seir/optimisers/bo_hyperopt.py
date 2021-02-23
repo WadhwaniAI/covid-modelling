@@ -12,7 +12,13 @@ class BO_Hyperopt(OptimiserBase):
     """Class which implements all optimisation related activites (training, evaluation, etc)
     """
 
-    def __init__(self):
+    def __init__(self, model, df_train, default_params, variable_param_ranges, train_period):
+        self.model = model
+        self.df_train = df_train
+        self.init_default_params(df_train, default_params, 
+                                 train_period=train_period)
+
+        self.set_variable_param_ranges(variable_param_ranges)
         self.lc = Loss_Calculator()
 
     def set_variable_param_ranges(self, variable_param_ranges):
@@ -69,16 +75,10 @@ class BO_Hyperopt(OptimiserBase):
         return params_array, losses_array
 
     def forecast(self, params, train_last_date, forecast_days, model):
-        simulate_till = train_last_date + timedelta(days=forecast_days)
-        simulate_till = datetime.combine(simulate_till, datetime.min.time())
+        return super().forecast(params, train_last_date, forecast_days, model)
 
-        df_prediction = self.solve({**params, **self.default_params}, model=model,
-                                    end_date=simulate_till)
-        return df_prediction
-
-    def optimise(self, df_train, model, num_evals=3500, loss_method='rmse', loss_indices=[-20, -10], 
-                 loss_compartments=['total'], loss_weights=[1], algo=tpe, seed=42, 
-                 forecast_days=30, **kwargs):
+    def optimise(self, num_evals=3500, train_period=28, loss_method='rmse', loss_compartments=['total'], 
+                 loss_weights=[1], algo=tpe, seed=42, forecast_days=30, ** kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -106,13 +106,14 @@ class BO_Hyperopt(OptimiserBase):
         Returns:
             dict, hp.Trials obj -- The best params after the fit and the list of trials conducted by hyperopt
         """
-        total_days = (df_train.iloc[-1, :]['date'].date() -
+        loss_indices = [-train_period, None]
+        total_days = (self.df_train.iloc[-1, :]['date'].date() -
                       self.default_params['starting_date']).days
         
-        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=model,
+        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, model=self.model,
                                                  default_params=self.default_params, total_days=total_days,
                                                  loss_method=loss_method, loss_indices=loss_indices, 
-                                                 loss_weights=loss_weights, df_true=df_train,
+                                                 loss_weights=loss_weights, df_true=self.df_train,
                                                  loss_compartments=loss_compartments)
 
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
@@ -128,9 +129,9 @@ class BO_Hyperopt(OptimiserBase):
         params_array, losses_array = self._order_trials_by_loss(trials)
 
         partial_forecast = partial(self.forecast, 
-                                   train_last_date=df_train.iloc[-1, :]['date'].date(), 
+                                   train_last_date=self.df_train.iloc[-1, :]['date'].date(),
                                    forecast_days=forecast_days,
-                                   model=model)
+                                   model=self.model)
         predictions_array = [partial_forecast(param) for param in params_array]
 
         return_dict = {

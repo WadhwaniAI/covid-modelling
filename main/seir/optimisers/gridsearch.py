@@ -13,7 +13,13 @@ class GridSearch(OptimiserBase):
     """Class which implements all optimisation related activites (training, evaluation, etc)
     """
 
-    def __init__(self):
+    def __init__(self, model, df_train, default_params, variable_param_ranges, train_period):
+        self.model = model
+        self.df_train = df_train
+        self.init_default_params(df_train, default_params,
+                                 train_period=train_period)
+
+        self.set_variable_param_ranges(variable_param_ranges)
         self.lc = Loss_Calculator()
 
     def set_variable_param_ranges(self, variable_param_ranges):
@@ -34,7 +40,7 @@ class GridSearch(OptimiserBase):
                                                       variable_param_ranges[key][0][1],
                                                       variable_param_ranges[key][1])
 
-        return formatted_param_ranges
+        self.variable_param_ranges = formatted_param_ranges
 
     def solve(self, params_dict: dict, model, end_date=None):
         return super().solve(params_dict=params_dict, model=model, end_date=end_date)
@@ -63,8 +69,8 @@ class GridSearch(OptimiserBase):
         params_dict = {param_names[i]: values[i] for i in range(len(values))}
         return params_dict
 
-    def optimise(self, df_train, default_params, variable_param_ranges, model, loss_method='rmse',
-                 loss_indices=[-20, -10], loss_compartments=['total'], debug=False):
+    def optimise(self, loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], 
+                 debug=False, forecast_days=30, **kwargs):
         """Implements gridsearch based optimisation
 
         Arguments:
@@ -92,24 +98,41 @@ class GridSearch(OptimiserBase):
         Returns:
             arr, list(dict) -- Array of loss values, and a list of parameter dicts
         """
-        total_days = (df_train.iloc[-1, :]['date'].date() - default_params['starting_date']).days
+        total_days = (self.df_train.iloc[-1, :]['date'].date() -
+                      self.default_params['starting_date']).days
 
-        rangelists = list(variable_param_ranges.values())
+        rangelists = list(self.variable_param_ranges.values())
         cartesian_product_tuples = itertools.product(*rangelists)
-        list_of_param_dicts = [self._create_dict(list(
-            variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
+        params_array = [self._create_dict(list(
+            self.variable_param_ranges.keys()), values) for values in cartesian_product_tuples]
 
-        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, default_params=default_params,
-                                                 df_true=df_train, total_days=total_days, model=model,
-                                                 loss_method=loss_method, loss_indices=loss_indices,
+        partial_solve_and_compute_loss = partial(self.solve_and_compute_loss, 
+                                                 default_params=self.default_params,
+                                                 df_true=self.df_train, total_days=total_days, 
+                                                 model=self.model, loss_method=loss_method, 
+                                                 loss_indices=loss_indices,
                                                  loss_compartments=loss_compartments, debug=False)
         
         # If debugging is enabled the gridsearch is not parallelised
         if debug:
-            loss_array = []
-            for params_dict in tqdm(list_of_param_dicts):
-                loss_array.append(partial_solve_and_compute_loss(variable_params=params_dict))
+            losses_array = []
+            for params_dict in tqdm(params_array):
+                losses_array.append(partial_solve_and_compute_loss(variable_params=params_dict))
         else:
-            loss_array = Parallel(n_jobs=40)(delayed(partial_solve_and_compute_loss)(params_dict) for params_dict in tqdm(list_of_param_dicts))
-                    
-        return loss_array, list_of_param_dicts
+            losses_array = Parallel(n_jobs=40)(delayed(partial_solve_and_compute_loss)(
+                params_dict) for params_dict in tqdm(params_array))
+
+        partial_forecast = partial(self.forecast,
+                                   train_last_date=self.df_train.iloc[-1, :]['date'].date(),
+                                   forecast_days=forecast_days,
+                                   model=self.model)
+
+        predictions_array = [partial_forecast(param) for param in params_array]
+
+        return_dict = {
+            'params': params_array,
+            'predictions': predictions_array,
+            'losses': losses_array
+        }
+
+        return return_dict
