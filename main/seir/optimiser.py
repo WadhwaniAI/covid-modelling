@@ -260,9 +260,3 @@ class Optimiser():
                     trials=trials)
         
         return best, trials
-
-    def bo_smac3(self, *args, **kwargs):
-        """Implements Bayesian Optimisation using SMAC3 library
-        """
-        #TODO
-        pass
