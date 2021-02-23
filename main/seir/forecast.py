@@ -236,7 +236,7 @@ def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
     Function to predict what-if scenarios with different post-lockdown R0s
 
     Args:
-        region_dict (dict): region_dict as returned by main.seir.fitting.single_fitting_cycle
+        region_dict (dict): region_dict as returned by main.seir.main.single_fitting_cycle
         params_dict (dict): model parameters
         multipliers (list, optional): list of multipliers to get post_lockdown_R0 from lockdown_R0. 
             Defaults to [0.9, 1, 1.1, 1.25].

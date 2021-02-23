@@ -23,7 +23,7 @@ class ABMAUncertainty(Uncertainty):
         Initializes uncertainty object, finds beta for distribution
 
         Args:
-            predictions_dict (dict): predictions_dict as returned by main.seir.fitting.single_fitting_cycle
+            predictions_dict (dict): predictions_dict as returned by main.seir.main.single_fitting_cycle
             date_of_sorting_trials (str): prediction date by which trials should be sorted + distributed
         """
         super().__init__(predictions_dict)
