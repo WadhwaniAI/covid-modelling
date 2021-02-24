@@ -15,7 +15,7 @@ import multiprocessing
 
 sys.path.append('../../')
 
-from main.seir.common import *
+from scripts.seir.common import *
 from utils.fitting.util import update_dict, chunked
 from utils.generic.config import read_config, process_config
 

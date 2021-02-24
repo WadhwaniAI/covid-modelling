@@ -10,7 +10,7 @@ from tqdm import tqdm
 import sys
 sys.path.append('../../')
 
-from main.seir.common import *
+from scripts.seir.common import *
 from utils.generic.config import read_config, process_config, make_date_key_str
 from utils.generic.logging import log_wandb
 from viz import plot_forecast
