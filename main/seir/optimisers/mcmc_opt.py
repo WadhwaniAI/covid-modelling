@@ -1,6 +1,10 @@
 from main.seir.optimisers import OptimiserBase
 from utils.fitting.loss import Loss_Calculator
 
+import datetime
+
+from main.seir.uncertainty import MCMC
+
 class MCMC_Opt(OptimiserBase):
     """Class which implements all optimisation related activites (training, evaluation, etc)
     """
@@ -58,5 +62,20 @@ class MCMC_Opt(OptimiserBase):
                                                 model, loss_compartments, loss_weights, loss_indices, 
                                                 loss_method, debug)
 
-    def optimise(*args, **kwargs):
-        pass
+    def optimise(self, df_train, default_params, variable_param_ranges, proposal_sigmas, end_date, 
+                 model, num_evals=10000, stride=5, n_chains=10, loss_method='rmse', 
+                 loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
+                 prior='uniform', algo='gaussian', **kwargs):
+        
+        end_date = datetime.combine(
+            df_train.iloc[-1, :]['date'].date(), datetime.min.time())
+        total_days = (df_train.iloc[-1, :]['date'].date() -
+                      default_params['starting_date']).days
+        mcmc_fit = MCMC(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
+                        algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, 
+                        loss_indices, loss_weights, model)
+        mcmc_fit.run()
+        
+        metric = {"DIC": mcmc_fit.DIC, "GR-ratio": mcmc_fit.R_hat}
+        best, tri = mcmc_fit._get_trials()
+        return best, tri, metric
