@@ -9,7 +9,6 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 
 sys.path.append('../../../')
-from main.seir.forecast import forecast_all_trials
 from main.seir.optimiser import Optimiser
 from .base import Uncertainty
 from utils.fitting.loss import Loss_Calculator
