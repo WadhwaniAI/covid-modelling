@@ -10,6 +10,7 @@ except AttributeError:
     collectionsAbc = collections
 
 import numpy as np
+from hyperopt import hp
 
 
 class HidePrints:
@@ -21,6 +22,32 @@ class HidePrints:
         sys.stdout.close()
         sys.stdout = self._original_stdout
 
+
+def set_variable_param_ranges(variable_param_ranges, fitting_method='bo_hyperopt'):
+    """Returns the ranges for the variable params in the search space
+
+    Keyword Arguments:
+
+        as_str {bool} -- If true, the parameters are not returned as a hyperopt object, but as a dict in
+        string form (default: {False})
+
+    Returns:
+        dict -- dict of ranges of variable params
+    """
+
+    formatted_param_ranges = {}
+    if fitting_method == 'bo_hyperopt':
+        for key in variable_param_ranges.keys():
+            formatted_param_ranges[key] = getattr(hp, variable_param_ranges[key][1])(
+                key, variable_param_ranges[key][0][0], variable_param_ranges[key][0][1])
+
+    if fitting_method == 'gridsearch':
+        for key in variable_param_ranges.keys():
+            formatted_param_ranges[key] = np.linspace(variable_param_ranges[key][0][0],
+                                                        variable_param_ranges[key][0][1],
+                                                        variable_param_ranges[key][1])
+
+    return formatted_param_ranges
 
 def train_test_split(df, threshold, threshold_col='date'):
     return df[df[threshold_col] <= threshold], df[df[threshold_col] > threshold]
