@@ -2,21 +2,20 @@ import pprint
 from collections import defaultdict, OrderedDict
 from datetime import datetime
 
-import multiprocessing as mp
 import numpy as np
 from joblib import delayed, Parallel
 from functools import partial
-from scipy.stats import poisson
 from tqdm import tqdm
 import copy
-from data.processing.processing import get_data
-from utils.fitting.mcmc_utils import set_optimizer, compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
-    avg_sum_multiple_chains, get_state, get_formatted_trials
-import pdb
+from main.seir.uncertainty.base import Uncertainty
+from main.seir.uncertainty.mcmc_utils import compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
+    avg_sum_multiple_chains, get_formatted_trials
 import scipy
 from scipy.stats import norm as N
 from scipy.stats import invgamma as inv
-class MCMC(object):
+
+
+class MCMC(Uncertainty):
 
     """
     MCMC class to perform metropolis-hastings. Supports gaussian and poisson likelihoods.
@@ -36,7 +35,8 @@ class MCMC(object):
     """
     
     def __init__(self, optimiser, df_train, default_params, variable_param_ranges, n_chains, total_days,
- algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,loss_weights,model, **ignored):
+                 algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,
+                 loss_weights,model, **ignored):
         """
         Constructor. Fetches the data, initializes the optimizer and sets up the
         likelihood function.
@@ -81,7 +81,6 @@ class MCMC(object):
         _,da,db = self._log_likelihood(theta)
         alpha = 40
         beta =  2/700
-        from scipy.stats import invgamma as inv
         theta['gamma'] = np.sqrt(inv.rvs(a = alpha ,scale = beta , size = 1 )[0])
         return theta,da,db
 
