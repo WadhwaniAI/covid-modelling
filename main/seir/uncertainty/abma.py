@@ -9,7 +9,7 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 
 sys.path.append('../../../')
-from main.seir.optimiser import Optimiser
+from utils.fitting.util import set_variable_param_ranges
 from .base import Uncertainty
 from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
@@ -119,8 +119,7 @@ class ABMAUncertainty(Uncertainty):
         Returns:
             float: optimal beta value
         """
-        op = Optimiser()
-        formatted_searchspace = op.set_variable_param_ranges(
+        formatted_searchspace = set_variable_param_ranges(
             variable_param_ranges, fitting_method)
 
         if fitting_method == 'bo_hyperopt':
