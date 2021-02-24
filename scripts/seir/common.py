@@ -60,12 +60,7 @@ def process_uncertainty_forecasts(predictions_dict, uncertainty):
 def forecast_best(predictions_dict, config):
     predictions_dict['forecasts'] = {}
     predictions_dict['forecasts'] = {}
-    predictions_dict['forecasts']['best'] = get_forecast(
-        predictions_dict,
-        model=config['fitting']['model'],
-        train_end_date=config['fitting']['split']['end_date'],
-        forecast_days=config['forecast']['forecast_days']
-    )
+    predictions_dict['forecasts']['best'] = predictions_dict['trials']['predictions'][0]
 
     predictions_dict['plots']['forecast_best'] = plot_forecast(
         predictions_dict,
