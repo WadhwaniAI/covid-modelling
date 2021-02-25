@@ -15,17 +15,19 @@ from utils.fitting.util import HidePrints, train_test_split
 
 
 class Optimiser():
-    def __init__(self, model: IHME, data: pd.DataFrame, args=None):
+    def __init__(self, model: IHME, train: pd.DataFrame, val: pd.DataFrame, args=None):
         """
         Initalises the optimiser for finding best fe_init for IHME model
 
         Args:
             model (IHME): untrained model
-            data (pd.DataFrame): fit + val data
+            train (pd.DataFrame): train data
+            val (pd.DataFrame): val data
             args ([type], optional): args for self.optimisestar(). Defaults to None.
         """
         self.model = model
-        self.data = data
+        self.train = train
+        self.val = val
         self.args = args
 
     def optimisestar(self, _):
@@ -61,17 +63,17 @@ class Optimiser():
         # if len(self.data) - val_size < min_days:
         #     raise Exception(f'len(data) - val_size must be >= {min_days}')
         model = self.model.generate()
-        data = copy(self.data)
-        threshold = data[model.date].max() - timedelta(days=val_size)
-        train, val = train_test_split(data, threshold, threshold_col=model.date)
+        # data = copy(self.data)
+        # threshold = data[model.date].max() - timedelta(days=val_size)
+        # train, val = train_test_split(data, threshold, threshold_col=model.date)
 
         def objective(params):
             test_model = model.generate()
             test_model.priors.update({
                 'fe_init': [params['alpha'], params['beta'], params['p']],
             })
-            train_cut = train[:]
-            val_cut = val[:]
+            train_cut = self.train[:]
+            val_cut = self.val[:]
             train_cut.loc[:, 'day'] = (train_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
             val_cut.loc[:, 'day'] = (val_cut['date'] - np.min(train_cut['date'])).apply(lambda x: x.days)
 
