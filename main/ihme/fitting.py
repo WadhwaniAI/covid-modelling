@@ -1,15 +1,17 @@
 import os
 import sys
 import copy
-from datetime import datetime, timedelta
+from datetime import timedelta
+from tabulate import tabulate
 
 import numpy as np
 import pandas as pd
 from curvefit.core import functions
 from pathos.multiprocessing import ProcessingPool as Pool
+import multiprocessing
 
 from data.processing.processing import get_data, train_val_test_split
-from viz import plot_smoothing, plot_fit
+from viz import plot_smoothing
 
 sys.path.append('../..')
 
@@ -124,38 +126,88 @@ def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params,
 def run_cycle():
     pass
 
-def single_fitting_cycle():
-    pass
-
-
-def setup(sub_region, region, area_names, model_params, sd, smooth, test_size, smooth_jump, start_date, data_length,
-          data_source, **config):
+def single_fitting_cycle(data, model, model_params, default_params, fitting_method_params, split, loss):
     """
-    gets data and sets up the model_parameters to be ready for IHME consumption
 
     Args:
-        sub_region (str): district
-        region (str): state
-        area_names (list): census area_names for the district
-        model_params (dict): model_params
-        sd (boolean): use social distancing covariates
-        smooth (int): apply rollingavg smoothing
-        test_size (int): size of test set
-        smooth_jump (boolean): whether to smooth_big_jump
-        start_date (str): start date for data
-        data_length (int): total length of data used
-        data_source (str): data source used
+        data ():
+        model ():
+        model_params ():
+        default_params ():
+        fitting_method_params ():
+        split ():
+        loss ():
 
     Returns:
-        tuple: dataframes dict, district_total_population, and model_params (modified)
-    """
-    model_params['func'] = getattr(functions, model_params['func'])
-    model_params['covs'] = ['covs', 'sd', 'covs'] if sd else ['covs', 'covs', 'covs']
-    dataframes, dtp = get_regional_data(sub_region, region, area_names, test_size=test_size, smooth_window=smooth,
-                                        smooth_jump=smooth_jump, start_date=start_date, data_length=data_length,
-                                        data_source=data_source, )
 
-    return dataframes, dtp, model_params
+    """
+
+    # record parameters for reproducibility
+    run_params = locals()
+    run_params['model'] = model.__name__
+    run_params['model_class'] = model
+
+    print('Performing {} fit ..'.format('m2' if split['val_period'] == 0 else 'm1'))
+
+    # Get data
+    params = {**data}
+    params['split'] = split
+    params['loss_compartments'] = loss['loss_compartments']
+    data_dict = data_setup(**params)
+
+    model_params['func'] = getattr(functions, model_params['func'])
+    model_params['covs'] = data['covariates']
+
+    observed_dataframes, smoothing = data_dict['observed_dataframes'], data_dict['smoothing']
+    smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
+    smoothing_description = smoothing['smoothing_description'] if 'smoothing_description' in smoothing else None
+
+    orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
+
+    print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
+    if not observed_dataframes['df_val'] is None:
+        print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
+
+    predictions_dict = run_cycle()
+    # run_cycle_compartments(dataframes, model_params, which_compartments=which_compartments, dtp=dtp, **config)
+
+    predictions_dict['plots']['smoothing'] = smoothing_plot
+    predictions_dict['smoothing_description'] = smoothing_description
+    predictions_dict['df_district_unsmoothed'] = orig_df_district
+
+    # record parameters for reproducibility
+    predictions_dict['run_params'] = run_params
+    return predictions_dict
+
+
+# def setup(sub_region, region, area_names, model_params, sd, smooth, test_size, smooth_jump, start_date, data_length,
+#           data_source, **config):
+#     """
+#     gets data and sets up the model_parameters to be ready for IHME consumption
+#
+#     Args:
+#         sub_region (str): district
+#         region (str): state
+#         area_names (list): census area_names for the district
+#         model_params (dict): model_params
+#         sd (boolean): use social distancing covariates
+#         smooth (int): apply rollingavg smoothing
+#         test_size (int): size of test set
+#         smooth_jump (boolean): whether to smooth_big_jump
+#         start_date (str): start date for data
+#         data_length (int): total length of data used
+#         data_source (str): data source used
+#
+#     Returns:
+#         tuple: dataframes dict, district_total_population, and model_params (modified)
+#     """
+#     model_params['func'] = getattr(functions, model_params['func'])
+#     model_params['covs'] = ['covs', 'sd', 'covs'] if sd else ['covs', 'covs', 'covs']
+#     dataframes, dtp = get_regional_data(sub_region, region, area_names, test_size=test_size, smooth_window=smooth,
+#                                         smooth_jump=smooth_jump, start_date=start_date, data_length=data_length,
+#                                         data_source=data_source, )
+#
+#     return dataframes, dtp, model_params
 
 
 def create_output_folder(fname):
@@ -172,21 +224,6 @@ def create_output_folder(fname):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     return output_folder
-
-
-def forecast(model, train, test, forecast_days):
-    predictions = pd.DataFrame(columns=[model.date, model.ycol])
-    if len(test) == 0:
-        n_days = (train[model.date].max() - train[model.date].min() + timedelta(days=1 + forecast_days)).days
-        predictions.loc[:, model.ycol] = model.predict(train[model.date].min(),
-                                                       train[model.date].max() + timedelta(days=forecast_days))
-    else:
-        n_days = (test[model.date].max() - train[model.date].min() + timedelta(days=1 + forecast_days)).days
-        predictions.loc[:, model.ycol] = model.predict(train[model.date].min(),
-                                                       test[model.date].max() + timedelta(days=forecast_days))
-    predictions.loc[:, model.date] = pd.to_datetime(
-        pd.Series([timedelta(days=x) + train[model.date].min() for x in range(n_days)]))
-    return predictions
 
 
 def calc_loss(ycol, train, test, predictions, xform_func, dtp):
@@ -271,9 +308,7 @@ def run_cycle(dataframes, model_params, forecast_days=30,
         dict: results_dict
     """
     model = IHME(model_params)
-    train, test = dataframes['train'], dataframes['test_nora']
-
-    n_days_optimize = kwargs.get("n_days_optimize", False)
+    train, val, test = dataframes['train'], dataframes['val'], dataframes['test_nora']
 
     # OPTIMIZE HYPERPARAMS
     hyperopt_runs = {}
@@ -285,26 +320,26 @@ def run_cycle(dataframes, model_params, forecast_days=30,
         'val_size': val_size,
         'min_days': min_days,
     }
-    o = Optimiser(model, train, args)
+    o = Optimiser(model, train, val, args)
 
-    if num_hyperopt == 1:
-        best_init, err, trials = o.optimisestar(0)
+    # if num_hyperopt == 1:
+    #     best_init, err, trials = o.optimisestar(0)
+    #     hyperopt_runs[err] = best_init
+    #     trials_dict[0] = trials
+    # else:
+    pool = Pool(processes=multiprocessing.cpu_count())
+    for i, (best_init, err, trials) in enumerate(pool.map(o.optimisestar, list(range(num_hyperopt)))):
         hyperopt_runs[err] = best_init
-        trials_dict[0] = trials
-    else:
-        pool = Pool(processes=5)
-        for i, (best_init, err, trials) in enumerate(pool.map(o.optimisestar, list(range(num_hyperopt)))):
-            hyperopt_runs[err] = best_init
-            trials_dict[i] = trials
+        trials_dict[i] = trials
     fe_init = hyperopt_runs[min(hyperopt_runs.keys())]
 
-    train.loc[:, 'day'] = (train['date'] - np.min(train['date'])).apply(lambda x: x.days)
-    test.loc[:, 'day'] = (test['date'] - np.min(train['date'])).apply(lambda x: x.days)
-    test.index = range(1 + train.index[-1], 1 + train.index[-1] + len(test))
+    # train.loc[:, 'day'] = (train['date'] - np.min(train['date'])).apply(lambda x: x.days)
+    # test.loc[:, 'day'] = (test['date'] - np.min(train['date'])).apply(lambda x: x.days)
+    # test.index = range(1 + train.index[-1], 1 + train.index[-1] + len(test))
     model.priors['fe_init'] = fe_init
 
     # FIT/PREDICT
-    model.fit(train)
+    model.fit(pd.concat([train, val]))
 
     predictions = pd.DataFrame(columns=[model.date, model.ycol])
     if len(test) == 0:
@@ -508,19 +543,19 @@ def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.
     return final
 
 
-def single_cycle(sub_region, region, area_names=None, model_params=None,
-                 which_compartments=Columns.curve_fit_compartments(), **config):
-    """[summary]
-
-    Args:
-        sub_region (str): district
-        region (str): state
-        area_names (list): census area_names for the district
-        model_params (dict): model_params
-        which_compartments (list, optional): List of compartments to fit. Defaults to Columns.curve_fit_compartments().
-
-    Returns:
-        dict: results_dict
-    """
-    dataframes, dtp, model_params = setup(sub_region, region, area_names, model_params, **config)
-    return run_cycle_compartments(dataframes, model_params, which_compartments=which_compartments, dtp=dtp, **config)
+# def single_cycle(sub_region, region, area_names=None, model_params=None,
+#                  which_compartments=Columns.curve_fit_compartments(), **config):
+#     """[summary]
+#
+#     Args:
+#         sub_region (str): district
+#         region (str): state
+#         area_names (list): census area_names for the district
+#         model_params (dict): model_params
+#         which_compartments (list, optional): List of compartments to fit. Defaults to Columns.curve_fit_compartments().
+#
+#     Returns:
+#         dict: results_dict
+#     """
+#     dataframes, dtp, model_params = setup(sub_region, region, area_names, model_params, **config)
+#     return run_cycle_compartments(dataframes, model_params, which_compartments=which_compartments, dtp=dtp, **config)
