@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import pandas as pd
 import numpy as np
 from copy import copy
@@ -10,7 +9,6 @@ from pathos.multiprocessing import ProcessingPool as Pool
 from curvefit.core import functions
 
 sys.path.append('../..')
-from models.ihme.model import IHME
 from utils.fitting.data import get_rates
 from utils.fitting.util import train_test_split, rollingavg
 

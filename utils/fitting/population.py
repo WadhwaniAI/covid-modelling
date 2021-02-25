@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
-import datetime
 import os
-import copy
 
 def create_age_bands(notation='-'):
     age_bands = {}

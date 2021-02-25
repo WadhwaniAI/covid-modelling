@@ -2,7 +2,6 @@ import os
 import numpy as np
 import pandas as pd
 
-from tqdm import tqdm
 import datetime
 
 def create_all_trials_csv(predictions_dict: dict):

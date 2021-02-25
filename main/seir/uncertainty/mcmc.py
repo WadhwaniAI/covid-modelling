@@ -195,7 +195,7 @@ class MCMC(Uncertainty):
         x_new,da,db= self._log_likelihood(theta_new)
         x_old,_,_ = self._log_likelihood(theta_old)
 
-        if (x_new) > (x_old):
+        if x_new > x_old:
             optimized+=1
             return True,explored,optimized,x_new,da,db
         else:

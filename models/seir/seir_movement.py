@@ -88,8 +88,8 @@ class SEIR_Movement(SEIR):
         dydt = np.zeros(y.shape)
 
         # Write differential equations
-        dydt[0] = - I * S / (self.T_trans) - self.mu*S  # S
-        dydt[1] = I * S / (self.T_trans) - (E / self.T_inc) - self.mu*E  # E
+        dydt[0] = - I * S / self.T_trans - self.mu*S  # S
+        dydt[1] = I * S / self.T_trans - (E / self.T_inc) - self.mu*E  # E
         dydt[2] = E / self.T_inc - I / self.T_inf - self.mu*I  # I
         dydt[3] = (1/self.T_inf)*(self.P_mild*I) - R_mild/self.T_recov_mild # R_mild
         dydt[4] = (1/self.T_inf)*(self.P_severe*I) - R_severe/self.T_recov_severe # R_severe

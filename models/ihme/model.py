@@ -1,9 +1,6 @@
 import pandas as pd
-import numpy as np 
-from datetime import timedelta, datetime
 from copy import copy
 
-import curvefit
 from curvefit.pipelines.basic_model import BasicModel
 from curvefit.core.functions import *
 from curvefit.core.utils import data_translator
@@ -11,8 +8,6 @@ from curvefit.core.utils import data_translator
 import sys
 sys.path.append('../../')
 
-from utils.fitting.data import get_daily_vals
-from utils.fitting.util import rollingavg
 from models.model import Model
 
 class IHME(Model):

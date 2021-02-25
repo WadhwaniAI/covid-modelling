@@ -1,21 +1,15 @@
-import os
 import json
 from copy import copy
 import argparse
 import pandas as pd
-import numpy as np
 import dill as pickle
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 import matplotlib.pyplot as plt
-
-import curvefit
 
 import sys
 sys.path.append('../..')
-from models.ihme.model import IHME
 from utils.fitting.data import cities
-from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative
 
 from viz import plot_ihme_results
 from main.ihme.fitting import create_output_folder, single_cycle

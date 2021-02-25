@@ -1,9 +1,4 @@
-import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-from pandas.plotting import register_matplotlib_converters
-from matplotlib.dates import DateFormatter
-import pandas as pd
 from datetime import timedelta
 
 import sys

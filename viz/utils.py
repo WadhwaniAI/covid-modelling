@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from matplotlib.dates import MO, TU, WE, TH, FR, SA, SU
+from matplotlib.dates import SA
 import seaborn as sns
 from pandas.plotting import register_matplotlib_converters
 from matplotlib.lines import Line2D

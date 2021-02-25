@@ -80,7 +80,7 @@ class AthenaLoader(BaseLoader):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
     
     def get_data(self, **dataloading_params):
-        if (dataloading_params['stratified_data']):
+        if dataloading_params['stratified_data']:
             return self.get_data_stratified(**dataloading_params)
         else:
             return self.get_data_standard(**dataloading_params)

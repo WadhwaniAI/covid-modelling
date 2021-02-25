@@ -1,6 +1,5 @@
 from hyperopt import hp, tpe, fmin, Trials
 from functools import partial
-from datetime import datetime, timedelta
 import importlib
 import numpy as np
 import copy

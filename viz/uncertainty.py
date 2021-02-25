@@ -3,7 +3,6 @@ from datetime import timedelta
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 import pandas as pd
-import numpy as np
 import seaborn as sns
 from adjustText import adjust_text
 import datetime

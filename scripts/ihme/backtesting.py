@@ -6,7 +6,7 @@ import argparse
 import pandas as pd
 import dill as pickle
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 import matplotlib.pyplot as plt
 
 sys.path.append('../..')
@@ -17,7 +17,7 @@ from utils.fitting.data import cities
 
 from main.ihme.backtesting import IHMEBacktest
 from main.ihme.fitting import setup, create_output_folder
-from viz import plot_backtest, plot_backtest_errors, plot
+from viz import plot_backtest, plot_backtest_errors
 from utils.generic.enums import Columns
 
 from utils.generic.config import read_config

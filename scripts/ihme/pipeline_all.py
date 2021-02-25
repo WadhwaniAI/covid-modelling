@@ -1,26 +1,15 @@
 import os
 import json
 from copy import copy
-import pandas as pd
-import numpy as np
 import dill as pickle
 import time
 import argparse
-from datetime import datetime, timedelta
-
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import pandas as pd
-import numpy as np
-import seaborn as sns
-from adjustText import adjust_text
+from datetime import datetime
 
 import sys
 sys.path.append('../..')
 from utils.fitting.data import cities
 from utils.generic.config import read_config
-from main.seir.forecast import get_forecast, order_trials, top_k_trials, forecast_k
-from utils.generic.enums import Columns
 
 from main.ihme.fitting import single_cycle, create_output_folder
 from utils.generic.enums import Columns

@@ -1,20 +1,14 @@
-from utils.fitting.loss import Loss_Calculator
 from copy import copy
 from models.ihme.model import IHME
-import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 import time
 
 from pathos.multiprocessing import ProcessingPool as Pool
 
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 
 import sys
 sys.path.append('../..')
-from utils.fitting.util import HidePrints
-from viz import setup_plt
 from utils.generic.enums import Columns
 from main.ihme.fitting import run_cycle_compartments
 

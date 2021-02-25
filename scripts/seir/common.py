@@ -1,11 +1,9 @@
 import copy
-import datetime
 import sys
 
 sys.path.append('../..')
 
 from main.seir.main import single_fitting_cycle
-from main.seir.forecast import get_forecast
 from viz import plot_forecast, plot_top_k_trials, plot_ptiles
 from viz.uncertainty import plot_beta_loss
 

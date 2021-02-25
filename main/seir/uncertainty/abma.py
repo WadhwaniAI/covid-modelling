@@ -249,7 +249,7 @@ class ABMAUncertainty(Uncertainty):
                 will be returned. Defaults to all deciles 10-90, as well as 2.5/97.5 and 5/95.
 
         Returns:
-            dict: {percentile: index} where index is the trial index (to arrays in predictions_dict)
+            pd.DataFrame
         """
         if self.distribution is None:
             raise Exception(
