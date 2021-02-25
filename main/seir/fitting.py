@@ -96,7 +96,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
         model {class} -- The epi model class we're using to perform optimisation (default: {SEIRHD})
         data_from_tracker {bool} -- If true, data is from covid19india API (default: {True})
         train_period {int} -- Length of training period (default: {7})
-        loss_compartments {list} -- Whci compartments to apply loss over
+        loss_compartments {list} -- Which compartments to apply loss over
         (default: {['active', 'total', 'recovered', 'deceased']})
         num_evals {int} -- Number of evaluations for hyperopt (default: {1500})
         N {float} -- Population of area (default: {1e7})
@@ -111,7 +111,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     optimiser = Optimiser()
     # Get the fixed params
     default_params = optimiser.init_default_params(df_train, default_params, train_period=split['train_period'])
-    # Get/create searchspace of variable paramms
+    # Get/create searchspace of variable params
     loss_indices = [-(split['train_period']), None]
     loss['loss_indices'] = loss_indices
     # Perform Bayesian Optimisation
@@ -155,7 +155,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
         model_class {class} -- The epi model class to be used for modelling (default: {SEIRHD})
         train_period {int} -- The training period (default: {7})
         val_period {int} -- The validation period (default: {7})
-        num_evals {int} -- Number of evaluations of Bayesian Optimsation (default: {1500})
+        num_evals {int} -- Number of evaluations of Bayesian Optimisation (default: {1500})
         data_from_tracker {bool} -- If False, data from tracker is not used (default: {True})
         filename {str} -- If None, Athena database is used. Otherwise, data in filename is read (default: {None})
         data_format {str} -- The format type of the filename user is providing ('old'/'new') (default: {'new'})
@@ -164,7 +164,7 @@ def single_fitting_cycle(data, model, variable_param_ranges, default_params, fit
     Returns:
         dict -- dict of everything related to prediction
     """
-    # record parameters for reproducability
+    # record parameters for reproducibility
     run_params = locals()
     run_params['model'] = model.__name__
     run_params['model_class'] = model
