@@ -28,22 +28,22 @@ def get_india_district_age_bands(age_data):
     return age_band_pops, total_pop
 
 def india_census_age():
-	# get age data in bands
-	filenames = 'DDW-{}00C-13'
-	state_file_mapping = {
-		filenames.format('24'): 'Gujarat',
-		filenames.format('29'): 'Karnataka',
-		filenames.format('27'): 'Maharashtra',
-		filenames.format('07'): 'Delhi',
-		filenames.format('08'): 'Rajasthan',
-	}
-
-	age_data = {}
-	directory = '../../data/data/census/'
-	for filename in os.listdir(directory):
-		df = pd.read_excel(os.path.join(directory, filename))
-		age_data[state_file_mapping[filename.split('.')[0]]] = df.dropna(how='all')
-	return age_data
+    # get age data in bands
+    filenames = 'DDW-{}00C-13'
+    state_file_mapping = {
+        filenames.format('24'): 'Gujarat',
+        filenames.format('29'): 'Karnataka',
+        filenames.format('27'): 'Maharashtra',
+        filenames.format('07'): 'Delhi',
+        filenames.format('08'): 'Rajasthan',
+    }
+    
+    age_data = {}
+    directory = '../../data/data/census/'
+    for filename in os.listdir(directory):
+        df = pd.read_excel(os.path.join(directory, filename))
+        age_data[state_file_mapping[filename.split('.')[0]]] = df.dropna(how='all')
+    return age_data
 
 def clean_indian_census(state):
     raw_all_district_age_data = india_census_age()[state]
