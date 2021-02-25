@@ -146,7 +146,7 @@ def plot_top_k_trials(predictions_dict, k=10, vline=None, log_scale=False,
         texts = []
         ax.plot(df_true[Columns.date.name].to_numpy(), df_true[compartment.name].to_numpy(),
                 '-o', color='C0', label=f'{compartment.label} (Observed)')
-        if plot_individual_curves == True:
+        if plot_individual_curves:
             for i, df_prediction in enumerate(predictions):
                 loss_value = np.around(top_k_losses[i], 2)
                 r0 = np.around(top_k_params[i]['lockdown_R0'], 2)
