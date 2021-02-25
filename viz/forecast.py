@@ -95,7 +95,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
                ls=':', color='black', label='Data Last Date')
     axis_formatter(ax, log_scale=log_scale)
     fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
-    if filename != None:
+    if filename is not None:
         plt.savefig(filename, format=fileformat)
 
     return fig
@@ -112,7 +112,7 @@ def plot_forecast_agnostic(df_true, df_prediction, region, log_scale=False, file
 
     axis_formatter(ax, log_scale=log_scale)
     fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
-    if filename != None:
+    if filename is not None:
         plt.savefig(filename)
 
     return fig

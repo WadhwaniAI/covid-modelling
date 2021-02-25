@@ -90,7 +90,7 @@ class OptimiserBase(ABC):
 
         # Choose which indices to calculate loss on
         # TODO Add slicing capabilities on the basis of date
-        if loss_indices == None:
+        if loss_indices is None:
             df_prediction_slice = df_prediction
             df_true_slice = df_true
         else:

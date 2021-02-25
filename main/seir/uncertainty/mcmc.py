@@ -104,7 +104,7 @@ class MCMC(Uncertainty):
             new_value = None
             lower_bound = (float(self.prior_ranges[param][0][0]))
             upper_bound = (self.prior_ranges[param][0][1])
-            while new_value == None:
+            while new_value is None:
                 #Gaussian proposal
                 new_value = np.random.normal(loc = old_value, scale = self.proposal_sigmas[param])
                 if new_value < lower_bound or new_value > upper_bound:

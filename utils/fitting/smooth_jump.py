@@ -26,7 +26,7 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
     """
     df_district['date'] = pd.to_datetime(df_district['date'])
     df_district = df_district.set_index('date')
-    if d2 == None:
+    if d2 is None:
         d2 = d1 + timedelta(days=1)
 
     d1 = datetime.combine(d1, datetime.min.time())

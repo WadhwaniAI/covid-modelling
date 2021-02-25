@@ -200,7 +200,7 @@ def run_cycle(dataframes, model_params, forecast_days=30,
     if len(test) != 0:
         test_pred = predictions[model.ycol][len(train):len(train) + len(test)]
         testerr = lc.evaluate(test[model.ycol], test_pred)
-    if xform_func != None:
+    if xform_func is not None:
         xform_trainerr = lc.evaluate(xform_func(train[model.ycol], dtp),
             xform_func(train_pred, dtp))
         xform_testerr = None
