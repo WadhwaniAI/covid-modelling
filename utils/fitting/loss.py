@@ -103,7 +103,8 @@ class Loss_Calculator():
         loss = np.mean(perc_ape)
         return loss
 
-    def calc_loss_dict(self, df_prediction, df_true, loss_compartments, loss_method='rmse'):
+    def calc_loss_dict(self, df_prediction, df_true, loss_compartments=['active', 'recovered', 'total', 'deceased'],
+                       loss_method='rmse'):
         """Caclculates dict of losses for each compartment using the method specified
 
         Args:
@@ -158,7 +159,7 @@ class Loss_Calculator():
         err['mape'] = self.mape(y_true, y_pred)
         err['rmse'] = self.rmse(y_true, y_pred)
         try:
-            err['rmsle'] = self.rmse(y_true, y_pred, log=True)
+            err['rmsle'] = self.rmsle(y_true, y_pred)
         except:
             err['rmsle'] = None
         return err
@@ -225,7 +226,7 @@ class Loss_Calculator():
 
             df_prediction_slice.reset_index(drop=True, inplace=True)
             df_true_slice.reset_index(drop=True, inplace=True)
-            ld = self.calc_loss_dict(df_prediction_slice, df_true_slice, method=method)
+            ld = self.calc_loss_dict(df_prediction_slice, df_true_slice, loss_method=method)
 
             ld = {key: round(value, round_precision) for key, value in ld.items()}
             if i+1 == len(week_indices)-1:
@@ -236,7 +237,7 @@ class Loss_Calculator():
 
         df_prediction.reset_index(drop=True, inplace=True)
         df_true.reset_index(drop=True, inplace=True)
-        ld = self.calc_loss_dict(df_prediction, df_true, method=method)
+        ld = self.calc_loss_dict(df_prediction, df_true, loss_method=method)
 
         ld = {key: round(value, round_precision) for key, value in ld.items()}
         forecast_errors_dict['total'] = ld
