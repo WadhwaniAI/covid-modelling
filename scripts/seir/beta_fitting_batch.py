@@ -1,11 +1,11 @@
+import argparse
 import os
 import pickle
-import argparse
 from functools import partial
+
 from joblib import Parallel, delayed
 from tqdm import tqdm
-
-from utils.generic.config import read_config, make_date_key_str
+from utils.generic.config import make_date_key_str, read_config
 from viz import plot_ptiles
 
 

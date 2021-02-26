@@ -1,22 +1,23 @@
 import argparse
+import datetime
+import itertools
 import logging
+import multiprocessing
 import os
 import pickle
 import sys
 from functools import partial
-import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
 from joblib import Parallel, delayed
 from tqdm import tqdm
-import multiprocessing
 
 sys.path.append('../../')
 
 from scripts.seir.common import *
-from utils.fitting.util import update_dict, chunked
-from utils.generic.config import read_config, process_config
+from utils.fitting.util import chunked, update_dict
+from utils.generic.config import process_config, read_config
 
 regions = [
     {'label': 'Mumbai', 'state': 'Maharashtra', 'district': 'Mumbai', 'smooth_jump': True},

@@ -1,8 +1,9 @@
+import datetime
 import os
+
 import numpy as np
 import pandas as pd
 
-import datetime
 
 def create_all_trials_csv(predictions_dict: dict):
     df_all = pd.DataFrame(columns=predictions_dict['trials_processed']['predictions'][0].columns)

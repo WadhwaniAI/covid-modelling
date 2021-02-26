@@ -1,19 +1,21 @@
-import numpy as np
 import argparse
-from functools import partial
-from tqdm import tqdm
-from joblib import Parallel, delayed
 import datetime
-
 import sys
+from functools import partial
+
+import numpy as np
+from joblib import Parallel, delayed
+from tqdm import tqdm
+
 sys.path.append('../../')
 
-import os
 import copy
+import os
 import pickle
 
 from utils.generic.config import read_config
 from viz.uncertainty import plot_beta_loss
+
 
 # Load all predictions_dict files_load_all_pdicts(parsed_args)
 def _load_all_pdicts(parsed_args):

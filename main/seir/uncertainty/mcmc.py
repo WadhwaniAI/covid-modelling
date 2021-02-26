@@ -221,8 +221,8 @@ class MCMC(Uncertainty):
         optimized = 0
         alpha_0 = 40
         beta_0 = 2/700
-        scipy.random.seed()
-        for i in tqdm(range(iters)):
+        np.random.seed()
+        for _ in tqdm(range(iters)):
             
             theta_new = self.Gauss_proposal(theta)
             theta_new['gamma'] = np.sqrt(inv.rvs(a = alpha_0 + da  ,scale = beta_0 + db,size = 1)[0])
