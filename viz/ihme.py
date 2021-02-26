@@ -1,9 +1,11 @@
-import matplotlib.pyplot as plt
+import sys
 from datetime import timedelta
 
-import sys
+import matplotlib.pyplot as plt
+
 sys.path.append('../..')
 from viz.utils import setup_plt
+
 
 def plot_ihme_results(model_params, converged_params, df, train_size, test, predictions, predictdate, testerr,
         file_prefix, val_size, draws=None, yaxis_name=None):

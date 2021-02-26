@@ -1,12 +1,13 @@
-import matplotlib.pyplot as plt
+import datetime
+from copy import copy
 from datetime import timedelta
-from matplotlib.lines import Line2D
-from matplotlib.patches import Patch
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from adjustText import adjust_text
-import datetime
-from copy import copy
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 from utils.generic.enums import Columns
 from viz.utils import axis_formatter
@@ -42,7 +43,7 @@ def plot_ptiles(predictions_dict, vline=None, which_compartments=[Columns.active
         ax.plot(df_true[Columns.date.name].to_numpy(), df_true[compartment.name].to_numpy(),
                 '-o', color='C0', label=f'{compartment.label} (Observed)')
         if plot_individual_curves:
-            for i, (ptile, df_prediction) in enumerate(predictions.items()):
+            for _, (ptile, df_prediction) in enumerate(predictions.items()):
                 sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
                             ls='-', label=f'{compartment.label} Percentile :{ptile}')
                 texts.append(plt.text(

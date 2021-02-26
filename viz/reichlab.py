@@ -1,21 +1,22 @@
 from copy import copy
-import matplotlib.pyplot as plt
+
+import adjustText as aT
+import geopandas as gpd
+import geoplot as gplt
 import matplotlib.colors as colors
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy.stats as stats
+import seaborn as sns
+import statsmodels.api as sm
 from matplotlib import cm
 from matplotlib.patches import Patch
-import geoplot as gplt
+from scipy.stats import median_abs_deviation
 from shapely.geometry import MultiPolygon
 
-import pandas as pd
-import geopandas as gpd
-import numpy as np
-import seaborn as sns
-import scipy.stats as stats
-from scipy.stats import median_abs_deviation
-import statsmodels.api as sm
-import adjustText as aT
-
 from viz.utils import add_inset_subplot_to_axes
+
 
 def preprocess_shape_file(filename='cb_2018_us_state_5m/cb_2018_us_state_5m.shp', 
                           root_dir='../../data/data/shapefiles'):
@@ -212,7 +213,7 @@ def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=N
     ax.scatter(df_zneg['best_loss_train'], df_zneg['model_mape'], s=-
             df_zneg[stat_metric_to_use]*100, c='blue', marker='o', label='-ve Z score states')
     if annotate:
-        for i, (index, row) in enumerate(df_wadhwani.iterrows()):
+        for _, (index, row) in enumerate(df_wadhwani.iterrows()):
             if abbv:
                 state_name = abbv_dict[index]
             else:

@@ -1,9 +1,10 @@
+import copy
+import datetime
 from datetime import timedelta
+
 import pandas as pd
 import seaborn as sns
 from adjustText import adjust_text
-import datetime
-import copy
 
 from utils.generic.enums.columns import *
 from viz.utils import axis_formatter
@@ -178,7 +179,7 @@ def plot_r0_multipliers(region_dict, predictions_mul_dict, log_scale=False):
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.plot(df_true['date'], df_true['active'],
         '-o', color='orange', label='Active Cases (Observed)')
-    for i, (mul, mul_dict) in enumerate(predictions_mul_dict.items()):
+    for _, (mul, mul_dict) in enumerate(predictions_mul_dict.items()):
         df_prediction = mul_dict['df_prediction']
         true_r0 = mul_dict['params']['post_lockdown_R0']
         sns.lineplot(x="date", y="hospitalised", data=df_prediction,

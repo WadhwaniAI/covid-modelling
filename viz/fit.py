@@ -1,14 +1,15 @@
-from datetime import timedelta
-from matplotlib.lines import Line2D
-import seaborn as sns
 import copy
 import math
+from datetime import timedelta
 
+import seaborn as sns
+from matplotlib.lines import Line2D
 from scipy.stats import entropy
 
 from utils.generic.enums.columns import *
 from utils.generic.stats import *
 from viz.utils import axis_formatter
+
 
 def plot_fit(df_prediction, df_train, df_val, df_district, train_period, location_description,
              which_compartments=['active', 'total'], description='', savepath=None, 

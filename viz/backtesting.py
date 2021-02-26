@@ -1,12 +1,12 @@
-import matplotlib as mpl
-import pandas as pd
 import copy
 from datetime import timedelta
 
-from viz.utils import setup_plt
-from viz.utils import axis_formatter
+import matplotlib as mpl
+import pandas as pd
+
 from data.processing.processing import get_data
 from utils.generic.enums.columns import *
+from viz.utils import axis_formatter, setup_plt
 
 
 def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_format='old_output', filename=None, 
