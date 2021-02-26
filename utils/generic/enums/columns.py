@@ -1,7 +1,8 @@
-from enum import Enum
 from collections import namedtuple
-import numpy as np
+from enum import Enum
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 Column = namedtuple('Column', ['name', 'label', 'color'])
 
@@ -12,15 +13,15 @@ class Columns(Enum):
 
     @property
     def name(self):
-        return self.value.name
+        return self.name
         
     @property
     def label(self):
-        return self.value.label
+        return self.label
     
     @property
     def color(self):
-        return self.value.color
+        return self.color
 
     date = Column('date', 'date', None)
     critical = Column('critical', 'Critical', 'brown')

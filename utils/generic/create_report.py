@@ -1,13 +1,15 @@
-import os
-import pypandoc
-from mdutils.mdutils import MdUtils
-from pprint import pformat
-import pandas as pd
-import numpy as np
-import pickle
-import yaml
 import copy
 import json
+import os
+import pickle
+from pprint import pformat
+
+import numpy as np
+import pandas as pd
+import pypandoc
+import yaml
+from mdutils.mdutils import MdUtils
+
 
 def _dump_predictions_dict(predictions_dict, ROOT_DIR):
     filepath = os.path.join(ROOT_DIR, 'predictions_dict.pkl')

@@ -1,7 +1,8 @@
+import sys
+
 import numpy as np
 import pandas as pd
 
-import sys
 sys.path.append('../..')
 from utils.fitting.population import get_district_population
 from utils.generic.enums import Columns

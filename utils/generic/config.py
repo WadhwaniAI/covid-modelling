@@ -1,11 +1,10 @@
-import yaml
 import copy
-
-import models
-import main.seir.uncertainty as uncertainty_module
-from utils.generic.enums import Columns
-
 import datetime
+
+import main.seir.uncertainty as uncertainty_module
+import models
+import yaml
+from utils.generic.enums import Columns
 
 
 def read_config(filename='default.yaml', preprocess=True):

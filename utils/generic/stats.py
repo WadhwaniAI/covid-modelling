@@ -1,5 +1,6 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 
 def get_best_param_dist(model_dict):
     """Computes mean and variance of the best fit params accross different runs

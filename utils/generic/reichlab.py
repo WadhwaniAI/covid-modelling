@@ -1,12 +1,12 @@
-from utils.fitting.loss import Loss_Calculator
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from pytz import timezone
 import copy
 import re
+from datetime import datetime, timedelta
 
+import numpy as np
+import pandas as pd
 from data.dataloader import JHULoader
+from pytz import timezone
+from utils.fitting.loss import Loss_Calculator
 from utils.generic.config import read_config
 
 """
@@ -272,11 +272,11 @@ def compare_gt_pred(df_all_submissions, df_gt_loss_wk, loss_fn='mape'):
                               'value_y': 'true_value'}, axis=1)
 
     lc = Loss_Calculator()
-    df_comb['mape'] = df_comb.apply(lambda row: lc._calc_mape(
+    df_comb['mape'] = df_comb.apply(lambda row: lc.mape(
         np.array([row['forecast_value']]), np.array([row['true_value']])), axis=1)
-    df_comb['rmse'] = df_comb.apply(lambda row: lc._calc_rmse(
+    df_comb['rmse'] = df_comb.apply(lambda row: lc.rmse(
         np.array([row['forecast_value']]), np.array([row['true_value']])), axis=1)
-    df_comb['mape_perc'] = df_comb.apply(lambda row: lc._calc_mape_perc(
+    df_comb['mape_perc'] = df_comb.apply(lambda row: lc.qtile_mape(
         np.array([row['forecast_value']]), np.array([row['true_value']]), 
         row['quantile']) if row['type'] == 'quantile' else np.nan, axis=1)
     num_cols = ['mape', 'rmse', 'mape_perc', 'forecast_value']
@@ -354,7 +354,7 @@ def _qtiles_nondec_correct(df_loc_submission):
     """
     grouped = df_loc_submission[df_loc_submission['type']
                                 == 'quantile'].groupby('target')
-    for target, group in grouped:
+    for _, group in grouped:
         diff_less_than_0 = np.diff(group['value']) < 0
         if sum(diff_less_than_0) > 0:
             indices = np.where(diff_less_than_0 == True)[0]
@@ -626,7 +626,7 @@ def end_to_end_comparison(hparam_source='predictions_dict', predictions_dict=Non
     target_end_dates = pd.unique(df_all_submissions['target_end_date'])
     start_date = target_end_dates[0] - np.timedelta64(7, 'D')
     end_date = target_end_dates[-1]
-    df_gt, df_gt_loss, df_gt_loss_wk = process_gt(comp, start_date, end_date)
+    _, _, df_gt_loss_wk = process_gt(comp, start_date, end_date)
 
     if process_wiai_submission:
         if predictions_dict is None:
