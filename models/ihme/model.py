@@ -1,14 +1,16 @@
-import pandas as pd
+import sys
 from copy import copy
 
-from curvefit.pipelines.basic_model import BasicModel
+import numpy as np
+import pandas as pd
 from curvefit.core.functions import *
 from curvefit.core.utils import data_translator
+from curvefit.pipelines.basic_model import BasicModel
 
-import sys
 sys.path.append('../../')
 
 from models.model import Model
+
 
 class IHME(Model):
 
