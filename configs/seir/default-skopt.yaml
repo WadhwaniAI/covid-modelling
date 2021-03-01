@@ -1,18 +1,14 @@
 fitting:
-    # Geographical Location
     data:
-        dataloader: SimulatedDataLoader
-        stratified_data: FALSE
+        dataloader: Covid19IndiaLoader
         dataloading_params:
             reload_data: FALSE
+            stratified_data: FALSE
             cache_dir: "../../misc/cache/"
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
-            generate: TRUE
-            config_file: seir_pu_fixed.yaml
-            filename: ../../data/data/simulated_data/undetected.csv
-        smooth_jump: FALSE
+        smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
@@ -21,55 +17,47 @@ fitting:
             2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
             2020-06-15: [null, deceased, total, TRUE, weighted-mag]
-        rolling_average: FALSE
+        rolling_average: TRUE
         rolling_average_params:
             center: TRUE
             window_size: 7
             win_type: null
-            min_periods: 1
-            split_after_rolling: FALSE # NOT IMPLEMENTED
+            min_periods: 7
+            split_after_rolling: FALSE
     #Choose Model and Ranges
     model_family: seir
-    model: SEIR_PU
+    model: SEIRHD
     variable_param_ranges:
-        T_inc: [[4, 6], uniform]
-        T_inf_U: [[1, 20], uniform]
-        T_recov: [[1, 40], uniform]
-        T_recov_fatal: [[1, 40], uniform]
-        beta: [[0,0.5], uniform]
-        d: [[0,1], uniform]
-        P_fatal: [[0, 0.5], uniform]
-        I_hosp_ratio: [[0, 6.0], uniform]
-        E_hosp_ratio: [[0, 2.0], uniform]
-        Pu_pop_ratio: [[0,0.6], uniform]
+        lockdown_R0: [[0.7, 1.2], uniform]
+        T_inc: [[4, 5], uniform]
+        T_inf: [[3, 4], uniform]
+        T_recov: [[1.0e-4, 40], uniform]
+        T_recov_fatal: [[1.0e-4, 40], uniform]
+        P_fatal: [[1.0e-4, 0.1], uniform]
+        E_hosp_ratio: [[1.0e-4, 2], uniform]
+        I_hosp_ratio: [[1.0e-4, 1], uniform]
     default_params:
         N: 1.0e+7
-        psi: 1.0
-    fitting_method: BO_Hyperopt
+    fitting_method: BO_SKOpt
     fitting_method_params:
-        num_evals: 1000
-        algo: tpe
+        acq_func: EI
+        n_calls: 500
+        n_initial_points: 5 
+        noise: 1.0e-3
+        seed: 42
     #Choose Fitting Periods and num evaluations
     split:
-        start_date: null # NOT IMPLEMENTED
-        end_date: null
-        train_period: 28
-        val_period: 28
-        test_period: 0 # NOT IMPLEMENTED
-        split_after_rolling: TRUE
+        start_date: null
+        end_date: 2020-10-31
+        train_period: 30
+        val_period: 3
+        test_period: 0
     #Optimisation related parameters
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
-sensitivity:
-    lockdown_R0: [[[0.5, 1.5], 101], total, null]
-    I_hosp_ratio: [[[0, 1], 201], total, null]
-    E_hosp_ratio: [[[0, 2], 201], total, null]
-    P_fatal: [[[0, 0.5], 201], deceased, total]
-    T_recov: [[[1, 100], 101], recovered, total]
-    T_recov_fatal: [[[1, 100], 101], deceased, total]
-forecast:
+    forecast:
         forecast_days: 30
 plotting:
     truncate_series: TRUE

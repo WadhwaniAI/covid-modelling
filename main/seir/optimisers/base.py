@@ -117,5 +117,5 @@ class OptimiserBase(ABC):
         return df_prediction
 
     @abstractmethod
-    def optimise(*args, **kwargs):
+    def optimise(self, *args, **kwargs):
         pass

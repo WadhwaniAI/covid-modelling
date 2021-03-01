@@ -1,6 +1,6 @@
 fitting:
     data:
-        data_source: Covid19IndiaLoader
+        dataloader: Covid19IndiaLoader
         dataloading_params:
             reload_data: FALSE
             stratified_data: FALSE

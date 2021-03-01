@@ -27,6 +27,8 @@ You can find the model diagram [here](model_diagrams/SEIRHD_Bed.pdf).
 
 # Code
 
-All the for all SEIR models is implemented in [models/seir](../models/seir). [models/seir/seir.py](../models/seir/seir.py) implements an abstract SEIR class (which again is a child of the abstract model class in [models/model.py](../models/model.py)). All SEIR implementations are children of the abstract SEIR class. All SEIR classes will have 2 public functions - `__init__` and `predict`. 
+## Contributing
+
+All the for all SEIR models is implemented in [models/seir](../models/seir). [models/seir/base.py](../models/seir/base.py) implements an abstract SEIR class (which again is a child of the abstract model class in [models/model.py](../models/model.py)). All SEIR implementations are children of the abstract SEIR class. All SEIR classes will have 2 public functions - `__init__` and `predict`. 
 
 If a user wants to create a new SEIR class, please ensure that it follows the above guidelines. 

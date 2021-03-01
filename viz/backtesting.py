@@ -9,13 +9,13 @@ from utils.generic.enums.columns import *
 from viz.utils import axis_formatter, setup_plt
 
 
-def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_format='old_output', filename=None, 
+def plot_backtest_seir(gt_dataloader='AthenaLoader', preds_source='filename', fname_format='old_output', filename=None,
                        predictions_dict=None, which_forecast=80, truncate_plotting_range=False,
                        separate_compartments=False, dataloading_params={'state': 'Maharashtra', 'district': 'Mumbai'}):
     """Function of backtesting plotting
 
     Args:
-        gt_data_source (str, optional): Ground Truth data source. Defaults to 'athena'.
+        gt_dataloader (str, optional): Ground Truth data source. Defaults to 'athena'.
         preds_source (str, optional): Source of predictions ('filename'/'pickle'). Defaults to 'filename'.
         fname_format (str, optional): Format of predictions fname ('old_output'/'new_deciles'). 
         Required if preds_source == 'filename'. Defaults to 'old_output'.
@@ -40,7 +40,7 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
     """
     
     # Getting gt data
-    df_true = get_data(gt_data_source, dataloading_params)
+    df_true = get_data(gt_dataloader, dataloading_params)
 
     # Setting train_period to None
     train_period = None

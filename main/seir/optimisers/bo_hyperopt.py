@@ -1,11 +1,12 @@
-from hyperopt import hp, tpe, fmin, Trials
-from functools import partial
-import importlib
-import numpy as np
 import copy
+import importlib
+from functools import partial
 
+import numpy as np
+from hyperopt import Trials, fmin, hp, tpe
 from main.seir.optimisers import OptimiserBase
 from utils.fitting.loss import Loss_Calculator
+
 
 class BO_Hyperopt(OptimiserBase):
     """Class which implements all optimisation related activites (training, evaluation, etc)
@@ -19,6 +20,9 @@ class BO_Hyperopt(OptimiserBase):
 
         self.set_variable_param_ranges(variable_param_ranges)
         self.lc = Loss_Calculator()
+
+    def init_default_params(self, df_train, default_params, train_period):
+        super().init_default_params(df_train, default_params, train_period)
 
     def set_variable_param_ranges(self, variable_param_ranges):
         """Returns the ranges for the variable params in the search space
@@ -45,9 +49,6 @@ class BO_Hyperopt(OptimiserBase):
         return super().predict_and_compute_loss(variable_params, default_params, df_true, total_days, 
                                               model, loss_compartments, loss_weights, loss_indices, 
                                               loss_method, debug)
-
-    def init_default_params(self, df_train, default_params, train_period):
-        super().init_default_params(df_train, default_params, train_period)
 
     def _order_trials_by_loss(self, trials_obj: Trials, sort_trials: bool = True):
         """Orders a set of trials by their corresponding loss value
@@ -76,8 +77,8 @@ class BO_Hyperopt(OptimiserBase):
     def forecast(self, params, train_last_date, forecast_days, model):
         return super().forecast(params, train_last_date, forecast_days, model)
 
-    def optimise(self, num_evals=3500, train_period=28, loss_method='rmse', loss_compartments=['total'], 
-                 loss_weights=[1], algo=tpe, seed=42, forecast_days=30, ** kwargs):
+    def optimise(self, train_period=28, loss_method='rmse', loss_compartments=['total'], 
+                 loss_weights=[1], num_evals=3500, algo=tpe, seed=42, forecast_days=30, ** kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -118,12 +119,12 @@ class BO_Hyperopt(OptimiserBase):
         algo_module = importlib.import_module(f'.{algo}', 'hyperopt')
         trials = Trials()
         rstate = np.random.RandomState(seed)
-        best = fmin(partial_predict_and_compute_loss,
-                    space=self.variable_param_ranges,
-                    algo=algo_module.suggest,
-                    max_evals=num_evals,
-                    rstate=rstate,
-                    trials=trials)
+        _ = fmin(partial_predict_and_compute_loss,
+                 space=self.variable_param_ranges,
+                 algo=algo_module.suggest,
+                 max_evals=num_evals,
+                 rstate=rstate,
+                 trials=trials)
         
         params_array, losses_array = self._order_trials_by_loss(trials)
 

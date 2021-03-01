@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: SimulatedDataLoader
+        dataloader: SimulatedDataLoader
         stratified_data: FALSE
         dataloading_params:
             reload_data: FALSE
