@@ -6,6 +6,7 @@ import pickle
 import sys
 from functools import partial
 import itertools
+from datetime import datetime, timedelta
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,11 +21,13 @@ from utils.fitting.util import update_dict, chunked
 from utils.generic.config import read_config, process_config
 
 regions = [
-    {'label': 'Mumbai', 'state': 'Maharashtra', 'district': 'Mumbai', 'smooth_jump': True},
-    {'label': 'Delhi', 'state': 'Delhi', 'district': None},
-    {'label': 'Kerala', 'state': 'Kerala', 'district': None},
-    {'label': 'Bengaluru', 'state': 'Karnataka', 'district': 'Bengaluru Urban'},
-    {'label': 'Pune', 'state': 'Maharashtra', 'district': 'Pune'}
+    {'label': 'Mumbai', 'state': 'Maharashtra', 'district': 'Mumbai', 'smooth_jump': True,
+     'start_date': '2020-03-09', 'end_date': None, 'data_length': 63},
+    {'label': 'Delhi', 'state': 'Delhi', 'district': None, 'start_date': '', 'end_date': '',
+     'forecast_period': 30},
+    # {'label': 'Kerala', 'state': 'Kerala', 'district': None},
+    # {'label': 'Bengaluru', 'state': 'Karnataka', 'district': 'Bengaluru Urban'},
+    # {'label': 'Pune', 'state': 'Maharashtra', 'district': 'Pune'}
 ]
 loss_methods = ['mape', 'rmse', 'rmse_log']
 
@@ -99,6 +102,24 @@ def get_experiment(which, regionwise=False):
                         }
                     }
                     configs[region['label'] + f'-{tl[0]}-{tl[1]}-{l1}-{l2}'] = config
+
+    elif which == 'windows':
+        today = datetime.today()
+        for region in regions:
+            start = datetime.strptime(region['start_date'], '%Y-%m-%d')
+            while start < today-timedelta(region['data_length']):
+                config = {
+                    'fitting': {
+                        'data': {'dataloading_params': region},
+                        'split': {
+                            'start_date': start,
+                            'end_date': None
+                        }
+                    }
+                }
+                start = start + timedelta(1)
+                start_str = start.strftime('%Y-%m-%d')
+                configs[region['label'] + '_' + start_str] = config
 
     if regionwise:
         configs_regionwise = {}
