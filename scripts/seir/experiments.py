@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import os
 import pickle
@@ -20,6 +21,39 @@ from utils.fitting.util import update_dict, chunked
 from utils.generic.config import read_config, process_config
 
 default_loss_methods = ['mape', 'rmse', 'rmse_log']
+
+
+def create_output(predictions_dict, output_folder, tag):
+    """Custom output generation function"""
+    directory = f'{output_folder}/{tag}'
+    if not os.path.exists(directory):
+        os.mkdir(directory)
+    d = {}
+    for outer in ['m1', 'm2']:
+        for inner in ['variable_param_ranges', 'best_params', 'beta_loss']:
+            if inner in predictions_dict[outer]:
+                with open(f'{directory}/{outer}_{inner}.json', 'w') as f:
+                    json.dump(predictions_dict[outer][inner], f, indent=4)
+        for inner in ['df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'df_district_unsmoothed']:
+            if inner in predictions_dict[outer] and predictions_dict[outer][inner] is not None:
+                predictions_dict[outer][inner].to_csv(f'{directory}/{outer}_{inner}.csv')
+        for inner in ['trials', 'run_params', 'optimiser', 'plots', 'smoothing_description', 'default_params', ]:
+            with open(f'{directory}/{outer}_{inner}.pkl', 'wb') as f:
+                pickle.dump(predictions_dict[outer][inner], f)
+        if 'ensemble_mean' in predictions_dict[outer]['forecasts']:
+            predictions_dict[outer]['forecasts']['ensemble_mean'].to_csv(
+                f'{directory}/{outer}_ensemble_mean_forecast.csv')
+        predictions_dict[outer]['trials_processed']['predictions'][0].to_csv(
+            f'{directory}/{outer}_trials_processed_predictions.csv')
+        np.save(f'{directory}/{outer}_trials_processed_params.npy',
+                predictions_dict[outer]['trials_processed']['params'])
+        np.save(f'{directory}/{outer}_trials_processed_losses.npy',
+                predictions_dict[outer]['trials_processed']['losses'])
+        d[f'{outer}_data_last_date'] = predictions_dict[outer]['data_last_date']
+    d['fitting_date'] = predictions_dict['fitting_date']
+    np.save(f'{directory}/m2_beta.npy', predictions_dict['m2']['beta'])
+    with open(f'{directory}/other.json', 'w') as f:
+        json.dump(d, f, indent=4)
 
 
 def get_experiment(which, regions, loss_methods=None, regionwise=False):
@@ -45,7 +79,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
     elif which == 'num_trials':
         for region in regions:
             for tl in itertools.product([21, 30], [3]):
-                for i, num in enumerate([5000]*5):
+                for i, num in enumerate([5000] * 5):
                     config = {
                         'fitting': {
                             'data': {'dataloading_params': region},
@@ -102,7 +136,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
         today = datetime.today()
         for region in regions:
             start = datetime.strptime(region['start_date'], '%Y-%m-%d')
-            while start < today-timedelta(region['data_length']):
+            while start < today - timedelta(region['data_length']):
                 config = {
                     'fitting': {
                         'data': {'dataloading_params': region},
