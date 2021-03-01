@@ -144,6 +144,9 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                             'start_date': start,
                             'end_date': None
                         }
+                    },
+                    'uncertainty': {
+                        'date_of_sorting_trials': start+timedelta(region['data_length']-1)
                     }
                 }
                 start = start + timedelta(1)
