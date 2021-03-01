@@ -27,7 +27,7 @@ fitting:
     #Choose Model and Ranges
     model: SEIRHD
     variable_param_ranges:
-        lockdown_R0: [[0.7, 1.5], uniform]
+        lockdown_R0: [[0.7, 2], uniform]
         T_inc: [[4, 5], uniform]
         T_inf: [[3, 4], uniform]
         T_recov: [[0, 2000], uniform]
