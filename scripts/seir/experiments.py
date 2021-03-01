@@ -219,7 +219,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.ERROR)
     parser = argparse.ArgumentParser(description="SEIR Batch Running Script")
     parser.add_argument("--base_config", type=str, required=True, help="base config to use while running the script")
-    parser.add_argument("--driver_config", type=str, required=False, help="driver config used for multiple experiments")
+    parser.add_argument("--driver_config", type=str, required=True, help="driver config used for multiple experiments")
     parser.add_argument("--experiment", type=str, required=True, help="experiment name")
     parsed_args = parser.parse_args()
     perform_batch_runs(parsed_args.base_config, parsed_args.driver_config, parsed_args.experiment)
