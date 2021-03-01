@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: Covid19IndiaLoader
+        dataloader: Covid19IndiaLoader
         stratified_data: FALSE
         dataloading_params:
             reload_data: FALSE

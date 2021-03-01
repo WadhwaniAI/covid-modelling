@@ -11,7 +11,7 @@ from viz import plot_fit, plot_smoothing
 import main.seir.optimisers as optimisers
 
 
-def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params, split,
+def data_setup(dataloader, dataloading_params, smooth_jump, smooth_jump_params, split,
                loss_compartments, rolling_average, rolling_average_params, **kwargs):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
@@ -27,7 +27,7 @@ def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params,
         pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
     """
     
-    data_dict = get_data(data_source, dataloading_params)
+    data_dict = get_data(dataloader, dataloading_params)
     df_district = data_dict['data_frame']
     
     smoothing_plot = None
@@ -37,7 +37,7 @@ def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params,
         if dataloading_params['stratified_data']:
             df_params_copy = copy.copy(dataloading_params)
             df_params_copy['stratified_data'] = False
-            df_not_strat = get_data(data_source, df_params_copy)['data_frame']
+            df_not_strat = get_data(dataloader, df_params_copy)['data_frame']
             df_district, description = smooth_big_jump_stratified(
                 df_district, df_not_strat, smooth_jump_params)
         else:

@@ -4,12 +4,12 @@ import datetime
 import data.dataloader as dl
 
 
-def get_data(data_source, dataloading_params):
+def get_data(dataloader, dataloading_params):
     """
 
     """
     try:
-        dl_class = getattr(dl, data_source)
+        dl_class = getattr(dl, dataloader)
         dlobj = dl_class()
         return dlobj.get_data(**dataloading_params)
     except Exception as e:

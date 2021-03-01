@@ -1,7 +1,7 @@
 fitting:
     # Geographical Location
     data:
-        data_source: AthenaLoader
+        dataloader: AthenaLoader
         dataloading_params:
             reload_data: FALSE
             cache_dir: "../../misc/cache/"
