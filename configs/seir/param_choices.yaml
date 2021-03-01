@@ -46,8 +46,8 @@ fitting:
     split:
         start_date: null
         end_date: 2020-06-30
-        train_period: 21
-        val_period: 7
+        train_period: 30
+        val_period: 3
         test_period: 0
     #Optimisation related parameters
     loss:
@@ -62,7 +62,7 @@ sensitivity:
     T_recov: [[[1, 100], 101], recovered, total]
     T_recov_fatal: [[[1, 100], 101], deceased, total]
 forecast:
-    forecast_days: 45
+    forecast_days: 30
     num_trials_to_plot: 10
     plot_topk_trials_for_columns: [total, active]
     plot_ptiles_for_columns: [total, active]
