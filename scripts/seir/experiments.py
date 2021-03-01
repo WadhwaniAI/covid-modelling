@@ -1,5 +1,4 @@
 import argparse
-import json
 import logging
 import os
 import pickle
@@ -20,22 +19,18 @@ from main.seir.common import *
 from utils.fitting.util import update_dict, chunked
 from utils.generic.config import read_config, process_config
 
-regions = [
-    {'label': 'Mumbai', 'state': 'Maharashtra', 'district': 'Mumbai', 'smooth_jump': True,
-     'start_date': '2020-03-09', 'end_date': None, 'data_length': 63},
-    {'label': 'Delhi', 'state': 'Delhi', 'district': None, 'start_date': '', 'end_date': '',
-     'forecast_period': 30},
-    # {'label': 'Kerala', 'state': 'Kerala', 'district': None},
-    # {'label': 'Bengaluru', 'state': 'Karnataka', 'district': 'Bengaluru Urban'},
-    # {'label': 'Pune', 'state': 'Maharashtra', 'district': 'Pune'}
-]
-loss_methods = ['mape', 'rmse', 'rmse_log']
+default_loss_methods = ['mape', 'rmse', 'rmse_log']
 
 
-def get_experiment(which, regionwise=False):
+def get_experiment(which, regions, loss_methods=None, regionwise=False):
     """Get experiment configuration"""
     logging.info('Getting experiment choices')
+
+    # Set values
+    loss_methods = default_loss_methods if loss_methods is None else loss_methods
     configs = {}
+
+    # Select experiment
     if which == 'train_lengths':
         for region in regions:
             for tl in itertools.product(np.arange(6, 45, 3), np.arange(2, 7, 1)):
@@ -157,7 +152,8 @@ def run_parallel(run_name, params, base_config_filename):
     return x
 
 
-def perform_batch_runs(base_config_filename='param_choices.yaml', experiment_name='train_lengths', output_folder=None):
+def perform_batch_runs(base_config_filename='param_choices.yaml', driver_config_filename='list_of_exp.yaml',
+                       experiment_name='train_lengths', output_folder=None):
     """Run all experiments"""
     # Specifying the folder where checkpoints will be saved
     timestamp = datetime.datetime.now().strftime("%Y_%m%d_%H%M%S")
@@ -167,7 +163,8 @@ def perform_batch_runs(base_config_filename='param_choices.yaml', experiment_nam
     n_jobs = multiprocessing.cpu_count()
 
     # Get experiment choices
-    what_to_vary = get_experiment(experiment_name)
+    regions = read_config(driver_config_filename, preprocess=False, config_dir='other')
+    what_to_vary = get_experiment(experiment_name, regions)
 
     # Run experiments
     for i, chunk in enumerate(chunked(what_to_vary.items(), n_jobs)):
@@ -186,7 +183,8 @@ def perform_batch_runs(base_config_filename='param_choices.yaml', experiment_nam
 if __name__ == '__main__':
     logging.basicConfig(level=logging.ERROR)
     parser = argparse.ArgumentParser(description="SEIR Batch Running Script")
-    parser.add_argument("--filename", type=str, required=True, help="config filename to use while running the script")
+    parser.add_argument("--base_config", type=str, required=True, help="base config to use while running the script")
+    parser.add_argument("--driver_config", type=str, required=False, help="driver config used for multiple experiments")
     parser.add_argument("--experiment", type=str, required=True, help="experiment name")
     parsed_args = parser.parse_args()
-    perform_batch_runs(parsed_args.filename, parsed_args.experiment)
+    perform_batch_runs(parsed_args.base_config, parsed_args.driver_config, parsed_args.experiment)
