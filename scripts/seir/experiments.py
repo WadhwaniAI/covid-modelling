@@ -149,8 +149,8 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                         'date_of_sorting_trials': start+datetime.timedelta(region['data_length']-1)
                     }
                 }
-                start = start + datetime.timedelta(1)
                 start_str = start.strftime('%Y-%m-%d')
+                start = start + datetime.timedelta(1)
                 configs[region['label'] + '_' + start_str] = config
 
     if regionwise:
