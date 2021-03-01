@@ -133,9 +133,9 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     configs[region['label'] + f'-{tl[0]}-{tl[1]}-{l1}-{l2}'] = config
 
     elif which == 'windows':
-        today = datetime.datetime.today()
-        for region in regions:
-            start = datetime.datetime.strptime(region['start_date'], '%Y-%m-%d')
+        today = datetime.datetime.now().date()
+        for key, region in regions.items():
+            start = region['start_date']
             while start < today - datetime.timedelta(region['data_length']):
                 config = {
                     'fitting': {
