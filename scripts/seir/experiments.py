@@ -6,7 +6,7 @@ import pickle
 import sys
 from functools import partial
 import itertools
-from datetime import datetime, timedelta
+import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -133,10 +133,10 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     configs[region['label'] + f'-{tl[0]}-{tl[1]}-{l1}-{l2}'] = config
 
     elif which == 'windows':
-        today = datetime.today()
+        today = datetime.datetime.today()
         for region in regions:
-            start = datetime.strptime(region['start_date'], '%Y-%m-%d')
-            while start < today - timedelta(region['data_length']):
+            start = datetime.datetime.strptime(region['start_date'], '%Y-%m-%d')
+            while start < today - datetime.timedelta(region['data_length']):
                 config = {
                     'fitting': {
                         'data': {'dataloading_params': region},
@@ -146,10 +146,10 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                         }
                     },
                     'uncertainty': {
-                        'date_of_sorting_trials': start+timedelta(region['data_length']-1)
+                        'date_of_sorting_trials': start+datetime.timedelta(region['data_length']-1)
                     }
                 }
-                start = start + timedelta(1)
+                start = start + datetime.timedelta(1)
                 start_str = start.strftime('%Y-%m-%d')
                 configs[region['label'] + '_' + start_str] = config
 
