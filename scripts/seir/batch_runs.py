@@ -11,7 +11,7 @@ import sys
 sys.path.append('../../')
 
 from main.seir.common import *
-from utils.generic.config import read_config, process_config, make_date_key_str
+from utils.generic.config import read_config, process_config_seir, make_date_key_str
 from utils.generic.logging import log_wandb
 from viz import plot_forecast
 
@@ -64,7 +64,7 @@ def run_single_config_end_to_end(config, wandb_config, run_name, log_wandb_flag=
 def single_run_fn_for_parallel(state, base_config_filename):
     wandb_config = read_config(base_config_filename, preprocess=False)
     wandb_config['fitting']['data']['dataloading_params']['region'] = state
-    config = process_config(wandb_config)
+    config = process_config_seir(wandb_config)
     wandb_config = make_date_key_str(wandb_config)
     try:
         x = run_single_config_end_to_end(

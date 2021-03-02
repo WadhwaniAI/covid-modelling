@@ -18,7 +18,7 @@ sys.path.append('../../')
 
 from main.seir.common import *
 from utils.fitting.util import update_dict, chunked
-from utils.generic.config import read_config, process_config
+from utils.generic.config import read_config, process_config_seir
 
 default_loss_methods = ['mape', 'rmse', 'rmse_log']
 
@@ -178,7 +178,7 @@ def run_parallel(run_name, params, base_config_filename):
     """Read config and run corresponding experiment"""
     config = read_config(base_config_filename, preprocess=False)
     config = update_dict(config, params)
-    config = process_config(config)
+    config = process_config_seir(config)
     try:
         logging.info(f'Start run: {run_name}')
         x = run(config)
