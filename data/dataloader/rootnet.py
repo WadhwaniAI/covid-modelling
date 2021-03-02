@@ -1,3 +1,4 @@
+import copy
 import pandas as pd
 import requests
 
@@ -53,3 +54,16 @@ class RootnetLoader(BaseLoader):
     def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
 
+
+    def get_data(self, state='Delhi', reload_data=False, **kwargs):
+        dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
+        df = copy.copy(dataframes['df_state_time_series'])
+        df[df['state'] == state]
+        df.reset_index(inplace=True, drop=True)
+
+        return {"data_frame": df}
+
+if __name__ == '__main__':
+    obj = RootnetLoader()
+    dataframes = obj.pull_dataframes()
+    import pdb; pdb.set_trace()
