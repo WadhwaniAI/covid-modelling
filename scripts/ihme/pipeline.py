@@ -4,6 +4,9 @@ pipeline.py
 import argparse
 import copy
 import datetime
+import sys
+
+sys.path.append('../../')
 
 from main.ihme.fitting import single_fitting_cycle
 from utils.generic.config import read_config
