@@ -38,8 +38,8 @@ fitting:
         I_hosp_ratio: [[1.0e-4, 1], uniform]
     default_params:
         N: 1.0e+7
-    fitting_method: BO_SKOpt
-    fitting_method_params:
+    optimiser: BO_SKOpt
+    optimiser_params:
         acq_func: EI
         n_calls: 500
         n_initial_points: 5 

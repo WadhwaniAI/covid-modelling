@@ -45,8 +45,8 @@ fitting:
     default_params:
         N: 1.0e+7
         psi: 1.0
-    fitting_method: BO_Hyperopt
-    fitting_method_params:
+    optimiser: BO_Hyperopt
+    optimiser_params:
         num_evals: 1000
         algo: tpe
     #Choose Fitting Periods and num evaluations

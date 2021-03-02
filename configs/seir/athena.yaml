@@ -43,8 +43,8 @@ fitting:
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
-    fitting_method: BO_Hyperopt
-    fitting_method_params:
+    optimiser: BO_Hyperopt
+    optimiser_params:
         num_evals: 1000
         algo: tpe
         seed: 42
