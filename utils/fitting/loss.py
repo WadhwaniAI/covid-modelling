@@ -177,7 +177,7 @@ class Loss_Calculator():
             err['rmsle'] = None
         return err
 
-    def create_loss_dataframe_region(self, df_train, df_val, df_prediction, train_period, 
+    def create_loss_dataframe_region(self, df_train, df_val, df_test, df_prediction,
                                      which_compartments=['active', 'total']):
         """Helper function for calculating loss in training pipeline
 
@@ -193,7 +193,8 @@ class Loss_Calculator():
         Returns:
             pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
         """
-        df_loss = pd.DataFrame(columns=['train', 'val'], index=which_compartments)
+        # TODO: Check whole repo for argument compatibility
+        df_loss = pd.DataFrame(columns=['train', 'val', 'test'], index=which_compartments)
 
         df_temp = df_prediction.loc[df_prediction['date'].isin(
             df_train['date']), ['date']+which_compartments]
@@ -214,6 +215,18 @@ class Loss_Calculator():
                     np.array(df_temp[compartment]), np.array(df_val[compartment]))
         else:
             del df_loss['val']
+
+        if isinstance(df_test, pd.DataFrame):
+            df_temp = df_prediction.loc[df_prediction['date'].isin(
+                df_test['date']), ['date']+which_compartments]
+            df_temp.reset_index(inplace=True, drop=True)
+            df_test.reset_index(inplace=True, drop=True)
+            for compartment in df_loss.index:
+                df_loss.loc[compartment, 'test'] = self._calc_mape(
+                    np.array(df_temp[compartment]), np.array(df_val[compartment]))
+        else:
+            del df_loss['test']
+
         return df_loss
 
     def evaluate_pointwise(self, y_true, y_pred):
@@ -247,8 +260,21 @@ class Loss_Calculator():
         loss_dict = self.evaluate_pointwise(y_true, y_pred)
         return pd.DataFrame.from_dict(loss_dict, orient='index')
 
-    def create_pointwise_loss_dataframe_region(self, df_train, df_val, df_prediction, train_period,
-                                               which_compartments=['hospitalised', 'total_infected']):
+    def create_pointwise_loss_dataframe_region(self, df_train, df_val, df_test, df_prediction,
+                                               which_compartments=['total']):
+        """
+
+        Args:
+            df_train ():
+            df_val ():
+            df_test ():
+            df_prediction ():
+            which_compartments ():
+
+        Returns:
+
+        """
+        # TODO: Take loss as arg
         df_temp = df_prediction.loc[df_prediction['date'].isin(
             df_train['date']), ['date'] + which_compartments]
         df_temp.reset_index(inplace=True, drop=True)
@@ -280,7 +306,29 @@ class Loss_Calculator():
                                               names=['compartment', 'loss_function'])
             df_val_loss_pointwise.name = 'loss'
 
-        return df_train_loss_pointwise, df_val_loss_pointwise
+        df_test_loss_pointwise = None
+        if isinstance(df_test, pd.DataFrame):
+            df_temp = df_prediction.loc[df_prediction['date'].isin(
+                df_test['date']), ['date'] + which_compartments]
+            df_temp.reset_index(inplace=True, drop=True)
+            df_test.reset_index(inplace=True, drop=True)
+            loss_df_dict = {}
+            for compartment in which_compartments:
+                df = self.create_pointwise_loss_dataframe(
+                    np.array(df_test[compartment]).astype(float), np.array(df_temp[compartment]).astype(float))
+                df.columns = df_test['date'].tolist()
+                loss_df_dict[compartment] = df
+            df_test_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
+                                               names=['compartment', 'loss_function'])
+            df_test_loss_pointwise.name = 'loss'
+
+        df_loss_pointwise = pd.concat([df_train_loss_pointwise, df_val_loss_pointwise, df_test_loss_pointwise],
+                                      axis=0, keys=['train', 'val', 'test'],
+                                      names=['split', 'compartment', 'loss_function'])
+
+        # TODO: Check is val and/or test is None
+
+        return df_loss_pointwise
 
     def backtesting_loss_week_by_week(self, df_prediction, df_true, method='mape', round_precision=2):
         """Implements backtesting loss (comparing unseen gt with predictions)
