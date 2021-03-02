@@ -1,5 +1,4 @@
 import yaml
-import os
 import copy
 
 import models
@@ -9,7 +8,7 @@ from utils.generic.enums import Columns
 import datetime
 
 
-def read_config(filename='default.yaml', preprocess=True):
+def read_config(filename='default.yaml', preprocess=True, config_dir='seir'):
     """Function for reading the YAML config file and doing some preprocessing
 
     Args:
@@ -17,11 +16,13 @@ def read_config(filename='default.yaml', preprocess=True):
         preprocess (bool, optional): If False, "processing" such as calling class names 
         inputted by the user, etc are not done. The config is returned as is. 
         This feature is used for W&B. Defaults to True.
+        config_dir (str, optional): Config directory name (Default: seir)
 
     Returns:
         dict: dict of config params
     """
-    with open(f'../../configs/seir/{filename}') as configfile:
+    config_path = f'../../configs/{config_dir}/{filename}'
+    with open(config_path) as configfile:
         config = yaml.load(configfile, Loader=yaml.SafeLoader)
     
     if not preprocess:
