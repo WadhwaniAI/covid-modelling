@@ -37,9 +37,9 @@ def transform_data(df, population):
     data = df.set_index('date')
     which_columns = df.select_dtypes(include='number').columns
     for column in which_columns:
-        if column.name in data.columns:
-            data[f'{column.name}_rate'] = data[column.name] / population
-            data[f'log_{column.name}_rate'] = data[f'{column.name}_rate'].apply(lambda x: np.log(x))
+        if column in data.columns:
+            data[f'{column}_rate'] = data[column] / population
+            data[f'log_{column}_rate'] = data[f'{column}_rate'].apply(lambda x: np.log(x))
     data = data.reset_index()
     data['date'] = pd.to_datetime(data['date'])
     return data
@@ -99,15 +99,17 @@ def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params,
     df_district.dropna(axis=0, how='any', subset=['total'], inplace=True)
     df_district.reset_index(drop=True, inplace=True)
 
-    # Add group and covs columns
-    df_district.loc[:, 'group'] = len(df_district) * [1.0]
-    df_district.loc[:, 'covs'] = len(df_district) * [1.0]
-
     # Make a copy of data without transformation or smoothing
     df_district_notrans = copy.deepcopy(df_district)
 
     # Convert data to population normalized rate and apply log transformation
     df_district = transform_data(df_district, population)
+
+    # Add group and covs columns
+    df_district.loc[:, 'group'] = len(df_district) * [1.0]
+    df_district.loc[:, 'covs'] = len(df_district) * [1.0]
+
+    df_district.loc[:, 'day'] = (df_district['date'] - np.min(df_district['date'])).apply(lambda x: x.days)
 
     # Perform split with/without rolling average
     rap = rolling_average_params
@@ -188,8 +190,8 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     results_dict['best_init'] = model.priors['fe_init']
 
     # Model fitting
-    model.fit(pd.concat([df_train, df_val]))
-    results_dict['best_params'] = model.pipeline.mod.params
+    fitting_data = pd.concat([df_train, df_val], axis=0)
+    model.fit(fitting_data)
 
     # Prediction
     # Create dataframe with date and prediction columns
@@ -198,7 +200,7 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     df_prediction.loc[:, model.date] = pd.date_range(df_train[model.date].min(), df_district.iloc[-1, :][model.date])
     # Get predictions from start of train period until last available date of data
     df_prediction.loc[:, model.ycol] = model.predict(df_train[model.date].min(),
-                                                     df_train[model.date].min() + timedelta(days=len(df_prediction)))
+                                                     df_train[model.date].min() + timedelta(days=len(df_prediction)-1))
 
     # Evaluation
     lc = Loss_Calculator()
@@ -227,6 +229,7 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     # Collect results
     results_dict['plots'] = {}
     results_dict['plots']['fit'] = fit_plot
+    results_dict['best_params'] = model.pipeline.mod.params
     results_dict['df_prediction'] = df_prediction_notrans
     results_dict['df_district'] = df_district_notrans
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
@@ -263,7 +266,10 @@ def single_fitting_cycle(data, model, model_params, default_params, fitting_meth
     print('Performing {} fit ..'.format('m2' if split['val_period'] == 0 else 'm1'))
 
     # Get data
-    params = {'split': split, 'loss_compartments': loss['loss_compartments']}
+    params = {**data}
+    params['split'] = split
+    params['loss_compartments'] = loss['loss_compartments']
+    params['population'] = default_params['N']
     data_dict = data_setup(**params)
 
     observed_dataframes, smoothing = data_dict['observed_dataframes'], data_dict['smoothing']
