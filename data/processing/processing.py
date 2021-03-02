@@ -307,7 +307,21 @@ def implement_rolling(df, window_size, center, win_type, min_periods):
 
     return df_roll
 
-def implement_split(df, train_period, val_period, test_period, start_date, end_date):
+def implement_split(df, train_period, val_period, test_period, start_date, end_date, trim_excess=False):
+    """
+
+    Args:
+        df ():
+        train_period ():
+        val_period ():
+        test_period ():
+        start_date ():
+        end_date ():
+        trim_excess (bool): If true, remove excess data prior to start date in train
+
+    Returns:
+
+    """
     if start_date is not None and end_date is not None:
         raise ValueError('Both start_date and end_date cannot be specified. Please specify only 1')
     elif start_date is not None:
@@ -317,9 +331,10 @@ def implement_split(df, train_period, val_period, test_period, start_date, end_d
         if isinstance(start_date, datetime.date):
             start_date = df.loc[df['date'].dt.date == start_date].index[0]
 
-        df_train = df.iloc[:start_date + train_period, :]
+        df_train = df.iloc[start_date:start_date + train_period, :] if trim_excess else \
+            df.iloc[:start_date + train_period, :]
         df_val = df.iloc[start_date + train_period:start_date + train_period + val_period, :]
-        df_test = df.iloc[start_date + train_period + val_period: \
+        df_test = df.iloc[start_date + train_period + val_period:
                           start_date + train_period + val_period + test_period, :]
     else:    
         if end_date is not None:
@@ -332,14 +347,16 @@ def implement_split(df, train_period, val_period, test_period, start_date, end_d
             end_date = 0  
 
         df_test = df.iloc[len(df) - test_period+end_date:end_date, :]
-        df_val = df.iloc[len(df) - (val_period+test_period) +
-                        end_date:len(df) - test_period+end_date, :]
-        df_train = df.iloc[:len(df) - (val_period+test_period)+end_date, :]
+        df_val = df.iloc[len(df) - (val_period+test_period)+end_date:len(df) - test_period+end_date, :]
+        df_train = df.iloc[len(df) - (val_period+test_period+train_period)+end_date:
+                           len(df) - (val_period+test_period)+end_date, :] if trim_excess else \
+            df.iloc[:len(df) - (val_period+test_period)+end_date, :]
 
     return df_train, df_val, df_test
 
 def train_val_test_split(df_district, train_period=5, val_period=5, test_period=5, start_date=None, end_date=None,  
-                         window_size=5, center=True, win_type=None, min_periods=1, split_after_rolling=False):
+                         window_size=5, center=True, win_type=None, min_periods=1, split_after_rolling=False,
+                         trim_excess=False):
     """Creates train val split on dataframe
 
     # TODO : Add support for creating train val test split
@@ -361,11 +378,11 @@ def train_val_test_split(df_district, train_period=5, val_period=5, test_period=
         df_district_rolling = implement_rolling(
             df_district_rolling, window_size, center, win_type, min_periods)
         df_train, df_val, df_test = implement_split(df_district_rolling, train_period, val_period, 
-                                                    test_period, start_date, end_date)
+                                                    test_period, start_date, end_date, trim_excess)
         
     else:
         df_train, df_val, df_test = implement_split(df_district_rolling, train_period, val_period,
-                                                    test_period, start_date, end_date)
+                                                    test_period, start_date, end_date, trim_excess)
 
         df_train = implement_rolling(df_train, window_size, center, win_type, min_periods)
         df_val = implement_rolling(df_val, window_size, center, win_type, min_periods)
