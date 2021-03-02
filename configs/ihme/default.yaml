@@ -1,43 +1,69 @@
-base:
-  experiment_name: ihme_paper
-  max_evals: 100 # optimiser evals (trials)
-  log: TRUE # fit on log of model_params: ycol
-  sd: FALSE # use social distancing covariate for beta
-  scoring: mape
-  min_days: 4 # min days to train on
-  train_size: 30 # train set + val set
-  val_size: 6 # val set for hyperopt
-  test_size: 30 # test set witheld from model entirely
-  shift: 1
-  models: [log_erf]
-  compartments: [total_infected]
-  smooth: 5 # window to smooth data (rolling avg) - 0 means no smoothing
-  smooth_jump: FALSE
-  smooth_jump_method: weighted
-  smooth_jump_days: 33
-  verbose: True
-  align: False
-run:
-  forecast_days: 360
-  num_hyperopt: 1 # number of times to run optimiser - done in parallel
-backtesting:
-  increment: 7 # how often to run backtesting
-  forecast_days: 14
-model_params:
-  xcol: day
-  date: date
-  groupcol: group
-  ycol: deceased
-  func: log_erf
-  priors: # for when log is TRUE
-      fe_init: [-1.1, 16.0, -9.0]
-      fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
-  pipeline_args:
-    n_draws: 20
-    cv_threshold: 1.e-2
-    smoothed_radius: [7,7]
-    num_smooths: 3
-    exclude_groups: []
-    exclude_below: 0
-    exp_smoothing: null
-    max_last: null
+fitting:
+    data:
+        data_source: covid19india
+        stratified_data: FALSE
+        dataloading_params:
+            reload_data: FALSE
+            state: Maharashtra
+            district: Mumbai
+            use_dataframe: data_all
+        smooth_jump: TRUE
+        smooth_jump_params:
+            2020-05-28: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-14: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, recovered, active, FALSE, weighted-mag]
+            2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
+            2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
+            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
+        rolling_average: TRUE
+        rolling_average_params:
+            center: TRUE
+            window_size: 7
+            win_type: null
+            min_periods: 7
+            split_after_rolling: FALSE
+        log: TRUE
+        covariates: ['covs', 'covs', 'covs']
+    model: log_erf
+    default_params:
+        N: 1.0e+7
+    fitting_method_params:
+        num_evals: 100
+        num_trials: 1
+        seed: 42
+    #Choose Fitting Periods and num evaluations
+    split:
+        start_date: null
+        end_date: 2020-10-31
+        train_period: 30
+        val_period: 3
+        test_period: 0
+    #Optimisation related parameters
+    loss:
+        loss_method: mape
+        loss_compartments: [total]
+        loss_weights: [0.25, 0.25, 0.25, 0.25]
+    model_params:
+        xcol: day
+        date: date
+        groupcol: group
+        ycol: deceased
+        func: log_erf
+        priors: # for when log is TRUE
+            fe_init: [-1.1, 16.0, -9.0]
+            fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
+        pipeline_args:
+            n_draws: 20
+            cv_threshold: 1.e-2
+            smoothed_radius: [7,7]
+            num_smooths: 3
+            exclude_groups: []
+            exclude_below: 0
+            exp_smoothing: null
+            max_last: null
+forecast:
+    forecast_days: 30
+logging:
+    experiment_name: wiai-temp
+    run_name: null
