@@ -25,7 +25,7 @@ fitting:
             split_after_rolling: FALSE
         log: TRUE
         covariates: ['covs', 'covs', 'covs']
-    model: log_erf
+    model: IHME
     default_params:
         N: 1.0e+7
     fitting_method_params:
