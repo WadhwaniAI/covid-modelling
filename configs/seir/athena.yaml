@@ -13,6 +13,7 @@ fitting:
             staging_dir: mumbai
             label: mumbai
             pyathena_rc_path: '../../misc/pyathena/pyathena.rc'
+        data_columns: [total, active, recovered, deceased]
         smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
