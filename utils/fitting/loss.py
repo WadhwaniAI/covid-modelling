@@ -39,7 +39,7 @@ class Loss_Calculator():
         y_pred = y_pred[y_true != 0]
         y_true = y_true[y_true != 0]
 
-        ape = np.abs((y_true - y_pred + 0) / y_true) *  100
+        ape = np.abs((y_true - y_pred + 0) / y_true) * 100
         loss = np.mean(ape)
         return loss
 
@@ -223,7 +223,7 @@ class Loss_Calculator():
             df_test.reset_index(inplace=True, drop=True)
             for compartment in df_loss.index:
                 df_loss.loc[compartment, 'test'] = self._calc_mape(
-                    np.array(df_temp[compartment]), np.array(df_val[compartment]))
+                    np.array(df_temp[compartment]), np.array(df_test[compartment]))
         else:
             del df_loss['test']
 
