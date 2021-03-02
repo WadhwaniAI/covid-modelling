@@ -48,7 +48,7 @@ fitting:
         xcol: day
         date: date
         groupcol: group
-        ycol: deceased
+        ycol: total
         func: log_erf
         priors: # for when log is TRUE
             fe_init: [-1.1, 16.0, -9.0]
