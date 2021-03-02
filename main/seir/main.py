@@ -112,12 +112,12 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
 
     # Initialise Optimiser
-    optimiser = getattr(optimisers, optimiser)(model, df_train, default_params,
-                                                    variable_param_ranges, 
-                                                    train_period=split['train_period'])
+    op = getattr(optimisers, optimiser)(model, df_train, default_params,
+                                        variable_param_ranges, 
+                                        train_period=split['train_period'])
     # Perform Optimisation
     args = {**optimiser_params, **split, **loss, **forecast}
-    trials = optimiser.optimise(**args)
+    trials = op.optimise(**args)
     print('best parameters\n', trials['params'][0])
 
     df_prediction = trials['predictions'][0]
