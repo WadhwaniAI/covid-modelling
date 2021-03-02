@@ -118,22 +118,22 @@ def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params,
             df_district, train_period=split['train_period'], val_period=split['val_period'],
             test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
             window_size=rap['window_size'], center=rap['center'],
-            win_type=rap['win_type'], min_periods=rap['min_periods'])
+            win_type=rap['win_type'], min_periods=rap['min_periods'], trim_excess=True)
     else:
         df_train, df_val, df_test = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
             test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
-            window_size=1)
+            window_size=1, trim_excess=True)
 
     df_train_nora, df_val_nora, df_test_nora = train_val_test_split(
         df_district, train_period=split['train_period'], val_period=split['val_period'],
         test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
-        window_size=1)
+        window_size=1, trim_excess=True)
 
     df_train_nora_notrans, df_val_nora_notrans, df_test_nora_notrans = train_val_test_split(
         df_district_notrans, train_period=split['train_period'], val_period=split['val_period'],
         test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
-        window_size=1)
+        window_size=1, trim_excess=True)
 
     observed_dataframes = {}
     for name in ['df_district', 'df_district_notrans',
