@@ -51,7 +51,7 @@ def get_experiment(which, regionwise=False):
                     config = {
                         'fitting': {
                             'data': {'dataloading_params': region},
-                            'fitting_method_params': {'num_evals': num},
+                            'optimiser_params': {'num_evals': num},
                             'split': {'train_period': tl[0], 'val_period': tl[1]}
                         }
                     }
@@ -64,7 +64,7 @@ def get_experiment(which, regionwise=False):
                     config = {
                         'fitting': {
                             'data': {'dataloading_params': region},
-                            'fitting_method_params': {'num_evals': num},
+                            'optimiser_params': {'num_evals': num},
                             'split': {'train_period': tl[0], 'val_period': tl[1]}
                         }
                     }
@@ -77,7 +77,7 @@ def get_experiment(which, regionwise=False):
                     config = {
                         'fitting': {
                             'data': {'dataloading_params': region},
-                            'fitting_method_params': {'algo': method, 'num_evals': num},
+                            'optimiser_params': {'algo': method, 'num_evals': num},
                             'split': {'train_period': tl[0], 'val_period': tl[1]}
                         }
                     }

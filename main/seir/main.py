@@ -86,8 +86,8 @@ def data_setup(dataloader, dataloading_params, smooth_jump, smooth_jump_params, 
     return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing}
 
 
-def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_params, fitting_method,
-              fitting_method_params, split, loss, forecast):
+def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_params, optimiser,
+              optimiser_params, split, loss, forecast):
     """Helper function for single_fitting_cycle where the fitting actually takes place
 
     Arguments:
@@ -112,11 +112,11 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
         observed_dataframes.get(k) for k in observed_dataframes.keys()]
 
     # Initialise Optimiser
-    optimiser = getattr(optimisers, fitting_method)(model, df_train, default_params,
+    optimiser = getattr(optimisers, optimiser)(model, df_train, default_params,
                                                     variable_param_ranges, 
                                                     train_period=split['train_period'])
     # Perform Optimisation
-    args = {**fitting_method_params, **split, **loss, **forecast}
+    args = {**optimiser_params, **split, **loss, **forecast}
     trials = optimiser.optimise(**args)
     print('best parameters\n', trials['params'][0])
 
@@ -144,7 +144,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
 
 
 def single_fitting_cycle(data, model_family, model, variable_param_ranges, default_params, 
-                         fitting_method, fitting_method_params, split, loss, forecast):
+                         optimiser, optimiser_params, split, loss, forecast):
     """Main function which user runs for running an entire fitting cycle for a particular district
 
     Arguments:
@@ -189,7 +189,7 @@ def single_fitting_cycle(data, model_family, model, variable_param_ranges, defau
         print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
         
     predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
-            default_params, fitting_method, fitting_method_params, split, loss, forecast)
+            default_params, optimiser, optimiser_params, split, loss, forecast)
 
     
     predictions_dict['plots']['smoothing'] = smoothing_plot
