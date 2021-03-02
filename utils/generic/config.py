@@ -28,7 +28,10 @@ def read_config(filename='default.yaml', preprocess=True, config_dir='seir'):
     if not preprocess:
         return config
     else:
-        return process_config(config)
+        if config_dir == 'seir':
+            return process_config_seir(config)
+        elif config_dir == 'ihme':
+            return process_config_ihme(config)
 
 def create_location_description(nconfig):
     """Helper function for creating location description
@@ -47,7 +50,7 @@ def create_location_description(nconfig):
         location_description = (dl_nconfig['state'])
     dl_nconfig['location_description'] = location_description
 
-def process_config(config):
+def process_config_seir(config):
     """Helper function for processing config file read from yaml file
 
     Args:
@@ -70,6 +73,23 @@ def process_config(config):
     nconfig['uncertainty']['uncertainty_params']['sort_trials_by_column'] = Columns.from_name(
         nconfig['uncertainty']['uncertainty_params']['sort_trials_by_column'])
         
+    return nconfig
+
+
+def process_config_ihme(config):
+    """Helper function for processing config file read from yaml file
+
+    Args:
+        config (dict): Unprocessed config dict
+
+    Returns:
+        dict: Processed config dict
+    """
+    nconfig = copy.deepcopy(config)
+    create_location_description(nconfig)
+
+    nconfig['fitting']['model'] = getattr(models.ihme, nconfig['fitting']['model'])
+
     return nconfig
 
 def make_date_key_str(config):
