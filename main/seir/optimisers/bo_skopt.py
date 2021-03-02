@@ -99,6 +99,14 @@ class BO_SKOpt(OptimiserBase):
         params_dict = {param_names[i]: values[i] for i in range(len(values))}
         return params_dict
 
+    def _order_trials_by_loss(self, losses_array, params_array, predictions_array):
+        least_losses_indices = np.argsort(losses_array)
+        losses_array = losses_array[least_losses_indices]
+        params_array = params_array[least_losses_indices]
+        predictions_array = predictions_array[least_losses_indices]
+
+        return losses_array, params_array, predictions_array
+
     def optimise(self, train_period=28, loss_method='rmse', loss_compartments=['total'],
                  loss_weights=[1], acq_func="EI", n_calls=15, n_initial_points=5, noise=0.1**2,     
                  seed=1234, forecast_days=30, ** kwargs):
@@ -133,6 +141,9 @@ class BO_SKOpt(OptimiserBase):
                                    model=self.model)
 
         predictions_array = [partial_forecast(param) for param in params_array]
+
+        losses_array, params_array, predictions_array = self._order_trials_by_loss(
+            losses_array, params_array, predictions_array)
 
         return_dict = {
             'params': params_array,
