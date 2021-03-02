@@ -50,7 +50,6 @@ class Optimiser():
         model = self.model.generate()
 
         def objective(params):
-            print('Start')
             test_model = model.generate()
             test_model.priors.update({
                 'fe_init': [params['alpha'], params['beta'], params['p']],
