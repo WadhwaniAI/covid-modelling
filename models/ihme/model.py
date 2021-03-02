@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np 
+import numpy as np
 from datetime import timedelta, datetime
 from copy import copy
 
@@ -9,11 +9,13 @@ from curvefit.core.functions import *
 from curvefit.core.utils import data_translator
 
 import sys
+
 sys.path.append('../../')
 
 from utils.fitting.data import get_daily_vals
 from utils.fitting.util import rollingavg
 from models.model import Model
+
 
 class IHME(Model):
 
@@ -52,7 +54,7 @@ class IHME(Model):
 
         Args:
             model_parameters (dict): model parameters dict, as specified above
-        """        
+        """
         self.model_parameters = model_parameters
         self.xcol = model_parameters.get('xcol')
         self.ycol = model_parameters.get('ycol')
@@ -64,14 +66,15 @@ class IHME(Model):
         self.covs = model_parameters.get('covs')
 
         self.param_names = ['alpha', 'beta', 'p']
-        self.predict_space = model_parameters.get('predict_space') if model_parameters.get('predict_space') else self.func
+        self.predict_space = model_parameters.get('predict_space') if model_parameters.get(
+            'predict_space') else self.func
 
         # link functions
         identity_fun = lambda x: x
         exp_fun = lambda x: np.exp(x)
         self.link_fun = [exp_fun, identity_fun, exp_fun]
         self.var_link_fun = [identity_fun, identity_fun, identity_fun]
-        
+
         self.pipeline = None
 
     def predict(self, start_date, end_date, **kwargs):
@@ -83,13 +86,13 @@ class IHME(Model):
 
         Returns:
             pd.DataFrame: predictions
-        """        
+        """
         data = self.pipeline.all_data.set_index('date')
         day0 = data.loc[data.index[0], 'day']
         start = int(day0) + (start_date - data.index[0]).days
         n_days = (end_date - start_date).days
-        
-        predictx = np.array([x for x in range(start, 1+start+n_days)])
+
+        predictx = np.array([x for x in range(start, 1 + start + n_days)])
         self.run(predictx)
         return self.pipeline.predict(times=predictx, predict_space=self.predict_space, predict_group='all')
 
@@ -100,27 +103,32 @@ class IHME(Model):
         Args:
             data (pd.DataFrame): dataframe to train model with, 
                 containing columns specified in init function parameters
-        """        
+        """
         self.pipeline = BasicModel(
-            all_data=data, #: (pd.DataFrame) of *all* the data that will go into this modeling pipeline
-            col_t=self.xcol, #: (str) name of the column with time
-            col_group=self.groupcol, #: (str) name of the column with the group in it
-            col_obs=self.ycol, #: (str) the name of the column with observations for fitting the model
-            col_obs_compare=self.ycol, #TODO: (str) the name of the column that will be used for predictive validity comparison
-            all_cov_names=self.covs, #TODO: List[str] list of name(s) of covariate(s). Not the same as the covariate specifications
-            fun=self.func, #: (callable) the space to fit in, one of curvefit.functions
-            predict_space=self.predict_space, #TODO confirm: (callable) the space to do predictive validity in, one of curvefit.functions
-            obs_se_func=None, #TODO if we wanna specify: (optional) function to get observation standard error from col_t
-            fit_dict=self.priors, #: keyword arguments to CurveModel.fit_params()
-            basic_model_dict= { #: additional keyword arguments to the CurveModel class
-                'col_obs_se': None,#(str) of observation standard error
-                'col_covs': [[cov] for cov in self.covs],#TODO: List[str] list of names of covariates to put on the parameters
-                'param_names': self.param_names,#(list{str}):
-                'link_fun': self.link_fun,#(list{function}):
-                'var_link_fun': self.var_link_fun,#(list{function}):
+            all_data=data,  #: (pd.DataFrame) of *all* the data that will go into this modeling pipeline
+            col_t=self.xcol,  #: (str) name of the column with time
+            col_group=self.groupcol,  #: (str) name of the column with the group in it
+            col_obs=self.ycol,  #: (str) the name of the column with observations for fitting the model
+            col_obs_compare=self.ycol,
+            # TODO: (str) the name of the column that will be used for predictive validity comparison
+            all_cov_names=self.covs,
+            # TODO: List[str] list of name(s) of covariate(s). Not the same as the covariate specifications
+            fun=self.func,  #: (callable) the space to fit in, one of curvefit.functions
+            predict_space=self.predict_space,
+            # TODO confirm: (callable) the space to do predictive validity in, one of curvefit.functions
+            obs_se_func=None,
+            # TODO if we wanna specify: (optional) function to get observation standard error from col_t
+            fit_dict=self.priors,  #: keyword arguments to CurveModel.fit_params()
+            basic_model_dict={  #: additional keyword arguments to the CurveModel class
+                'col_obs_se': None,  # (str) of observation standard error
+                'col_covs': [[cov] for cov in self.covs],
+                # TODO: List[str] list of names of covariates to put on the parameters
+                'param_names': self.param_names,  # (list{str}):
+                'link_fun': self.link_fun,  # (list{function}):
+                'var_link_fun': self.var_link_fun,  # (list{function}):
             },
         )
-      
+
     def run(self, predictx, pipeline_args=None):
         """
         Function to actually fit the model, requires prediction dates
@@ -132,19 +140,19 @@ class IHME(Model):
 
         Returns:
             BasicModel: instance of the curvefit model, fitted.
-        """        
+        """
         p_args = self.pipeline_args
         if pipeline_args is not None:
             p_args.update(pipeline_args)
-        
+
         # pipeline
         self.pipeline.setup_pipeline()
-        self.pipeline.run(n_draws=p_args['n_draws'], prediction_times=predictx, 
-            cv_threshold=p_args['cv_threshold'], smoothed_radius=p_args['smoothed_radius'], 
-            num_smooths=p_args['num_smooths'], exclude_groups=p_args['exclude_groups'], 
-            exclude_below=p_args['exclude_below'], exp_smoothing=p_args['exp_smoothing'], 
-            max_last=p_args['max_last']
-        )
+        self.pipeline.run(n_draws=p_args['n_draws'], prediction_times=predictx,
+                          cv_threshold=p_args['cv_threshold'], smoothed_radius=p_args['smoothed_radius'],
+                          num_smooths=p_args['num_smooths'], exclude_groups=p_args['exclude_groups'],
+                          exclude_below=p_args['exclude_below'], exp_smoothing=p_args['exp_smoothing'],
+                          max_last=p_args['max_last']
+                          )
         return self.pipeline
 
     def calc_draws(self):
@@ -153,7 +161,7 @@ class IHME(Model):
 
         Returns:
             [dict]: dict containing lower and upper (2.5% and 97.5%) percentiles
-        """        
+        """
         draws_dict = {}
         for group in self.pipeline.groups:
             draws = self.pipeline.draws[group].copy()
@@ -172,8 +180,8 @@ class IHME(Model):
 
             lower = np.quantile(draws, axis=0, q=0.025)
             upper = np.quantile(draws, axis=0, q=0.975)
-            draws_dict[group] =  {
-                'lower': lower, 
+            draws_dict[group] = {
+                'lower': lower,
                 'upper': upper
             }
         return draws_dict
@@ -184,7 +192,7 @@ class IHME(Model):
 
         Returns:
             self: copy of the untrained model 
-        """        
+        """
         out = IHME(self.model_parameters)
         out.xcol = self.xcol
         out.ycol = self.ycol
@@ -195,11 +203,11 @@ class IHME(Model):
         out.pipeline_args = copy(self.pipeline_args)
         out.covs = copy(self.covs)
 
-        out.param_names  = copy(self.param_names)
+        out.param_names = copy(self.param_names)
         out.predict_space = self.predict_space
 
         out.link_fun = copy(self.link_fun)
         out.var_link_fun = copy(self.var_link_fun)
-        
+
         out.pipeline = None
         return out
