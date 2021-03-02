@@ -166,7 +166,7 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     model_params['covs'] = data['covariates']
 
     # Initialize the model
-    model = IHME(model_params)  # TODO: Use model argument here
+    model = model(model_params)
 
     # Get the required data
     df_district, df_district_notrans, df_train, df_val, df_test, \
