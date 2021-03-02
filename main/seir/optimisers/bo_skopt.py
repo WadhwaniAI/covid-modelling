@@ -102,8 +102,9 @@ class BO_SKOpt(OptimiserBase):
     def _order_trials_by_loss(self, losses_array, params_array, predictions_array):
         least_losses_indices = np.argsort(losses_array)
         losses_array = losses_array[least_losses_indices]
+        params_array = np.array(params_array)
         params_array = params_array[least_losses_indices]
-        predictions_array = predictions_array[least_losses_indices]
+        predictions_array = [predictions_array[i] for i in least_losses_indices]
 
         return losses_array, params_array, predictions_array
 
