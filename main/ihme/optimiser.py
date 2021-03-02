@@ -1,7 +1,6 @@
 import sys
-
-from copy import copy
-from datetime import timedelta
+from pathos.multiprocessing import ProcessingPool as Pool
+import multiprocessing
 
 import numpy as np
 import pandas as pd
@@ -11,10 +10,12 @@ from models.ihme.model import IHME
 from utils.fitting.loss import Loss_Calculator
 
 sys.path.append('../..')
-from utils.fitting.util import HidePrints, train_test_split
+
+from utils.fitting.util import HidePrints
 
 
 class Optimiser():
+
     def __init__(self, model: IHME, train: pd.DataFrame, val: pd.DataFrame, args=None):
         """
         Initalises the optimiser for finding best fe_init for IHME model
@@ -30,20 +31,7 @@ class Optimiser():
         self.val = val
         self.args = args
 
-    def optimisestar(self, _):
-        """
-        wrapper function for self.optimise
-
-        Args:
-            _ ([type]): anything, scrapped
-
-        Returns:
-            tuple: fe_init, min_loss, trials object
-        """
-        return self.optimise(**self.args)
-
-    def optimise(self, bounds: list,
-                 iterations: int, scoring='mape', val_size=7, min_days=7):
+    def _optimise(self, bounds: list, iterations: int, scoring='mape'):
         """
         optimise function to find best fe_init and n_days_train
 
@@ -51,8 +39,6 @@ class Optimiser():
             bounds (list): fe_bounds; searchspace for fe_init
             iterations (int): number of evals to search for optimum
             scoring (str, optional): mape, rmse, rmsle. Defaults to 'mape'.
-            val_size (int, optional): to withold as val set. Defaults to 7.
-            min_days (int, optional): min_days to train on. Defaults to 7.
 
         Raises:
             Exception: raised if data doesn't have min_days + val_size rows
@@ -60,12 +46,7 @@ class Optimiser():
         Returns:
             tuple: fe_init, min_loss, trials object
         """
-        # if len(self.data) - val_size < min_days:
-        #     raise Exception(f'len(data) - val_size must be >= {min_days}')
         model = self.model.generate()
-        # data = copy(self.data)
-        # threshold = data[model.date].max() - timedelta(days=val_size)
-        # train, val = train_test_split(data, threshold, threshold_col=model.date)
 
         def objective(params):
             test_model = model.generate()
@@ -92,13 +73,6 @@ class Optimiser():
         space = {}
         for i, bound in enumerate(bounds):
             space[model.param_names[i]] = hp.uniform(model.param_names[i], bound[0], bound[1])
-        # fmin returns index for hp.choice
-        # n_days_range = np.arange(min_days, 1 + len(data) - val_size, dtype=int)
-
-        # TODO: decide, and remove n from hyperopt search if it remains consistent
-        # force only min_days for n
-        # n_days_range = np.arange(min_days, 1 + min_days, dtype=int)
-        # space['n'] = hp.choice('n', n_days_range)
 
         trials = Trials()
         best = fmin(objective,
@@ -111,9 +85,33 @@ class Optimiser():
         for i, param in enumerate(model.param_names):
             fe_init.append(best[param])
 
-        # returns index of range provided to hp.choice for n
-        # best['n'] = n_days_range[best['n']]
-
         min_loss = min(trials.losses())
-        # print (best, min_loss)
         return fe_init, min_loss, trials
+
+    def optimise_helper(self, _):
+        """
+        wrapper function for self.optimise
+
+        Args:
+            _ ([type]): anything, scrapped
+
+        Returns:
+            tuple: fe_init, min_loss, trials object
+        """
+        return self._optimise(**self.args)
+
+    def optimise(self):
+        """
+
+        Returns:
+
+        """
+        hyperopt_runs = {}
+        trials_dict = {}
+        pool = Pool(processes=multiprocessing.cpu_count())
+        for i, (best_init, err, trials) in enumerate(pool.map(self.optimise_helper,
+                                                              list(range(self.args['num_trials'])))):
+            hyperopt_runs[err] = best_init
+            trials_dict[i] = trials
+        best_index = np.argmin(hyperopt_runs.keys())
+        return hyperopt_runs[best_index], trials_dict[best_index]
