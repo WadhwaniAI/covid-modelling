@@ -230,7 +230,9 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     results_dict['df_prediction'] = df_prediction_notrans
     results_dict['df_district'] = df_district_notrans
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
-    for name in ['optimiser', 'df_train', 'df_val', 'df_loss', 'df_loss_pointwise', 'trials',
+    for name in ['optimiser', 'df_train', 'df_val', 'df_test',
+                 'df_train_nora_notrans', 'df_val_nora_notrans', 'df_test_nora_notrans',
+                 'df_loss', 'df_loss_pointwise', 'trials',
                  'data_last_date', 'draws']:
         results_dict[name] = eval(name)
 
