@@ -178,9 +178,9 @@ def run_experiments(ihme_config_path, region_config_path, data, root_folder, mul
 
         # Find loss on s3 for baseline c3 model
         lc = Loss_Calculator()
-        df_c3_s3_loss = lc.create_loss_dataframe_region(train_baseline[-c3_train_period:], test_baseline[-s3:],
+        df_c3_s3_loss = lc.create_loss_dataframe_region(train_baseline[-c3_train_period:], test_baseline[-s3:], None,
                                                         predictions_dict_baseline['df_prediction'],
-                                                        c3_train_period, which_compartments=replace_compartments)
+                                                        which_compartments=replace_compartments)
         predictions_dict_baseline['df_loss_s3'] = df_c3_s3_loss
 
         print("Creating plots...")

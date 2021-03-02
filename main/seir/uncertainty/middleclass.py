@@ -245,9 +245,9 @@ class MCUncertainty(Uncertainty):
             deciles_forecast[ptile]['df_prediction'] = df_prediction
             if not self.construct_percentiles_day_wise:
                 deciles_forecast[ptile]['params'] = params[df_ptile_idxs.iloc[0][ptile]]
-            deciles_forecast[ptile]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
-                df_train_nora, None, df_prediction, train_period=self.fitting_config['split']['val_period'],
-                which_compartments=self.loss_compartments)
+            deciles_forecast[ptile]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(df_train_nora, None,
+                                                                                                None, df_prediction,
+                                                                                                which_compartments=self.loss_compartments)
         return deciles_forecast
 
     def _ptile_idx_helper(self, percentiles, date):

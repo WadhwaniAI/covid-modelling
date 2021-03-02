@@ -127,7 +127,7 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
                                     model=model)
 
     lc = Loss_Calculator()
-    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, split['train_period'],
+    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, None, df_prediction,
                                               which_compartments=loss['loss_compartments'])
 
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'],
