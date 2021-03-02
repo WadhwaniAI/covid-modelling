@@ -10,7 +10,7 @@ from utils.generic.config import read_config
 
 
 def run_pipeline(config_filename):
-    config = read_config(config_filename, preprocess=False)
+    config = read_config(config_filename, preprocess=False, config_dir='ihme')
     timestamp = datetime.datetime.now()
     output_folder = '../../misc/ihme/{}'.format(timestamp.strftime("%Y_%m%d_%H%M%S"))
     predictions_dict = single_fitting_cycle(**copy.deepcopy(config['fitting']))
