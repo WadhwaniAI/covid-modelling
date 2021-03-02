@@ -31,7 +31,7 @@ class Optimiser():
         self.val = val
         self.args = args
 
-    def _optimise(self, bounds: list, iterations: int, scoring='mape'):
+    def _optimise(self, bounds: list, iterations: int, scoring='mape', **kwargs):
         """
         optimise function to find best fe_init and n_days_train
 
@@ -108,10 +108,13 @@ class Optimiser():
         """
         hyperopt_runs = {}
         trials_dict = {}
-        pool = Pool(processes=multiprocessing.cpu_count())
+        num_processes = multiprocessing.cpu_count() if self.args['num_trials'] > 1 else 1
+        pool = Pool(processes=num_processes)
         for i, (best_init, err, trials) in enumerate(pool.map(self.optimise_helper,
                                                               list(range(self.args['num_trials'])))):
             hyperopt_runs[err] = best_init
             trials_dict[i] = trials
+        pool.close()
         best_index = np.argmin(hyperopt_runs.keys())
-        return hyperopt_runs[best_index], trials_dict[best_index]
+        best_err = min(hyperopt_runs.keys())
+        return hyperopt_runs[best_err], trials_dict[best_index]
