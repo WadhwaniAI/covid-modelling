@@ -1,37 +1,37 @@
 base:
-  log: TRUE # fit on log of model_params: ycol
-  disable_tracker: TRUE # use athena instead of covid19api
-  max_evals: 100 # optimiser evals (trials)
-  sd: FALSE # use social distancing covariate for beta
-  smooth: 0 # window to smooth data (rolling avg) - 0 means no smoothing
-  test_size: 7 # witheld from model entirely
-  scoring: mape
-  val_size: 7 # val set for hyperopt
-  min_days: 7 # min days to train on
-  smooth_jump: FALSE
-  smooth_jump_method: weighted
-  smooth_jump_days: 33
+	log: TRUE # fit on log of model_params: ycol
+	disable_tracker: TRUE # use athena instead of covid19api
+	max_evals: 100 # optimiser evals (trials)
+	sd: FALSE # use social distancing covariate for beta
+	smooth: 0 # window to smooth data (rolling avg) - 0 means no smoothing
+	test_size: 7 # witheld from model entirely
+	scoring: mape
+	val_size: 7 # val set for hyperopt
+	min_days: 7 # min days to train on
+	smooth_jump: FALSE
+	smooth_jump_method: weighted
+	smooth_jump_days: 33
 run:
-  forecast_days: 30
-  num_hyperopt: 1 # number of times to run optimiser - done in parallel
+	forecast_days: 30
+	num_hyperopt: 1 # number of times to run optimiser - done in parallel
 backtesting:
-  increment: 7 # how often to run backtesting
-  forecast_days: 14
+	increment: 7 # how often to run backtesting
+	forecast_days: 14
 model_params:
-  xcol: day
-  date: date
-  groupcol: group
-  ycol: deceased
-  func: log_erf
-  priors: # for when log is TRUE
-    fe_init: [-1.1, 16.0, -9.0]
-    fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
-  pipeline_args:
-    n_draws: 20
-    cv_threshold: 1.e-2
-    smoothed_radius: [7,7]
-    num_smooths: 3
-    exclude_groups: []
-    exclude_below: 0
-    exp_smoothing: null
-    max_last: null
+	xcol: day
+	date: date
+	groupcol: group
+	ycol: deceased
+	func: log_erf
+	priors: # for when log is TRUE
+		fe_init: [-1.1, 16.0, -9.0]
+		fe_bounds: [[-5.0, -0.5], [12,40], [-20, -5]]
+	pipeline_args:
+		n_draws: 20
+		cv_threshold: 1.e-2
+		smoothed_radius: [7,7]
+		num_smooths: 3
+		exclude_groups: []
+		exclude_below: 0
+		exp_smoothing: null
+		max_last: null
