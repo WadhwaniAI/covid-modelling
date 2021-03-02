@@ -4,14 +4,16 @@ import datetime
 import data.dataloader as dl
 
 
-def get_data(dataloader, dataloading_params):
-    """
-
-    """
+def get_data(dataloader, dataloading_params, data_columns):
     try:
         dl_class = getattr(dl, dataloader)
         dlobj = dl_class()
-        return dlobj.get_data(**dataloading_params)
+        df_result = dlobj.get_data(**dataloading_params)
+        if data_columns in df_result.columns:
+            return df_result
+        else:
+            raise ValueError('The returned dataframe from the specified dataloader (`dataloader`) doesn\'t' +
+                'contain the specified columns (`data_columns`)')
     except Exception as e:
         print(e)
 
