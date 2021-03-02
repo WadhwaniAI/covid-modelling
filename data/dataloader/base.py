@@ -37,5 +37,5 @@ class BaseLoader(ABC):
         return dataframes
 
     @abstractmethod
-    def get_data(*args, **kwargs):
+    def get_data(self, *args, **kwargs):
         pass
