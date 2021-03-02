@@ -564,64 +564,64 @@ def get_data_from_source(region=None, sub_region=None, data_source='covid19india
         raise Exception('Invalid data source')
     return data
 
-def train_val_test_split(data, val_size=5, test_size=0, rolling_window=5, end='smooth', dropna=True,
-                         train_rollingmean=False, val_rollingmean=False, test_rollingmean=False, which_columns=None):
-    print("splitting data ..")
-    data_processed = copy.deepcopy(data)
-
-    # Infer columns with numeric datatype
-    data_processed = data_processed.infer_objects()
-    if which_columns is None:
-        which_columns = data_processed.select_dtypes(include='number').columns
-
-    train_size = len(data_processed) - (val_size + test_size)
-    df_train = data_processed.head(train_size)
-    df_val_test = data_processed.tail(val_size+test_size)
-    df_val = df_val_test.head(val_size)
-    df_test = df_val_test.tail(test_size)
-    df_train_copy, df_val_copy, df_test_copy = df_train.copy(deep=True), df_val.copy(deep=True), df_test.copy(deep=True)
-
-    for column in which_columns:
-        if column in data_processed.columns:
-            if train_rollingmean and not df_train.empty:
-                df_train.loc[:, column] = df_train[column].rolling(rolling_window, center=True, min_periods=1).mean()
-            if val_rollingmean and not df_val.empty:
-                df_val.loc[:, column] = df_val[column].rolling(rolling_window, center=True, min_periods=1).mean()
-            if test_rollingmean and not df_test.empty:
-                df_test.loc[:, column] = df_test[column].rolling(rolling_window, center=True, min_periods=1).mean()
-
-    offset_window = rolling_window // 2
-
-    if end == 'actual' and rolling_window > 1:
-        if not df_train.empty and train_rollingmean:
-            df_train.iloc[:offset_window, :] = data_processed.iloc[:offset_window, :]
-            end = -(val_size+test_size) if (val_size+test_size) != 0 else None
-            df_train.iloc[-offset_window:, :] = data_processed.iloc[-(val_size+test_size+offset_window):end, :]
-        if not df_val.empty and val_rollingmean:
-            df_val.iloc[:offset_window, :] = data_processed.iloc[
-                                            -(val_size+test_size):-(val_size+test_size-offset_window), :]
-            end = -test_size if test_size != 0 else None
-            df_val.iloc[-offset_window:, :] = data_processed.iloc[-(test_size+offset_window):end, :]
-        if not df_test.empty and test_rollingmean:
-            df_test.iloc[:offset_window, :] = data_processed.iloc[-test_size:-(test_size-offset_window), :]
-            df_test.iloc[-offset_window:, :] = data_processed.iloc[-offset_window:, :]
-        if not df_train.empty and train_rollingmean:
-            df_train.iloc[:offset_window, :] = df_train_copy.head(offset_window)
-            df_train.iloc[-offset_window:, :] = df_train_copy.tail(offset_window)
-        if not df_val.empty and val_rollingmean:
-            df_val.iloc[:offset_window, :] = df_val_copy.head(offset_window)
-            df_val.iloc[-offset_window:, :] = df_val_copy.tail(offset_window)
-        if not df_test.empty and test_rollingmean:
-            df_test.iloc[:offset_window, :] = df_test_copy.head(offset_window)
-            df_test.iloc[-offset_window:, :] = df_test_copy.tail(offset_window)
-
-    for df in [df_train, df_test, df_val]:
-        if not df.empty:
-            if dropna:
-                df.dropna(axis=0, how='any', subset=which_columns, inplace=True)
-            df.reset_index(inplace=True, drop=True)
-
-    return df_train, df_val, df_test
+# def train_val_test_split(data, val_size=5, test_size=0, rolling_window=5, end='smooth', dropna=True,
+#                          train_rollingmean=False, val_rollingmean=False, test_rollingmean=False, which_columns=None):
+#     print("splitting data ..")
+#     data_processed = copy.deepcopy(data)
+#
+#     # Infer columns with numeric datatype
+#     data_processed = data_processed.infer_objects()
+#     if which_columns is None:
+#         which_columns = data_processed.select_dtypes(include='number').columns
+#
+#     train_size = len(data_processed) - (val_size + test_size)
+#     df_train = data_processed.head(train_size)
+#     df_val_test = data_processed.tail(val_size+test_size)
+#     df_val = df_val_test.head(val_size)
+#     df_test = df_val_test.tail(test_size)
+#     df_train_copy, df_val_copy, df_test_copy = df_train.copy(deep=True), df_val.copy(deep=True), df_test.copy(deep=True)
+#
+#     for column in which_columns:
+#         if column in data_processed.columns:
+#             if train_rollingmean and not df_train.empty:
+#                 df_train.loc[:, column] = df_train[column].rolling(rolling_window, center=True, min_periods=1).mean()
+#             if val_rollingmean and not df_val.empty:
+#                 df_val.loc[:, column] = df_val[column].rolling(rolling_window, center=True, min_periods=1).mean()
+#             if test_rollingmean and not df_test.empty:
+#                 df_test.loc[:, column] = df_test[column].rolling(rolling_window, center=True, min_periods=1).mean()
+#
+#     offset_window = rolling_window // 2
+#
+#     if end == 'actual' and rolling_window > 1:
+#         if not df_train.empty and train_rollingmean:
+#             df_train.iloc[:offset_window, :] = data_processed.iloc[:offset_window, :]
+#             end = -(val_size+test_size) if (val_size+test_size) != 0 else None
+#             df_train.iloc[-offset_window:, :] = data_processed.iloc[-(val_size+test_size+offset_window):end, :]
+#         if not df_val.empty and val_rollingmean:
+#             df_val.iloc[:offset_window, :] = data_processed.iloc[
+#                                             -(val_size+test_size):-(val_size+test_size-offset_window), :]
+#             end = -test_size if test_size != 0 else None
+#             df_val.iloc[-offset_window:, :] = data_processed.iloc[-(test_size+offset_window):end, :]
+#         if not df_test.empty and test_rollingmean:
+#             df_test.iloc[:offset_window, :] = data_processed.iloc[-test_size:-(test_size-offset_window), :]
+#             df_test.iloc[-offset_window:, :] = data_processed.iloc[-offset_window:, :]
+#         if not df_train.empty and train_rollingmean:
+#             df_train.iloc[:offset_window, :] = df_train_copy.head(offset_window)
+#             df_train.iloc[-offset_window:, :] = df_train_copy.tail(offset_window)
+#         if not df_val.empty and val_rollingmean:
+#             df_val.iloc[:offset_window, :] = df_val_copy.head(offset_window)
+#             df_val.iloc[-offset_window:, :] = df_val_copy.tail(offset_window)
+#         if not df_test.empty and test_rollingmean:
+#             df_test.iloc[:offset_window, :] = df_test_copy.head(offset_window)
+#             df_test.iloc[-offset_window:, :] = df_test_copy.tail(offset_window)
+#
+#     for df in [df_train, df_test, df_val]:
+#         if not df.empty:
+#             if dropna:
+#                 df.dropna(axis=0, how='any', subset=which_columns, inplace=True)
+#             df.reset_index(inplace=True, drop=True)
+#
+#     return df_train, df_val, df_test
 
 def get_observed_dataframes(input_data, val_period=7, test_period=7, window=7, which_columns=None):
 
