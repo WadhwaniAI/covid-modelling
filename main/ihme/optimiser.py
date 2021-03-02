@@ -30,6 +30,7 @@ class Optimiser():
         self.train = train
         self.val = val
         self.args = args
+        self.lc = Loss_Calculator()
 
     def _optimise(self, bounds: list, iterations: int, scoring='mape', **kwargs):
         """
@@ -49,6 +50,7 @@ class Optimiser():
         model = self.model.generate()
 
         def objective(params):
+            print('Start')
             test_model = model.generate()
             test_model.priors.update({
                 'fe_init': [params['alpha'], params['beta'], params['p']],
@@ -61,8 +63,7 @@ class Optimiser():
             with HidePrints():
                 test_model.fit(train_cut)
                 predictions = test_model.predict(val_cut[model.date].min(), val_cut[model.date].max())
-            lc = Loss_Calculator()
-            err = lc.evaluate(val_cut[model.ycol], predictions)
+            err = self.lc.evaluate(val_cut[model.ycol], predictions)
             return {
                 'loss': err[scoring],
                 'status': STATUS_OK,
@@ -109,12 +110,16 @@ class Optimiser():
         hyperopt_runs = {}
         trials_dict = {}
         num_processes = multiprocessing.cpu_count() if self.args['num_trials'] > 1 else 1
-        pool = Pool(processes=num_processes)
-        for i, (best_init, err, trials) in enumerate(pool.map(self.optimise_helper,
-                                                              list(range(self.args['num_trials'])))):
-            hyperopt_runs[err] = best_init
-            trials_dict[i] = trials
-        pool.close()
-        best_index = np.argmin(hyperopt_runs.keys())
-        best_err = min(hyperopt_runs.keys())
-        return hyperopt_runs[best_err], trials_dict[best_index]
+        if num_processes == 1:
+            best_init, err, trials = self.optimise_helper(0)
+            return best_init, trials
+        else:
+            pool = Pool(processes=num_processes)
+            for i, (best_init, err, trials) in enumerate(pool.map(self.optimise_helper,
+                                                                  list(range(self.args['num_trials'])))):
+                hyperopt_runs[err] = best_init
+                trials_dict[i] = trials
+            pool.close()
+            best_index = np.argmin(hyperopt_runs.keys())
+            best_err = min(hyperopt_runs.keys())
+            return hyperopt_runs[best_err], trials_dict[best_index]
