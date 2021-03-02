@@ -5,17 +5,14 @@ import data.dataloader as dl
 
 
 def get_data(dataloader, dataloading_params, data_columns):
-    try:
-        dl_class = getattr(dl, dataloader)
-        dlobj = dl_class()
-        df_result = dlobj.get_data(**dataloading_params)
-        if data_columns in df_result.columns:
-            return df_result
-        else:
-            raise ValueError('The returned dataframe from the specified dataloader (`dataloader`) doesn\'t' +
-                'contain the specified columns (`data_columns`)')
-    except Exception as e:
-        print(e)
+    dl_class = getattr(dl, dataloader)
+    dlobj = dl_class()
+    res = dlobj.get_data(**dataloading_params)
+    if set(data_columns).issubset(set(res['data_frame'].columns)):
+        return res
+    else:
+        raise ValueError('The returned dataframe from the specified dataloader (`dataloader`) doesn\'t' +
+            'contain the specified columns (`data_columns`)')
 
 
 def implement_rolling(df, window_size, center, win_type, min_periods):
