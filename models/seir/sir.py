@@ -66,8 +66,8 @@ class SIR(SIRBase):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['hospitalised'] = float('nan')
+        df_prediction['active'] = float('nan')
         df_prediction['recovered'] = float('nan')
         df_prediction['deceased'] = float('nan')
-        df_prediction['total_infected'] = df_prediction['R']
+        df_prediction['total'] = df_prediction['R']
         return df_prediction

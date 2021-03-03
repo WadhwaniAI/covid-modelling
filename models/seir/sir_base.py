@@ -62,10 +62,10 @@ class SIRBase:
         for state in R_STATES:
             statename = state.split('R_')[1]
             P_keyname = [k for k in p_params.keys() if k.split('P_')[1] == statename][0]
-            state_init_values[state] = p_params[P_keyname] * observed_values['hospitalised']
+            state_init_values[state] = p_params[P_keyname] * observed_values['active']
 
-        state_init_values['R'] = observed_values['total_infected']
-        state_init_values['I'] = I_tot_ratio * observed_values['total_infected']
+        state_init_values['R'] = observed_values['total']
+        state_init_values['I'] = I_tot_ratio * observed_values['total']
         nonSsum = sum(state_init_values.values())
 
         state_init_values['S'] = (self.N - nonSsum)
