@@ -6,11 +6,30 @@ import datetime
 from data.dataloader.base import BaseLoader
 
 class JHULoader(BaseLoader):
+    """Dataloader that time series case data for US states, counties, and US from
+        the JHU github repo 'https://www.github.com/CSSEGISandData/COVID-19/'
+
+        Allows the user to do fitting on US states, US counties, and all countries
+
+    Args:
+        BaseLoader (abstract class): Abstract Data Loader Class
+    """
     def __init__(self):
         super().__init__()
 
-    # helper function for modifying the dataframes such that each row is a snapshot of a country on a particular day
     def _modify_dataframe(self, df, column_name='RecoveredCases', province_info_column_idx=4):
+        """Helper function for modifying the dataframes such that each row is a 
+            snapshot of a country on a particular day
+
+        Args:
+            df (pd.DataFrame): dataframe to be modified
+            column_name (str, optional): Modification to be done for which column. Defaults to 'RecoveredCases'.
+            province_info_column_idx (int, optional): What is the column index of the 
+            province info column. Defaults to 4.
+
+        Returns:
+            pd.DataFrame: Modified dataframe
+        """
         cases_matrix = df.to_numpy()[:, province_info_column_idx:]
         cases_array = cases_matrix.reshape(-1, 1)
 
@@ -27,6 +46,16 @@ class JHULoader(BaseLoader):
         return df
 
     def _load_from_daily_reports(self):
+        """
+        This function parses the CSVs from JHU's daily_reports module 
+        and converts them to pandas dataframes
+        This returns case counts for all US counties, states, and US as a whole
+
+        Important to note that this returns `deceased`, `total`, `active` and `recovered` numbers
+
+        Returns:
+            pd.DataFrame: dataframe of case counts
+        """
         starting_date = datetime.datetime.strptime('04-12-2020', "%m-%d-%Y")
         main_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/' + \
                    'master/csse_covid_19_data/csse_covid_19_daily_reports_us/{}.csv'
@@ -40,18 +69,22 @@ class JHULoader(BaseLoader):
                 df = pd.read_csv(main_url.format(curr_date.strftime("%m-%d-%Y")))
                 df['date'] = curr_date
                 df_master = pd.concat([df_master, df], ignore_index=True)
-            except Exception as e:
+            except Exception:
                 pass
 
         return df_master
 
     def _load_data_from_time_series_us(self):
         """
-        This function parses the confirmed, death and recovered CSVs on JHU's 
-        github repo and converts them to pandas dataframes
-        Columns of returned dataframe : 
-        ['Province/State', 'Country/Region', 'Lat', 'Long', 'Date', 
-        'ConfirmedCases', 'Deaths', 'RecoveredCases', 'ActiveCases']
+        This function parses the confirmed, death and recovered CSVs from JHU's
+        time_series_us module and converts them to pandas dataframes
+        This returns case counts for all US states
+
+        Important to note that this returns ONLY `deceased` and `total` numbers.
+        `active` and `recovered` are not returned.
+
+        Returns:
+            pd.DataFrame: dataframe of case counts
         """
         main_url='https://raw.githubusercontent.com/CSSEGISandData/COVID-19/' + \
                  'master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_{}_US.csv'
@@ -70,11 +103,17 @@ class JHULoader(BaseLoader):
     # Loads time series case data for every country (and all provinces within certain countries) from JHU's github repo
     def _load_data_from_time_series_global(self):
         """
-        This function parses the confirmed, death and recovered CSVs on JHU's 
-        github repo and converts them to pandas dataframes
-        Columns of returned dataframe : 
-        ['Province/State', 'Country/Region', 'Lat', 'Long', 'Date', 
-        'ConfirmedCases', 'Deaths', 'RecoveredCases', 'ActiveCases']
+        This function parses the `confirmed`, `deceased` and `recovered` CSVs from JHU's 
+        time_series_global module and converts them to pandas dataframes
+        This returns case counts for all countries (including US)
+
+        `active`, `recovered`, `deceased` and `total` are all returned
+
+        Columns of returned dataframe :
+
+        Returns:
+            pd.DataFrame: ['Province/State', 'Country/Region', 'Lat', 'Long', 'Date', 
+            'ConfirmedCases', 'Deaths', 'RecoveredCases', 'ActiveCases']
         """
         main_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/' + \
                    'master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_{}_global.csv'
@@ -92,6 +131,15 @@ class JHULoader(BaseLoader):
         return df_master
 
     def pull_dataframes(self, **kwargs):
+        """Function for pullling dataframes from all modules on JHU's github repo
+
+        Returns:
+            dict{str : pd.DatFrame}: Dict of dataframes 
+
+            df_us_states : US States, from daily reports
+            df_us_counties : US Counties, States, and US, from time series US
+            df_global : All countries apart from US, from time series global
+        """
         dataframes = {}
         dataframes['df_us_states'] = self._load_from_daily_reports()
         dataframes['df_us_counties'] = self._load_data_from_time_series_us()
@@ -103,6 +151,22 @@ class JHULoader(BaseLoader):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
 
     def get_data(self, dataframe, region, sub_region=None, reload_data=False, **kwargs):
+        """Main function serving as handshake between data and fitting modules
+
+        Args:
+            dataframe (str): Which df to use for fitting. Can be `global`, `us_states`, `us_counties`.
+            region (str): Which region data to do fitting on
+            sub_region (str, optional): Which subregion to do fitting on. Defaults to None.
+            reload_data (bool, optional): arg for pull_dataframes_cached. If true, data is 
+            pulled afresh, rather than using the cache. Defaults to False.
+
+        Raises:
+            ValueError: If `dataframe` is `us_counties`, a `sub_region` must be provided. 
+            ValueError: `dataframe` can be only 1 of `global`, `us_states`, `us_counties`.
+
+        Returns:
+            dict: dict with singular element containing the processed dataframe
+        """
         dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
         df = dataframes[f'df_{dataframe}']
         if dataframe == 'global':
