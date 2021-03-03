@@ -37,7 +37,7 @@ def create_output(predictions_dict, output_folder, tag):
         for inner in ['df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'df_district_unsmoothed']:
             if inner in predictions_dict[outer] and predictions_dict[outer][inner] is not None:
                 predictions_dict[outer][inner].to_csv(f'{directory}/{outer}_{inner}.csv')
-        for inner in ['trials', 'run_params', 'optimiser', 'plots', 'smoothing_description', 'default_params', ]:
+        for inner in ['trials', 'run_params', 'optimiser', 'plots', 'smoothing_description', 'default_params']:
             with open(f'{directory}/{outer}_{inner}.pkl', 'wb') as f:
                 pickle.dump(predictions_dict[outer][inner], f)
         if 'ensemble_mean' in predictions_dict[outer]['forecasts']:
@@ -66,6 +66,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
 
     # Select experiment
     if which == 'train_lengths':
+        # Optimize the length of the fitting and alpha estimation periods
         for region in regions:
             for tl in itertools.product(np.arange(6, 45, 3), np.arange(2, 7, 1)):
                 config = {
@@ -77,6 +78,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                 configs[region['label'] + f'-{tl[0]}-{tl[1]}'] = config
 
     elif which == 'num_trials':
+        # Optimize the number of hyperopt trials for fitting
         for region in regions:
             for tl in itertools.product([21, 30], [3]):
                 for i, num in enumerate([5000] * 5):
@@ -90,6 +92,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     configs[region['label'] + f'-{tl[0]}-{tl[1]}' + f'-{num}-{i}'] = config
 
     elif which == 'num_trials_ensemble':
+        # Optimize the number of hyperopt trials for fitting using ABMA
         for region in regions:
             for tl in itertools.product([21, 30], [3]):
                 for num in np.arange(500, 5500, 500):
@@ -103,6 +106,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     configs[region['label'] + f'-{tl[0]}-{tl[1]}' + f'-{num}'] = config
 
     elif which == 'optimiser':
+        # Compare optimizers
         for region in regions:
             for tl in itertools.product([21, 30], [3]):
                 for method, num in [('tpe', 3000), ('rand', 10000)]:
@@ -116,6 +120,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     configs[region['label'] + f'-{tl[0]}-{tl[1]}-{method}'] = config
 
     elif which == 'loss_method':
+        # Compare fitting loss methods
         for region in regions:
             for tl in itertools.product([30], [3]):
                 for l1, l2 in itertools.product(loss_methods, loss_methods):
@@ -133,6 +138,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     configs[region['label'] + f'-{tl[0]}-{tl[1]}-{l1}-{l2}'] = config
 
     elif which == 'windows':
+        # Fit to multiple windows
         today = datetime.datetime.now().date()
         for key, region in regions.items():
             start = region['start_date']
@@ -195,7 +201,7 @@ def perform_batch_runs(base_config_filename='param_choices.yaml', driver_config_
     # Specifying the folder where checkpoints will be saved
     timestamp = datetime.datetime.now().strftime("%Y_%m%d_%H%M%S")
     if output_folder is None:
-        output_folder = f'../../outputs/param_choices/{timestamp}'
+        output_folder = f'../../outputs/seir/{timestamp}'
     os.makedirs(output_folder, exist_ok=True)
     n_jobs = multiprocessing.cpu_count()
 
