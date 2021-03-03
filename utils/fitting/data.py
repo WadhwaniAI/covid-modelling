@@ -1,13 +1,9 @@
 import sys
 
 import numpy as np
-import pandas as pd
 import yaml
 
 sys.path.append('../..')
-
-from utils.fitting.population import get_district_population, get_population
-from utils.generic.enums import Columns
 
 # tuples: (district, state, census_area_name(s))
 mumbai = 'Mumbai', 'Maharashtra', ['District - Mumbai (23)', 'District - Mumbai Suburban (22)']
