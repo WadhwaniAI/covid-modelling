@@ -62,7 +62,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
     # Select experiment
     if which == 'train_lengths':
         # Optimize the length of the fitting and validation periods
-        for region in regions:
+        for key, region in regions.items():
             for tl in itertools.product(np.arange(6, 45, 3), np.arange(2, 7, 1)):
                 config = {
                     'fitting': {
@@ -75,7 +75,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
 
     elif which == 'num_trials':
         # Optimize the number of hyperopt trials for fitting
-        for region in regions:
+        for key, region in regions.items():
             for tl in itertools.product([21], [7]):
                 for i, num in enumerate([500] * 5):
                     config = {
@@ -90,7 +90,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
 
     elif which == 'loss_method':
         # Compare fitting loss methods
-        for region in regions:
+        for key, region in regions.items():
             for tl in itertools.product([30], [3]):
                 for l in loss_methods:
                     config = {

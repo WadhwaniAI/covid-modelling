@@ -67,7 +67,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
     # Select experiment
     if which == 'train_lengths':
         # Optimize the length of the fitting and alpha estimation periods
-        for region in regions:
+        for key, region in regions.items():
             for tl in itertools.product(np.arange(6, 45, 3), np.arange(2, 7, 1)):
                 config = {
                     'fitting': {
@@ -79,7 +79,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
 
     elif which == 'num_trials':
         # Optimize the number of hyperopt trials for fitting
-        for region in regions:
+        for key, region in regions.items():
             for tl in itertools.product([21, 30], [3]):
                 for i, num in enumerate([5000] * 5):
                     config = {
@@ -93,7 +93,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
 
     elif which == 'num_trials_ensemble':
         # Optimize the number of hyperopt trials for fitting using ABMA
-        for region in regions:
+        for key, region in regions.items():
             for tl in itertools.product([21, 30], [3]):
                 for num in np.arange(500, 5500, 500):
                     config = {
@@ -107,7 +107,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
 
     elif which == 'optimiser':
         # Compare optimizers
-        for region in regions:
+        for key, region in regions.items():
             for tl in itertools.product([21, 30], [3]):
                 for method, num in [('tpe', 3000), ('rand', 10000)]:
                     config = {
@@ -121,7 +121,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
 
     elif which == 'loss_method':
         # Compare fitting loss methods
-        for region in regions:
+        for key, region in regions.items():
             for tl in itertools.product([30], [3]):
                 for l1, l2 in itertools.product(loss_methods, loss_methods):
                     config = {
