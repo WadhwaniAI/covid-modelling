@@ -67,7 +67,8 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                 config = {
                     'fitting': {
                         'data': {'dataloading_params': region,
-                                 'data_source': region['data_source']},
+                                 'data_source': region['data_source'],
+                                 'smooth_jump': region['smooth_jump']},
                         'split': {'train_period': tl[0], 'val_period': tl[1]}
                     }
                 }
@@ -81,7 +82,8 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     config = {
                         'fitting': {
                             'data': {'dataloading_params': region,
-                                     'data_source': region['data_source']},
+                                     'data_source': region['data_source'],
+                                     'smooth_jump': region['smooth_jump']},
                             'fitting_method_params': {'num_evals': num},
                             'split': {'train_period': tl[0], 'val_period': tl[1]}
                         }
@@ -96,7 +98,8 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     config = {
                         'fitting': {
                             'data': {'dataloading_params': region,
-                                     'data_source': region['data_source']},
+                                     'data_source': region['data_source'],
+                                     'smooth_jump': region['smooth_jump']},
                             'loss': {'loss_method': l}
                         }
                     }
@@ -111,7 +114,8 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                 config = {
                     'fitting': {
                         'data': {'dataloading_params': region,
-                                 'data_source': region['data_source']},
+                                 'data_source': region['data_source'],
+                                 'smooth_jump': region['smooth_jump']},
                         'split': {
                             'start_date': start,
                             'end_date': None
