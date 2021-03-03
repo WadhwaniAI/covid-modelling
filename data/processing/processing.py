@@ -191,7 +191,7 @@ def get_data_from_tracker_state(state='Delhi', reload_data=False, **kwargs):
     dataframes = get_dataframes_cached(reload_data=reload_data)
     df_states = copy.copy(dataframes['df_states_all'])
     df_state = df_states[df_states['state'] == state]
-    df_state['date'] = pd.to_datetime(df_state['date'])
+    df_state.loc[:,'date'] = pd.to_datetime(df_state['date'])
     df_state = df_state.rename({'confirmed': 'total'}, axis='columns')
     df_state.reset_index(inplace=True, drop=True)
     return df_state
