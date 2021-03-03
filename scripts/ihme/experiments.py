@@ -31,7 +31,7 @@ def create_output(predictions_dict, output_folder, tag):
     """Custom output generation function"""
     directory = f'{output_folder}/{tag}'
     if not os.path.exists(directory):
-        os.mkdir(directory)
+        os.makedirs(directory)
     d = {}
     # Numpy
     for key in ['best_init', 'best_params', 'draws']:
@@ -77,7 +77,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
         # Optimize the number of hyperopt trials for fitting
         for key, region in regions.items():
             for tl in itertools.product([21], [7]):
-                for i, num in enumerate([500] * 5):
+                for i, num in enumerate([500] * 3):
                     config = {
                         'fitting': {
                             'data': {'dataloading_params': region,
@@ -152,7 +152,7 @@ def run_parallel(run_name, params, base_config_filename):
     return x
 
 
-def perform_batch_runs(base_config_filename='param_choices.yaml', driver_config_filename='list_of_exp.yaml',
+def perform_batch_runs(base_config_filename='default.yaml', driver_config_filename='list_of_exp.yaml',
                        experiment_name='train_lengths', output_folder=None):
     """Run all experiments"""
     # Specifying the folder where checkpoints will be saved
