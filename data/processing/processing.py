@@ -1,15 +1,15 @@
-import json
-
-import pandas as pd
-import numpy as np
 import copy
+import datetime
+import json
 import os
 import pickle
-import datetime
-from collections import defaultdict
+
+import numpy as np
+import pandas as pd
 import yaml
 
-from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoader, CovidTrackingLoader, SimulatedDataLoader
+from data.dataloader import Covid19IndiaLoader, JHULoader, AthenaLoader, NYTLoader, CovidTrackingLoader, \
+    SimulatedDataLoader
 
 
 def get_dataframes_cached(loader_class=Covid19IndiaLoader, reload_data=False, label=None, **kwargs):
@@ -114,6 +114,7 @@ def get_custom_data_from_db(state='Maharashtra', district='Mumbai', reload_data=
 
     return {"data_frame": df_result}
 
+
 def generate_simulated_data(**dataloading_params):
     """generates simulated data using the input params in config file
     Keyword Arguments
@@ -135,15 +136,16 @@ def generate_simulated_data(**dataloading_params):
 
     for col in df_result.columns:
         if col in ['active', 'total', 'recovered', 'deceased']:
-            df_result[col] = df_result[col].astype('int64')    
+            df_result[col] = df_result[col].astype('int64')
     return {"data_frame": df_result[['date', 'active', 'total', 'recovered', 'deceased']], "actual_params": params}
 
-#TODO add support of adding 0s column for the ones which don't exist
+
+# TODO add support of adding 0s column for the ones which don't exist
 def get_simulated_data_from_file(filename, params_filename=None, **kwargs):
     params = {}
     if params_filename:
-        params = pd.read_csv(params_filename).iloc[0,:].to_dict()
-    df_result = pd.read_csv(filename) 
+        params = pd.read_csv(params_filename).iloc[0, :].to_dict()
+    df_result = pd.read_csv(filename)
     df_result['date'] = pd.to_datetime(df_result['date'])
     df_result.loc[:, ['total', 'active', 'recovered', 'deceased']] = df_result[[
         'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
@@ -152,12 +154,13 @@ def get_simulated_data_from_file(filename, params_filename=None, **kwargs):
             df_result[col] = df_result[col].astype('int64')
     return {"data_frame": df_result[['date', 'active', 'total', 'recovered', 'deceased']], "actual_params": params}
 
-#TODO add support of adding 0s column for the ones which don't exist
+
+# TODO add support of adding 0s column for the ones which don't exist
 def get_custom_data_from_file(filename, data_format='new', **kwargs):
     if data_format == 'new':
-        df_result = pd.read_csv(filename) 
+        df_result = pd.read_csv(filename)
         df_result = df_result.drop(['Ward/block name', 'Ward number (if applicable)', 'Mild cases (isolated)',
-                                    'Moderate cases (hospitalized)', 'Severe cases (In ICU)', 
+                                    'Moderate cases (hospitalized)', 'Severe cases (In ICU)',
                                     'Critical cases (ventilated patients)'], axis=1)
         df_result.columns = ['state', 'district', 'date', 'total', 'active', 'recovered', 'deceased']
         df_result.drop(np.arange(3), inplace=True)
@@ -168,33 +171,34 @@ def get_custom_data_from_file(filename, data_format='new', **kwargs):
             'total', 'active', 'recovered', 'deceased']].apply(pd.to_numeric)
         df_result = df_result[['date', 'state', 'district', 'total', 'active', 'recovered', 'deceased']]
         df_result = df_result.dropna(subset=['date'], how='all')
-        
+
     elif data_format == 'old':
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
     else:
         raise ValueError('data_format can only be new or old')
-        
+
     return {"data_frame": df_result}
 
 
-def get_data_from_tracker(state='Maharashtra', district='Mumbai', use_dataframe='data_all', 
-                          reload_data=False, ** kwargs):
+def get_data_from_tracker(state='Maharashtra', district='Mumbai', use_dataframe='data_all',
+                          reload_data=False, **kwargs):
     if not district is None:
         return {"data_frame": get_data_from_tracker_district(state, district, use_dataframe, reload_data)}
     else:
         return {"data_frame": get_data_from_tracker_state(state, reload_data)}
 
-        
+
 def get_data_from_tracker_state(state='Delhi', reload_data=False, **kwargs):
     dataframes = get_dataframes_cached(reload_data=reload_data)
     df_states = copy.copy(dataframes['df_states_all'])
     df_state = df_states[df_states['state'] == state]
-    df_state.loc[:,'date'] = pd.to_datetime(df_state['date'])
+    df_state.loc[:, 'date'] = pd.to_datetime(df_state['date'])
     df_state = df_state.rename({'confirmed': 'total'}, axis='columns')
     df_state.reset_index(inplace=True, drop=True)
     return df_state
+
 
 def get_data_from_tracker_district(state='Karnataka', district='Bengaluru', use_dataframe='raw_data',
                                    reload_data=False, **kwargs):
@@ -224,9 +228,8 @@ def get_data_from_jhu(dataframe, region, sub_region=None, reload_data=False, **k
     dataframes = get_dataframes_cached(loader_class=JHULoader, reload_data=reload_data)
     df = dataframes[f'df_{dataframe}']
     if dataframe == 'global':
-        df.rename(columns= {"ConfirmedCases": "total", "Deaths": "deceased",
-                            "RecoveredCases": "recovered", "ActiveCases": "active", 
-                            "Date": "date"}, inplace=True)
+        df.rename(columns={"ConfirmedCases": "total", "Deaths": "deceased", "RecoveredCases": "recovered",
+                           "ActiveCases": "active", "Date": "date"}, inplace=True)
         df.drop(["Lat", "Long"], axis=1, inplace=True)
         df = df[df['Country/Region'] == region]
         if sub_region is None:
@@ -235,29 +238,27 @@ def get_data_from_jhu(dataframe, region, sub_region=None, reload_data=False, **k
             df = df[df['Province/State'] == sub_region]
 
     elif dataframe == 'us_states':
-        drop_columns = ['Last_Update', 'Lat', 'Long_', 'FIPS', 'Incident_Rate', 
-                        'People_Hospitalized', 'Mortality_Rate', 'UID', 'ISO3', 
+        drop_columns = ['Last_Update', 'Lat', 'Long_', 'FIPS', 'Incident_Rate',
+                        'People_Hospitalized', 'Mortality_Rate', 'UID', 'ISO3',
                         'Testing_Rate', 'Hospitalization_Rate']
         df.drop(drop_columns, axis=1, inplace=True)
-        df.rename(columns={"Confirmed": "total", "Deaths": "deceased",
-                           "Recovered": "recovered", "Active": "active", 
+        df.rename(columns={"Confirmed": "total", "Deaths": "deceased", "Recovered": "recovered", "Active": "active",
                            "People_Tested": "tested", "Date": "date"}, inplace=True)
-        df = df[['date', 'Province_State', 'Country_Region', 'total', 'active', 
+        df = df[['date', 'Province_State', 'Country_Region', 'total', 'active',
                  'recovered', 'deceased', 'tested']]
-        df = df[df['Province_State'] == region]    
+        df = df[df['Province_State'] == region]
 
     elif dataframe == 'us_counties':
-        drop_columns = ['UID', 'iso2', 'iso3', 'code3', 'FIPS', 
-                        'Lat', 'Long_']
+        drop_columns = ['UID', 'iso2', 'iso3', 'code3', 'FIPS', 'Lat', 'Long_']
         df.drop(drop_columns, axis=1, inplace=True)
         df.rename(columns={"ConfirmedCases": "total", "Deaths": "deceased",
                            "Date": "date"}, inplace=True)
-        df = df[['date', 'Admin2', 'Province_State', 'Country_Region', 'Combined_Key', 
+        df = df[['date', 'Admin2', 'Province_State', 'Country_Region', 'Combined_Key',
                  'Population', 'total', 'deceased']]
         if sub_region is None:
             raise ValueError('Please provide a county name ie, the sub_region key')
         df = df[(df['Province_State'] == region) & (df['Admin2'] == sub_region)]
-        
+
     else:
         raise ValueError('Unknown dataframe type given as input to user')
 
@@ -266,8 +267,7 @@ def get_data_from_jhu(dataframe, region, sub_region=None, reload_data=False, **k
 
 
 def get_data_from_ny_times(state, county=None, reload_data=False, **kwargs):
-    dataframes = get_dataframes_cached(
-        loader_class=NYTLoader, reload_data=reload_data)
+    dataframes = get_dataframes_cached(loader_class=NYTLoader, reload_data=reload_data)
     if county is not None:
         df = dataframes['counties']
         df = df[np.logical_and(df['state'] == state, df['county'] == county)]
@@ -282,10 +282,9 @@ def get_data_from_ny_times(state, county=None, reload_data=False, **kwargs):
 
 
 def get_data_from_covid_tracking(state, reload_data=False, **kwargs):
-    dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader, 
-                                       reload_data=reload_data)
+    dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader, reload_data=reload_data)
     df_states = dataframes['df_states']
-    df_states = df_states.loc[:, ['date', 'state', 'state_name', 'positive', 
+    df_states = df_states.loc[:, ['date', 'state', 'state_name', 'positive',
                                   'active', 'recovered', 'death']]
     df_states.rename(columns={"positive": "total",
                               "death": "deceased"}, inplace=True)
@@ -299,13 +298,14 @@ def implement_rolling(df, window_size, center, win_type, min_periods):
     # Select numeric columns
     which_columns = df_roll.select_dtypes(include='number').columns
     for column in which_columns:
-        df_roll[column] = df_roll[column].rolling(window=window_size, center=center, win_type=win_type, 
+        df_roll[column] = df_roll[column].rolling(window=window_size, center=center, win_type=win_type,
                                                   min_periods=min_periods).mean()
         # For the days which become na after rolling, the following line 
         # uses the true observations inplace of na, and the rolling average where it exists
         df_roll[column] = df_roll[column].fillna(df[column])
 
     return df_roll
+
 
 def implement_split(df, train_period, val_period, test_period, start_date, end_date, trim_excess=False):
     """
@@ -336,7 +336,7 @@ def implement_split(df, train_period, val_period, test_period, start_date, end_d
         df_val = df.iloc[start_date + train_period:start_date + train_period + val_period, :]
         df_test = df.iloc[start_date + train_period + val_period:
                           start_date + train_period + val_period + test_period, :]
-    else:    
+    else:
         if end_date is not None:
             if isinstance(end_date, int):
                 if end_date > 0:
@@ -344,17 +344,18 @@ def implement_split(df, train_period, val_period, test_period, start_date, end_d
             if isinstance(end_date, datetime.date):
                 end_date = df.loc[df['date'].dt.date == end_date].index[0] - len(df) + 1
         else:
-            end_date = 0  
+            end_date = 0
 
-        df_test = df.iloc[len(df) - test_period+end_date:end_date, :]
-        df_val = df.iloc[len(df) - (val_period+test_period)+end_date:len(df) - test_period+end_date, :]
-        df_train = df.iloc[len(df) - (val_period+test_period+train_period)+end_date:
-                           len(df) - (val_period+test_period)+end_date, :] if trim_excess else \
-            df.iloc[:len(df) - (val_period+test_period)+end_date, :]
+        df_test = df.iloc[len(df) - test_period + end_date:end_date, :]
+        df_val = df.iloc[len(df) - (val_period + test_period) + end_date:len(df) - test_period + end_date, :]
+        df_train = df.iloc[len(df) - (val_period + test_period + train_period) + end_date:
+                           len(df) - (val_period + test_period) + end_date, :] if trim_excess else \
+            df.iloc[:len(df) - (val_period + test_period) + end_date, :]
 
     return df_train, df_val, df_test
 
-def train_val_test_split(df_district, train_period=5, val_period=5, test_period=5, start_date=None, end_date=None,  
+
+def train_val_test_split(df_district, train_period=5, val_period=5, test_period=5, start_date=None, end_date=None,
                          window_size=5, center=True, win_type=None, min_periods=1, split_after_rolling=False,
                          trim_excess=False):
     """Creates train val split on dataframe
@@ -377,9 +378,9 @@ def train_val_test_split(df_district, train_period=5, val_period=5, test_period=
     if split_after_rolling:
         df_district_rolling = implement_rolling(
             df_district_rolling, window_size, center, win_type, min_periods)
-        df_train, df_val, df_test = implement_split(df_district_rolling, train_period, val_period, 
+        df_train, df_val, df_test = implement_split(df_district_rolling, train_period, val_period,
                                                     test_period, start_date, end_date, trim_excess)
-        
+
     else:
         df_train, df_val, df_test = implement_split(df_district_rolling, train_period, val_period,
                                                     test_period, start_date, end_date, trim_excess)
@@ -391,11 +392,12 @@ def train_val_test_split(df_district, train_period=5, val_period=5, test_period=
     df_train = df_train.infer_objects()
     df_val = df_val.infer_objects()
     df_test = df_test.infer_objects()
-        
+
     if val_period == 0:
         df_val = None
 
     return df_train, df_val, df_test
+
 
 def get_jhu_data(region, sub_region=None):
     dataframe = get_dataframes_cached(loader_class=JHULoader)
@@ -411,6 +413,7 @@ def get_jhu_data(region, sub_region=None):
     df.reset_index(drop=True, inplace=True)
     return df
 
+
 def get_ny_times_data(state, county=None):
     dataframes = get_dataframes_cached(loader_class=NYTLoader)
     if county is not None:
@@ -424,6 +427,7 @@ def get_ny_times_data(state, county=None):
     df.drop('fips', axis=1, inplace=True)
     df.reset_index(drop=True, inplace=True)
     return df
+
 
 def get_covid_tracking_data(state, county=None):
     dataframes = get_dataframes_cached(loader_class=CovidTrackingLoader)
