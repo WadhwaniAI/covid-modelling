@@ -6,31 +6,43 @@ import requests
 from data.dataloader.base import BaseLoader
 
 class Covid19IndiaLoader(BaseLoader):
+    """Dataloader that gets casecount data from covid19india.org
+
+    Args:
+        BaseLoader (abstract class): Abstract Data Loader Class
+    """
     def __init__(self):
         super().__init__()
 
-    def _load_data_json(self, dataframes):
+    def _load_data_json(self):
         # Parse data.json file
         data = requests.get('https://api.covid19india.org/data.json').json()
 
         # Create dataframe for testing data
         df_tested = pd.DataFrame.from_dict(data['tested'])
-        dataframes['df_tested'] = df_tested
 
         # Create dataframe for statewise data
         df_statewise = pd.DataFrame.from_dict(data['statewise'])
-        dataframes['df_statewise'] = df_statewise
 
         # Create dataframe for time series data
         df_india_time_series = pd.DataFrame.from_dict(data['cases_time_series'])
         df_india_time_series['date'] = pd.to_datetime([datetime.datetime.strptime(
             x[:6] + ' 2020', '%d %b %Y') for x in df_india_time_series['date']])
-        dataframes['df_india_time_series'] = df_india_time_series
-        return dataframes
+        
+        return df_tested, df_statewise, df_india_time_series
 
-    def _load_state_district_wise_json(self, dataframes):
-        # Parse state_district_wise.json file
+    def _load_state_district_wise_json(self):
+        # Load state_district_wise.json file
         data = requests.get('https://api.covid19india.org/state_district_wise.json').json()
+
+        # Create statecode_to_state_dict
+        df_statecode = pd.DataFrame.from_dict(data)
+        df_statecode = df_statecode.drop(['districtData']).T
+        statecode_to_state_dict = dict(
+            zip(df_statecode['statecode'], df_statecode.index))
+
+
+        # Create df_districtwise
         states = data.keys()
         for state in states:
             for district, district_dict in data[state]['districtData'].items():
@@ -50,29 +62,24 @@ class Covid19IndiaLoader(BaseLoader):
             df['state'] = state
             df = df[columns]
             df_districtwise = pd.concat([df_districtwise, df], ignore_index=True)
-        dataframes['df_districtwise'] = df_districtwise
 
-        data = requests.get('https://api.covid19india.org/state_district_wise.json').json()
-        df_statecode = pd.DataFrame.from_dict(data)
-        df_statecode = df_statecode.drop(['districtData']).T
-        statecode_to_state_dict = dict(zip(df_statecode['statecode'], df_statecode.index))
+        return df_districtwise, statecode_to_state_dict
 
-        return dataframes, statecode_to_state_dict
-
-    def _load_raw_data_json(self, dataframes):
+    def _load_raw_data_json(self, NUM_RAW_DFS=30):
          # Parse raw_data.json file
         raw_data_dataframes = []
-        for i in range(1, 21):
+        for i in range(1, NUM_RAW_DFS+1):
             try:
                 data = requests.get(f'https://api.covid19india.org/raw_data{i}.json').json()
                 raw_data_dataframes.append(pd.DataFrame.from_dict(data['raw_data']))
             except Exception:
                 break
 
-        dataframes['df_raw_data'] = pd.concat(raw_data_dataframes, ignore_index=True)
-        return dataframes
+        df_raw = pd.concat(raw_data_dataframes, ignore_index=True)
+        
+        return df_raw
 
-    def _load_districts_daily_json(self, dataframes):
+    def _load_districts_daily_json(self):
         data = requests.get('https://api.covid19india.org/districts_daily.json').json()
         df_districts = pd.DataFrame(columns=['notes', 'active', 'confirmed', 'deceased', 
                                             'recovered', 'date', 'state', 'district'])
@@ -89,10 +96,9 @@ class Covid19IndiaLoader(BaseLoader):
         numeric_cols = ['active', 'confirmed', 'deceased', 'recovered']
         df_districts[numeric_cols] = df_districts[numeric_cols].apply(
             pd.to_numeric)
-        dataframes['df_districts'] = df_districts
-        return dataframes
+        return df_districts
 
-    def _load_data_all_json_district(self, dataframes, statecode_to_state_dict):
+    def _load_data_all_json_district(self, statecode_to_state_dict):
         data = requests.get('https://api.covid19india.org/v4/data-all.json').json()
 
         for date in data.keys():
@@ -147,10 +153,10 @@ class Covid19IndiaLoader(BaseLoader):
 
         numeric_cols = ['confirmed', 'active', 'recovered', 'deceased', 'tested', 'migrated']
         df_districts_all.loc[:, numeric_cols] = df_districts_all.loc[:, numeric_cols].apply(pd.to_numeric)
-        dataframes['df_districts_all'] = df_districts_all
-        return dataframes
+        
+        return df_districts_all
 
-    def _load_data_all_json_state(self, dataframes, statecode_to_state_dict):
+    def _load_data_all_json_state(self, statecode_to_state_dict):
         data = requests.get('https://api.covid19india.org/v4/data-all.json').json()
         for date in data.keys():
             date_dict = data[date]
@@ -185,8 +191,7 @@ class Covid19IndiaLoader(BaseLoader):
         
         numeric_cols = ['confirmed', 'active', 'recovered', 'deceased', 'tested', 'migrated']
         df_states_all.loc[:, numeric_cols] = df_states_all.loc[:, numeric_cols].apply(pd.to_numeric)
-        dataframes['df_states_all'] = df_states_all
-        return dataframes
+        return df_states_all
 
     def pull_dataframes(self, load_raw_data=False, load_districts_daily=False, **kwargs):
         """
@@ -206,14 +211,22 @@ class Covid19IndiaLoader(BaseLoader):
         # List of dataframes to return
         dataframes = {}
 
-        dataframes = self._load_data_json(dataframes)
-        dataframes, statecode_to_state_dict = self._load_state_district_wise_json(dataframes)
+        df_tested, df_statewise, df_india_time_series = self._load_data_json()
+        dataframes['df_tested'] = df_tested
+        dataframes['df_statewise'] = df_statewise
+        dataframes['df_india_time_series'] = df_india_time_series
+        df_districtwise, statecode_to_state_dict = self._load_state_district_wise_json()
+        dataframes['df_districtwise'] = df_districtwise
         if load_raw_data:
-            dataframes = self._load_raw_data_json(dataframes)
+            df_raw = self._load_raw_data_json()
+            dataframes['df_raw_data'] = df_raw
         if load_districts_daily:
-            dataframes = self._load_districts_daily_json(dataframes)
-        dataframes = self._load_data_all_json_district(dataframes, statecode_to_state_dict)
-        dataframes = self._load_data_all_json_state(dataframes, statecode_to_state_dict)
+            df_districts = self._load_districts_daily_json()
+            dataframes['df_districts'] = df_districts
+        df_districts_all = self._load_data_all_json_district(statecode_to_state_dict)
+        dataframes['df_districts_all'] = df_districts_all
+        df_states_all = self._load_data_all_json_state(statecode_to_state_dict)
+        dataframes['df_states_all'] = df_states_all
 
         return dataframes
 
