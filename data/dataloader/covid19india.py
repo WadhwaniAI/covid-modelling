@@ -7,6 +7,11 @@ from data.dataloader.base import BaseLoader
 
 class Covid19IndiaLoader(BaseLoader):
     """Dataloader that gets casecount data from covid19india.org
+    From api.covid19india.org. We use the JSON api and not the CSV api
+
+    Different API are accessed and then converted into pd.DataFrames
+
+    Full list of dataframes are given in the docstrings of pull_dataframes
 
     Args:
         BaseLoader (abstract class): Abstract Data Loader Class
@@ -15,6 +20,15 @@ class Covid19IndiaLoader(BaseLoader):
         super().__init__()
 
     def _load_data_json(self):
+        """Returns dataframes from data.json
+
+        df_tested : dataframe of testing data
+        df_statewise : dataframe of statewise data (today's snapshot)
+        df_india_time_series : dataframe of india cases (time series)
+
+        Returns:
+            [pd.DataFrame]: list of dataframes
+        """
         # Parse data.json file
         data = requests.get('https://api.covid19india.org/data.json').json()
 
@@ -32,6 +46,14 @@ class Covid19IndiaLoader(BaseLoader):
         return df_tested, df_statewise, df_india_time_series
 
     def _load_state_district_wise_json(self):
+        """Loads dataframes from the state_district_wise.json file
+
+        df_districtwise : Today's snapshot of district-wise cases
+        statecode_to_state_dict : Mapping statecode to state name
+
+        Returns:
+            pd.DataFrame, dict: df_districtwise, statecode_to_state_dict
+        """
         # Load state_district_wise.json file
         data = requests.get('https://api.covid19india.org/state_district_wise.json').json()
 
@@ -66,6 +88,13 @@ class Covid19IndiaLoader(BaseLoader):
         return df_districtwise, statecode_to_state_dict
 
     def _load_raw_data_json(self, NUM_RAW_DFS=30):
+        """Loads raw_data from raw_data{i}.json
+
+        df_raw : patient level information
+
+        Args:
+            NUM_RAW_DFS (int, optional): Number of raw data json files to consider. Defaults to 30.
+        """
          # Parse raw_data.json file
         raw_data_dataframes = []
         for i in range(1, NUM_RAW_DFS+1):
@@ -80,6 +109,11 @@ class Covid19IndiaLoader(BaseLoader):
         return df_raw
 
     def _load_districts_daily_json(self):
+        """Loads history of cases district wise from districts_daily.json
+
+        Returns:
+            pd.DataFrame: df_districts
+        """
         data = requests.get('https://api.covid19india.org/districts_daily.json').json()
         df_districts = pd.DataFrame(columns=['notes', 'active', 'confirmed', 'deceased', 
                                             'recovered', 'date', 'state', 'district'])
@@ -99,6 +133,14 @@ class Covid19IndiaLoader(BaseLoader):
         return df_districts
 
     def _load_data_all_json_district(self, statecode_to_state_dict):
+        """Loads history of cases district wise from data-all.json
+
+        Args:
+            statecode_to_state_dict (dict): dict mapping state code to state name
+
+        Returns:
+            pd.DataFrame: df_districts_all
+        """
         data = requests.get('https://api.covid19india.org/v4/data-all.json').json()
 
         for date in data.keys():
@@ -157,6 +199,14 @@ class Covid19IndiaLoader(BaseLoader):
         return df_districts_all
 
     def _load_data_all_json_state(self, statecode_to_state_dict):
+        """Loads history of cases state wise from data-all.json
+
+        Args:
+            statecode_to_state_dict (dict): dict mapping state code to state name
+
+        Returns:
+            pd.DataFrame: df_state_all
+        """
         data = requests.get('https://api.covid19india.org/v4/data-all.json').json()
         for date in data.keys():
             date_dict = data[date]
@@ -203,9 +253,9 @@ class Covid19IndiaLoader(BaseLoader):
         - df_india_time_series : Time series of cases in India (nationwide)
         - df_districtwise : Today's snapshot of cases in India, districtwise
         - df_raw_data : Patient level information of cases
-        - df_deaths_recoveries : Patient level information of deaths and recoveries
-        - [NOT UPDATED ANYMORE] df_travel_history : Travel history of some patients (Unofficial : from newsarticles, twitter, etc)
-        - df_resources : Repository of testing labs, fundraising orgs, government hel   plines, etc
+        - df_districts_daily : Histoty of cases district wise obtainted from districts_daily.json
+        - df_districts_all : Histoty of cases district wise obtainted from data_all.json
+        - df_states_all : Histoty of cases state wise obtainted from data_all.json
         """
 
         # List of dataframes to return
@@ -222,7 +272,7 @@ class Covid19IndiaLoader(BaseLoader):
             dataframes['df_raw_data'] = df_raw
         if load_districts_daily:
             df_districts = self._load_districts_daily_json()
-            dataframes['df_districts'] = df_districts
+            dataframes['df_districts_daily'] = df_districts
         df_districts_all = self._load_data_all_json_district(statecode_to_state_dict)
         dataframes['df_districts_all'] = df_districts_all
         df_states_all = self._load_data_all_json_state(statecode_to_state_dict)
@@ -235,6 +285,20 @@ class Covid19IndiaLoader(BaseLoader):
 
     def get_data(self, state='Maharashtra', district='Mumbai', use_dataframe='data_all',
                  reload_data=False, **kwargs):
+        """[summary]
+
+        Args:
+            state (str, optional): State to fit on. Defaults to 'Maharashtra'.
+            district (str, optional): District to fit on. If given, get_data_district is called. 
+            Else, get_data_state is called. Defaults to 'Mumbai'.
+            use_dataframe (str, optional): Which dataframe to use for districts.
+             Can be data_all/districts_daily. Defaults to 'data_all'.
+            reload_data (bool, optional): arg for pull_dataframes_cached. If true, data is 
+            pulled afresh, rather than using the cache. Defaults to False.
+
+        Returns:
+            dict { str : pd.DataFrame }  : Processed dataframe
+        """
         if not district is None:
             return {"data_frame": self.get_data_district(state, district, use_dataframe, 
                                                          reload_data, **kwargs)}
@@ -243,6 +307,16 @@ class Covid19IndiaLoader(BaseLoader):
 
 
     def get_data_state(self, state='Delhi', reload_data=False, **kwargs):
+        """Helper function for get_data. Returns state data
+
+        Args:
+            state (str, optional): State to fit on. Defaults to 'Delhi'.
+            reload_data (bool, optional): arg for pull_dataframes_cached. If true, data is 
+            pulled afresh, rather than using the cache. Defaults to False.
+
+        Returns:
+            dict { str : pd.DataFrame }  : Processed dataframe
+        """
         dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
         df_states = copy.copy(dataframes['df_states_all'])
         df_state = df_states[df_states['state'] == state]
@@ -252,7 +326,19 @@ class Covid19IndiaLoader(BaseLoader):
         return df_state
 
     def get_data_district(self, state='Karnataka', district='Bengaluru', 
-                          use_dataframe='raw_data', reload_data=False, **kwargs):
+                          use_dataframe='data_all', reload_data=False, **kwargs):
+        """Helper function for get_data. Returns district data
+
+        Args:
+            state (str, optional): State to fit on. Defaults to 'Karnataka'.
+            district (str, optional): Distrit to fit on. Defaults to 'Bengaluru'.
+            use_dataframe (str, optional) : Which dataframe to use. Can be `data_all`/`districts_daily`.
+            reload_data (bool, optional): arg for pull_dataframes_cached. If true, data is
+            pulled afresh, rather than using the cache. Defaults to False.
+
+        Returns:
+            dict { str : pd.DataFrame }  : Processed dataframe
+        """
         dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
 
         if use_dataframe == 'data_all':
@@ -267,7 +353,7 @@ class Covid19IndiaLoader(BaseLoader):
             return df_district
 
         if use_dataframe == 'districts_daily':
-            df_districts = copy.copy(dataframes['df_districts'])
+            df_districts = copy.copy(dataframes['df_districts_daily'])
             df_district = df_districts.loc[(df_districts['state'] == state) & (
                 df_districts['district'] == district)]
             del df_district['notes']
