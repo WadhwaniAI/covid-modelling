@@ -1,5 +1,6 @@
 """
 pipeline.py
+Run as: python3 -W ignore pipeline.py -c default.yaml
 """
 import argparse
 import copy
@@ -7,6 +8,7 @@ import datetime
 import sys
 import warnings
 import pandas as pd
+from tabulate import tabulate
 
 sys.path.append('../../')
 
@@ -32,6 +34,7 @@ def run_pipeline(config_filename):
     timestamp = datetime.datetime.now()
     output_folder = '../../misc/ihme/{}'.format(timestamp.strftime("%Y_%m%d_%H%M%S"))
     predictions_dict = single_fitting_cycle(**copy.deepcopy(config['fitting']))
+    print('loss\n', tabulate(predictions_dict['df_loss'].tail().round(2).T, headers='keys', tablefmt='psql'))
 
 
 if __name__ == "__main__":
