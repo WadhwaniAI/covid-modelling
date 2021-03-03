@@ -27,7 +27,7 @@ def create_output(predictions_dict, output_folder, tag):
     """Custom output generation function"""
     directory = f'{output_folder}/{tag}'
     if not os.path.exists(directory):
-        os.mkdir(directory)
+        os.makedirs(directory)
     d = {}
     for outer in ['m1', 'm2']:
         for inner in ['variable_param_ranges', 'best_params', 'beta_loss']:
@@ -209,7 +209,7 @@ def run_parallel(run_name, params, base_config_filename):
     return x
 
 
-def perform_batch_runs(base_config_filename='param_choices.yaml', driver_config_filename='list_of_exp.yaml',
+def perform_batch_runs(base_config_filename='abma_experiments.yaml', driver_config_filename='list_of_exp.yaml',
                        experiment_name='train_lengths', output_folder=None):
     """Run all experiments"""
     # Specifying the folder where checkpoints will be saved
