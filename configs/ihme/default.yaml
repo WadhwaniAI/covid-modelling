@@ -24,26 +24,26 @@ fitting:
             min_periods: 7
             split_after_rolling: FALSE
         log: TRUE
-        covariates: ['covs', 'covs', 'covs']
+        covariates: ['default_cov', 'default_cov', 'default_cov']
     model: IHME
     default_params:
         N: 1.0e+7
     fitting_method_params:
         num_evals: 100
-        num_trials: 1
+        num_trials: 5
         seed: 42
     #Choose Fitting Periods and num evaluations
     split:
         start_date: null
-        end_date: 2020-10-31
-        train_period: 30
-        val_period: 3
-        test_period: 0
+        end_date: 2020-06-30
+        train_period: 21
+        val_period: 7
+        test_period: 5
     #Optimisation related parameters
     loss:
         loss_method: mape
         loss_compartments: [total]
-        loss_weights: [0.25, 0.25, 0.25, 0.25]
+        loss_weights: [1]
     model_params:
         xcol: day
         date: date
