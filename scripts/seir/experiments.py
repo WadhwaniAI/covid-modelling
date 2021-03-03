@@ -56,8 +56,19 @@ def create_output(predictions_dict, output_folder, tag):
         json.dump(d, f, indent=4)
 
 
-def get_experiment(which, regions, loss_methods=None, regionwise=False):
-    """Get experiment configuration"""
+def get_experiment(experiment_name, regions, loss_methods=None, regionwise=False):
+    """Get experiment configuration
+    Specify partial config using driver config, each of which is then merged with base config.
+
+    Args:
+        experiment_name (str): Name of the experiment
+        regions (dict): Partial configuration for each region
+        loss_methods (list, optional): List of loss methods
+        regionwise (bool, optional): Group configs by region
+
+    Returns:
+        dict: dictionary of configs
+    """
     logging.info('Getting experiment choices')
 
     # Set values
@@ -65,7 +76,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
     configs = {}
 
     # Select experiment
-    if which == 'train_lengths':
+    if experiment_name == 'train_lengths':
         # Optimize the length of the fitting and alpha estimation periods
         for key, region in regions.items():
             for tl in itertools.product(np.arange(6, 45, 3), np.arange(2, 7, 1)):
@@ -77,7 +88,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                 }
                 configs[region['label'] + f'-{tl[0]}-{tl[1]}'] = config
 
-    elif which == 'num_trials':
+    elif experiment_name == 'num_trials':
         # Optimize the number of hyperopt trials for fitting
         for key, region in regions.items():
             for tl in itertools.product([21, 30], [3]):
@@ -91,7 +102,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     }
                     configs[region['label'] + f'-{tl[0]}-{tl[1]}' + f'-{num}-{i}'] = config
 
-    elif which == 'num_trials_ensemble':
+    elif experiment_name == 'num_trials_ensemble':
         # Optimize the number of hyperopt trials for fitting using ABMA
         for key, region in regions.items():
             for tl in itertools.product([21, 30], [3]):
@@ -105,7 +116,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     }
                     configs[region['label'] + f'-{tl[0]}-{tl[1]}' + f'-{num}'] = config
 
-    elif which == 'optimiser':
+    elif experiment_name == 'optimiser':
         # Compare optimizers
         for key, region in regions.items():
             for tl in itertools.product([21, 30], [3]):
@@ -119,7 +130,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     }
                     configs[region['label'] + f'-{tl[0]}-{tl[1]}-{method}'] = config
 
-    elif which == 'loss_method':
+    elif experiment_name == 'loss_method':
         # Compare fitting loss methods
         for key, region in regions.items():
             for tl in itertools.product([30], [3]):
@@ -137,7 +148,7 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                     }
                     configs[region['label'] + f'-{tl[0]}-{tl[1]}-{l1}-{l2}'] = config
 
-    elif which == 'windows':
+    elif experiment_name == 'windows':
         # Fit to multiple windows
         today = datetime.datetime.now().date()
         for key, region in regions.items():
@@ -158,6 +169,9 @@ def get_experiment(which, regions, loss_methods=None, regionwise=False):
                 start_str = start.strftime('%Y-%m-%d')
                 start = start + datetime.timedelta(1)
                 configs[region['label'] + '_' + start_str] = config
+
+    else:
+        print('Experiment not found')
 
     if regionwise:
         configs_regionwise = {}
@@ -206,8 +220,8 @@ def perform_batch_runs(base_config_filename='param_choices.yaml', driver_config_
     n_jobs = multiprocessing.cpu_count()
 
     # Get experiment choices
-    regions = read_config(driver_config_filename, preprocess=False, config_dir='other')
-    what_to_vary = get_experiment(experiment_name, regions)
+    driver_config = read_config(driver_config_filename, preprocess=False, config_dir='other')
+    what_to_vary = get_experiment(experiment_name, driver_config)
 
     # Run experiments
     for i, chunk in enumerate(chunked(what_to_vary.items(), n_jobs)):
