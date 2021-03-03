@@ -164,6 +164,9 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     # Set up model params TODO: Shift to read_config
     model_params['func'] = getattr(functions, model_params['func'])
     model_params['covs'] = data['covariates']
+    col = model_params['ycol']
+    transformed_col = f'log_{col}_rate' if data['log'] else f'{col}_rate'
+    model_params['ycol'] = transformed_col
 
     # Initialize the model
     model = model(model_params)
@@ -209,21 +212,21 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     # Create dataframe of transformed predictions
     df_prediction_notrans = pd.DataFrame({
         model.date: df_prediction[model.date],
-        model.ycol: df_prediction[model.ycol].apply(lambda x: transform_func(x, default_params['N']))
+        col: df_prediction[transformed_col].apply(lambda x: transform_func(x, default_params['N']))
     })
     # Obtain mean and pointwise losses for train, val and test
     df_loss = lc.create_loss_dataframe_region(df_train_nora_notrans, df_val_nora_notrans, df_test_nora_notrans,
-                                              df_prediction_notrans, which_compartments=loss['loss_compartments'])
+                                              df_prediction_notrans, which_compartments=[col])
     df_loss_pointwise = lc.create_pointwise_loss_dataframe_region(df_test_nora_notrans, df_val_nora_notrans,
                                                                   df_test_nora_notrans, df_prediction_notrans,
-                                                                  which_compartments=loss['loss_compartments'])
+                                                                  which_compartments=[col])
 
     # Uncertainty TODO: Shift to forecast section of code
     draws = get_uncertainty_draws(model, model_params)
 
     # Plotting
-    fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'],
-                        location_description=data['dataloading_params']['location_description'],
+    fit_plot = plot_fit(df_prediction_notrans, df_train_nora_notrans, df_val_nora_notrans, df_district_notrans,
+                        split['train_period'], location_description=data['dataloading_params']['location_description'],
                         which_compartments=loss['loss_compartments'])
 
     # Collect results
