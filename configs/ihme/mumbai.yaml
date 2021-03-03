@@ -1,6 +1,0 @@
-base:
-  data_source: 'athena' 
-  smooth: 3 # window to smooth data (rolling avg) - 0 means no smoothing
-  smooth_jump: TRUE
-  smooth_jump_method: weighted
-  smooth_jump_days: 33
