@@ -4,13 +4,19 @@ from data.dataloader.base import BaseLoader
 
 
 class CovidTrackingLoader(BaseLoader):
+    """Dataloader that time series case data for US states from
+        Covid Tracking API 'https://covidtracking.com/data/api'
+
+    Args:
+        BaseLoader (abstract class): Abstract Data Loader Class
+    """
     def __init__(self):
         super().__init__()
 
-    # Loads time series case data for US states from the Covid Tracking API 'https://covidtracking.com/data/api'
     def pull_dataframes(self, **kwargs):
         """
-        This function parses the us-states and us-counties CSVs on NY Times's github repo and converts them to pandas dataframes
+        This function parses the us-states and us-counties CSVs obtained from the 
+        covidtracking API and converts them to pandas dataframes
         Returns dict of dataframes for states and counties
         """
         dataframes = dict()
