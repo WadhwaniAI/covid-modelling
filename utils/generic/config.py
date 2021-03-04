@@ -1,3 +1,5 @@
+import itertools
+
 import yaml
 import copy
 
@@ -147,7 +149,7 @@ def make_date_str(config):
             if isinstance(k, datetime.date):
                 keys_to_make_str.append(k)
             if isinstance(v, datetime.date):
-                config[k] = v.strftime('%Y-%m-%d')
+                new_config[k] = v.strftime('%Y-%m-%d')
 
     for k, v in config.items():
         if k in keys_to_make_str:
@@ -155,3 +157,36 @@ def make_date_str(config):
             del new_config[k]
 
     return new_config
+
+
+def generate_config(config):
+    """Generate configuration from template
+
+    Args:
+        config ():
+
+    Returns:
+
+    """
+    new_config = {}
+    for k, v in config.items():
+        if isinstance(v, dict):
+            temp = generate_config(v)
+            if temp:
+                new_config[k] = temp
+        elif isinstance(v, list):
+            pattern, choices, select = v
+            if select:
+                if pattern == 'repeat':
+                    choices = [choices[0]] * choices[1]
+                if pattern == 'range':
+                    choices = range(choices[0], choices[1], choices[2])
+                new_config[k] = choices
+    return new_config
+
+
+def generate_combinations(d):
+    keys, values = d.keys(), d.values()
+    values_choices = (generate_combinations(v) if isinstance(v, dict) else v for v in values)
+    for comb in itertools.product(*values_choices):
+        yield dict(zip(keys, comb))
