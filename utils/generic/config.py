@@ -33,6 +33,7 @@ def read_config(filename='default.yaml', preprocess=True, config_dir='seir'):
         elif config_dir == 'ihme':
             return process_config_ihme(config)
 
+
 def create_location_description(nconfig):
     """Helper function for creating location description
 
@@ -49,6 +50,7 @@ def create_location_description(nconfig):
     else:
         location_description = (dl_nconfig['state'])
     dl_nconfig['location_description'] = location_description
+
 
 def process_config_seir(config):
     """Helper function for processing config file read from yaml file
@@ -92,6 +94,7 @@ def process_config_ihme(config):
 
     return nconfig
 
+
 def make_date_key_str(config):
     """A function that loops recursively across the input config and 
     converts any element where the key is a datetime.date to an element with a str key
@@ -117,4 +120,38 @@ def make_date_key_str(config):
             new_config[k.strftime('%Y-%m-%d')] = v
             del new_config[k]
     
+    return new_config
+
+
+def make_date_str(config):
+    """A function that loops recursively across the input config and
+    converts any element where the key or value is a datetime.date to an element with a str key or value
+    Allows conversion to JSON
+
+    Args:
+        config (dict): input config to fitting
+
+    Returns:
+        dict: Config with datetime.date keys and values converted to str
+    """
+    keys_to_make_str = []
+    new_config = copy.copy(config)
+    for k, v in config.items():
+        if isinstance(v, dict):
+            new_config[k] = make_date_str(v)
+        else:
+            if isinstance(v, list):
+                for i in range(len(v)):
+                    if isinstance(v[i], datetime.date):
+                        v[i] = v[i].strftime('%Y-%m-%d')
+            if isinstance(k, datetime.date):
+                keys_to_make_str.append(k)
+            if isinstance(v, datetime.date):
+                config[k] = v.strftime('%Y-%m-%d')
+
+    for k, v in config.items():
+        if k in keys_to_make_str:
+            new_config[k.strftime('%Y-%m-%d')] = v
+            del new_config[k]
+
     return new_config
