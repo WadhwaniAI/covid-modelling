@@ -1,3 +1,7 @@
+"""
+experiments.py
+Run hyperparameter tuning and other experiments for variants of compartmental models using the ABMA approach.
+"""
 import argparse
 import json
 import logging
@@ -5,8 +9,6 @@ import os
 import pickle
 import sys
 from functools import partial
-import itertools
-import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,10 +19,8 @@ import multiprocessing
 sys.path.append('../../')
 
 from main.seir.common import *
-from utils.fitting.util import update_dict, chunked
-from utils.generic.config import read_config, process_config_seir
-
-default_loss_methods = ['mape', 'rmse', 'rmse_log']
+from utils.fitting.util import update_dict, chunked, CustomEncoder
+from utils.generic.config import read_config, process_config_seir, generate_config, generate_combinations, make_date_str
 
 
 def create_output(predictions_dict, output_folder, tag):
@@ -54,131 +54,18 @@ def create_output(predictions_dict, output_folder, tag):
     np.save(f'{directory}/m2_beta.npy', predictions_dict['m2']['beta'])
     with open(f'{directory}/other.json', 'w') as f:
         json.dump(d, f, indent=4)
+    with open(f'{directory}/config.json', 'w') as f:
+        json.dump(make_date_str(predictions_dict['config']), f, indent=4, cls=CustomEncoder)
 
 
-def get_experiment(experiment_name, regions, loss_methods=None, regionwise=False):
-    """Get experiment configuration
-    Specify partial config using driver config, each of which is then merged with base config.
-
-    Args:
-        experiment_name (str): Name of the experiment
-        regions (dict): Partial configuration for each region
-        loss_methods (list, optional): List of loss methods
-        regionwise (bool, optional): Group configs by region
-
-    Returns:
-        dict: dictionary of configs
-    """
+def get_experiment(base_config_filename, driver_config_filename):
+    """Get experiment configuration"""
     logging.info('Getting experiment choices')
-
-    # Set values
-    loss_methods = default_loss_methods if loss_methods is None else loss_methods
-    configs = {}
-
-    # Select experiment
-    if experiment_name == 'train_lengths':
-        # Optimize the length of the fitting and alpha estimation periods
-        for key, region in regions.items():
-            for tl in itertools.product(np.arange(6, 45, 3), np.arange(2, 7, 1)):
-                config = {
-                    'fitting': {
-                        'data': {'dataloading_params': region},
-                        'split': {'train_period': tl[0], 'val_period': tl[1]}
-                    }
-                }
-                configs[region['label'] + f'-{tl[0]}-{tl[1]}'] = config
-
-    elif experiment_name == 'num_trials':
-        # Optimize the number of hyperopt trials for fitting
-        for key, region in regions.items():
-            for tl in itertools.product([21, 30], [3]):
-                for i, num in enumerate([5000] * 5):
-                    config = {
-                        'fitting': {
-                            'data': {'dataloading_params': region},
-                            'fitting_method_params': {'num_evals': num},
-                            'split': {'train_period': tl[0], 'val_period': tl[1]}
-                        }
-                    }
-                    configs[region['label'] + f'-{tl[0]}-{tl[1]}' + f'-{num}-{i}'] = config
-
-    elif experiment_name == 'num_trials_ensemble':
-        # Optimize the number of hyperopt trials for fitting using ABMA
-        for key, region in regions.items():
-            for tl in itertools.product([21, 30], [3]):
-                for num in np.arange(500, 5500, 500):
-                    config = {
-                        'fitting': {
-                            'data': {'dataloading_params': region},
-                            'fitting_method_params': {'num_evals': num},
-                            'split': {'train_period': tl[0], 'val_period': tl[1]}
-                        }
-                    }
-                    configs[region['label'] + f'-{tl[0]}-{tl[1]}' + f'-{num}'] = config
-
-    elif experiment_name == 'optimiser':
-        # Compare optimizers
-        for key, region in regions.items():
-            for tl in itertools.product([21, 30], [3]):
-                for method, num in [('tpe', 3000), ('rand', 10000)]:
-                    config = {
-                        'fitting': {
-                            'data': {'dataloading_params': region},
-                            'fitting_method_params': {'algo': method, 'num_evals': num},
-                            'split': {'train_period': tl[0], 'val_period': tl[1]}
-                        }
-                    }
-                    configs[region['label'] + f'-{tl[0]}-{tl[1]}-{method}'] = config
-
-    elif experiment_name == 'loss_method':
-        # Compare fitting loss methods
-        for key, region in regions.items():
-            for tl in itertools.product([30], [3]):
-                for l1, l2 in itertools.product(loss_methods, loss_methods):
-                    config = {
-                        'fitting': {
-                            'data': {'dataloading_params': region},
-                            'loss': {'loss_method': l1}
-                        },
-                        'uncertainty': {
-                            'uncertainty_params': {
-                                'loss': {'loss_method': l2}
-                            }
-                        }
-                    }
-                    configs[region['label'] + f'-{tl[0]}-{tl[1]}-{l1}-{l2}'] = config
-
-    elif experiment_name == 'windows':
-        # Fit to multiple windows
-        today = datetime.datetime.now().date()
-        for key, region in regions.items():
-            start = region['start_date']
-            while start < today - datetime.timedelta(region['data_length']):
-                config = {
-                    'fitting': {
-                        'data': {'dataloading_params': region},
-                        'split': {
-                            'start_date': start,
-                            'end_date': None
-                        }
-                    },
-                    'uncertainty': {
-                        'date_of_sorting_trials': start+datetime.timedelta(region['data_length']-1)
-                    }
-                }
-                start_str = start.strftime('%Y-%m-%d')
-                start = start + datetime.timedelta(1)
-                configs[region['label'] + '_' + start_str] = config
-
-    else:
-        print('Experiment not found')
-
-    if regionwise:
-        configs_regionwise = {}
-        for region in regions:
-            configs_regionwise[region['label']] = {k: v for k, v in configs.items() if region['label'] in k}
-        return configs_regionwise
-
+    experiments = read_config(driver_config_filename, preprocess=False, config_dir='other')
+    label = base_config_filename.split('.')[0]
+    experiments = generate_config(experiments)
+    experiments = generate_combinations(experiments)
+    configs = {f'{label}/{i}': exp for i, exp in enumerate(experiments)}
     return configs
 
 
@@ -202,6 +89,7 @@ def run_parallel(run_name, params, base_config_filename):
     try:
         logging.info(f'Start run: {run_name}')
         x = run(config)
+        x['config'] = config
         plt.close('all')
     except Exception as e:
         x = e
@@ -209,8 +97,8 @@ def run_parallel(run_name, params, base_config_filename):
     return x
 
 
-def perform_batch_runs(base_config_filename='abma_experiments.yaml', driver_config_filename='list_of_exp.yaml',
-                       experiment_name='train_lengths', output_folder=None):
+def perform_batch_runs(base_config_filename='default.yaml', driver_config_filename='list_of_exp.yaml',
+                       output_folder=None):
     """Run all experiments"""
     # Specifying the folder where checkpoints will be saved
     timestamp = datetime.datetime.now().strftime("%Y_%m%d_%H%M%S")
@@ -220,8 +108,7 @@ def perform_batch_runs(base_config_filename='abma_experiments.yaml', driver_conf
     n_jobs = multiprocessing.cpu_count()
 
     # Get experiment choices
-    driver_config = read_config(driver_config_filename, preprocess=False, config_dir='other')
-    what_to_vary = get_experiment(experiment_name, driver_config)
+    what_to_vary = get_experiment(base_config_filename, driver_config_filename)
 
     # Run experiments
     for i, chunk in enumerate(chunked(what_to_vary.items(), n_jobs)):
@@ -241,8 +128,9 @@ def perform_batch_runs(base_config_filename='abma_experiments.yaml', driver_conf
 if __name__ == '__main__':
     logging.basicConfig(level=logging.ERROR)
     parser = argparse.ArgumentParser(description="SEIR Batch Running Script")
-    parser.add_argument("--base_config", type=str, required=True, help="base config to use while running the script")
-    parser.add_argument("--driver_config", type=str, required=True, help="driver config used for multiple experiments")
-    parser.add_argument("--experiment", type=str, required=True, help="experiment name")
+    parser.add_argument("-b", "--base_config", type=str, required=True,
+                        help="base config to use while running the script")
+    parser.add_argument("-d", "--driver_config", type=str, required=True,
+                        help="driver config used for multiple experiments")
     parsed_args = parser.parse_args()
-    perform_batch_runs(parsed_args.base_config, parsed_args.driver_config, parsed_args.experiment)
+    perform_batch_runs(parsed_args.base_config, parsed_args.driver_config)
