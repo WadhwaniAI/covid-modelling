@@ -3,6 +3,7 @@ import itertools
 import json
 import os
 import sys
+from abc import ABCMeta
 from copy import deepcopy
 from datetime import datetime
 
@@ -116,6 +117,8 @@ class CustomEncoder(json.JSONEncoder):
             return obj.tolist()
         elif isinstance(obj, datetime):
             return obj.strftime('%m-%d-%Y')
+        elif isinstance(obj, ABCMeta):
+            return obj.__name__
         else:
             return super(CustomEncoder, self).default(obj)
 
