@@ -1,5 +1,7 @@
 """
 pipeline.py
+Run a single fitting cycle using the IHME model.
+Loads data, optimizes initial parameters, fits the IHME model to the data and evaluates on the train, val and test sets.
 Run as: python3 -W ignore pipeline.py -c default.yaml
 """
 import argparse
@@ -52,12 +54,10 @@ def create_output(predictions_dict, output_folder, config):
 
 
 def run_pipeline(config_filename):
-    """
+    """Run pipeline for a given config
 
     Args:
-        config_filename ():
-
-    Returns:
+        config_filename (str): config file name
 
     """
     config = read_config(config_filename, preprocess=True, config_dir='ihme')
