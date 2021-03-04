@@ -1,5 +1,9 @@
 """
 experiments.py
+Run multiple experiments with multiple configurations.
+Create a new config under configs/ihme for each region.
+Create a driver config specifying the experiments under configs/other.
+Run as: python3 -W ignore experiments.py -b region.yaml -d driver.yaml
 """
 import argparse
 import copy
@@ -10,7 +14,6 @@ import os
 import pickle
 import sys
 from functools import partial
-import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,8 +24,8 @@ import multiprocessing
 sys.path.append('../../')
 
 from main.ihme.fitting import single_fitting_cycle
-from utils.fitting.util import update_dict, chunked
-from utils.generic.config import read_config, process_config_ihme
+from utils.fitting.util import update_dict, chunked, CustomEncoder
+from utils.generic.config import read_config, process_config_ihme, make_date_str, generate_combinations, generate_config
 
 default_loss_methods = ['mape', 'rmse', 'rmse_log']
 
@@ -37,7 +40,7 @@ def create_output(predictions_dict, output_folder, tag):
     for key in ['best_init', 'best_params', 'draws']:
         np.save(f'{directory}/{key}.npy', predictions_dict[key])
     # Pickle
-    for key in ['trials', 'run_params', 'optimiser', 'plots', 'smoothing_description']:
+    for key in ['trials', 'run_params', 'plots', 'smoothing_description']:
         with open(f'{directory}/{key}.pkl', 'wb') as f:
             pickle.dump(predictions_dict[key], f)
     # Dataframes
@@ -49,89 +52,18 @@ def create_output(predictions_dict, output_folder, tag):
     d['data_last_date'] = predictions_dict['data_last_date']
     with open(f'{directory}/other.json', 'w') as f:
         json.dump(d, f, indent=4)
+    with open(f'{directory}/config.json', 'w') as f:
+        json.dump(make_date_str(predictions_dict['config']), f, indent=4, cls=CustomEncoder)
 
 
-def get_experiment(which, regions, loss_methods=None, regionwise=False):
+def get_experiments(driver_config_filename, base_config_filename):
     """Get experiment configuration"""
     logging.info('Getting experiment choices')
-
-    # Set values
-    loss_methods = default_loss_methods if loss_methods is None else loss_methods
-    configs = {}
-
-    # Select experiment
-    if which == 'train_lengths':
-        # Optimize the length of the fitting and validation periods
-        for key, region in regions.items():
-            for tl in itertools.product(np.arange(6, 45, 3), np.arange(2, 7, 1)):
-                config = {
-                    'fitting': {
-                        'data': {'dataloading_params': region,
-                                 'data_source': region['data_source'],
-                                 'smooth_jump': region['smooth_jump']},
-                        'split': {'train_period': tl[0], 'val_period': tl[1]}
-                    }
-                }
-                configs[region['label'] + f'/{tl[0]}-{tl[1]}'] = config
-
-    elif which == 'num_trials':
-        # Optimize the number of hyperopt trials for fitting
-        for key, region in regions.items():
-            for tl in itertools.product([21], [7]):
-                for i, num in enumerate([500] * 3):
-                    config = {
-                        'fitting': {
-                            'data': {'dataloading_params': region,
-                                     'data_source': region['data_source'],
-                                     'smooth_jump': region['smooth_jump']},
-                            'fitting_method_params': {'num_evals': num},
-                            'split': {'train_period': tl[0], 'val_period': tl[1]}
-                        }
-                    }
-                    configs[region['label'] + f'/{tl[0]}-{tl[1]}' + f'-{num}-{i}'] = config
-
-    elif which == 'loss_method':
-        # Compare fitting loss methods
-        for key, region in regions.items():
-            for tl in itertools.product([30], [3]):
-                for l in loss_methods:
-                    config = {
-                        'fitting': {
-                            'data': {'dataloading_params': region,
-                                     'data_source': region['data_source'],
-                                     'smooth_jump': region['smooth_jump']},
-                            'loss': {'loss_method': l}
-                        }
-                    }
-                    configs[region['label'] + f'/{tl[0]}-{tl[1]}-{l}'] = config
-
-    elif which == 'windows':
-        # Fit to multiple windows
-        today = datetime.datetime.now().date()
-        for key, region in regions.items():
-            start = region['start_date']
-            while start < today - datetime.timedelta(region['data_length']):
-                config = {
-                    'fitting': {
-                        'data': {'dataloading_params': region,
-                                 'data_source': region['data_source'],
-                                 'smooth_jump': region['smooth_jump']},
-                        'split': {
-                            'start_date': start,
-                            'end_date': None
-                        }
-                    }
-                }
-                start_str = start.strftime('%Y-%m-%d')
-                start = start + datetime.timedelta(1)
-                configs[region['label'] + '/' + start_str] = config
-
-    if regionwise:
-        configs_regionwise = {}
-        for region in regions:
-            configs_regionwise[region['label']] = {k: v for k, v in configs.items() if region['label'] in k}
-        return configs_regionwise
-
+    experiments = read_config(driver_config_filename, preprocess=False, config_dir='other')
+    label = base_config_filename.split('.')[0]
+    experiments = generate_config(experiments)
+    experiments = generate_combinations(experiments)
+    configs = {f'{label}/{i}': exp for i, exp in enumerate(experiments)}
     return configs
 
 
@@ -149,6 +81,7 @@ def run_parallel(run_name, params, base_config_filename):
     try:
         logging.info(f'Start run: {run_name}')
         x = run(config)
+        x['config'] = config
         plt.close('all')
     except Exception as e:
         x = e
@@ -157,7 +90,7 @@ def run_parallel(run_name, params, base_config_filename):
 
 
 def perform_batch_runs(base_config_filename='default.yaml', driver_config_filename='list_of_exp.yaml',
-                       experiment_name='train_lengths', output_folder=None):
+                       output_folder=None):
     """Run all experiments"""
     # Specifying the folder where checkpoints will be saved
     timestamp = datetime.datetime.now().strftime("%Y_%m%d_%H%M%S")
@@ -167,8 +100,7 @@ def perform_batch_runs(base_config_filename='default.yaml', driver_config_filena
     n_jobs = multiprocessing.cpu_count()
 
     # Get experiment choices
-    regions = read_config(driver_config_filename, preprocess=False, config_dir='other')
-    what_to_vary = get_experiment(experiment_name, regions)
+    what_to_vary = get_experiments(driver_config_filename, base_config_filename)
 
     # Run experiments
     for i, chunk in enumerate(chunked(what_to_vary.items(), n_jobs)):
@@ -181,17 +113,16 @@ def perform_batch_runs(base_config_filename='default.yaml', driver_config_filena
         for j, key in tqdm(enumerate(chunk.keys())):
             if isinstance(predictions_arr[j], dict):
                 create_output(predictions_arr[j], output_folder, key)
-                # with open(f'{output_folder}/{key}_predictions_dict.pkl', 'wb') as f:
+                # with open(f'{output_folder}/{key}/predictions_dict.pkl', 'wb') as f:
                 #     pickle.dump(predictions_arr[j], f)
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.ERROR)
-    parser = argparse.ArgumentParser(description="SEIR Batch Running Script")
+    parser = argparse.ArgumentParser(description="IHME Batch Running Script")
     parser.add_argument("-b", "--base_config", type=str, required=True,
                         help="base config to use while running the script")
     parser.add_argument("-d", "--driver_config", type=str, required=False, default='list_of_exp.yaml',
                         help="driver config used for multiple experiments")
-    parser.add_argument("-e", "--experiment", type=str, required=True, help="experiment name")
     parsed_args = parser.parse_args()
-    perform_batch_runs(parsed_args.base_config, parsed_args.driver_config, parsed_args.experiment)
+    perform_batch_runs(parsed_args.base_config, parsed_args.driver_config)
