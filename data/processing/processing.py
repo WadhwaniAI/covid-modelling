@@ -263,6 +263,7 @@ def get_data_from_jhu(dataframe, region, sub_region=None, reload_data=False, **k
         raise ValueError('Unknown dataframe type given as input to user')
 
     df.reset_index(drop=True, inplace=True)
+    df = df.infer_objects()
     return {"data_frame": df}
 
 
