@@ -20,7 +20,7 @@ import multiprocessing
 sys.path.append('../../')
 
 from main.seir.common import *
-from utils.fitting.util import update_dict, chunked
+from utils.fitting.util import update_dict, chunked, CustomEncoder
 from utils.generic.config import read_config, process_config_seir, generate_config, generate_combinations, make_date_str
 
 
