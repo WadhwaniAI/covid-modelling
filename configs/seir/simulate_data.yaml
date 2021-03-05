@@ -1,5 +1,4 @@
 fitting:
-    # Geographical Location
     data:
         dataloader: SimulatedDataLoader
         stratified_data: FALSE
@@ -14,7 +13,6 @@ fitting:
         smooth_jump_params: None
         rolling_average: FALSE
         rolling_average_params: None
-    #Choose Model and Ranges
     model_family: seir
     model: SEIRHD
     variable_param_ranges:
@@ -32,14 +30,12 @@ fitting:
     optimiser_params:
         num_evals: 1000
         algo: tpe
-    #Choose Fitting Periods and num evaluations
     split:
         start_date: null
         end_date: 2020-08-31
         train_period: 21
         val_period: 7
         test_period: 0
-    #Optimisation related parameters
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]

@@ -35,7 +35,6 @@ fitting:
             win_type: null
             min_periods: 7
             split_after_rolling: FALSE
-    #Choose Model and Ranges
     model_family: seir
     model: SEIRHD_Bed
     variable_param_ranges:
@@ -64,7 +63,6 @@ fitting:
         num_evals: 1500
         algo: tpe
         seed: 42
-    #Choose Fitting Periods and num evaluations
     split:
         start_date: null
         end_date: 2020-08-31

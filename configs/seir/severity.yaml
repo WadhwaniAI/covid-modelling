@@ -33,7 +33,6 @@ fitting:
             window_size: 7
             win_type: null
             split_after_rolling: TRUE
-    #Choose Model and Ranges
     model_family: seir
     model: SEIRHD_Severity
     variable_param_ranges:  
@@ -58,7 +57,6 @@ fitting:
         num_evals: 1000
         algo: tpe
         seed: 42
-    #Choose Fitting Periods and num evaluations
     split:
         start_date: null
         end_date: null

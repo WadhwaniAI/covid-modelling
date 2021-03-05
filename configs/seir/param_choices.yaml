@@ -1,5 +1,4 @@
 fitting:
-    # Geographical Location
     data:
         dataloader: Covid19IndiaLoader
         stratified_data: FALSE
@@ -25,7 +24,6 @@ fitting:
             win_type: null
             min_periods: 7
             split_after_rolling: FALSE
-    #Choose Model and Ranges
     model_family: seir
     model: SEIRHD
     variable_param_ranges:
@@ -44,14 +42,12 @@ fitting:
         num_evals: 3000
         algo: tpe
         seed: 42
-    #Choose Fitting Periods and num evaluations
     split:
         start_date: null
         end_date: 2020-06-30
         train_period: 21
         val_period: 7
         test_period: 0
-    #Optimisation related parameters
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]

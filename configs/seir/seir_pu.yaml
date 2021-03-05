@@ -1,5 +1,4 @@
 fitting:
-    # Geographical Location
     data:
         dataloader: SimulatedDataLoader
         stratified_data: FALSE
@@ -28,7 +27,6 @@ fitting:
             win_type: null
             min_periods: 1
             split_after_rolling: FALSE # NOT IMPLEMENTED
-    #Choose Model and Ranges
     model_family: seir
     model: SEIR_PU
     variable_param_ranges:
@@ -49,7 +47,6 @@ fitting:
     optimiser_params:
         num_evals: 1000
         algo: tpe
-    #Choose Fitting Periods and num evaluations
     split:
         start_date: null # NOT IMPLEMENTED
         end_date: null
@@ -57,7 +54,6 @@ fitting:
         val_period: 28
         test_period: 0 # NOT IMPLEMENTED
         split_after_rolling: TRUE
-    #Optimisation related parameters
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
