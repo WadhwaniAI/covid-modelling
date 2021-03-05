@@ -49,18 +49,18 @@ def _create_combined_pdict(predictions_dict_list, parsed_args):
         # Concatenate all predictions
         predictions_arr, losses_arr, params_arr = ([], [], [])
         for _, pdict in enumerate(predictions_dict_list):
-            predictions_arr += pdict[loc]['trials_processed']['predictions'][:parsed_args.num_trials]
+            predictions_arr += pdict[loc]['trials']['predictions'][:parsed_args.num_trials]
 
-            losses_arr.append(pdict[loc]['trials_processed']['losses'][:parsed_args.num_trials])
+            losses_arr.append(pdict[loc]['trials']['losses'][:parsed_args.num_trials])
 
-            params_arr.append(pdict[loc]['trials_processed']['params'][:parsed_args.num_trials])
+            params_arr.append(pdict[loc]['trials']['params'][:parsed_args.num_trials])
         
         # Add them to predictions_dict_comb
-        predictions_dict_comb[loc]['trials_processed'] = {}
-        predictions_dict_comb[loc]['trials_processed']['predictions'] = predictions_arr
-        predictions_dict_comb[loc]['trials_processed']['losses'] = np.concatenate(
+        predictions_dict_comb[loc]['trials'] = {}
+        predictions_dict_comb[loc]['trials']['predictions'] = predictions_arr
+        predictions_dict_comb[loc]['trials']['losses'] = np.concatenate(
             tuple(losses_arr), axis=None)
-        predictions_dict_comb[loc]['trials_processed']['params'] = np.concatenate(
+        predictions_dict_comb[loc]['trials']['params'] = np.concatenate(
             tuple(params_arr), axis=None)
 
     return predictions_dict_comb

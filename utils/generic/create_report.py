@@ -69,7 +69,7 @@ def _log_smoothing(mdFile, ROOT_DIR, fit_dict):
 def _log_fits(mdFile, ROOT_DIR, fit_dict):
     mdFile.new_header(level=1, title=f'FIT')
     mdFile.new_header(level=2, title=f'Optimal Parameters')
-    mdFile.insert_code(pformat(fit_dict['best_params']))
+    mdFile.insert_code(pformat(fit_dict['trials']['params'][0]))
     mdFile.new_header(level=2, title=f'MAPE Loss Values')
     mdFile.new_paragraph(fit_dict['df_loss'].to_markdown())
 
@@ -112,7 +112,7 @@ def _log_forecasts(mdFile, ROOT_DIR, fit_dict):
 
 
 def _log_tables(mdFile, fit_dict):
-    trials_processed = copy.deepcopy(fit_dict['trials_processed'])
+    trials_processed = copy.deepcopy(fit_dict['trials'])
     trials_processed['losses'] = np.around(trials_processed['losses'], 2)
     trials_processed['params'] = [{key: np.around(value, 2) for key, value in params_dict.items()}
                                   for params_dict in trials_processed['params']]

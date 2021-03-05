@@ -6,9 +6,9 @@ import pandas as pd
 
 
 def create_all_trials_csv(predictions_dict: dict):
-    df_all = pd.DataFrame(columns=predictions_dict['trials_processed']['predictions'][0].columns)
-    for i, df_prediction in enumerate(predictions_dict['trials_processed']['predictions']):
-        df_prediction['loss'] = predictions_dict['trials_processed']['losses'][i]
+    df_all = pd.DataFrame(columns=predictions_dict['trials']['predictions'][0].columns)
+    for i, df_prediction in enumerate(predictions_dict['trials']['predictions']):
+        df_prediction['loss'] = predictions_dict['trials']['losses'][i]
         df_all = pd.concat([df_all, df_prediction])
 
     forecast_columns = [x for x in df_all.columns if not x[0].isupper()]

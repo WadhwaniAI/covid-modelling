@@ -13,15 +13,15 @@ class Columns(Enum):
 
     @property
     def name(self):
-        return self.name
+        return self.value.name
         
     @property
     def label(self):
-        return self.label
+        return self.value.label
     
     @property
     def color(self):
-        return self.color
+        return self.value.color
 
     date = Column('date', 'date', None)
     critical = Column('critical', 'Critical', 'brown')

@@ -20,7 +20,7 @@ def create_dataframes_for_logging(fit_dict):
     Returns:
         pd.DataFrame, pd.DataFrame, pd.DataFrame: dataframes as described above
     """
-    trials_processed = copy.deepcopy(fit_dict['trials_processed'])
+    trials_processed = copy.deepcopy(fit_dict['trials'])
     trials_processed['losses'] = np.around(trials_processed['losses'], 2)
     trials_processed['params'] = [{key: np.around(value, 2) for key, value in params_dict.items()}
                                    for params_dict in trials_processed['params']]

@@ -123,7 +123,7 @@ def plot_top_k_trials(predictions_dict, k=10, vline=None, log_scale=False,
                       which_compartments=[Columns.active], plot_individual_curves=True,
                       truncate_series=True, left_truncation_buffer=30):
                 
-    trials_processed = predictions_dict['trials_processed']
+    trials_processed = predictions_dict['trials']
     top_k_losses = trials_processed['losses'][:k]
     top_k_params = trials_processed['params'][:k]
     predictions = trials_processed['predictions'][:k]
