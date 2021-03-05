@@ -185,7 +185,7 @@ def plot_r0_multipliers(region_dict, predictions_mul_dict, log_scale=False):
     for i, (mul, mul_dict) in enumerate(predictions_mul_dict.items()):
         df_prediction = mul_dict['df_prediction']
         true_r0 = mul_dict['params']['post_lockdown_R0']
-        sns.lineplot(x="date", y="hospitalised", data=df_prediction,
+        sns.lineplot(x="date", y="active", data=df_prediction,
                     ls='-', label=f'Active Cases ({mul} - R0 {true_r0})')
         plt.text(
             x=df_prediction['date'].iloc[-1],
