@@ -1,0 +1,26 @@
+# Driver config template which mirrors base config (default.yaml of SEIR or IHME)
+
+# Each terminal element has the structure [pattern, choices, select]
+# pattern: the method of specification of the choices
+  # list: list of choices
+  # repeat: value, num_repetitions
+  # range: start, stop (exclusive), step
+# choices: representation of values using one of the above patterns
+# select: if True, produce combinations for this element else use default value from base config
+
+# Use generate_config (utils/generic/config.py) to convert choices to the full list of values as specified by pattern.
+# Further use generate_combinations (utils/generic/config.py) to generate a list of configs of all combinations.
+
+# Example: terminal element -> [range, [500, 2000, 500], TRUE]
+#          generate_config -> [500, 1000, 1500]
+#          generate_combinations -> Three configs each with one value
+
+fitting:
+  fitting_method_params:
+    algo: [list, [tpe, rand], FALSE]
+    num_evals: [repeat, [3000, 3], FALSE]
+  split:
+    train_period: [range, [6, 45, 3], TRUE]
+    val_period: [range, [2, 7, 1], FALSE]
+  loss:
+    loss_method: [list, [mape, rmse, rmse_log], FALSE]
