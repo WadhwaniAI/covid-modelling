@@ -60,23 +60,8 @@ def plot_smoothing(orig_df_district, new_df_district, state, district,
     plt.tight_layout()
     return fig
 
-def plot(x, y, title, yaxis_name=None, log=False, scatter=False, savepath=None):
-    plt.title(title)
-    setup_plt(yaxis_name)
-    yscale = 'log' if log else "linear"
-    plt.yscale(yscale)
 
-    # plot error
-    if scatter:
-        plt.scatter(x,y,c='dodgerblue', marker='+')
-    else:
-        plt.plot(x, y, ls='-', c='crimson')
-    if savepath is not None:
-        plt.savefig(savepath)
-    return
-
-
-def plot_data(data, region, sub_region, which_compartments=['hospitalised', 'total_infected', 'recovered', 'deceased'],
+def plot_data(data, region, sub_region, which_compartments=['active', 'total', 'recovered', 'deceased'],
               description='', savepath=None):
     # Create plots
     plot_ledger = {
