@@ -5,6 +5,7 @@ from skopt import gp_minimize
 from skopt.space import Real
 from skopt.utils import use_named_args
 from functools import partial
+from datetime import timedelta
 import numpy as np
 
 class BO_SKOpt(OptimiserBase):
@@ -108,9 +109,9 @@ class BO_SKOpt(OptimiserBase):
 
         return losses_array, params_array, predictions_array
 
-    def optimise(self, train_period=28, loss_method='rmse', loss_compartments=['total'],
-                 loss_weights=[1], acq_func="EI", n_calls=15, n_initial_points=5, noise=0.1**2,     
-                 seed=1234, forecast_days=30, ** kwargs):
+    def optimise(self, loss_method='rmse', loss_compartments=['total'], loss_weights=[1], 
+                 acq_func="EI", n_calls=15, n_initial_points=5, noise=0.1**2, seed=1234, 
+                 train_period=28, val_period=3, forecast_days=30, ** kwargs):
 
         loss_indices = [-train_period, None]
         total_days = (self.df_train.iloc[-1, :]['date'].date() -
@@ -135,9 +136,11 @@ class BO_SKOpt(OptimiserBase):
         params_matrix = np.array(res['x_iters'])
         param_names = [x.name for x in self.variable_param_ranges]
         params_array = [self._create_dict(param_names, value) for value in params_matrix]
+        train_last_date = self.df_train.iloc[-1, :]['date'].date() + \
+            timedelta(days=val_period)
         
         partial_forecast = partial(self.forecast,
-                                   train_last_date=self.df_train.iloc[-1,:]['date'].date(),
+                                   train_last_date=train_last_date,
                                    forecast_days=forecast_days,
                                    model=self.model)
 

@@ -4,6 +4,7 @@ from tqdm import tqdm
 
 import itertools
 from functools import partial
+from datetime import timedelta
 from joblib import Parallel, delayed
 
 from main.seir.optimisers import OptimiserBase
@@ -73,7 +74,7 @@ class GridSearch(OptimiserBase):
         return super().forecast(params, train_last_date, forecast_days, model)
 
     def optimise(self, loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], 
-                 debug=False, forecast_days=30, **kwargs):
+                 train_period=28, val_period=3, debug=False, forecast_days=30, **kwargs):
         """Implements gridsearch based optimisation
 
         Arguments:
@@ -125,8 +126,11 @@ class GridSearch(OptimiserBase):
             losses_array = Parallel(n_jobs=40)(delayed(partial_predict_and_compute_loss)(
                 params_dict) for params_dict in tqdm(params_array))
 
+
+        train_last_date = self.df_train.iloc[-1, :]['date'].date() + \
+            timedelta(days=val_period)
         partial_forecast = partial(self.forecast,
-                                   train_last_date=self.df_train.iloc[-1, :]['date'].date(),
+                                   train_last_date=train_last_date,
                                    forecast_days=forecast_days,
                                    model=self.model)
 

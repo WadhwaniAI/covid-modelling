@@ -4,6 +4,7 @@ from functools import partial
 
 import numpy as np
 from hyperopt import Trials, fmin, hp, tpe
+from datetime import timedelta
 from main.seir.optimisers import OptimiserBase
 from utils.fitting.loss import Loss_Calculator
 
@@ -77,8 +78,9 @@ class BO_Hyperopt(OptimiserBase):
     def forecast(self, params, train_last_date, forecast_days, model):
         return super().forecast(params, train_last_date, forecast_days, model)
 
-    def optimise(self, train_period=28, loss_method='rmse', loss_compartments=['total'], 
-                 loss_weights=[1], num_evals=3500, algo=tpe, seed=42, forecast_days=30, ** kwargs):
+    def optimise(self, loss_method='rmse', loss_compartments=['total'], loss_weights=[1], 
+                 train_period=28, val_period=3, num_evals=3500, algo=tpe, seed=42, 
+                 forecast_days=30, ** kwargs):
         """Implements Bayesian Optimisation using hyperopt library
 
         Arguments:
@@ -127,9 +129,10 @@ class BO_Hyperopt(OptimiserBase):
                  trials=trials)
         
         params_array, losses_array = self._order_trials_by_loss(trials)
+        train_last_date = self.df_train.iloc[-1, :]['date'].date() + timedelta(days=val_period)
 
         partial_forecast = partial(self.forecast, 
-                                   train_last_date=self.df_train.iloc[-1, :]['date'].date(),
+                                   train_last_date=train_last_date,
                                    forecast_days=forecast_days,
                                    model=self.model)
         predictions_array = [partial_forecast(param) for param in params_array]
