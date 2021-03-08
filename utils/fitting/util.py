@@ -101,6 +101,8 @@ class CustomEncoder(json.JSONEncoder):
             return obj.name
         elif isinstance(obj, type):
             return obj.__name__
+        elif callable(obj):
+            return obj.__name__
         else:
             return super(CustomEncoder, self).default(obj)
 
