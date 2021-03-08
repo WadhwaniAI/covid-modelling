@@ -193,7 +193,6 @@ class Loss_Calculator():
         Returns:
             pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
         """
-        # TODO: Check whole repo for argument compatibility
         df_loss = pd.DataFrame(columns=['train', 'val', 'test'], index=which_compartments)
 
         df_temp = df_prediction.loc[df_prediction['date'].isin(
@@ -326,7 +325,7 @@ class Loss_Calculator():
                                       axis=0, keys=['train', 'val', 'test'],
                                       names=['split', 'compartment', 'loss_function'])
 
-        # TODO: Check is val and/or test is None
+        # TODO: Check if val and/or test is None
 
         return df_loss_pointwise
 

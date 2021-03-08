@@ -363,9 +363,7 @@ def implement_split(df, train_period, val_period, test_period, start_date, end_d
 def train_val_test_split(df_district, train_period=5, val_period=5, test_period=5, start_date=None, end_date=None,
                          window_size=5, center=True, win_type=None, min_periods=1, split_after_rolling=False,
                          trim_excess=False):
-    """Creates train val split on dataframe
-
-    # TODO : Add support for creating train val test split
+    """Creates train val test split on dataframe
 
     Arguments:
         df_district {pd.DataFrame} -- The observed dataframe
