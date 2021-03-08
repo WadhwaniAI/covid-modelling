@@ -12,13 +12,7 @@
 # choices: representation of values using one of the above patterns
 # select: if True, produce combinations for this element else use default value from base config
 
-# Use generate_config (utils/generic/config.py) to convert choices to the full list of values as specified by pattern.
-# Further use generate_combinations (utils/generic/config.py) to generate a list of configs of all combinations.
-# NOTE: Any terminal element which is a list will be split into choices.
-
-# Example: terminal element -> [range, [500, 2000, 500], TRUE]
-#          generate_config -> [500, 1000, 1500]
-#          generate_combinations -> Three configs each with one value
+# Use generate_configs_from_driver (utils/generic/config.py) to generate all configs.
 
 configs: [default]
 base:
@@ -35,4 +29,7 @@ specific:
   default:
     fitting:
       split:
-        start_date: [date_range, [2020-03-29, null, 1, D], FALSE]
+        start_date: [date_range, [2020-03-29, null, 2, D], FALSE]
+    uncertainty:
+      uncertainty_params:
+        date_of_sorting_trials: [date_range, [2020-05-29, null, 2, D], FALSE]
