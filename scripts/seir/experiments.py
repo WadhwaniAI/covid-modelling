@@ -22,7 +22,7 @@ sys.path.append('../../')
 
 from main.seir.fitting import single_fitting_cycle
 from utils.fitting.util import update_dict, chunked, CustomEncoder
-from utils.generic.config import read_config, process_config_seir, make_date_str, get_configs_from_driver
+from utils.generic.config import read_config, process_config_seir, make_date_str, generate_configs_from_driver
 
 
 def create_output(predictions_dict, output_folder, tag):
@@ -52,7 +52,7 @@ def create_output(predictions_dict, output_folder, tag):
 def get_experiment(driver_config_filename):
     """Get experiment configuration"""
     logging.info('Getting experiment choices')
-    configs = get_configs_from_driver(driver_config_filename)
+    configs = generate_configs_from_driver(driver_config_filename)
     return configs
 
 
