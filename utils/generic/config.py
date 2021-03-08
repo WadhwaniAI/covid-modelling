@@ -57,7 +57,7 @@ def create_location_description(nconfig):
 
 
 def process_config_seir(config):
-    """Helper function for processing config file read from yaml file
+    """Helper function for processing SEIR config file read from yaml file
 
     Args:
         config (dict): Unprocessed config dict
@@ -83,7 +83,7 @@ def process_config_seir(config):
 
 
 def process_config_ihme(config):
-    """Helper function for processing config file read from yaml file
+    """Helper function for processing IHME config file read from yaml file
 
     Args:
         config (dict): Unprocessed config dict
@@ -95,8 +95,8 @@ def process_config_ihme(config):
     create_location_description(nconfig)
 
     nconfig['fitting']['model'] = getattr(models.ihme, nconfig['fitting']['model'])
-    nconfig['model_params']['func'] = getattr(functions, nconfig['model_params']['func'])
-    nconfig['model_params']['covs'] = nconfig['fitting']['data']['covariates']
+    nconfig['fitting']['model_params']['func'] = getattr(functions, nconfig['fitting']['model_params']['func'])
+    nconfig['fitting']['model_params']['covs'] = nconfig['fitting']['data']['covariates']
 
     return nconfig
 
