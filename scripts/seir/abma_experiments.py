@@ -6,6 +6,7 @@ import argparse
 import itertools
 import json
 import logging
+import multiprocessing
 import os
 import pickle
 import sys
@@ -14,7 +15,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from joblib import Parallel, delayed
 from tqdm import tqdm
-import multiprocessing
 
 sys.path.append('../../')
 

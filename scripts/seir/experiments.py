@@ -4,19 +4,19 @@ Run hyperparameter tuning and other experiments for variants of compartmental mo
 """
 
 import argparse
+import copy
 import datetime
 import itertools
 import json
 import logging
+import multiprocessing
 import os
 import pickle
 import sys
-import copy
 
 import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 from tqdm import tqdm
-import multiprocessing
 
 sys.path.append('../../')
 
@@ -58,10 +58,8 @@ def get_experiment(driver_config_filename):
 
 def run(config):
     """Run single experiment for given config"""
-    predictions_dict = single_fitting_cycle(
-        **copy.deepcopy(config['fitting']))
-    predictions_dict['fitting_date'] = datetime.datetime.now().strftime(
-        "%Y-%m-%d")
+    predictions_dict = single_fitting_cycle(**copy.deepcopy(config['fitting']))
+    predictions_dict['fitting_date'] = datetime.datetime.now().strftime("%Y-%m-%d")
     return predictions_dict
 
 
@@ -104,7 +102,7 @@ def perform_batch_runs(driver_config_filename='list_of_exp.yaml', output_folder=
         # Save results
         for j, (key, _) in tqdm(enumerate(chunk2)):
             if isinstance(predictions_arr[j], dict):
-                create_output(predictions_arr[j], output_folder, f'{key}/{n_jobs*i+j}')
+                create_output(predictions_arr[j], output_folder, f'{key}/{n_jobs * i + j}')
                 # with open(f'{output_folder}/{key}_predictions_dict.pkl', 'wb') as f:
                 #     pickle.dump(predictions_arr[j], f)
 
