@@ -29,7 +29,7 @@ specific:
   default:
     fitting:
       split:
-        start_date: [date_range, [2020-03-29, null, 2, D], FALSE]
+        start_date: [date_range, [2020-04-26, null, 1, D], FALSE]
     uncertainty:
       uncertainty_params:
-        date_of_sorting_trials: [date_range, [2020-05-29, null, 2, D], FALSE]
+        date_of_sorting_trials: [date_range, [2020-06-26, null, 1, D], FALSE]
