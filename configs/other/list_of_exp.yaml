@@ -29,7 +29,7 @@ specific:
   default:
     fitting:
       split:
-        start_date: [date_range, [2020-04-26, null, 1, D], FALSE]
+        start_date: [date_range, [2020-04-26, null, 1, D], FALSE] # NOTE: set config end date to null
     uncertainty:
       uncertainty_params:
         date_of_sorting_trials: [date_range, [2020-06-26, null, 1, D], FALSE]
