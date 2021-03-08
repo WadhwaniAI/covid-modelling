@@ -30,7 +30,7 @@ fitting:
         N: 1.0e+7
     fitting_method_params:
         num_evals: 100
-        num_trials: 5
+        num_trials: 1
         seed: 42
     #Choose Fitting Periods and num evaluations
     split:
