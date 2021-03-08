@@ -117,7 +117,7 @@ class IHME(Model):
             predict_space=self.predict_space,
             # TODO confirm: (callable) the space to do predictive validity in, one of curvefit.functions
             obs_se_func=None,
-            # TODO if we wanna specify: (optional) function to get observation standard error from col_t
+            # TODO if we want to specify: (optional) function to get observation standard error from col_t
             fit_dict=self.priors,  #: keyword arguments to CurveModel.fit_params()
             basic_model_dict={  #: additional keyword arguments to the CurveModel class
                 'col_obs_se': None,  # (str) of observation standard error
