@@ -73,6 +73,7 @@ def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params,
         rolling_average ():
         rolling_average_params ():
         population():
+        covariates():
         **kwargs ():
 
     Returns:
@@ -103,7 +104,7 @@ def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params,
         print(smoothing['smoothing_description'])
 
     # Drop rows with NA values
-    df_district.dropna(axis=0, how='any', subset=['total'], inplace=True)  # TODO: Replace with ycol
+    df_district.dropna(axis=0, how='any', subset=['total'], inplace=True)  # TODO: Replace with ycol?
     df_district.reset_index(drop=True, inplace=True)
 
     # Make a copy of data without transformation or smoothing
@@ -169,9 +170,6 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     Returns:
 
     """
-    # Set up model params TODO: Shift to read_config
-    model_params['func'] = getattr(functions, model_params['func'])
-    model_params['covs'] = data['covariates']
     col = model_params['ycol']
     transformed_col = f'log_{col}_rate' if data['log'] else f'{col}_rate'
     model_params['ycol'] = transformed_col
@@ -229,7 +227,7 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
                                                                   df_test_nora_notrans, df_prediction_notrans,
                                                                   which_compartments=[col])
 
-    # Uncertainty TODO: Shift to forecast section of code
+    # Uncertainty
     draws = get_uncertainty_draws(model, model_params)
 
     # Plotting
