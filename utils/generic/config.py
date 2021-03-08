@@ -1,13 +1,15 @@
+import copy
+import datetime
 import itertools
+import pandas as pd
 
 import yaml
-import copy
+from curvefit.core import functions
 
-import models
 import main.seir.uncertainty as uncertainty_module
+import models
+from utils.fitting.util import update_dict
 from utils.generic.enums import Columns
-
-import datetime
 
 
 def read_config(filename='default.yaml', preprocess=True, config_dir='seir'):
@@ -93,6 +95,8 @@ def process_config_ihme(config):
     create_location_description(nconfig)
 
     nconfig['fitting']['model'] = getattr(models.ihme, nconfig['fitting']['model'])
+    nconfig['model_params']['func'] = getattr(functions, nconfig['model_params']['func'])
+    nconfig['model_params']['covs'] = nconfig['fitting']['data']['covariates']
 
     return nconfig
 
@@ -181,6 +185,9 @@ def generate_config(config):
                     choices = [choices[0]] * choices[1]
                 if pattern == 'range':
                     choices = range(choices[0], choices[1], choices[2])
+                if pattern == 'date_range':
+                    choices = {k: v for k, v in zip(['start', 'end', 'periods', 'freq'], choices) if v is not None}
+                    choices = pd.date_range(**choices).date
                 new_config[k] = choices
     return new_config
 
@@ -190,3 +197,20 @@ def generate_combinations(d):
     values_choices = (generate_combinations(v) if isinstance(v, dict) else v for v in values)
     for comb in itertools.product(*values_choices):
         yield dict(zip(keys, comb))
+
+
+def chain(keys, iterables):
+    for i, it in enumerate(iterables):
+        for element in it:
+            yield keys[i], element
+
+
+def get_configs_from_driver(driver_config_filename):
+    driver_config = read_config(driver_config_filename, preprocess=False, config_dir='other')
+    configs = generate_config(driver_config['base'])
+    if driver_config['specific']:
+        configs = [update_dict(configs, generate_config(driver_config['specific'][config_name]))
+                   if config_name in driver_config['specific'] else configs
+                   for config_name in driver_config['configs']]
+    configs = chain(driver_config['configs'], (generate_combinations(exp) for exp in configs))
+    return configs
