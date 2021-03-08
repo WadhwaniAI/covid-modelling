@@ -1,7 +1,6 @@
 """
 fitting.py
 """
-import os
 import sys
 import copy
 from datetime import timedelta
@@ -9,7 +8,6 @@ from tabulate import tabulate
 
 import numpy as np
 import pandas as pd
-from curvefit.core import functions
 
 from data.processing.processing import get_data, train_val_test_split
 from viz import plot_smoothing, plot_fit
