@@ -192,10 +192,19 @@ def generate_config(config):
     return new_config
 
 
-def generate_combinations(d):
+def split_dict_combinations(d):
+    """Convert dict of lists into list of dicts of all combinations"""
     keys, values = d.keys(), d.values()
-    values_choices = (generate_combinations(v) if isinstance(v, dict) else v for v in values)
+    values_choices = (split_dict_combinations(v) if isinstance(v, dict) else v for v in values)
     for comb in itertools.product(*values_choices):
+        yield dict(zip(keys, comb))
+
+
+def split_dict_vertical(d):
+    """Convert dict of lists to list of dicts"""
+    keys, values = d.keys(), d.values()
+    values_choices = (split_dict_vertical(v) if isinstance(v, dict) else v for v in values)
+    for comb in zip(*values_choices):
         yield dict(zip(keys, comb))
 
 
@@ -205,12 +214,31 @@ def chain(keys, iterables):
             yield keys[i], element
 
 
-def get_configs_from_driver(driver_config_filename):
+def generators_product(g1, g2):
+    for (c1, c2) in itertools.product(g1, g2):
+        yield update_dict(c1, c2)
+
+
+def generate_configs_from_driver(driver_config_filename):
     driver_config = read_config(driver_config_filename, preprocess=False, config_dir='other')
-    configs = generate_config(driver_config['base'])
-    if driver_config['specific']:
-        configs = [update_dict(configs, generate_config(driver_config['specific'][config_name]))
-                   if config_name in driver_config['specific'] else configs
-                   for config_name in driver_config['configs']]
-    configs = chain(driver_config['configs'], (generate_combinations(exp) for exp in configs))
+    if 'specific' in driver_config and driver_config['specific'] is not None:
+        configs = []
+        for config_name in driver_config['configs']:
+            base_configs = generate_config(driver_config['base'])
+            base_configs = split_dict_combinations(base_configs)
+            if config_name in driver_config['specific']:
+                temp = generate_config(driver_config['specific'][config_name])
+                if temp == {}:
+                    config = base_configs
+                else:
+                    specific_config = split_dict_vertical(temp)
+                    config = generators_product(base_configs, specific_config)
+            else:
+                config = base_configs
+            configs.append(config)
+        configs = chain(driver_config['configs'], configs)
+    else:
+        base_configs = generate_config(driver_config['base'])
+        configs = chain(driver_config['configs'], (split_dict_combinations(base_configs)
+                                                   for _ in driver_config['configs']))
     return configs
