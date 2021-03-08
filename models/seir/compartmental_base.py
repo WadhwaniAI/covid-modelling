@@ -1,6 +1,5 @@
-import datetime
 from abc import abstractmethod
-from datetime import datetime
+import datetime
 
 import pandas as pd
 
