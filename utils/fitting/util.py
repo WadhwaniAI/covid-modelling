@@ -7,6 +7,7 @@ from abc import ABCMeta
 from copy import deepcopy
 from datetime import datetime
 
+import numpy as np
 import yaml
 
 try:
@@ -14,8 +15,9 @@ try:
 except AttributeError:
     collectionsAbc = collections
 
+sys.path.append('../../')
 
-import numpy as np
+from utils.generic.enums.columns import Columns
 
 
 class HidePrints:
@@ -28,35 +30,8 @@ class HidePrints:
         sys.stdout = self._original_stdout
 
 
-def train_test_split(df, threshold, threshold_col='date'):
-    return df[df[threshold_col] <= threshold], df[df[threshold_col] > threshold]
-
-
-def smooth(y, smoothing_window):
-    box = np.ones(smoothing_window) / smoothing_window
-    y_smooth = np.convolve(y, box, mode='same')
-    return y_smooth
-
-
 def rollingavg(series, window):
     return series.rolling(window, center=True).mean()
-
-def read_config(path, backtesting=False):
-    default_path = os.path.join(os.path.dirname(path), 'default.yaml')
-    with open(default_path) as default:
-        config = yaml.load(default, Loader=yaml.SafeLoader)
-    with open(path) as configfile:
-        new = yaml.load(configfile, Loader=yaml.SafeLoader)
-    for k in config.keys():
-        if type(config[k]) is dict and new.get(k) is not None:
-            config[k].update(new[k])
-    model_params = config['model_params']
-    if backtesting:
-        config['base'].update(config['backtesting'])
-    else:
-        config['base'].update(config['run'])
-    config = config['base']
-    return config, model_params
 
 
 def update_dict(dict_1, dict_2):
@@ -75,11 +50,13 @@ def update_dict(dict_1, dict_2):
             new_dict[k] = v
     return new_dict
 
+
 def get_subset(df, lower, upper, col='date'):
     """Get subset of rows of dataframe"""
     lower = lower if lower is not None else df.iloc[0, :][col]
     upper = upper if upper is not None else df.iloc[-1, :][col]
     return df[np.logical_and(df[col] >= lower, df[col] <= upper)]
+
 
 def convert_date(date, to_str=False, date_format='%m-%d-%Y'):
     """Convert date between string and datetime.datetime formats
@@ -100,6 +77,7 @@ def convert_date(date, to_str=False, date_format='%m-%d-%Y'):
     except:
         return date
 
+
 def read_file(path, file_type='yaml'):
     if file_type == 'yaml':
         with open(path) as infile:
@@ -119,14 +97,25 @@ class CustomEncoder(json.JSONEncoder):
             return obj.strftime('%m-%d-%Y')
         elif isinstance(obj, ABCMeta):
             return obj.__name__
+        elif isinstance(obj, Columns):
+            return obj.name
+        elif isinstance(obj, type):
+            return obj.__name__
         else:
             return super(CustomEncoder, self).default(obj)
 
-def chunked(it, size):
-    """Divide dictionary into chunks"""
-    it = iter(it)
-    while True:
-        p = dict(itertools.islice(it, size))
-        if not p:
-            break
-        yield p
+
+def chunked(iterable, size=1):
+    """Divide iterable into chunks of specified size
+    https://stackoverflow.com/questions/24527006/split-a-generator-into-chunks-without-pre-walking-it
+
+    Args:
+        iterable ():
+        size ():
+
+    Returns:
+
+    """
+    iterator = iterable
+    for first in iterator:
+        yield itertools.chain([first], itertools.islice(iterator, size - 1))
