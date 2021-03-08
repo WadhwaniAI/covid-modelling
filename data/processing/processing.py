@@ -330,6 +330,8 @@ def implement_split(df, train_period, val_period, test_period, start_date, end_d
             if start_date < 0:
                 raise ValueError('Please enter a positive value for start_date if entering an integer')
         if isinstance(start_date, datetime.date):
+            if not np.any(df['date'].dt.date == start_date):
+                raise ValueError('Start date is out of bounds')
             start_date = df.loc[df['date'].dt.date == start_date].index[0]
 
         df_train = df.iloc[start_date:start_date + train_period, :] if trim_excess else \
@@ -343,6 +345,8 @@ def implement_split(df, train_period, val_period, test_period, start_date, end_d
                 if end_date > 0:
                     raise ValueError('Please enter a negative value for end_date if entering an integer')
             if isinstance(end_date, datetime.date):
+                if not np.any(df['date'].dt.date == end_date):
+                    raise ValueError('End date is out of bounds')
                 end_date = df.loc[df['date'].dt.date == end_date].index[0] - len(df) + 1
         else:
             end_date = 0
