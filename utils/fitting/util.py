@@ -106,16 +106,6 @@ class CustomEncoder(json.JSONEncoder):
 
 
 def chunked(iterable, size=1):
-    """Divide iterable into chunks of specified size
-    https://stackoverflow.com/questions/24527006/split-a-generator-into-chunks-without-pre-walking-it
-
-    Args:
-        iterable ():
-        size ():
-
-    Returns:
-
-    """
-    iterator = iterable
-    for first in iterator:
-        yield itertools.chain([first], itertools.islice(iterator, size - 1))
+    """Divide iterable into chunks of specified size"""
+    for it in iterable:
+        yield itertools.chain([it], itertools.islice(iterable, size - 1))
