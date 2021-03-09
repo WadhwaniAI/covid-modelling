@@ -13,6 +13,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+import yaml
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
@@ -56,6 +57,8 @@ def create_output(predictions_dict, output_folder, tag):
         json.dump(d, f, indent=4)
     with open(f'{directory}/config.json', 'w') as f:
         json.dump(make_date_str(predictions_dict['config']), f, indent=4, cls=CustomEncoder)
+    with open(f'{directory}/config.yaml', 'w') as f:
+        yaml.dump(make_date_str(predictions_dict['config']), f)
 
 
 def get_experiment(driver_config_filename):
@@ -81,11 +84,12 @@ def run_parallel(key, params):
     """Read config and run corresponding experiment"""
     config = read_config(f'{key}.yaml', preprocess=False)
     config = update_dict(config, params)
+    config_copy = copy.deepcopy(config)
     config = process_config_seir(config)
     try:
         logging.info(f'Start run: {key}')
         x = run(config)
-        x['config'] = config
+        x['config'] = config_copy
         plt.close('all')
     except Exception as e:
         x = e
