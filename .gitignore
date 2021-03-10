@@ -25,9 +25,19 @@ sftp-configjson
 *__pycache__
 *DS_Store
 
+# Ignore everything in docs/sphinx/_build except html
+!docs/
+
+docs/*
+!docs/sphinx/
+
+docs/sphinx/*
+!docs/sphinx/_build/
+
+docs/sphinx/_build/*
+!docs/sphinx/_build/html/
+
 # Folders (on Home dir and otherwise)
-*_build/
-**_build/
 data/data/
 *plots/
 **plots/
@@ -52,7 +62,6 @@ optim/
 
 # Exceptions
 !docs/model_diagrams/*pdf
-!docs/sphinx/_build/html/
 !docs/figures/*png
 *output/
 **output/
