@@ -1,0 +1,313 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>models.seir package &#8212; covid-modelling  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="notebooks package" href="notebooks.html" />
+    <link rel="prev" title="models.ihme package" href="models.ihme.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="models-seir-package">
+<h1>models.seir package<a class="headerlink" href="#models-seir-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-models.seir.base">
+<span id="models-seir-base-module"></span><h2>models.seir.base module<a class="headerlink" href="#module-models.seir.base" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="models.seir.base.SEIR">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">models.seir.base.</span></code><code class="sig-name descname"><span class="pre">SEIR</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">STATES</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R_STATES</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lockdown_R0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2020-03-09'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.base.SEIR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="models.html#models.model.Model" title="models.model.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">models.model.Model</span></code></a></p>
+<dl class="py method">
+<dt id="models.seir.base.SEIR.get_derivative">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">get_derivative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.base.SEIR.get_derivative" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="models.seir.base.SEIR.predict">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">predict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_days</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.base.SEIR.predict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-models.seir.seir_movement">
+<span id="models-seir-seir-movement-module"></span><h2>models.seir.seir_movement module<a class="headerlink" href="#module-models.seir.seir_movement" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="models.seir.seir_movement.SEIR_Movement">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">models.seir.seir_movement.</span></code><code class="sig-name descname"><span class="pre">SEIR_Movement</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lockdown_R0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_severe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_severe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_mild</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2020-03-09'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_movement.SEIR_Movement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#models.seir.base.SEIR" title="models.seir.base.SEIR"><code class="xref py py-class docutils literal notranslate"><span class="pre">models.seir.base.SEIR</span></code></a></p>
+<dl class="py method">
+<dt id="models.seir.seir_movement.SEIR_Movement.get_derivative">
+<code class="sig-name descname"><span class="pre">get_derivative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_movement.SEIR_Movement.get_derivative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates derivative at time t</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="models.seir.seir_movement.SEIR_Movement.predict">
+<code class="sig-name descname"><span class="pre">predict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Radau'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_movement.SEIR_Movement.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns predictions of the model</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-models.seir.seir_movement_testing">
+<span id="models-seir-seir-movement-testing-module"></span><h2>models.seir.seir_movement_testing module<a class="headerlink" href="#module-models.seir.seir_movement_testing" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="models.seir.seir_movement_testing.SEIR_Movement_Testing">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">models.seir.seir_movement_testing.</span></code><code class="sig-name descname"><span class="pre">SEIR_Movement_Testing</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lockdown_R0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_severe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_severe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_mild</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_E</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psi_E</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_I</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psi_I</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2020-03-09'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_movement_testing.SEIR_Movement_Testing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#models.seir.base.SEIR" title="models.seir.base.SEIR"><code class="xref py py-class docutils literal notranslate"><span class="pre">models.seir.base.SEIR</span></code></a></p>
+<dl class="py method">
+<dt id="models.seir.seir_movement_testing.SEIR_Movement_Testing.get_derivative">
+<code class="sig-name descname"><span class="pre">get_derivative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_movement_testing.SEIR_Movement_Testing.get_derivative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates derivative at time t</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="models.seir.seir_movement_testing.SEIR_Movement_Testing.predict">
+<code class="sig-name descname"><span class="pre">predict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Radau'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_movement_testing.SEIR_Movement_Testing.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns predictions of the model</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-models.seir.seir_pu">
+<span id="models-seir-seir-pu-module"></span><h2>models.seir.seir_pu module<a class="headerlink" href="#module-models.seir.seir_pu" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="models.seir.seir_pu.SEIR_PU">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">models.seir.seir_pu.</span></code><code class="sig-name descname"><span class="pre">SEIR_PU</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lockdown_R0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf_U</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_severe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2020-03-09'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Pu_pop_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_pu.SEIR_PU" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#models.seir.base.SEIR" title="models.seir.base.SEIR"><code class="xref py py-class docutils literal notranslate"><span class="pre">models.seir.base.SEIR</span></code></a></p>
+<dl class="py method">
+<dt id="models.seir.seir_pu.SEIR_PU.get_derivative">
+<code class="sig-name descname"><span class="pre">get_derivative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_pu.SEIR_PU.get_derivative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates derivative at time t</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="models.seir.seir_pu.SEIR_PU.predict">
+<code class="sig-name descname"><span class="pre">predict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Radau'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_pu.SEIR_PU.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns predictions of the model</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-models.seir.seir_testing">
+<span id="models-seir-seir-testing-module"></span><h2>models.seir.seir_testing module<a class="headerlink" href="#module-models.seir.seir_testing" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="models.seir.seir_testing.SEIR_Testing">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">models.seir.seir_testing.</span></code><code class="sig-name descname"><span class="pre">SEIR_Testing</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lockdown_R0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_severe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_severe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_mild</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_E</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psi_E</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_I</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psi_I</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2020-03-09'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_testing.SEIR_Testing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#models.seir.base.SEIR" title="models.seir.base.SEIR"><code class="xref py py-class docutils literal notranslate"><span class="pre">models.seir.base.SEIR</span></code></a></p>
+<dl class="py method">
+<dt id="models.seir.seir_testing.SEIR_Testing.get_derivative">
+<code class="sig-name descname"><span class="pre">get_derivative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_testing.SEIR_Testing.get_derivative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates derivative at time t</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="models.seir.seir_testing.SEIR_Testing.predict">
+<code class="sig-name descname"><span class="pre">predict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Radau'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_testing.SEIR_Testing.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns predictions of the model</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-models.seir.seir_undetected">
+<span id="models-seir-seir-undetected-module"></span><h2>models.seir.seir_undetected module<a class="headerlink" href="#module-models.seir.seir_undetected" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="models.seir.seir_undetected.SEIR_Undetected">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">models.seir.seir_undetected.</span></code><code class="sig-name descname"><span class="pre">SEIR_Undetected</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lockdown_R0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf_D</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf_U</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_severe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2020-03-09'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_D_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_U_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_undetected.SEIR_Undetected" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#models.seir.base.SEIR" title="models.seir.base.SEIR"><code class="xref py py-class docutils literal notranslate"><span class="pre">models.seir.base.SEIR</span></code></a></p>
+<dl class="py method">
+<dt id="models.seir.seir_undetected.SEIR_Undetected.get_derivative">
+<code class="sig-name descname"><span class="pre">get_derivative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_undetected.SEIR_Undetected.get_derivative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates derivative at time t</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="models.seir.seir_undetected.SEIR_Undetected.predict">
+<code class="sig-name descname"><span class="pre">predict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Radau'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seir_undetected.SEIR_Undetected.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns predictions of the model</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-models.seir.seirhd">
+<span id="models-seir-seirhd-module"></span><h2>models.seir.seirhd module<a class="headerlink" href="#module-models.seir.seirhd" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="models.seir.seirhd.SEIRHD">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">models.seir.seirhd.</span></code><code class="sig-name descname"><span class="pre">SEIRHD</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lockdown_R0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2020-03-09'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seirhd.SEIRHD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#models.seir.base.SEIR" title="models.seir.base.SEIR"><code class="xref py py-class docutils literal notranslate"><span class="pre">models.seir.base.SEIR</span></code></a></p>
+<dl class="py method">
+<dt id="models.seir.seirhd.SEIRHD.get_derivative">
+<code class="sig-name descname"><span class="pre">get_derivative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seirhd.SEIRHD.get_derivative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates derivative at time t</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="models.seir.seirhd.SEIRHD.predict">
+<code class="sig-name descname"><span class="pre">predict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Radau'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seirhd.SEIRHD.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns predictions of the model</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-models.seir.seirhd_bed">
+<span id="models-seir-seirhd-bed-module"></span><h2>models.seir.seirhd_bed module<a class="headerlink" href="#module-models.seir.seirhd_bed" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="models.seir.seirhd_bed.SEIRHD_Bed">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">models.seir.seirhd_bed.</span></code><code class="sig-name descname"><span class="pre">SEIRHD_Bed</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lockdown_R0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_nonoxy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_oxy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_icu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_vent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_hq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_non_oxy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_oxy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_icu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_vent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2020-03-09'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seirhd_bed.SEIRHD_Bed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#models.seir.base.SEIR" title="models.seir.base.SEIR"><code class="xref py py-class docutils literal notranslate"><span class="pre">models.seir.base.SEIR</span></code></a></p>
+<dl class="py method">
+<dt id="models.seir.seirhd_bed.SEIRHD_Bed.get_derivative">
+<code class="sig-name descname"><span class="pre">get_derivative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seirhd_bed.SEIRHD_Bed.get_derivative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates derivative at time t</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="models.seir.seirhd_bed.SEIRHD_Bed.predict">
+<code class="sig-name descname"><span class="pre">predict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Radau'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seirhd_bed.SEIRHD_Bed.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns predictions of the model</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-models.seir.seirhd_severity">
+<span id="models-seir-seirhd-severity-module"></span><h2>models.seir.seirhd_severity module<a class="headerlink" href="#module-models.seir.seirhd_severity" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="models.seir.seirhd_severity.SEIRHD_Severity">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">models.seir.seirhd_severity.</span></code><code class="sig-name descname"><span class="pre">SEIRHD_Severity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lockdown_R0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_inc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_moderate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_severe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_severe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_mild</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_moderate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_recov_fatal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2020-03-09'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_hosp_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">super_init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seirhd_severity.SEIRHD_Severity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#models.seir.base.SEIR" title="models.seir.base.SEIR"><code class="xref py py-class docutils literal notranslate"><span class="pre">models.seir.base.SEIR</span></code></a></p>
+<dl class="py method">
+<dt id="models.seir.seirhd_severity.SEIRHD_Severity.get_derivative">
+<code class="sig-name descname"><span class="pre">get_derivative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seirhd_severity.SEIRHD_Severity.get_derivative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates derivative at time t</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="models.seir.seirhd_severity.SEIRHD_Severity.predict">
+<code class="sig-name descname"><span class="pre">predict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Radau'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#models.seir.seirhd_severity.SEIRHD_Severity.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns predictions of the model</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-models.seir">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-models.seir" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">covid-modelling</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">covid-modelling</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="data.html">data package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">main package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="models.html">models package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks.html">notebooks package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viz.html">viz package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">covid-modelling</a><ul>
+  <li><a href="models.html">models package</a><ul>
+      <li>Previous: <a href="models.ihme.html" title="previous chapter">models.ihme package</a></li>
+      <li>Next: <a href="notebooks.html" title="next chapter">notebooks package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Sansiddh, Nayana, Avtansh, Siddhant, Ayush.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/models.seir.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

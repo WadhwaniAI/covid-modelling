@@ -1,0 +1,301 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>main.seir package &#8212; covid-modelling  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="main.seir.optimisers package" href="main.seir.optimisers.html" />
+    <link rel="prev" title="main package" href="main.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="main-seir-package">
+<h1>main.seir package<a class="headerlink" href="#main-seir-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="main.seir.optimisers.html">main.seir.optimisers package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.optimisers.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.optimisers.html#module-main.seir.optimisers.base">main.seir.optimisers.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.optimisers.html#module-main.seir.optimisers.bo_hyperopt">main.seir.optimisers.bo_hyperopt module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.optimisers.html#module-main.seir.optimisers.bo_skopt">main.seir.optimisers.bo_skopt module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.optimisers.html#module-main.seir.optimisers.bo_smac3">main.seir.optimisers.bo_smac3 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.optimisers.html#module-main.seir.optimisers.gridsearch">main.seir.optimisers.gridsearch module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.optimisers.html#module-main.seir.optimisers.mcmc_opt">main.seir.optimisers.mcmc_opt module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.optimisers.html#module-main.seir.optimisers">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main.seir.uncertainty.html">main.seir.uncertainty package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.uncertainty.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.uncertainty.html#module-main.seir.uncertainty.abma">main.seir.uncertainty.abma module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.uncertainty.html#module-main.seir.uncertainty.base">main.seir.uncertainty.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.uncertainty.html#module-main.seir.uncertainty.mcmc">main.seir.uncertainty.mcmc module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.uncertainty.html#module-main.seir.uncertainty.mcmc_utils">main.seir.uncertainty.mcmc_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.seir.uncertainty.html#module-main.seir.uncertainty">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-main.seir.forecast">
+<span id="main-seir-forecast-module"></span><h2>main.seir.forecast module<a class="headerlink" href="#module-main.seir.forecast" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="main.seir.forecast.create_all_trials_csv">
+<code class="sig-prename descclassname"><span class="pre">main.seir.forecast.</span></code><code class="sig-name descname"><span class="pre">create_all_trials_csv</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.forecast.create_all_trials_csv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.forecast.create_decile_csv">
+<code class="sig-prename descclassname"><span class="pre">main.seir.forecast.</span></code><code class="sig-name descname"><span class="pre">create_decile_csv</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regionType</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.forecast.create_decile_csv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.forecast.create_decile_csv_new">
+<code class="sig-prename descclassname"><span class="pre">main.seir.forecast.</span></code><code class="sig-name descname"><span class="pre">create_decile_csv_new</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.forecast.create_decile_csv_new" title="Permalink to this definition">¶</a></dt>
+<dd><p>Nayana’s implementation of the CSV format that P&amp;P consume for the presentations</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>predictions_dict (dict): Dict of all predictions</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: Dataframe in the format that Keshav wants</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.forecast.predict_r0_multipliers">
+<code class="sig-prename descclassname"><span class="pre">main.seir.forecast.</span></code><code class="sig-name descname"><span class="pre">predict_r0_multipliers</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">region_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">days</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multipliers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.9,</span> <span class="pre">1,</span> <span class="pre">1.1,</span> <span class="pre">1.25]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.forecast.predict_r0_multipliers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to predict what-if scenarios with different post-lockdown R0s</p>
+<dl>
+<dt>Args:</dt><dd><p>region_dict (dict): region_dict as returned by main.seir.main.single_fitting_cycle
+params_dict (dict): model parameters
+multipliers (list, optional): list of multipliers to get post_lockdown_R0 from lockdown_R0.</p>
+<blockquote>
+<div><p>Defaults to [0.9, 1, 1.1, 1.25].</p>
+</div></blockquote>
+<dl class="simple">
+<dt>lockdown_removal_date (str, optional): Date to change R0 value and simulate change. </dt><dd><p>Defaults to ‘2020-06-01’.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><dl>
+<dt>dict: {</dt><dd><dl class="simple">
+<dt>multiplier: {</dt><dd><p>params: multiplied params dict, 
+df_prediction: predictions</p>
+</dd>
+</dl>
+<p>}</p>
+</dd>
+</dl>
+<p>}</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.forecast.save_r0_mul">
+<code class="sig-prename descclassname"><span class="pre">main.seir.forecast.</span></code><code class="sig-name descname"><span class="pre">save_r0_mul</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_mul_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folder</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.forecast.save_r0_mul" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves what-if scenario plots and csv data</p>
+<dl>
+<dt>Args:</dt><dd><dl class="simple">
+<dt>predictions_mul_dict (dict): output from predict_r0_multipliers </dt><dd><p>{multiplier: {params: dict, df_predicted: pd.DataFrame}}</p>
+</dd>
+</dl>
+<p>folder (str): assets will be saved in reports/{folder}/</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.forecast.set_r0_multiplier">
+<code class="sig-prename descclassname"><span class="pre">main.seir.forecast.</span></code><code class="sig-name descname"><span class="pre">set_r0_multiplier</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mul</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.forecast.set_r0_multiplier" title="Permalink to this definition">¶</a></dt>
+<dd><p>[summary]</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>params_dict (dict): model parameters
+mul (float): float to multiply lockdown_R0 by to get post_lockdown_R0</p>
+</dd>
+<dt>Returns:</dt><dd><p>dict: model parameters with a post_lockdown_R0</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-main.seir.main">
+<span id="main-seir-main-module"></span><h2>main.seir.main module<a class="headerlink" href="#module-main.seir.main" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="main.seir.main.data_setup">
+<code class="sig-prename descclassname"><span class="pre">main.seir.main.</span></code><code class="sig-name descname"><span class="pre">data_setup</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataloader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloading_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smooth_jump</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smooth_jump_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_compartments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rolling_average</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rolling_average_params</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.main.data_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for single_fitting_cycle where data from different sources (given input) is imported</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>dataframes {dict(pd.Dataframe)} – dict of dataframes
+state {str} – State name in title case
+district {str} – District name in title case
+data_from_tracker {bool} – Whether data is from tracker or not
+data_format {str} – If using filename, what is the filename format
+filename {str} – Name of the filename to read file from</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame, pd.DataFrame – data from main source, and data from raw_data in covid19india</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.main.run_cycle">
+<code class="sig-prename descclassname"><span class="pre">main.seir.main.</span></code><code class="sig-name descname"><span class="pre">run_cycle</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observed_dataframes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_param_ranges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimiser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimiser_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.main.run_cycle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for single_fitting_cycle where the fitting actually takes place</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>state {str} – state name in title case
+district {str} – district name in title case
+observed_dataframes {dict(pd.DataFrame)} – Dict of all observed dataframes</p>
+</dd>
+<dt>Keyword Arguments:</dt><dd><p>model {class} – The epi model class we’re using to perform optimisation (default: {SEIRHD})
+data_from_tracker {bool} – If true, data is from covid19india API (default: {True})
+train_period {int} – Length of training period (default: {7})
+loss_compartments {list} – Whci compartments to apply loss over 
+(default: {[‘active’, ‘total’, ‘recovered’, ‘deceased’]})
+num_evals {int} – Number of evaluations for hyperopt (default: {1500})
+N {float} – Population of area (default: {1e7})</p>
+</dd>
+<dt>Returns:</dt><dd><p>dict – Dict of all predictions</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.main.single_fitting_cycle">
+<code class="sig-prename descclassname"><span class="pre">main.seir.main.</span></code><code class="sig-name descname"><span class="pre">single_fitting_cycle</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_family</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_param_ranges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimiser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimiser_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.main.single_fitting_cycle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function which user runs for running an entire fitting cycle for a particular district</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>dataframes {dict(pd.DataFrame)} – Dict of dataframes returned
+state {str} – State Name
+district {str} – District Name (in title case)</p>
+</dd>
+<dt>Keyword Arguments:</dt><dd><p>model_class {class} – The epi model class to be used for modelling (default: {SEIRHD})
+train_period {int} – The training period (default: {7})
+val_period {int} – The validation period (default: {7})
+num_evals {int} – Number of evaluations of Bayesian Optimsation (default: {1500})
+data_from_tracker {bool} – If False, data from tracker is not used (default: {True})
+filename {str} – If None, Athena database is used. Otherwise, data in filename is read (default: {None})
+data_format {str} – The format type of the filename user is providing (‘old’/’new’) (default: {‘new’})
+N {float} – The population of the geographical region (default: {1e7})
+loss_compartments {list} – Which compartments to fit on (default: {[‘active’, ‘total’]})</p>
+</dd>
+<dt>Returns:</dt><dd><p>dict – dict of everything related to prediction</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-main.seir">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-main.seir" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">covid-modelling</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">covid-modelling</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="data.html">data package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="main.html">main package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html">models package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks.html">notebooks package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viz.html">viz package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">covid-modelling</a><ul>
+  <li><a href="main.html">main package</a><ul>
+      <li>Previous: <a href="main.html" title="previous chapter">main package</a></li>
+      <li>Next: <a href="main.seir.optimisers.html" title="next chapter">main.seir.optimisers package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Sansiddh, Nayana, Avtansh, Siddhant, Ayush.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/main.seir.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
