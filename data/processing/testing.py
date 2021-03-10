@@ -7,6 +7,16 @@ import copy
 import data.dataloader as dl
 
 def get_testing_data(state, dist, dataloader='Covid19IndiaLoader'):
+    """Function for getting testing data
+
+    Args:
+        state (str): Name of State
+        dist (str): Name of District
+        dataloader (str, optional): Which dataloader to use. Defaults to 'Covid19IndiaLoader'.
+
+    Returns:
+        pd.DataFrame: dataframe with testing data
+    """
     dlobj = getattr(dl, dataloader)()
     dataframes = dlobj.pull_dataframes_cached()
     if dataloader == 'AthenaLoader':
