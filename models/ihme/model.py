@@ -12,8 +12,6 @@ import sys
 
 sys.path.append('../../')
 
-from utils.fitting.data import get_daily_vals
-from utils.fitting.util import rollingavg
 from models.model import Model
 
 
