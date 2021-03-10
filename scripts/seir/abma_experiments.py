@@ -97,8 +97,7 @@ def run_parallel(key, params):
     return x
 
 
-def perform_batch_runs(base_config_filename='default.yaml', driver_config_filename='list_of_exp.yaml',
-                       output_folder=None):
+def perform_batch_runs(driver_config_filename='list_of_exp.yaml', output_folder=None):
     """Run all experiments"""
     # Specifying the folder where checkpoints will be saved
     timestamp = datetime.datetime.now().strftime("%Y_%m%d_%H%M%S")
