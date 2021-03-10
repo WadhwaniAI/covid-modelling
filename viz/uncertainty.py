@@ -1,13 +1,13 @@
-import matplotlib.pyplot as plt
-from datetime import timedelta
-from matplotlib.lines import Line2D
-from matplotlib.patches import Patch
-import pandas as pd
-import numpy as np
-import seaborn as sns
-from adjustText import adjust_text
 import datetime
 from copy import copy
+from datetime import timedelta
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+from adjustText import adjust_text
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 from utils.generic.enums import Columns
 from viz.utils import axis_formatter

@@ -1,20 +1,13 @@
-
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import matplotlib as mpl
-import pandas as pd
-import numpy as np
-import seaborn as sns
-from adjustText import adjust_text
-import datetime
 import copy
 from datetime import timedelta
 
-from viz.utils import setup_plt
-from utils.generic.enums import Columns, SEIRParams
-from viz.utils import axis_formatter
+import matplotlib as mpl
+import pandas as pd
+
 from data.processing.processing import get_data
 from utils.generic.enums.columns import *
+from viz.utils import axis_formatter
+from viz.utils import setup_plt
 
 
 def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_format='old_output', filename=None, 
