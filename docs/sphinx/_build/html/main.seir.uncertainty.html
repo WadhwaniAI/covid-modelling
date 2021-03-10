@@ -1,0 +1,457 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>main.seir.uncertainty package &#8212; covid-modelling  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="models package" href="models.html" />
+    <link rel="prev" title="main.seir.optimisers package" href="main.seir.optimisers.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="main-seir-uncertainty-package">
+<h1>main.seir.uncertainty package<a class="headerlink" href="#main-seir-uncertainty-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-main.seir.uncertainty.abma">
+<span id="main-seir-uncertainty-abma-module"></span><h2>main.seir.uncertainty.abma module<a class="headerlink" href="#module-main.seir.uncertainty.abma" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="main.seir.uncertainty.abma.ABMAUncertainty">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.abma.</span></code><code class="sig-name descname"><span class="pre">ABMAUncertainty</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitting_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_param_ranges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitting_method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitting_method_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">construct_percentiles_day_wise</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_of_sorting_trials</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort_trials_by_column</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentiles</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.abma.ABMAUncertainty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#main.seir.uncertainty.base.Uncertainty" title="main.seir.uncertainty.base.Uncertainty"><code class="xref py py-class docutils literal notranslate"><span class="pre">main.seir.uncertainty.base.Uncertainty</span></code></a></p>
+<dl class="py method">
+<dt id="main.seir.uncertainty.abma.ABMAUncertainty.avg_weighted_error">
+<code class="sig-name descname"><span class="pre">avg_weighted_error</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_ensemble_mean_forecast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.abma.ABMAUncertainty.avg_weighted_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loss function to optimize beta</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>params (dict): {‘beta’: float}</p>
+</dd>
+<dt>Returns:</dt><dd><p>float: average relative error calculated over trials and a val set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="main.seir.uncertainty.abma.ABMAUncertainty.find_beta">
+<code class="sig-name descname"><span class="pre">find_beta</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fitting_method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitting_method_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_param_ranges</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.abma.ABMAUncertainty.find_beta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs a search over trials to find best beta for a probability distro</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>num_evals (int, optional): number of iterations to run hyperopt. Defaults to 1000.</p>
+</dd>
+<dt>Returns:</dt><dd><p>float: optimal beta value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="main.seir.uncertainty.abma.ABMAUncertainty.get_distribution">
+<code class="sig-name descname"><span class="pre">get_distribution</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.abma.ABMAUncertainty.get_distribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes probability distribution based on given beta and date 
+over the trials in predictions_dict[‘all_trials’]</p>
+<p>Args:</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>pd.DataFrame: dataframe of sorted trials, with columns</dt><dd><p>idx: original trial index
+loss: loss value for that trial
+weight: np.exp(-beta*loss)
+pdf: pdf
+cdf: cdf
+&lt;date_of_sorting_trials&gt;: predicted value on &lt;date_of_sorting_trials&gt;</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="main.seir.uncertainty.abma.ABMAUncertainty.get_forecasts">
+<code class="sig-name descname"><span class="pre">get_forecasts</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">percentiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.abma.ABMAUncertainty.get_forecasts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get forecasts at certain percentiles</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>percentiles (list, optional): percentiles at which predictions from the distribution </dt><dd><p>will be returned. Defaults to all deciles 10-90, as well as 2.5/97.5 and 5/95.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>dict: deciles_forecast, {percentile: {df_prediction: pd.DataFrame, df_loss: pd.DataFrame, params: dict}}</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="main.seir.uncertainty.abma.ABMAUncertainty.get_ptiles_idx">
+<code class="sig-name descname"><span class="pre">get_ptiles_idx</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">percentiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.abma.ABMAUncertainty.get_ptiles_idx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the predictions at certain percentiles from a distribution of trials</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>percentiles (list, optional): percentiles at which predictions from the distribution </dt><dd><p>will be returned. Defaults to all deciles 10-90, as well as 2.5/97.5 and 5/95.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="main.seir.uncertainty.abma.ABMAUncertainty.trials_to_df">
+<code class="sig-name descname"><span class="pre">trials_to_df</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">trials_processed</span></em>, <em class="sig-param"><span class="pre">column=&lt;Columns.active:</span> <span class="pre">Column(name='active'</span></em>, <em class="sig-param"><span class="pre">label='Active</span> <span class="pre">Cases'</span></em>, <em class="sig-param"><span class="pre">color='orange')&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.abma.ABMAUncertainty.trials_to_df" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-main.seir.uncertainty.base">
+<span id="main-seir-uncertainty-base-module"></span><h2>main.seir.uncertainty.base module<a class="headerlink" href="#module-main.seir.uncertainty.base" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="main.seir.uncertainty.base.Uncertainty">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.base.</span></code><code class="sig-name descname"><span class="pre">Uncertainty</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.base.Uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="main.seir.uncertainty.base.Uncertainty.get_distribution">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">get_distribution</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.base.Uncertainty.get_distribution" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="main.seir.uncertainty.base.Uncertainty.get_forecasts">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">get_forecasts</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">percentiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.base.Uncertainty.get_forecasts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-main.seir.uncertainty.mcmc">
+<span id="main-seir-uncertainty-mcmc-module"></span><h2>main.seir.uncertainty.mcmc module<a class="headerlink" href="#module-main.seir.uncertainty.mcmc" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="main.seir.uncertainty.mcmc.MCMC">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc.</span></code><code class="sig-name descname"><span class="pre">MCMC</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimiser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_param_ranges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_chains</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_days</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">algo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_evals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proposal_sigmas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_compartments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">ignored</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc.MCMC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#main.seir.uncertainty.base.Uncertainty" title="main.seir.uncertainty.base.Uncertainty"><code class="xref py py-class docutils literal notranslate"><span class="pre">main.seir.uncertainty.base.Uncertainty</span></code></a></p>
+<p>MCMC class to perform metropolis-hastings. Supports gaussian and poisson likelihoods.</p>
+<dl class="simple">
+<dt>Attributes:</dt><dd><p>chains (list): List of chains where each chain contains a list of accepted and rejected parameters.
+df_district (pd.DataFrame): dataframe containing district data.
+df_train (pd.DataFrame): dataframe containing district data to train on.
+df_val (pd.DataFrame): dataframe containing district data to evaluate performance on.
+dist_log_likelihood (func): pointer to the log-likelihood function to use.
+fit_days (int): no. of days to evaluate performance on.
+fit_end (int): no. of days to fit the model on.
+fit_start (int): dataframe index to fit start day.
+R_hat (dict): dictionary containing the convergence metrics for each parameter.
+state (str): state that the district belongs to.
+timestamp (datetime.datetime): date and time when the model is run.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="main.seir.uncertainty.mcmc.MCMC.Gauss_proposal">
+<code class="sig-name descname"><span class="pre">Gauss_proposal</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta_old</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc.MCMC.Gauss_proposal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Proposes a new set of parameter values given the previous set using gaussian noise.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>theta_old (dict): dictionary of old param-value pairs.</p>
+</dd>
+<dt>Returns:</dt><dd><p>OrderedDict: dictionary of newly proposed param-value pairs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="main.seir.uncertainty.mcmc.MCMC.run">
+<code class="sig-name descname"><span class="pre">run</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc.MCMC.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs all the metropolis-hastings chains in parallel/serial.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>list: best params and set of trials mimicing bayesopt trials object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="main.seir.uncertainty.mcmc.MCMC.truncated_gaussian">
+<code class="sig-name descname"><span class="pre">truncated_gaussian</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc.MCMC.truncated_gaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates Multiplier offset to take care of truncated gaussian</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>theta(OrderedDict): set of parameters</p>
+</dd>
+<dt>Returns:</dt><dd><p>float: Multiplier offset to take care of truncated gaussian</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-main.seir.uncertainty.mcmc_utils">
+<span id="main-seir-uncertainty-mcmc-utils-module"></span><h2>main.seir.uncertainty.mcmc_utils module<a class="headerlink" href="#module-main.seir.uncertainty.mcmc_utils" title="Permalink to this headline">¶</a></h2>
+<p>Summary</p>
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.accumulate">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">accumulate</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.accumulate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>dict_list (TYPE): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>TYPE: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.avg_sum_chain">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">avg_sum_chain</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chain</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.avg_sum_chain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>chain (TYPE): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>TYPE: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.avg_sum_multiple_chains">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">avg_sum_multiple_chains</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chain_sums_avg</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.avg_sum_multiple_chains" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>chain_sums_avg (TYPE): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>TYPE: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.compute_B">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">compute_B</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">multiple_chain_sums_avg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chain_sums_avg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.compute_B" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>multiple_chain_sums_avg (TYPE): Description
+chain_sums_avg (TYPE): Description
+n (TYPE): Description
+m (TYPE): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>TYPE: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.compute_W">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">compute_W</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split_chains</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chain_sums_avg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.compute_W" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>split_chains (TYPE): Description
+chain_sums_avg (TYPE): Description
+n (TYPE): Description
+m (TYPE): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>TYPE: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.divide">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">divide</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictvar</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.divide" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>dictvar (TYPE): Description
+num (TYPE): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>TYPE: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.divide_dict">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">divide_dict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.divide_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>d1 (TYPE): Description
+d2 (TYPE): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>TYPE: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.get_PI">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">get_PI</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pred_dfs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.96</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.get_PI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>pred_dfs (TYPE): Description
+date (TYPE): Description
+key (TYPE): Description
+multiplier (float, optional): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>TYPE: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.get_formatted_trials">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">get_formatted_trials</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">losses</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.get_formatted_trials" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>params (TYPE): Description
+losses (TYPE): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>TYPE: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.get_state">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">get_state</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">district</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.get_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>district (TYPE): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>TYPE: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.predict">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">predict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mcmc_runs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_params</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimiser</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">object</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_days</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">pandas.core.frame.DataFrame</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>data (pd.DataFrame): Description
+mcmc_runs (list): Description
+predict_days (int): Description
+end_date (str, optional): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="main.seir.uncertainty.mcmc_utils.set_optimizer">
+<code class="sig-prename descclassname"><span class="pre">main.seir.uncertainty.mcmc_utils.</span></code><code class="sig-name descname"><span class="pre">set_optimizer</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_period</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimiser</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#main.seir.uncertainty.mcmc_utils.set_optimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summary</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>data (pd.DataFrame): Description
+train_period (int): Description</p>
+</dd>
+<dt>Returns:</dt><dd><p>TYPE: Description</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-main.seir.uncertainty">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-main.seir.uncertainty" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">covid-modelling</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">covid-modelling</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="data.html">data package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="main.html">main package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html">models package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks.html">notebooks package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viz.html">viz package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">covid-modelling</a><ul>
+  <li><a href="main.html">main package</a><ul>
+  <li><a href="main.seir.html">main.seir package</a><ul>
+      <li>Previous: <a href="main.seir.optimisers.html" title="previous chapter">main.seir.optimisers package</a></li>
+      <li>Next: <a href="models.html" title="next chapter">models package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Sansiddh, Nayana, Avtansh, Siddhant, Ayush.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/main.seir.uncertainty.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

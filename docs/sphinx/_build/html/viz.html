@@ -1,0 +1,702 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>viz package &#8212; covid-modelling  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="utils.generic.enums package" href="utils.generic.enums.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="viz-package">
+<h1>viz package<a class="headerlink" href="#viz-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-viz.backtesting">
+<span id="viz-backtesting-module"></span><h2>viz.backtesting module<a class="headerlink" href="#module-viz.backtesting" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="viz.backtesting.plot_backtest">
+<code class="sig-prename descclassname"><span class="pre">viz.backtesting.</span></code><code class="sig-name descname"><span class="pre">plot_backtest</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">results,</span> <span class="pre">data,</span> <span class="pre">dist,</span> <span class="pre">which_compartments=[&lt;Columns.recovered:</span> <span class="pre">Column(name='recovered',</span> <span class="pre">label='Recovered',</span> <span class="pre">color='green')&gt;,</span> <span class="pre">&lt;Columns.deceased:</span> <span class="pre">Column(name='deceased',</span> <span class="pre">label='Deceased',</span> <span class="pre">color='red')&gt;,</span> <span class="pre">&lt;Columns.active:</span> <span class="pre">Column(name='active',</span> <span class="pre">label='Active</span> <span class="pre">Cases',</span> <span class="pre">color='orange')&gt;,</span> <span class="pre">&lt;Columns.total:</span> <span class="pre">Column(name='total',</span> <span class="pre">label='Confirmed</span> <span class="pre">Cases',</span> <span class="pre">color='C0')&gt;],</span> <span class="pre">scoring='mape',</span> <span class="pre">dtp=None,</span> <span class="pre">axis_name='No.</span> <span class="pre">People',</span> <span class="pre">savepath=None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.backtesting.plot_backtest" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="viz.backtesting.plot_backtest_errors">
+<code class="sig-prename descclassname"><span class="pre">viz.backtesting.</span></code><code class="sig-name descname"><span class="pre">plot_backtest_errors</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">results,</span> <span class="pre">data,</span> <span class="pre">file_prefix,</span> <span class="pre">which_compartments=[&lt;Columns.recovered:</span> <span class="pre">Column(name='recovered',</span> <span class="pre">label='Recovered',</span> <span class="pre">color='green')&gt;,</span> <span class="pre">&lt;Columns.deceased:</span> <span class="pre">Column(name='deceased',</span> <span class="pre">label='Deceased',</span> <span class="pre">color='red')&gt;,</span> <span class="pre">&lt;Columns.active:</span> <span class="pre">Column(name='active',</span> <span class="pre">label='Active</span> <span class="pre">Cases',</span> <span class="pre">color='orange')&gt;,</span> <span class="pre">&lt;Columns.total:</span> <span class="pre">Column(name='total',</span> <span class="pre">label='Confirmed</span> <span class="pre">Cases',</span> <span class="pre">color='C0')&gt;],</span> <span class="pre">scoring='mape',</span> <span class="pre">savepath=None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.backtesting.plot_backtest_errors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="viz.backtesting.plot_backtest_seir">
+<code class="sig-prename descclassname"><span class="pre">viz.backtesting.</span></code><code class="sig-name descname"><span class="pre">plot_backtest_seir</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gt_dataloader</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AthenaLoader'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preds_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'filename'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fname_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'old_output'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_forecast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">80</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">truncate_plotting_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separate_compartments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloading_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'district':</span> <span class="pre">'Mumbai',</span> <span class="pre">'state':</span> <span class="pre">'Maharashtra'}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.backtesting.plot_backtest_seir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function of backtesting plotting</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>gt_dataloader (str, optional): Ground Truth data source. Defaults to ‘athena’.
+preds_source (str, optional): Source of predictions (‘filename’/’pickle’). Defaults to ‘filename’.
+fname_format (str, optional): Format of predictions fname (‘old_output’/’new_deciles’). 
+Required if preds_source == ‘filename’. Defaults to ‘old_output’.
+filename (str, optional): path to predictions filename. 
+Required if preds_source == ‘filename’. Defaults to None.
+predictions_dict (dict, optional): Predictions dict loaded from pickle file. 
+Required if preds_source == ‘pickle’. Defaults to None.
+which_forecast (int, optional): Which forecast (50, 80, best, etc). Defaults to 80.
+truncate_plotting_range (bool, optional): If true, only plots those days 
+for which forecasting was done + training days. Defaults to False.
+separate_compartments (bool, optional): If true, creates subplot for each compartment. Defaults to False.
+dataloading_params (dict, optional): Dict corresponding to location where forecasting was done. 
+Defaults to {‘state’: ‘Maharashtra’, ‘district’: ‘Mumbai’}.</p>
+</dd>
+<dt>Raises:</dt><dd><p>ValueError: Please give legal fname_format : old_output or new_deciles
+ValueError: Please give a predictions_dict input, current input is None
+ValueError: Please give legal preds_source : either filename or pickle</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure, pd.DataFrame, pd.DataFrame : matplotlib figure, gt df, prediction df (both truncated)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-viz.data">
+<span id="viz-data-module"></span><h2>viz.data module<a class="headerlink" href="#module-viz.data" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="viz.data.plot">
+<code class="sig-prename descclassname"><span class="pre">viz.data.</span></code><code class="sig-name descname"><span class="pre">plot</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaxis_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scatter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.data.plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="viz.data.plot_smoothing">
+<code class="sig-prename descclassname"><span class="pre">viz.data.</span></code><code class="sig-name descname"><span class="pre">plot_smoothing</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">orig_df_district</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_df_district</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">district</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_compartments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['active',</span> <span class="pre">'total',</span> <span class="pre">'recovered',</span> <span class="pre">'deceased']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Smoothing'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.data.plot_smoothing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for creating plots for the smoothing</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>orig_df_district {pd.DataFrame} – unsmoothed data
+new_df_district {pd.DataFrame} – smoothed data
+train_period {int} – Length of train period
+state {str} – Name of state
+district {str} – Name of district</p>
+</dd>
+<dt>Keyword Arguments:</dt><dd><p>which_compartments {list} – Which buckets to plot (default: {[‘active’, ‘total’, ‘recovered’, ‘deceased’]})
+description {str} – Additional description for the plots (if any) (default: {‘’})</p>
+</dd>
+<dt>Returns:</dt><dd><p>ax – Matplotlib ax object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-viz.fit">
+<span id="viz-fit-module"></span><h2>viz.fit module<a class="headerlink" href="#module-viz.fit" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="viz.fit.plot_all_histograms">
+<code class="sig-prename descclassname"><span class="pre">viz.fit.</span></code><code class="sig-name descname"><span class="pre">plot_all_histograms</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.fit.plot_all_histograms" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Plots histograms for all the sampled params for all runs. </dt><dd><p>It is assumed that the user provides a dict of N elements, 
+each corresponding to the predictions_dict of 1 run. 
+It is assumed that each run will have the same set of P parameters
+If N runs are provided, a figure with P subplots is created (in a P//2*2 grid).
+Each subplot corresponds to one parameter 
+The ith subplot will have N histograms with each jth histogram corresponding to the ith 
+parameter in the corresponding jth run</p>
+</dd>
+<dt>Args:</dt><dd><p>predictions_dict (dict): Dict of all predictions
+description (str): Description of all the N runs given by the user. Used in the suptitle function
+weighting (str, optional): The weighting function. 
+If ‘exp’, np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+If ‘inv’, 1/loss is used. Else, uniform weighting is used. Defaults to ‘exp’.
+beta (float, optional): beta param for exponential weighting</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure, mpl.Axes, pd.DataFrame: The matplotlib figure, matplotlib axes, 
+a dict of histograms of all the params for all the runs</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.fit.plot_all_losses">
+<code class="sig-prename descclassname"><span class="pre">viz.fit.</span></code><code class="sig-name descname"><span class="pre">plot_all_losses</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_losses</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['train',</span> <span class="pre">'val']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'best_loss_nora'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exp'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.fit.plot_all_losses" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Plots mean and variance bar graphs for losses from all the compartments for different (scenario, config). </dt><dd><p>It is assumed that the user provides a dict with 1st layer of keys as the scenarios and 2nd layer 
+of keys as the config file used. For each (scenario, config), the user should provide prediction_dicts
+corresponding to multiple runs and a “method” (‘best’ or ‘ensemble’) specifying how to aggregate 
+these runs.
+Each subplot corresponds to one compartment. Each subplot will have a set of bars corresponding
+to each scenario. Within a set, each bar corresponds to a config file used.</p>
+</dd>
+<dt>Args:</dt><dd><p>predictions_dict (dict): Dict of all predictions in above mentioned format
+which_losses: Which losses have to considered? train or val
+method (str, optional): The method of aggregation of different runs.</p>
+<blockquote>
+<div><p>possible values: ‘best_loss_nora’, ‘best_loss_ra’, ‘ensemble_loss_ra’</p>
+</div></blockquote>
+<dl class="simple">
+<dt>weighting (str, optional): The weighting function. </dt><dd><p>If ‘exp’, np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+If ‘inv’, 1/loss is used. Else, uniform weighting is used. Defaults to ‘exp’.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure: The matplotlib figure</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.fit.plot_all_params">
+<code class="sig-prename descclassname"><span class="pre">viz.fit.</span></code><code class="sig-name descname"><span class="pre">plot_all_params</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'best'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exp'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.fit.plot_all_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Plots mean and variance bar graphs for all the sampled params for different (scenario, config). </dt><dd><p>It is assumed that the user provides a dict with 1st layer of keys as the scenarios and 2nd layer 
+of keys as the config file used. For each (scenario, config), the user should provide prediction_dicts
+corresponding to multiple runs and a “method” (‘best’ or ‘ensemble’) specifying how to aggregate 
+these runs.
+Each subplot corresponds to one parameter. Each subplot will have a set of bars corresponding
+to each scenario. Within a set, each bar corresponds to a config file used.</p>
+</dd>
+<dt>Args:</dt><dd><p>predictions_dict (dict): Dict of all predictions in above mentioned format
+method (str, optional): The method of aggregation of different runs (‘best’ or ‘ensemble’)
+weighting (str, optional): The weighting function.</p>
+<blockquote>
+<div><p>If ‘exp’, np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+If ‘inv’, 1/loss is used. Else, uniform weighting is used. Defaults to ‘exp’.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure: The matplotlib figure</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.fit.plot_fit">
+<code class="sig-prename descclassname"><span class="pre">viz.fit.</span></code><code class="sig-name descname"><span class="pre">plot_fit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_prediction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_district</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location_description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_compartments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['active',</span> <span class="pre">'total']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">truncate_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">left_truncation_buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.fit.plot_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for creating plots for the training pipeline</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>df_prediction {pd.DataFrame} – The prediction dataframe outputted by the model
+df_train {pd.DataFrame} – The train dataset (with rolling average)
+df_val {pd.DataFrame} – The val dataset (with rolling average)
+df_train_nora {pd.DataFrame} – The train dataset (with no rolling average)
+df_val_nora {pd.DataFrame} – The val dataset (with no rolling average)
+train_period {int} – Length of train period
+location_description {str} – Information about location</p>
+</dd>
+<dt>Keyword Arguments:</dt><dd><p>which_compartments {list} – Which buckets to plot (default: {[‘active’, ‘total’]})
+description {str} – Additional description for the plots (if any) (default: {‘’})</p>
+</dd>
+<dt>Returns:</dt><dd><p>ax – Matplotlib ax object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.fit.plot_heatmap_distribution_sigmas">
+<code class="sig-prename descclassname"><span class="pre">viz.fit.</span></code><code class="sig-name descname"><span class="pre">plot_heatmap_distribution_sigmas</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean_var_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stat_measure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Reds'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">16)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.fit.plot_heatmap_distribution_sigmas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots a heatmap of sigma/mu where sigma/mu will be defined as follows : 
+Suppose there are Q locations for which we are doing distribution analyis,
+Each time we run the config N times, and there are P parameters.
+There will therefore be Q, P, N triplets for which we have a mean, variance value
+For a particular location q, and parameter p, we can calculate mean of means. 
+That would be X_double_bar. We can also calculate sigma of means (X_bar_sigma).
+sigma_by_mu would be defined as X_bar_sigma/X_double_bar.</p>
+<p>We would have a Q*P matrix that is the heatmap that we plot.
+We can do the same process with either the mean or the variance</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>mean_var_dict (dict): a dict of Q elements, 
+where each element is the output of plot_mean_variance.
+stat_measure (str, optional): Which stat measure to calculate sigma_by_mu over. 
+Defaults to ‘mean’.
+cmap (str, optional): mpl colormap to use. Defaults to ‘Reds’.</p>
+</dd>
+<dt>Returns:</dt><dd><p>[type]: [description]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.fit.plot_histogram">
+<code class="sig-prename descclassname"><span class="pre">viz.fit.</span></code><code class="sig-name descname"><span class="pre">plot_histogram</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_lines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savefig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.fit.plot_histogram" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Plots histograms for all the sampled params for a particular run in a particular fig.</dt><dd><p>The ith subplot will have the histogram corresponding to the ith parameter</p>
+</dd>
+<dt>Args:</dt><dd><p>predictions_dict (dict): predictions_dict for a particular run
+fig (mpl.Figure): The mpl.Figure to plot in
+axs (mpl.Axes): The mpl.Axes to plot in
+weighting (str, optional): The weighting function.
+If ‘exp’, np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+If ‘inv’, 1/loss is used. Else, uniform weighting is used. Defaults to ‘exp’.
+beta (float, optional): beta param for exponential weighting 
+plot_lines (bool, optional): If true line joining top of histogram bars is instead plotted. 
+Defaults to False.
+weighted (bool, optional): If false uniform weighting is applied. Defaults to True.
+savefig (bool, optional): If true the figure is saved. Defaults to False.
+filename (str, optional): if savefig is true what filename to save as. Defaults to None.
+label (str, optional): What is the label of the histogram. Defaults to None.</p>
+</dd>
+<dt>Returns:</dt><dd><p>dict: a dict of histograms of all the params for a particular run</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.fit.plot_kl_divergence">
+<code class="sig-prename descclassname"><span class="pre">viz.fit.</span></code><code class="sig-name descname"><span class="pre">plot_kl_divergence</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">histograms_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Reds'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shared_cmap_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.fit.plot_kl_divergence" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Plots KL divergence heatmaps for all the sampled params for all runs. </dt><dd><p>It is assumed that the user provides a dict of N elements, 
+each corresponding to the histogram dict of 1 run (as returned by plot_all_histograms)
+It is assumed that each run will have the same set of P parameters
+If N runs are provided, a figure with P subplots is created (in a P//2*2 grid).
+Each subplot corresponds to one parameter 
+The ith subplot will be an N * N matrix with each element in at (j, k) index is the 
+KL divergence of ith parmeter in the kth run wrt the ith parmeter in the jth run</p>
+</dd>
+<dt>Args:</dt><dd><p>histograms_dict (dict): dict of histograms as returned by plot_all_histograms
+description (str): description of the plot (used by fig.suptitle)
+cmap (str, optional): matplotlib colormap for heatmap. Defaults to ‘Reds’.
+shared_cmap_axes (bool, optional): Whether all colormaps in all subplots
+will have the same axes. Defaults to True.</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure, mpl.Axes, dict: The matplotlib figure, matplotlib axes, 
+a dict of KL divergence matrices for all parameters</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.fit.plot_mean_variance">
+<code class="sig-prename descclassname"><span class="pre">viz.fit.</span></code><code class="sig-name descname"><span class="pre">plot_mean_variance</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.fit.plot_mean_variance" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Plots mean and variance bar graphs for all the sampled params for all runs. </dt><dd><p>It is assumed that the user provides a dict of N elements, 
+each corresponding to the predictions_dict of 1 run. 
+It is assumed that each run will have the same set of P parameters
+If N runs are provided, a figure with P subplots is created (in a P//2*2 grid).
+Each subplot corresponds to one parameter 
+The ith subplot will have N bars with each jth bar corresponding to mean and variance of ith 
+parameter in the corresponding jth run</p>
+</dd>
+<dt>Args:</dt><dd><p>predictions_dict (dict): Dict of all predictions
+description (str): Description of all the N runs given by the user. Used in the suptitle function
+weighting (str, optional): The weighting function. 
+If ‘exp’, np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+If ‘inv’, 1/loss is used. Else, uniform weighting is used. Defaults to ‘exp’.
+beta (float, optional): beta param for exponential weighting</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure, mpl.Axes, pd.DataFrame: The matplotlib figure, matplotlib axes, 
+a dataframe of mean and variance values for all parameters and all runs</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.fit.plot_scatter">
+<code class="sig-prename descclassname"><span class="pre">viz.fit.</span></code><code class="sig-name descname"><span class="pre">plot_scatter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean_var_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stat_measure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.fit.plot_scatter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots a scatter plot between the means of var_1 vs var_2 across all the runs
+Expects an input of mean_var_dict, which is a dict of Q elements, 
+where each element is the output of plot_mean_variance.
+It creates a figure with Q subplots in a Q//2*2 grid
+Each subplot is a scatter plot of means of var_1 vs var_2</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>mean_var_dict (dict): A dict as described above 
+var_1 (str): Variable on x axis
+var_2 (str): Variable on x axis
+stat_measure (str, optional): Which statistical measure to plot (‘mean’/’std’). Defaults to ‘mean’.</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure, mpl.Axes: The matplotlib figure, matplotlib axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-viz.forecast">
+<span id="viz-forecast-module"></span><h2>viz.forecast module<a class="headerlink" href="#module-viz.forecast" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="viz.forecast.plot_forecast">
+<code class="sig-prename descclassname"><span class="pre">viz.forecast.</span></code><code class="sig-name descname"><span class="pre">plot_forecast</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fits_to_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['best']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_compartments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['active',</span> <span class="pre">'total',</span> <span class="pre">'deceased',</span> <span class="pre">'recovered']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fileformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eps'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_bars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">truncate_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">left_truncation_buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.forecast.plot_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for plotting forecasts (both best fit and uncertainty deciles)</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>predictions_dict {dict} – Dict of predictions for a particular district 
+region {tuple} – Region Name eg : (‘Maharashtra’, ‘Mumbai’)</p>
+</dd>
+<dt>Keyword Argument</dt><dd><p>which_compartments {list} – Which compartments to plot (default: {[‘active’, ‘total’, ‘deceased’, ‘recovered’]})
+df_prediction {pd.DataFrame} – DataFrame of predictions (default: {None})
+both_forecasts {bool} – If true, plot both forecasts (default: {False})
+log_scale {bool} – If true, y is in log scale (default: {False})
+filename {str} – If given, the plot is saved here (default: {None})
+fileformat {str} – The format in which the plot will be saved (default: {‘eps’})
+error_bars {bool} – If true, error bars will be plotted (default: {False})</p>
+</dd>
+<dt>Returns:</dt><dd><p>ax – Matplotlib ax figure</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.forecast.plot_forecast_agnostic">
+<code class="sig-prename descclassname"><span class="pre">viz.forecast.</span></code><code class="sig-name descname"><span class="pre">plot_forecast_agnostic</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">df_true,</span> <span class="pre">df_prediction,</span> <span class="pre">region,</span> <span class="pre">log_scale=False,</span> <span class="pre">filename=None,</span> <span class="pre">model_name='M2',</span> <span class="pre">which_compartments=[&lt;Columns.recovered:</span> <span class="pre">Column(name='recovered',</span> <span class="pre">label='Recovered',</span> <span class="pre">color='green')&gt;,</span> <span class="pre">&lt;Columns.deceased:</span> <span class="pre">Column(name='deceased',</span> <span class="pre">label='Deceased',</span> <span class="pre">color='red')&gt;,</span> <span class="pre">&lt;Columns.active:</span> <span class="pre">Column(name='active',</span> <span class="pre">label='Active</span> <span class="pre">Cases',</span> <span class="pre">color='orange')&gt;,</span> <span class="pre">&lt;Columns.total:</span> <span class="pre">Column(name='total',</span> <span class="pre">label='Confirmed</span> <span class="pre">Cases',</span> <span class="pre">color='C0')&gt;]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.forecast.plot_forecast_agnostic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="viz.forecast.plot_r0_multipliers">
+<code class="sig-prename descclassname"><span class="pre">viz.forecast.</span></code><code class="sig-name descname"><span class="pre">plot_r0_multipliers</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">region_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictions_mul_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.forecast.plot_r0_multipliers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="viz.forecast.plot_top_k_trials">
+<code class="sig-prename descclassname"><span class="pre">viz.forecast.</span></code><code class="sig-name descname"><span class="pre">plot_top_k_trials</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">predictions_dict,</span> <span class="pre">k=10,</span> <span class="pre">vline=None,</span> <span class="pre">log_scale=False,</span> <span class="pre">which_compartments=[&lt;Columns.active:</span> <span class="pre">Column(name='active',</span> <span class="pre">label='Active</span> <span class="pre">Cases',</span> <span class="pre">color='orange')&gt;],</span> <span class="pre">plot_individual_curves=True,</span> <span class="pre">truncate_series=True,</span> <span class="pre">left_truncation_buffer=30</span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.forecast.plot_top_k_trials" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="viz.forecast.preprocess_for_error_plot">
+<code class="sig-prename descclassname"><span class="pre">viz.forecast.</span></code><code class="sig-name descname"><span class="pre">preprocess_for_error_plot</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_prediction</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_loss</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_compartments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['active',</span> <span class="pre">'total',</span> <span class="pre">'deceased',</span> <span class="pre">'recovered']</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.forecast.preprocess_for_error_plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-viz.ihme">
+<span id="viz-ihme-module"></span><h2>viz.ihme module<a class="headerlink" href="#module-viz.ihme" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="viz.ihme.plot_ihme_results">
+<code class="sig-prename descclassname"><span class="pre">viz.ihme.</span></code><code class="sig-name descname"><span class="pre">plot_ihme_results</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">converged_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictdate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">testerr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draws</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yaxis_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.ihme.plot_ihme_results" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-viz.reichlab">
+<span id="viz-reichlab-module"></span><h2>viz.reichlab module<a class="headerlink" href="#module-viz.reichlab" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="viz.reichlab.create_heatmap">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">create_heatmap</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'z_score'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.create_heatmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>General function for creating sns heatmap for variables which measure the performance 
+of our forecasts with respect to other models</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df (pd.DataFrame): The dataframe of where rows correspond to different states, 
+and the different columns are metrics for evaluating model performance. 
+Like z_score, non_param_z_score
+var_name (str, optional): Which column name to use. Defaults to ‘z_score’.
+center (int, optional): Where is the heatmap to be centered. Defaults to 0.</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure, mpl.Axes: Figure and Axes of the heatmap plot</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.reichlab.create_scatter_plot_mape">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">create_scatter_plot_mape</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_wadhwani</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">annotate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">abbv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">abbv_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">annot_z_score</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stat_metric_to_use</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'z_score'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.create_scatter_plot_mape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for creating scatter plot of train error vs test error</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_wadhwani (pd.DataFrame): The dataframe which contains the train and test error values
+annotate (bool, optional): If true, each of the points in the scatter 
+are annotated. Defaults to True.
+abbv (bool, optional): If true, the abbreviation of the state is used 
+for annotation. Defaults to False.
+abbv_dict (dict, optional): Dict mapping state name to state code name. 
+Necessary if abbv=True. Defaults to None.
+annot_z_score (bool, optional): If true, the Z score is also annotated. 
+Defaults to False.
+stat_metric_to_use (str, optional): Which statistical metric to use on the 
+color and radius scale. Defaults to ‘z_score’
+log_scale (bool, optional): If true, the y_scale is lo. Defaults to False.</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure: Matplotlib figure with the scatter plot</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.reichlab.create_scatter_plot_zscores">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">create_scatter_plot_zscores</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_wadhwani</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">annotate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">us_states_abbv_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.create_scatter_plot_zscores" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create scatter plot between Z score and Non Param Z Score</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_wadhwani (pd.DataFrame): Dataframe which has Z and non param Z scores for all states
+annotate (bool, optional): If true, annotates scatters with all state code. Defaults to False.
+us_states_abbv_dict (dict, optional): if annotate=true, uses this state_code dict to annotate. 
+Necessary if annotate=True. Defaults to None.</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure, mpl.Axes: The figure and axes object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.reichlab.error_barchart">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">error_barchart</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_comb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ftype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'quantile'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mape_perc'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latex</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_median_over_wiai_states</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_rank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.error_barchart" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="viz.reichlab.mape_heatmap_single_state">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">mape_heatmap_single_state</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_mape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Reds'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.mape_heatmap_single_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for creating rectangular heatmap of MAPE values of models for given state</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_mape (pd.DataFrame): dataframe of mape values for all models, region
+state (str): Which state to make heatmap for
+cmap (str, optional): What colormap to use. Defaults to ‘Reds’.</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure, mpl.Axes: The Figure and Axes object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.reichlab.plot_ecdf_all_states">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">plot_ecdf_all_states</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_mape</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.plot_ecdf_all_states" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for ECDF plots for all states</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_mape (pd.DataFrame): The dataframe with MAPE values for every model, region</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure, [mpl.Axes] : The figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.reichlab.plot_ecdf_single_state">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">plot_ecdf_single_state</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_mape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Wadhwani_AI-BayesOpt'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.plot_ecdf_single_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for ECDF plot for a single region</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_mape (pd.DataFrame): The dataframe with MAPE values for every model
+state (str): The state for which the plotting has to done
+ax (mpl.Axes): The axes object to make the plot in
+model (str, optional): Which model to highlight via a vertical line. Defaults to ‘Wadhwani_AI-BayesOpt’.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.reichlab.plot_multiple_choropleths">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">plot_multiple_choropleths</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_wadhwani</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gdf</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">geopandas.geodataframe.GeoDataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vars_to_plot</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.plot_multiple_choropleths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for plotting multiple choropleths in 1 fig</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_wadhwani (pd.DataFrame): dataframe with different metrics analysing model performance for every location
+gdf (gpd.GeoDataFrame): The processed shapefile as a geopandas dataframe
+vars_to_plot (dict): Dict containing which params to plot choropleths for, and corresponding plotting params</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure, [mpl.Axes]: The matplotlib figure and axes object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.reichlab.plot_qq_all_states">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">plot_qq_all_states</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_mape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_wadhwani</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.plot_qq_all_states" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for QQ plot for a single region</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_mape (pd.DataFrame): The dataframe with MAPE values for every model, region
+fit (bool, optional): If true, theoretical quantiles are fit to data. Defaults to False.
+df_wadhwani (pd.DataFrame, optional): If fit=true, the mean and std values 
+to use for the theoretical quantiles. Defaults to None.</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Figure, [mpl.Axes] : The figure and axes objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.reichlab.plot_qq_single_state">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">plot_qq_single_state</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_mape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_wadhwani</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.plot_qq_single_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for QQ plot for a single region</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_mape (pd.DataFrame): The dataframe with MAPE values for every model, region
+state (str): The state for which the plotting has to done
+ax (mpl.Axes): The axes object to make the plot in
+fit (bool, optional): If true, theoretical quantiles are fit to data. Defaults to False.
+df_wadhwani (pd.DataFrame, optional): If fit=true, the mean and std values 
+to use for the theoretical quantiles. Defaults to None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.reichlab.plot_single_choropleth">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">plot_single_choropleth</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'z_score'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vcenter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'coolwarm'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gdf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.plot_single_choropleth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for creating single choropleth for all US states</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df (pd.DataFrame): The dataframe with the data for which the choropleth is to be made
+var (str, optional): The variable to make the choropleth for. Defaults to ‘z_score’.
+vcenter (int, optional): Center of cmap. Defaults to 0.
+vmin (int, optional): Min of cmap. Defaults to -1.
+vmax (int, optional): Max of cmap. Defaults to 1.
+cmap (str, optional): Which matplotlib cmap to use. Defaults to ‘coolwarm’.
+ax (mpl.Axes, optional): If given, makes plot on this axes. Defaults to None.
+gdf (gpd.GeoDataFrame, optional): If given, uses this as the geodataframe. Defaults to None.
+adjust_text (bool, optional): If true, adjusts the text of the annotation. Defaults to False.</p>
+</dd>
+<dt>Returns:</dt><dd><p>[type]: [description]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.reichlab.preprocess_shape_file">
+<code class="sig-prename descclassname"><span class="pre">viz.reichlab.</span></code><code class="sig-name descname"><span class="pre">preprocess_shape_file</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cb_2018_us_state_5m/cb_2018_us_state_5m.shp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../../data/data/shapefiles'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.reichlab.preprocess_shape_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for preprocessing shape file of US states</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>filename (str, optional): Shapefile filename. Defaults to ‘cb_2018_us_state_5m/cb_2018_us_state_5m.shp’.
+root_dir (str, optional): Directory where shapefiles are stored. Defaults to ‘../../data/data/shapefiles’.</p>
+</dd>
+<dt>Returns:</dt><dd><p>gpd.GeoDataFrame: Returns the preprocessed geodataframe</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-viz.uncertainty">
+<span id="viz-uncertainty-module"></span><h2>viz.uncertainty module<a class="headerlink" href="#module-viz.uncertainty" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="viz.uncertainty.plot_beta_loss">
+<code class="sig-prename descclassname"><span class="pre">viz.uncertainty.</span></code><code class="sig-name descname"><span class="pre">plot_beta_loss</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_of_trials</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.uncertainty.plot_beta_loss" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="viz.uncertainty.plot_ptiles">
+<code class="sig-prename descclassname"><span class="pre">viz.uncertainty.</span></code><code class="sig-name descname"><span class="pre">plot_ptiles</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">predictions_dict,</span> <span class="pre">vline=None,</span> <span class="pre">which_compartments=[&lt;Columns.active:</span> <span class="pre">Column(name='active',</span> <span class="pre">label='Active</span> <span class="pre">Cases',</span> <span class="pre">color='orange')&gt;],</span> <span class="pre">plot_individual_curves=True,</span> <span class="pre">log_scale=False,</span> <span class="pre">truncate_series=True,</span> <span class="pre">left_truncation_buffer=30,</span> <span class="pre">ci_lb=2.5,</span> <span class="pre">ci_ub=97.5</span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.uncertainty.plot_ptiles" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="viz.uncertainty.plot_ptiles_reichlab">
+<code class="sig-prename descclassname"><span class="pre">viz.uncertainty.</span></code><code class="sig-name descname"><span class="pre">plot_ptiles_reichlab</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_comb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'inc</span> <span class="pre">death'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_true</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_point</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_individual_curves</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ci_lb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ci_ub</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">97.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latex</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.uncertainty.plot_ptiles_reichlab" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-viz.utils">
+<span id="viz-utils-module"></span><h2>viz.utils module<a class="headerlink" href="#module-viz.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="viz.utils.add_inset_subplot_to_axes">
+<code class="sig-prename descclassname"><span class="pre">viz.utils.</span></code><code class="sig-name descname"><span class="pre">add_inset_subplot_to_axes</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rect</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.utils.add_inset_subplot_to_axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>General purpose helper function for adding an inset subplot within a particular subplot</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>ax (mpl.Axes): The axes in which the inset plot is to be added
+rect (list): List providing details of the size of the subplot. of the form [x, y, w, h], 
+where x, y is the bottom left coordinate of the rectangle, and w and h are the width and 
+height of the rectangle respectively.</p>
+</dd>
+<dt>Returns:</dt><dd><p>mpl.Axes: A mpl Axes variable corresponding to the inset subplot.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.utils.axis_formatter">
+<code class="sig-prename descclassname"><span class="pre">viz.utils.</span></code><code class="sig-name descname"><span class="pre">axis_formatter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend_elements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.utils.axis_formatter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for formatting axis</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>ax – Matplotlib ax object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="viz.utils.setup_plt">
+<code class="sig-prename descclassname"><span class="pre">viz.utils.</span></code><code class="sig-name descname"><span class="pre">setup_plt</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ycol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'log'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.utils.setup_plt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="viz.utils.show_figure">
+<code class="sig-prename descclassname"><span class="pre">viz.utils.</span></code><code class="sig-name descname"><span class="pre">show_figure</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fig</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#viz.utils.show_figure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for plotting figs not created from pyplot and loaded from pickle file.
+Create a dummy figure and uses its manager to display “fig”</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>fig (mpl.Figure): The figure you want to plot.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-viz">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-viz" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">covid-modelling</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">covid-modelling</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="data.html">data package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">main package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html">models package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks.html">notebooks package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">viz package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">covid-modelling</a><ul>
+      <li>Previous: <a href="utils.generic.enums.html" title="previous chapter">utils.generic.enums package</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Sansiddh, Nayana, Avtansh, Siddhant, Ayush.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/viz.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,462 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>utils.fitting package &#8212; covid-modelling  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="utils.generic package" href="utils.generic.html" />
+    <link rel="prev" title="utils package" href="utils.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="utils-fitting-package">
+<h1>utils.fitting package<a class="headerlink" href="#utils-fitting-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-utils.fitting.data">
+<span id="utils-fitting-data-module"></span><h2>utils.fitting.data module<a class="headerlink" href="#module-utils.fitting.data" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="utils.fitting.data.get_daily_vals">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.data.</span></code><code class="sig-name descname"><span class="pre">get_daily_vals</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.data.get_daily_vals" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.data.get_rates">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.data.</span></code><code class="sig-name descname"><span class="pre">get_rates</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">district_timeseries</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area_names</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.data.get_rates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.data.lograte_to_cumulative">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.data.</span></code><code class="sig-name descname"><span class="pre">lograte_to_cumulative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_transform</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">population</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.data.lograte_to_cumulative" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.data.rate_to_cumulative">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.data.</span></code><code class="sig-name descname"><span class="pre">rate_to_cumulative</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_transform</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">population</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.data.rate_to_cumulative" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-utils.fitting.loss">
+<span id="utils-fitting-loss-module"></span><h2>utils.fitting.loss module<a class="headerlink" href="#module-utils.fitting.loss" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="utils.fitting.loss.Loss_Calculator">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">utils.fitting.loss.</span></code><code class="sig-name descname"><span class="pre">Loss_Calculator</span></code><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="utils.fitting.loss.Loss_Calculator.backtesting_loss_week_by_week">
+<code class="sig-name descname"><span class="pre">backtesting_loss_week_by_week</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_prediction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mape'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator.backtesting_loss_week_by_week" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements backtesting loss (comparing unseen gt with predictions)
+Calculates the backtesting loss for each compartment, week by week into the future, 
+using the specified method</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_prediction (pd.DataFrame): the prediction df
+df_true (pd.DataFrame): the gt df
+method (str, optional): The loss method. Defaults to ‘mape’.
+round_precision (int, optional): Precision to which we want to round the dataframe. Defaults to 2.</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: The loss dataframe by compartment (row), week (column)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.fitting.loss.Loss_Calculator.calc_loss">
+<code class="sig-name descname"><span class="pre">calc_loss</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_prediction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rmse'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_compartments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['active',</span> <span class="pre">'recovered',</span> <span class="pre">'total',</span> <span class="pre">'deceased']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator.calc_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates loss using specified method, averaged across specified compartments using specified weights</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_prediction (pd.DataFrame): prediction dataframe
+df_true (pd.DataFrame): gt dataframe
+loss_method (str, optional): loss loss_method. Defaults to ‘rmse’.
+loss_compartments (list, optional): Compartments to calculate loss on.
+Defaults to [‘active’, ‘recovered’, ‘total’, ‘deceased’].
+loss_weights (list, optional): Weights for corresponding compartments. Defaults to [1, 1, 1, 1].</p>
+</dd>
+<dt>Returns:</dt><dd><p>float: loss value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.fitting.loss.Loss_Calculator.calc_loss_dict">
+<code class="sig-name descname"><span class="pre">calc_loss_dict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_prediction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_compartments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['active',</span> <span class="pre">'recovered',</span> <span class="pre">'total',</span> <span class="pre">'deceased']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rmse'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator.calc_loss_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Caclculates dict of losses for each compartment using the method specified</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_prediction (pd.DataFrame): prediction dataframe
+df_true (pd.DataFrame): gt dataframe
+method (str, optional): Loss method. Defaults to ‘rmse’.</p>
+</dd>
+<dt>Returns:</dt><dd><p>dict: dict of loss values {compartment : loss_value}</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.fitting.loss.Loss_Calculator.create_loss_dataframe_region">
+<code class="sig-name descname"><span class="pre">create_loss_dataframe_region</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_prediction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mape'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_compartments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['active',</span> <span class="pre">'total']</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator.create_loss_dataframe_region" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for calculating loss in training pipeline</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>df_train {pd.DataFrame} – Train dataset
+df_val {pd.DataFrame} – Val dataset
+df_prediction {pd.DataFrame} – Model Prediction</p>
+</dd>
+<dt>Keyword Arguments:</dt><dd><p>loss_compartments {list} – List of buckets to calculate loss on (default: {[‘active’, ‘total’]})</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame – A dataframe of train loss values and val (if val exists too)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.fitting.loss.Loss_Calculator.evaluate">
+<code class="sig-name descname"><span class="pre">evaluate</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used by IHME</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>y_true ([type]): [description]
+y_pred ([type]): [description]</p>
+</dd>
+<dt>Returns:</dt><dd><p>dict: Dict of losses</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.fitting.loss.Loss_Calculator.mape">
+<code class="sig-name descname"><span class="pre">mape</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator.mape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate MAPE loss</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>y_pred (np.array): predicted array
+y_true (np.array): GT array</p>
+</dd>
+<dt>Returns:</dt><dd><p>float: MAPE loss</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.fitting.loss.Loss_Calculator.qtile_l1">
+<code class="sig-name descname"><span class="pre">qtile_l1</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perc</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator.qtile_l1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for calculating L1 quantile loss</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>y_pred (np.array): Predicted array
+y_true (np.array): GT array
+perc (float): The quantile</p>
+</dd>
+<dt>Returns:</dt><dd><p>float: L1 Percentile Loss</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.fitting.loss.Loss_Calculator.qtile_mape">
+<code class="sig-name descname"><span class="pre">qtile_mape</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perc</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator.qtile_mape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for calculating MAPE quantile loss</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>y_pred (np.array): Predicted array
+y_true (np.array): GT Array
+perc (float): quantile</p>
+</dd>
+<dt>Returns:</dt><dd><p>float: MAPE Percentile Loss</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.fitting.loss.Loss_Calculator.rmse">
+<code class="sig-name descname"><span class="pre">rmse</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator.rmse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate RMSE Loss</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>y_pred (np.array): predicted array
+y_true (np.array): true array</p>
+</dd>
+<dt>Returns:</dt><dd><p>float: RMSE loss</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.fitting.loss.Loss_Calculator.rmsle">
+<code class="sig-name descname"><span class="pre">rmsle</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator.rmsle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate RMSLE Loss</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>y_pred (np.array): predicted array
+y_true (np.array): true array</p>
+</dd>
+<dt>Returns:</dt><dd><p>float: RMSLE loss</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.fitting.loss.Loss_Calculator.smape">
+<code class="sig-name descname"><span class="pre">smape</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.loss.Loss_Calculator.smape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for calculating symmetric mape</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>y_pred (np.array): predicted array
+y_true (np.array): GT array</p>
+</dd>
+<dt>Returns:</dt><dd><p>float: SMAPE loss</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-utils.fitting.ode">
+<span id="utils-fitting-ode-module"></span><h2>utils.fitting.ode module<a class="headerlink" href="#module-utils.fitting.ode" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="utils.fitting.ode.ODE_Solver">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">utils.fitting.ode.</span></code><code class="sig-name descname"><span class="pre">ODE_Solver</span></code><a class="headerlink" href="#utils.fitting.ode.ODE_Solver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="utils.fitting.ode.ODE_Solver.solve_ode">
+<code class="sig-name descname"><span class="pre">solve_ode</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_init_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Radau'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.ode.ODE_Solver.solve_ode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solves ODE</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-utils.fitting.population">
+<span id="utils-fitting-population-module"></span><h2>utils.fitting.population module<a class="headerlink" href="#module-utils.fitting.population" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="utils.fitting.population.clean_indian_census">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.population.</span></code><code class="sig-name descname"><span class="pre">clean_indian_census</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.population.clean_indian_census" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.population.create_age_bands">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.population.</span></code><code class="sig-name descname"><span class="pre">create_age_bands</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'-'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.population.create_age_bands" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.population.get_country_age_bands">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.population.</span></code><code class="sig-name descname"><span class="pre">get_country_age_bands</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">country</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.population.get_country_age_bands" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.population.get_district_population">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.population.</span></code><code class="sig-name descname"><span class="pre">get_district_population</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area_names</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.population.get_district_population" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.population.get_india_district_age_bands">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.population.</span></code><code class="sig-name descname"><span class="pre">get_india_district_age_bands</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">age_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.population.get_india_district_age_bands" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.population.india_census_age">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.population.</span></code><code class="sig-name descname"><span class="pre">india_census_age</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.population.india_census_age" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.population.standardise_age">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.population.</span></code><code class="sig-name descname"><span class="pre">standardise_age</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">country</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area_names</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.population.standardise_age" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-utils.fitting.smooth_jump">
+<span id="utils-fitting-smooth-jump-module"></span><h2>utils.fitting.smooth_jump module<a class="headerlink" href="#module-utils.fitting.smooth_jump" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="utils.fitting.smooth_jump.smooth_big_jump">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.smooth_jump.</span></code><code class="sig-name descname"><span class="pre">smooth_big_jump</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_district</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smooth_jump_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.smooth_jump.smooth_big_jump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.smooth_jump.smooth_big_jump_helper">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.smooth_jump.</span></code><code class="sig-name descname"><span class="pre">smooth_big_jump_helper</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_district</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smoothing_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auxillary_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smoothing_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'uniform'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_recov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aux_var_add</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.smooth_jump.smooth_big_jump_helper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for performing smoothing of big jumps</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_district (pd.DataFrame): The input dataframe
+smoothing_length (int): The time window to smooth over
+d1 (str): Date just before smoothing YYYY-MM-DD
+d2 (str): Date on which smoothing happens YYYY-MM-DD
+smoothing_var (str): Variable to smooth over
+auxillary_var (str): Corresponding auxillary variable that also gets smoothed 
+t_recov (int, optional): The assumed recovery time. For weigthed method. Defaults to 14.
+method (str, optional): [description]. Defaults to ‘uniform’.</p>
+</dd>
+<dt>Raises:</dt><dd><p>Exception: [description]</p>
+</dd>
+<dt>Returns:</dt><dd><p>[type]: [description]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.smooth_jump.smooth_big_jump_stratified">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.smooth_jump.</span></code><code class="sig-name descname"><span class="pre">smooth_big_jump_stratified</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_strat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_not_strat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smooth_jump_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.smooth_jump.smooth_big_jump_stratified" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-utils.fitting.util">
+<span id="utils-fitting-util-module"></span><h2>utils.fitting.util module<a class="headerlink" href="#module-utils.fitting.util" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="utils.fitting.util.HidePrints">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">utils.fitting.util.</span></code><code class="sig-name descname"><span class="pre">HidePrints</span></code><a class="headerlink" href="#utils.fitting.util.HidePrints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.util.chunked">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.util.</span></code><code class="sig-name descname"><span class="pre">chunked</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">it</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.util.chunked" title="Permalink to this definition">¶</a></dt>
+<dd><p>Divide dictionary into chunks</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.util.rollingavg">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.util.</span></code><code class="sig-name descname"><span class="pre">rollingavg</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.util.rollingavg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.util.set_variable_param_ranges">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.util.</span></code><code class="sig-name descname"><span class="pre">set_variable_param_ranges</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_param_ranges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitting_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bo_hyperopt'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.util.set_variable_param_ranges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the ranges for the variable params in the search space</p>
+<p>Keyword Arguments:</p>
+<blockquote>
+<div><p>as_str {bool} – If true, the parameters are not returned as a hyperopt object, but as a dict in
+string form (default: {False})</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>dict – dict of ranges of variable params</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.util.smooth">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.util.</span></code><code class="sig-name descname"><span class="pre">smooth</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smoothing_window</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.util.smooth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.util.train_test_split">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.util.</span></code><code class="sig-name descname"><span class="pre">train_test_split</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'date'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.util.train_test_split" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.fitting.util.update_dict">
+<code class="sig-prename descclassname"><span class="pre">utils.fitting.util.</span></code><code class="sig-name descname"><span class="pre">update_dict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.fitting.util.update_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update one nested dictionary with another
+Args:</p>
+<blockquote>
+<div><p>dict_1 (dict): dictionary which is updated
+dict_2 (dict): dictionary from values are copied</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>dict: updated dictionary</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-utils.fitting">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-utils.fitting" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">covid-modelling</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">covid-modelling</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="data.html">data package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">main package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html">models package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks.html">notebooks package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="utils.html">utils package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viz.html">viz package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">covid-modelling</a><ul>
+  <li><a href="utils.html">utils package</a><ul>
+      <li>Previous: <a href="utils.html" title="previous chapter">utils package</a></li>
+      <li>Next: <a href="utils.generic.html" title="next chapter">utils.generic package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Sansiddh, Nayana, Avtansh, Siddhant, Ayush.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/utils.fitting.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

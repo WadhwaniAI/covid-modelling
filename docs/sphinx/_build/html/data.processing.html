@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>data.processing package &#8212; covid-modelling  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="main package" href="main.html" />
+    <link rel="prev" title="data.dataloader package" href="data.dataloader.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="data-processing-package">
+<h1>data.processing package<a class="headerlink" href="#data-processing-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-data.processing.processing">
+<span id="data-processing-processing-module"></span><h2>data.processing.processing module<a class="headerlink" href="#module-data.processing.processing" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="data.processing.processing.get_data">
+<code class="sig-prename descclassname"><span class="pre">data.processing.processing.</span></code><code class="sig-name descname"><span class="pre">get_data</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataloader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloading_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_columns</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data.processing.processing.get_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="data.processing.processing.implement_rolling">
+<code class="sig-prename descclassname"><span class="pre">data.processing.processing.</span></code><code class="sig-name descname"><span class="pre">implement_rolling</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">win_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_periods</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data.processing.processing.implement_rolling" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="data.processing.processing.implement_split">
+<code class="sig-prename descclassname"><span class="pre">data.processing.processing.</span></code><code class="sig-name descname"><span class="pre">implement_split</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data.processing.processing.implement_split" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="data.processing.processing.train_val_test_split">
+<code class="sig-prename descclassname"><span class="pre">data.processing.processing.</span></code><code class="sig-name descname"><span class="pre">train_val_test_split</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_district</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_period</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_period</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_period</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">win_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_periods</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split_after_rolling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data.processing.processing.train_val_test_split" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates train val split on dataframe</p>
+<p># TODO : Add support for creating train val test split</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>df_district {pd.DataFrame} – The observed dataframe</p>
+</dd>
+<dt>Keyword Arguments:</dt><dd><p>val_period {int} – Size of val set (default: {5})
+window_size {int} – Size of rolling window. The rolling window is centered (default: {5})</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame, pd.DataFrame, pd.DataFrame – train dataset, val dataset, concatenation of rolling average dfs</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-data.processing.testing">
+<span id="data-processing-testing-module"></span><h2>data.processing.testing module<a class="headerlink" href="#module-data.processing.testing" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="data.processing.testing.get_testing_data">
+<code class="sig-prename descclassname"><span class="pre">data.processing.testing.</span></code><code class="sig-name descname"><span class="pre">get_testing_data</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Covid19IndiaLoader'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data.processing.testing.get_testing_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-data.processing">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-data.processing" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">covid-modelling</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">covid-modelling</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="data.html">data package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">main package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html">models package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks.html">notebooks package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viz.html">viz package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">covid-modelling</a><ul>
+  <li><a href="data.html">data package</a><ul>
+      <li>Previous: <a href="data.dataloader.html" title="previous chapter">data.dataloader package</a></li>
+      <li>Next: <a href="main.html" title="next chapter">main package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Sansiddh, Nayana, Avtansh, Siddhant, Ayush.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/data.processing.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

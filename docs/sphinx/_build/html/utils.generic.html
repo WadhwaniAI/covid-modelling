@@ -1,0 +1,513 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>utils.generic package &#8212; covid-modelling  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="utils.generic.enums package" href="utils.generic.enums.html" />
+    <link rel="prev" title="utils.fitting package" href="utils.fitting.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="utils-generic-package">
+<h1>utils.generic package<a class="headerlink" href="#utils-generic-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="utils.generic.enums.html">utils.generic.enums package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils.generic.enums.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.generic.enums.html#module-utils.generic.enums.columns">utils.generic.enums.columns module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.generic.enums.html#module-utils.generic.enums">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-utils.generic.config">
+<span id="utils-generic-config-module"></span><h2>utils.generic.config module<a class="headerlink" href="#module-utils.generic.config" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="utils.generic.config.create_location_description">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.config.</span></code><code class="sig-name descname"><span class="pre">create_location_description</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nconfig</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.config.create_location_description" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for creating location description</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>nconfig (dict): The input config</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.config.make_date_key_str">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.config.</span></code><code class="sig-name descname"><span class="pre">make_date_key_str</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.config.make_date_key_str" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function that loops recursively across the input config and 
+converts any element where the key is a datetime.date to an element with a str key
+W&amp;B doesn’t allow datetime.date keys in configs</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>config (dict): input config to fitting</p>
+</dd>
+<dt>Returns:</dt><dd><p>dict: Config with datetime.date keys converted to str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.config.process_config">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.config.</span></code><code class="sig-name descname"><span class="pre">process_config</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.config.process_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for processing config file read from yaml file</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>config (dict): Unprocessed config dict</p>
+</dd>
+<dt>Returns:</dt><dd><p>dict: Processed config dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.config.read_config">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.config.</span></code><code class="sig-name descname"><span class="pre">read_config</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default.yaml'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.config.read_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for reading the YAML config file and doing some preprocessing</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>filename (str, optional): Config file name. Defaults to ‘default.yaml’.
+preprocess (bool, optional): If False, “processing” such as calling class names 
+inputted by the user, etc are not done. The config is returned as is. 
+This feature is used for W&amp;B. Defaults to True.</p>
+</dd>
+<dt>Returns:</dt><dd><p>dict: dict of config params</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-utils.generic.create_report">
+<span id="utils-generic-create-report-module"></span><h2>utils.generic.create_report module<a class="headerlink" href="#module-utils.generic.create_report" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="utils.generic.create_report.save_dict_and_create_report">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.create_report.</span></code><code class="sig-name descname"><span class="pre">save_dict_and_create_report</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ROOT_DIR</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../../misc/reports/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default.yaml'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_ROOT_DIR</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../../configs/seir'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.create_report.save_dict_and_create_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates report (BOTH MD and DOCX) for an input of a dict of predictions for a particular district/region
+The DOCX file can directly be uploaded to Google Drive and shared with the people who have to review</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><p>predictions_dict {dict} – Dict of predictions for a particual district/region [NOT ALL Districts]</p>
+</dd>
+<dt>Keyword Arguments:</dt><dd><p>ROOT_DIR {str} – the path where the plots and the report would be saved (default: {‘../../misc/reports/’})</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-utils.generic.logging">
+<span id="utils-generic-logging-module"></span><h2>utils.generic.logging module<a class="headerlink" href="#module-utils.generic.logging" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="utils.generic.logging.create_dataframes_for_logging">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.logging.</span></code><code class="sig-name descname"><span class="pre">create_dataframes_for_logging</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fit_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.logging.create_dataframes_for_logging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for creating dataframes of top k trials params, deciles params and deciles losses
+Takes as input the dict of fits, and returns 3 pd.DataFrames</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>fit_dict (dict): predictions_dict as returned by generated_report.ipynb</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame, pd.DataFrame, pd.DataFrame: dataframes as described above</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.logging.log_mlflow">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.logging.</span></code><code class="sig-name descname"><span class="pre">log_mlflow</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'covid-modelling-default'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artifact_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.logging.log_mlflow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for logging to MLflow</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>experiment_name (str): name of MLflow experiment
+run_name (str): name of the run
+params (dict): dictionary of parameters to log
+metrics (dict): dictionary of metrics to log
+artifact_dir (str): path containing artifacts to log
+tags (dict): dictionary of tags to log</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.logging.log_wandb">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.logging.</span></code><code class="sig-name descname"><span class="pre">log_wandb</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.logging.log_wandb" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Function for logging stuff to W&amp;B. Logs config param during initialisation,</dt><dd><p>matplotlib plots, and pandas dataframes</p>
+</dd>
+<dt>Args:</dt><dd><p>predictions_dict (dict): Dict of all predictions generated in generate_report.ipynb</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-utils.generic.reichlab">
+<span id="utils-generic-reichlab-module"></span><h2>utils.generic.reichlab module<a class="headerlink" href="#module-utils.generic.reichlab" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="utils.generic.reichlab.calculate_z_score">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">calculate_z_score</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_mape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_rank</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Wadhwani_AI-BayesOpt'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.calculate_z_score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for calculating Z score and non param Z score</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_mape (pd.DataFrame): dataframes of mape values for all models, locations
+df_rank (pd.DataFrame): dataframes of ranks values for all models, locations
+model_name (str, optional): Which model to calculate Z scores for. Defaults to ‘Wadhwani_AI-BayesOpt’.</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: dataframe with the calculated Z scores</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.reichlab.combine_wiai_subm_with_all">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">combine_wiai_subm_with_all</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_all_submissions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_wiai_submission</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.combine_wiai_subm_with_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for combining WIAI submission with all model submissions.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_all_submissions (pd.DataFrame): Processed df of all model submissions 
+df_wiai_submission (pd.DataFrame): Processed WIAI submission
+comp (str): Which compartment (Can be ‘inc_case’, ‘cum_case’, ‘inc_death’, or ‘cum_death’)</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: Combined DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.reichlab.combine_with_train_data">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">combine_with_train_data</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.combine_with_train_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combine the Z score dataframe with the train error data from (read from predictions_dict file)</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>predictions_dict (dict): The predictions_dict output file
+df (pd.DataFrame): Z Score dataframe</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: df with the z scores and train error</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.reichlab.compare_gt_pred">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">compare_gt_pred</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_all_submissions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_gt_loss_wk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mape'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.compare_gt_pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for comparing all predictions to ground truth</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_all_submissions (pd.DataFrame): dataframe of all predictions processed
+df_gt_loss_wk (pd.DataFrame): dataframe of ground truth numbers aggregated at a week level</p>
+</dd>
+<dt>Returns:</dt><dd><p>[pd.DataFrame, pd.DataFrame, pd.DataFrame]: combined dataframe, dataframe of mape values, dataframe of ranks</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.reichlab.create_performance_table">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">create_performance_table</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_mape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_rank</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.create_performance_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates dataframe of all models sorted by MAPE value and rank, to compare relative performance</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df_mape (pd.DataFrame): df of MAPE values for all models, regions
+df_rank (pd.DataFrame): df of ranks for all models, regions</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: The performance table</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.reichlab.end_to_end_comparison">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">end_to_end_comparison</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hparam_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'predictions_dict'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_of_submission</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process_wiai_submission</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_as_point_forecast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ensemble_mean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_territories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_submissions_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">45</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location_id_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">78</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.end_to_end_comparison" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.reichlab.format_wiai_submission">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">format_wiai_submission</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc_name_to_key_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">formatting_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'analysis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_as_point_forecast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ensemble_mean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_comp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_percentiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.format_wiai_submission" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for formatting our submission in the reichlab format</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>predictions_dict (dict): Predictions dict of all locations
+loc_name_to_key_dict (dict): Dict mapping location names to location key
+use_as_point_forecast (str, optional): Which forecast to use as point forecast (‘best’/’ensemble_mean’). 
+Defaults to ‘ensemble_mean’.
+skip_percentiles (bool, optional): If true, processing of all percentiles is skipped. Defaults to False.</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: Processed Wadhwani AI submission</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.reichlab.get_list_of_models">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">get_list_of_models</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date_of_submission</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reichlab_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../../../covid19-forecast-hub'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_from_github</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location_id_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">78</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_submissions_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.get_list_of_models" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an input of submission date, comp, gets list of all models that submitted.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
+comp (str): Which compartment (Can be ‘inc_case’, ‘cum_case’, ‘inc_death’, or ‘cum_death’)
+reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+Defaults to ‘../../../covid19-forecast-hub’.
+read_from_github (bool, optional): If true, reads files directly from github 
+instead of cloned repo. Defaults to False.
+location_id_filter (int, optional): Only considers locations with location code &lt;= this input. 
+Defaults to 78. All states, territories have code &lt;= 78. &gt; 78, locations are counties
+num_submissions_filter (bool, optional): Only selects models with submissions more than this.
+Defaults to 50.</p>
+</dd>
+<dt>Returns:</dt><dd><p>list: list of eligible models</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.reichlab.get_mapping">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">get_mapping</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'location_name_to_code'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reichlab_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../../../covid19-forecast-hub'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_from_github</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.get_mapping" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.reichlab.process_all_submissions">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">process_all_submissions</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_of_models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_of_submission</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reichlab_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../../../covid19-forecast-hub'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_from_github</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location_id_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">78</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_weeks_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.process_all_submissions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process submissions for all models given as input and concatenate them</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>list_of_models (list): List of all models to process submission for. Typically output of get_list_of_models
+date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
+comp (str): Which compartment (Can be ‘inc_case’, ‘cum_case’, ‘inc_death’, or ‘cum_death’)
+reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+Defaults to ‘../../../covid19-forecast-hub’.
+read_from_github (bool, optional): If true, reads files directly from github 
+instead of cloned repo. Defaults to False.
+location_id_filter (int, optional): All location ids &lt;= this will be kept. Defaults to 78.
+num_weeks_filter (int, optional): Only forecasts num_weeks_filter weeks ahead 
+will be kept. Defaults to 4.</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: Dataframe with all submissions processed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.reichlab.process_gt">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">process_gt</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reichlab_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../../../covid19-forecast-hub'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_from_github</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location_id_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">78</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.process_gt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process gt file in reichlab repo. Aggregate by week, and truncate to dates models forecasted for.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>comp (str): Which compartment (Can be ‘inc_case’, ‘cum_case’, ‘inc_death’, or ‘cum_death’)
+df_all_submissions (pd.DataFrame): The dataframe of all model predictions processed. 
+reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+Defaults to ‘../../../covid19-forecast-hub’.
+read_from_github (bool, optional): If true, reads files directly from github 
+instead of cloned repo. Defaults to False.
+location_id_filter (int, optional): All location ids &lt;= this will be kept. Defaults to 78.</p>
+</dd>
+<dt>Returns:</dt><dd><p>[pd.DataFrame]*3, dict : gt df, gt df truncated to model prediction dates (daily), 
+gt df truncated to model prediction dates (aggregated weekly), dict of location name to location key</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.reichlab.process_single_submission">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.reichlab.</span></code><code class="sig-name descname"><span class="pre">process_single_submission</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_of_submission</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reichlab_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../../../covid19-forecast-hub'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_from_github</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location_id_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">78</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_weeks_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.reichlab.process_single_submission" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes the CSV file of a single submission (one model, one instance of time)</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>model (str): The model name to process CSV of 
+date_of_submission (str): The ensemble creation date (always a Mon), for selecting a particular week
+comp (str): Which compartment (Can be ‘inc_case’, ‘cum_case’, ‘inc_death’, or ‘cum_death’)
+df_true (pd.DataFrame): The ground truth dataframe (Used for processing cum_cases submissions)
+reichlab_path (str, optional): Path to reichlab repo (if cloned on machine). 
+Defaults to ‘../../../covid19-forecast-hub’.
+read_from_github (bool, optional): If true, reads files directly from github 
+instead of cloned repo. Defaults to False.
+location_id_filter (int, optional): All location ids &lt;= this will be kept. Defaults to 78.
+num_weeks_filter (int, optional): Only forecasts num_weeks_filter weeks ahead 
+will be kept. Defaults to 4.</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: model submssion processed dataframe</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-utils.generic.stats">
+<span id="utils-generic-stats-module"></span><h2>utils.generic.stats module<a class="headerlink" href="#module-utils.generic.stats" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="utils.generic.stats.get_best_param_dist">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.stats.</span></code><code class="sig-name descname"><span class="pre">get_best_param_dist</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.stats.get_best_param_dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes mean and variance of the best fit params accross different runs</p>
+<dl class="simple">
+<dt>Args:</dt><dd><dl class="simple">
+<dt>model_dict (dict): Dict containing the predictions dict for all the runs for a given </dt><dd><p>scenario, config setting</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>dataframe containing mean, std for all the parameters</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.stats.get_ensemble_combined">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.stats.</span></code><code class="sig-name descname"><span class="pre">get_ensemble_combined</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.stats.get_ensemble_combined" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes ensemble mean and variance of all the params accross different runs</p>
+<dl>
+<dt>Args:</dt><dd><dl class="simple">
+<dt>model_dict (dict): Dict containing the predictions dict for all the runs for a given </dt><dd><p>scenario, config setting</p>
+</dd>
+<dt>weighting (str, optional): The weighting function. </dt><dd><p>If ‘exp’, np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+If ‘inv’, 1/loss is used. Else, uniform weighting is used. Defaults to ‘exp’.</p>
+</dd>
+</dl>
+<p>beta (float, optional): beta param for exponential weighting</p>
+</dd>
+<dt>Returns:</dt><dd><p>dataframe containing mean, std for all the parameters</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.stats.get_loss_stats">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.stats.</span></code><code class="sig-name descname"><span class="pre">get_loss_stats</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'train'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'best_loss_nora'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.stats.get_loss_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes mean and variance of loss values accross all the compartments for different runs</p>
+<dl>
+<dt>Args:</dt><dd><dl class="simple">
+<dt>model_dict (dict): Dict containing the predictions dict for all the runs for a given </dt><dd><p>scenario, config setting</p>
+</dd>
+</dl>
+<p>which_losses: Which losses have to considered? train or val
+method (str, optional): The method of aggregation of different runs.</p>
+<blockquote>
+<div><p>possible values: ‘best_loss_nora’, ‘best_loss_ra’, ‘ensemble_loss_ra’</p>
+</div></blockquote>
+<dl class="simple">
+<dt>weighting (str, optional): The weighting function. </dt><dd><p>If ‘exp’, np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+If ‘inv’, 1/loss is used. Else, uniform weighting is used. Defaults to ‘exp’.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>dataframe containing mean, std loss values for all the compartments</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.generic.stats.get_param_stats">
+<code class="sig-prename descclassname"><span class="pre">utils.generic.stats.</span></code><code class="sig-name descname"><span class="pre">get_param_stats</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'best'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exp'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.generic.stats.get_param_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes mean and variance for all the params accross different runs based on the method mentioned</p>
+<dl>
+<dt>Args:</dt><dd><dl class="simple">
+<dt>model_dict (dict): Dict containing the predictions dict for all the runs for a given </dt><dd><p>scenario, config setting</p>
+</dd>
+</dl>
+<p>method (str, optional): The method of aggregation of different runs (‘best’ or ‘ensemble’)
+weighting (str, optional): The weighting function.</p>
+<blockquote>
+<div><p>If ‘exp’, np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+If ‘inv’, 1/loss is used. Else, uniform weighting is used. Defaults to ‘exp’.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>dataframe containing mean, std for all the parameters</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-utils.generic">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-utils.generic" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">covid-modelling</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">covid-modelling</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="data.html">data package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">main package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html">models package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks.html">notebooks package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="utils.html">utils package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viz.html">viz package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">covid-modelling</a><ul>
+  <li><a href="utils.html">utils package</a><ul>
+      <li>Previous: <a href="utils.fitting.html" title="previous chapter">utils.fitting package</a></li>
+      <li>Next: <a href="utils.generic.enums.html" title="next chapter">utils.generic.enums package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Sansiddh, Nayana, Avtansh, Siddhant, Ayush.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/utils.generic.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
