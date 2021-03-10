@@ -7,8 +7,8 @@ def get_best_param_dist(model_dict):
 
     Args:
         model_dict (dict): Dict containing the predictions dict for all the runs for a given 
-            scenario, config setting
-        
+        scenario, config setting
+    
     Returns:
         dataframe containing mean, std for all the parameters 
     """
@@ -21,10 +21,10 @@ def get_ensemble_combined(model_dict, weighting='exp', beta=1):
 
     Args:
         model_dict (dict): Dict containing the predictions dict for all the runs for a given 
-            scenario, config setting
+        scenario, config setting
         weighting (str, optional): The weighting function. 
-            If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
-            If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
+        If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+        If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
         beta (float, optional): beta param for exponential weighting 
 
     Returns:
@@ -82,13 +82,13 @@ def get_loss_stats(model_dict, which_loss='train',method='best_loss_nora',weight
 
     Args:
         model_dict (dict): Dict containing the predictions dict for all the runs for a given 
-            scenario, config setting
+        scenario, config setting
         which_losses: Which losses have to considered? train or val
         method (str, optional): The method of aggregation of different runs. 
-            possible values: 'best_loss_nora', 'best_loss_ra', 'ensemble_loss_ra'
+        possible values: 'best_loss_nora', 'best_loss_ra', 'ensemble_loss_ra'
         weighting (str, optional): The weighting function. 
-            If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
-            If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
+        If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+        If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
         
     Returns:
         dataframe containing mean, std loss values for all the compartments  
