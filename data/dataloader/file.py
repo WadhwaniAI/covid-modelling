@@ -4,6 +4,13 @@ import pandas as pd
 from data.dataloader.base import BaseLoader
 
 class FileLoader(BaseLoader):
+    """A very barebones dataloader for loading data from files.
+
+    #TODO : Populate more + add checks
+
+    Args:
+        BaseLoader (abstract class): Abstract Data Loader Class
+    """
     def __init__(self):
         pass
 

@@ -6,7 +6,7 @@ import datetime
 from data.dataloader.base import BaseLoader
 
 class JHULoader(BaseLoader):
-    """Dataloader that time series case data for US states, counties, and US from
+    """Dataloader that outputs time series case data for US states, counties, and US from
         the JHU github repo 'https://www.github.com/CSSEGISandData/COVID-19/'
 
         Allows the user to do fitting on US states, US counties, and all countries

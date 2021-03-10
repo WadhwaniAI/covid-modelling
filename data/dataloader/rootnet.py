@@ -6,6 +6,14 @@ from data.dataloader.base import BaseLoader
 
 
 class RootnetLoader(BaseLoader):
+    """Dataloader that outputs time series case data for Indian states from 
+        'https://api.rootnet.in/'
+
+        Allows the user to do fitting on Indian states
+
+    Args:
+        BaseLoader (abstract class): Abstract Data Loader Class
+    """
     def __init__(self):
         super().__init__()
 
@@ -56,14 +64,18 @@ class RootnetLoader(BaseLoader):
 
 
     def get_data(self, state='Delhi', reload_data=False, **kwargs):
+        """Main function serving as handshake between data and fitting modules
+
+        Args:
+            state (str, optional): State in India to fit on. Defaults to 'Delhi'.
+            reload_data (bool, optional): Param for pull_dataframes_cached. Defaults to False.
+
+        Returns:
+            dict{str : pd.DataFrame}: Processed dataframe
+        """
         dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
         df = copy.copy(dataframes['df_state_time_series'])
         df[df['state'] == state]
         df.reset_index(inplace=True, drop=True)
 
         return {"data_frame": df}
-
-if __name__ == '__main__':
-    obj = RootnetLoader()
-    dataframes = obj.pull_dataframes()
-    import pdb; pdb.set_trace()

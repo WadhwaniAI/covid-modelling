@@ -6,8 +6,8 @@ import requests
 from data.dataloader.base import BaseLoader
 
 class Covid19IndiaLoader(BaseLoader):
-    """Dataloader that gets casecount data from covid19india.org
-    From api.covid19india.org. We use the JSON api and not the CSV api
+    """Dataloader that gets casecount data from 'https://api.covid19india.org'
+    We use the JSON api and not the CSV api
 
     Different API are accessed and then converted into pd.DataFrames
 
@@ -285,7 +285,7 @@ class Covid19IndiaLoader(BaseLoader):
 
     def get_data(self, state='Maharashtra', district='Mumbai', use_dataframe='data_all',
                  reload_data=False, **kwargs):
-        """[summary]
+        """Main function serving as handshake between data and fitting modules
 
         Args:
             state (str, optional): State to fit on. Defaults to 'Maharashtra'.

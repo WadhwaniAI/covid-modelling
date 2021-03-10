@@ -8,14 +8,25 @@ from data.dataloader.base import BaseLoader
 
 
 class AthenaLoader(BaseLoader):
+    """Dataloader that gets casecount data from the AWS Athena DB
+
+    We use AWS Athena DB to store the data given to us by our clients. 
+    Read the docstrings of pull_dataframes for a full list of tables.
+
+    Args:
+        BaseLoader (abstract class): Abstract Data Loader Class
+    """
     def __init__(self):
         super().__init__()
 
     def create_connection(self, schema, staging_dir, pyathena_rc_path='../../misc/pyathena/pyathena.rc'):
         """Creates SQL Server connection using AWS Athena credentials
 
-        Keyword Arguments:
-            pyathena_rc_path {str} -- [Path to the PyAthena RC file with the AWS Athena variables] (default: {None})
+        Args:
+            schema (str): Which schema to use
+            staging_dir (str): Which staging dir to use
+            pyathena_rc_path {str, Optional} -- Path to the PyAthena RC file with 
+            the AWS Athena variables. Defaults to ../../misc/pyathena/pyathena.rc.
 
         Returns:
             [cursor] -- [Connection Cursor]
@@ -49,15 +60,20 @@ class AthenaLoader(BaseLoader):
 
     def pull_dataframes(self, schema, tables, staging_dir, 
                         pyathena_rc_path='../../misc/pyathena/pyathena.rc', **kwargs):
-        """Creates connection to Athena database and returns all the tables there as a dict of Pandas dataframes
+        """Creates connection to Athena database and returns all the tables 
+        there as a dict of Pandas dataframes
 
-        Keyword Arguments:
-            pyathena_rc_path {str} -- Path to the PyAthena RC file with the AWS Athena variables 
-            (If you don't have this contact jerome@wadhwaniai.org) (default: {None})
+        Args:
+            schema (str): Which schema to use
+            staging_dir (str): Which staging dir to use
+            tables (list[str]) : Which tables to return
+            pyathena_rc_path {str, Optional} -- Path to the PyAthena RC file with 
+            the AWS Athena variables. Defaults to ../../misc/pyathena/pyathena.rc.
+            (If you don't have this contact jerome@wadhwaniai.org)
 
         Returns:
             dict -- dict where key is str and value is pd.DataFrame
-            The dataframes : 
+            The tables which can be returned : 
             covid_case_summary
             new_covid_case_summary
             demographics_details
@@ -80,12 +96,27 @@ class AthenaLoader(BaseLoader):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
     
     def get_data(self, **dataloading_params):
+        """Main function serving as handshake between data and fitting modules
+
+        Returns:
+            dict{str : pd.DataFrame}: The processed dataframe
+        """
         if dataloading_params['stratified_data']:
             return self.get_data_stratified(**dataloading_params)
         else:
             return self.get_data_standard(**dataloading_params)
 
     def get_data_standard(self, state='Maharashtra', district='Mumbai', reload_data=False, **kwargs):
+        """Helper function for `get_data`. Gets data with the standard casecounts (C, A, R, D)
+
+        Args:
+            state (str, optional): Which state. Defaults to 'Maharashtra'.
+            district (str, optional): Which district. Defaults to 'Mumbai'.
+            reload_data (bool, optional): Param for `pull_dataframes_cached`. Defaults to False.
+
+        Returns:
+            dict{str : pd.DataFrame}: The processed dataframe
+        """
         print('fetching from athenadb...')
         label = kwargs.pop('label', None)
         dataframes = self.pull_dataframes_cached(reload_data=reload_data, label=label, ** kwargs)
@@ -105,6 +136,17 @@ class AthenaLoader(BaseLoader):
         return {"data_frame": df_result}
 
     def get_data_stratified(self, state='Maharashtra', district='Mumbai', reload_data=False, ** kwargs):
+        """Helper function for `get_data`. Gets data with the standard casecounts (C, A, R, D)
+        and stratified casecounts (by severity, bed type, etc etc)
+
+        Args:
+            state (str, optional): Which state. Defaults to 'Maharashtra'.
+            district (str, optional): Which district. Defaults to 'Mumbai'.
+            reload_data (bool, optional): Param for `pull_dataframes_cached`. Defaults to False.
+
+        Returns:
+            dict{str : pd.DataFrame}: The processed dataframe
+        """
         print('fetching from athenadb...')
         label = kwargs.pop('label', None)
         dataframes = self.pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)

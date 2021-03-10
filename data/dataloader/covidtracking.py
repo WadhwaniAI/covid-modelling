@@ -41,12 +41,21 @@ class CovidTrackingLoader(BaseLoader):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
 
     def get_data(self, state, reload_data=False, **kwargs):
+        """Main function serving as handshake between data and fitting modules
+
+        Args:
+            state (str): Name of the US state to do fitting on
+            reload_data (bool, optional): Param for `pull_dataframes_cached`. Defaults to False.
+
+        Returns:
+            dict{str : pd.DataFrame}: Processed dataframe
+        """
         dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
         df_states = dataframes['df_states']
         df_states = df_states.loc[:, ['date', 'state', 'state_name', 'positive',
                                     'active', 'recovered', 'death']]
         df_states.rename(columns={"positive": "total",
-                                "death": "deceased"}, inplace=True)
+                                  "death": "deceased"}, inplace=True)
         df = df_states[df_states['state_name'] == state]
         df.reset_index(drop=True, inplace=True)
         return {"data_frame": df}

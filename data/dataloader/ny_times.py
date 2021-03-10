@@ -4,7 +4,7 @@ from data.dataloader.base import BaseLoader
 
 
 class NYTLoader(BaseLoader):
-    """Dataloader that time series case data for US states, counties, and US from
+    """Dataloader that outputs time series case data for US states, counties, and US from
         the NY Times github repo 'https://www.github.com/nytimes/covid-19-data/'
 
         Allows the user to do fitting on US states, US counties
