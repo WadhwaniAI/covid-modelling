@@ -1,7 +1,7 @@
 from main.seir.optimisers import OptimiserBase
 from utils.fitting.loss import Loss_Calculator
 
-import datetime
+from datetime import datetime
 
 from main.seir.uncertainty import MCMC
 
