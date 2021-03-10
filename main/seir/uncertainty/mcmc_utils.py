@@ -3,32 +3,7 @@
 from collections import defaultdict
 
 import numpy as np
-import pandas as pd
-from tqdm import tqdm
 
-
-def get_state(district):
-    """Summary
-    
-    Args:
-        district (TYPE): Description
-    
-    Returns:
-        TYPE: Description
-    """
-    state_map = {
-        "Mumbai": "Maharashtra",
-        "Pune": "Maharashtra",
-        "Jaipur": "Rajasthan",
-        "Bengaluru Urban": "Karnataka",
-        "Bengaluru Rural": "Karnataka",
-        "Ahmedabad": "Gujarat",
-        "North Delhi": "Delhi",
-        "South Delhi": "Delhi",
-        "East Delhi": "Delhi",
-        "West Delhi": "Delhi"
-    }
-    return state_map[district]
     
 def get_PI(pred_dfs, date, key, multiplier=1.96):
     """Summary
@@ -51,62 +26,6 @@ def get_PI(pred_dfs, date, key, multiplier=1.96):
     low = mu - multiplier*sigma
     high = mu + multiplier*sigma
     return mu, low, high
-
-def set_optimizer(data: pd.DataFrame, train_period: int,default_params, optimiser):
-    """Summary
-    
-    Args:
-        data (pd.DataFrame): Description
-        train_period (int): Description
-    
-    Returns:
-        TYPE: Description
-    """
-    #optimiser = Optimiser()
-    default_params = optimiser.init_default_params(data,default_params,train_period=train_period)
-    return optimiser, default_params
-
-def predict(data: pd.DataFrame, mcmc_runs: list, default_params: dict, optimiser: object,
-      predict_days: int, end_date: str = None) -> pd.DataFrame:
-    """Summary
-    
-    Args:
-        data (pd.DataFrame): Description
-        mcmc_runs (list): Description
-        predict_days (int): Description
-        end_date (str, optional): Description
-    
-    Returns:
-        pd.DataFrame: Description
-    """
-    #optimiser, default_params = set_optimizer(data, predict_days, default_params)
-    
-    combined_acc = list()
-    for _, run in enumerate(mcmc_runs):
-        burn_in = int(len(run) / 2)
-        combined_acc += run[0][burn_in:]
-        
-    n_samples = 1000
-    sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
-    
-    pred_dfs = list()
-    for i in tqdm(sample_indices):
-        #import pdb; pdb.set_trace()
-        all_params = {**combined_acc[int(i)], **default_params}
-        pred_dfs.append(optimiser.solve(params_dict = all_params, end_date=end_date))
-    for df in pred_dfs:
-        df.set_index('date', inplace=True)
-
-    result = pred_dfs[0].copy()
-    for col in result.columns:
-        result["{}_low".format(col)] = ''
-        result["{}_high".format(col)] = ''
-
-    for date in tqdm(pred_dfs[0].index):
-        for key in pred_dfs[0]:
-            result.loc[date, key], result.loc[date, "{}_low".format(key)], result.loc[date, "{}_high".format(key)] = get_PI(pred_dfs, date, key)
-    
-    return result
 
 def accumulate(dict_list):
     """Summary
