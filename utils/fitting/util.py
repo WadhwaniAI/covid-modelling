@@ -30,10 +30,6 @@ class HidePrints:
         sys.stdout = self._original_stdout
 
 
-def rollingavg(series, window):
-    return series.rolling(window, center=True).mean()
-
-
 def update_dict(dict_1, dict_2):
     """Update one nested dictionary with another
     Args:
@@ -49,40 +45,6 @@ def update_dict(dict_1, dict_2):
         else:
             new_dict[k] = v
     return new_dict
-
-
-def get_subset(df, lower, upper, col='date'):
-    """Get subset of rows of dataframe"""
-    lower = lower if lower is not None else df.iloc[0, :][col]
-    upper = upper if upper is not None else df.iloc[-1, :][col]
-    return df[np.logical_and(df[col] >= lower, df[col] <= upper)]
-
-
-def convert_date(date, to_str=False, date_format='%m-%d-%Y'):
-    """Convert date between string and datetime.datetime formats
-
-    Args:
-        date (Any): date to be converted
-        to_str (bool): if True, perform datetime to string conversion, otherwise string to datetime
-        date_format (str): date format
-
-    Returns:
-        Any: Converted date
-    """
-    try:
-        if to_str:
-            return date.strftime(date_format)
-        else:
-            return datetime.strptime(date, date_format)
-    except:
-        return date
-
-
-def read_file(path, file_type='yaml'):
-    if file_type == 'yaml':
-        with open(path) as infile:
-            config = yaml.load(infile, Loader=yaml.SafeLoader)
-    return config
 
 
 class CustomEncoder(json.JSONEncoder):
