@@ -26,6 +26,8 @@ sftp-configjson
 *DS_Store
 
 # Folders (on Home dir and otherwise)
+*_build/
+**_build/
 data/data/
 *plots/
 **plots/
@@ -50,6 +52,7 @@ optim/
 
 # Exceptions
 !docs/model_diagrams/*pdf
+!docs/sphinx/_build/html/
 !docs/figures/*png
 *output/
 **output/
