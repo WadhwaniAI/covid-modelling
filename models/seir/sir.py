@@ -9,7 +9,7 @@ from models.seir.compartmental_base import CompartmentalBase
 class SIR(CompartmentalBase):
 
     def __init__(self, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2, N=7e6,
-                 I_hosp_ratio=0.5, I_tot_ratio=0.5, starting_date='2020-03-09', observed_values=None):
+                 I_hosp_ratio=0.5, starting_date='2020-03-09', observed_values=None, **kwargs):
         """
         This class implements SIR.
 
@@ -62,7 +62,7 @@ class SIR(CompartmentalBase):
             state_init_values[state] = p_params[P_keyname] * observed_values['active']
 
         state_init_values['R'] = observed_values['total']
-        state_init_values['I'] = I_tot_ratio * observed_values['total']
+        state_init_values['I'] = I_hosp_ratio * observed_values['total']
         nonSsum = sum(state_init_values.values())
 
         state_init_values['S'] = (self.N - nonSsum)
