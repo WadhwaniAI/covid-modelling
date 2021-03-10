@@ -6,8 +6,6 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-#from main.seir.optimiser import Optimiser
-
 
 def get_state(district):
     """Summary
@@ -84,7 +82,7 @@ def predict(data: pd.DataFrame, mcmc_runs: list, default_params: dict, optimiser
     #optimiser, default_params = set_optimizer(data, predict_days, default_params)
     
     combined_acc = list()
-    for k, run in enumerate(mcmc_runs):
+    for _, run in enumerate(mcmc_runs):
         burn_in = int(len(run) / 2)
         combined_acc += run[0][burn_in:]
         
