@@ -1,18 +1,20 @@
+import copy
 import pprint
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict, defaultdict
 from datetime import datetime
+from functools import partial
 
 import numpy as np
-from joblib import delayed, Parallel
-from functools import partial
-from tqdm import tqdm
-import copy
+from joblib import Parallel, delayed
 from main.seir.uncertainty.base import Uncertainty
-from main.seir.uncertainty.mcmc_utils import compute_W, compute_B, accumulate, divide, divide_dict, avg_sum_chain, \
-    avg_sum_multiple_chains, get_formatted_trials
-import scipy
-from scipy.stats import norm as N
+from main.seir.uncertainty.mcmc_utils import (accumulate, avg_sum_chain,
+                                              avg_sum_multiple_chains,
+                                              compute_B, compute_W, divide,
+                                              divide_dict,
+                                              get_formatted_trials)
 from scipy.stats import invgamma as inv
+from scipy.stats import norm as N
+from tqdm import tqdm
 
 
 class MCMC(Uncertainty):
@@ -36,7 +38,7 @@ class MCMC(Uncertainty):
     
     def __init__(self, optimiser, df_train, default_params, variable_param_ranges, n_chains, total_days,
                  algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,
-                 loss_weights,model, **ignored):
+                 loss_weights, model, **ignored):
         """
         Constructor. Fetches the data, initializes the optimizer and sets up the
         likelihood function.
@@ -47,8 +49,6 @@ class MCMC(Uncertainty):
             **ignored: flag to ignore extra parameters.
         """
         self.timestamp = datetime.now()
-        self.district = 'Mumbai'
-        self.state = 'Maharashtra'
         self.stride = stride
         self.loss_weights = loss_weights
         self.loss_indices = loss_indices
@@ -206,7 +206,7 @@ class MCMC(Uncertainty):
                 explored+=1
             return accept_bool,explored,optimized,x_new,da,db
 
-    def _metropolis(self, iters):
+    def _metropolis(self, iters, A=0, alpha_0=40, beta_0=2/700, seed=None):
         """
         Implementation of the metropolis loop.
         
@@ -216,18 +216,15 @@ class MCMC(Uncertainty):
         theta,da,db = self._param_init()
         accepted = [theta]
         rejected = list()
-        A = 0
         explored = 0
         optimized = 0
-        alpha_0 = 40
-        beta_0 = 2/700
-        np.random.seed()
+        np.random.seed(seed=seed)
         for _ in tqdm(range(iters)):
             
             theta_new = self.Gauss_proposal(theta)
             theta_new['gamma'] = np.sqrt(inv.rvs(a = alpha_0 + da  ,scale = beta_0 + db,size = 1)[0])
             
-            accept_choice,explored , optimized, LL , da, db = self._accept(theta, theta_new, explored, optimized)
+            accept_choice,explored , optimized, _ , da, db = self._accept(theta, theta_new, explored, optimized)
             if accept_choice:
                 theta = copy.deepcopy(theta_new)
                 A += 1
@@ -301,24 +298,25 @@ class MCMC(Uncertainty):
         trials = get_formatted_trials(params, losses)
         return best_params, trials
 
-    def run(self):
+    def run(self, parallelise=False):
         """
         Runs all the metropolis-hastings chains in parallel/serial.
         
         Returns:
             list: best params and set of trials mimicing bayesopt trials object
         """
-        paralell_bool = False
         
-        if paralell_bool:
+        if parallelise:
             print("Executing in Parallel")
             partial_metropolis = partial(self._metropolis, iters=self.iters)
             self.chains = Parallel(n_jobs=self.n_chains)(
                 delayed(partial_metropolis)() for _ in range(self.n_chains))
         else:
             print("Executing in Serial")
-            self.chains = []
-            for i, run in enumerate(range(self.n_chains)):
-                self.chains.append(self._metropolis(self.iters))
+            chains = []
+            for _ in range(self.n_chains):
+                chains.append(self._metropolis(self.iters))
+
+            self.chains = chains
         self._check_convergence()
         return self._get_trials()
