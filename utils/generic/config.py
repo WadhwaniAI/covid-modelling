@@ -2,7 +2,7 @@ import copy
 import datetime
 
 import main.seir.uncertainty as uncertainty_module
-import models
+import importlib
 import yaml
 from utils.generic.enums import Columns
 
@@ -58,7 +58,9 @@ def process_config(config):
     nconfig = copy.deepcopy(config)
     create_location_description(nconfig)
     
-    model_family = getattr(models, nconfig['fitting']['model_family'])
+    model_family = importlib.import_module(
+        f".{nconfig['fitting']['model_family']}", 'models')
+
     nconfig['fitting']['model'] = getattr(model_family, nconfig['fitting']['model'])
 
     nconfig['plotting']['plot_topk_trials_for_columns'] = [Columns.from_name(
