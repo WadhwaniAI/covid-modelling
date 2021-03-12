@@ -4,7 +4,6 @@ from copy import copy
 
 import numpy as np
 import pandas as pd
-from curvefit.core.functions import *
 from curvefit.core.utils import data_translator
 from curvefit.pipelines.basic_model import BasicModel
 
