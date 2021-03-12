@@ -20,6 +20,7 @@ base:
     fitting_method_params:
       algo: [list, [tpe, rand], FALSE]
       num_evals: [repeat, [3000, 3], FALSE]
+      seed: [range, [0, 100, 10], FALSE]
     split:
       train_period: [range, [6, 45, 3], FALSE]
       val_period: [range, [2, 7, 1], FALSE]
