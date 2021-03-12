@@ -26,10 +26,10 @@ def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth
     Returns:
         pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
     """
-    
+
     data_dict = get_data(dataloader, dataloading_params, data_columns)
     df_district = data_dict['data_frame']
-    
+
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
 
@@ -37,8 +37,8 @@ def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth
         if dataloading_params['stratified_data']:
             df_params_copy = copy.copy(dataloading_params)
             df_params_copy['stratified_data'] = False
-            df_not_strat = get_data(dataloader, df_params_copy, 
-                data_columns)['data_frame']
+            df_not_strat = get_data(dataloader, df_params_copy,
+                                    data_columns)['data_frame']
             df_district, description = smooth_big_jump_stratified(
                 df_district, df_not_strat, smooth_jump_params)
         else:
@@ -60,18 +60,18 @@ def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth
             'df_district_unsmoothed': orig_df_district
         }
         print(smoothing['smoothing_description'])
-     
+
     rap = rolling_average_params
     if rolling_average:
         df_train, df_val, _ = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
             test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
-            window_size=rap['window_size'], center=rap['center'], 
+            window_size=rap['window_size'], center=rap['center'],
             win_type=rap['win_type'], min_periods=rap['min_periods'])
     else:
         df_train, df_val, _ = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
-            test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
+            test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
             window_size=1)
 
     df_train_nora, df_val_nora, _ = train_val_test_split(
@@ -79,9 +79,13 @@ def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth
         test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
         window_size=1)
 
-    observed_dataframes = {}
-    for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
-        observed_dataframes[name] = eval(name)
+    observed_dataframes = {
+        'df_train': df_train,
+        'df_val': df_val,
+        'df_train_nora': df_train_nora,
+        'df_val_nora': df_val_nora,
+        'df_district': df_district
+    }
     if 'ideal_params' in data_dict:
         return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing, "ideal_params" : data_dict['ideal_params']}
     return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing}
@@ -122,12 +126,12 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     print('best parameters\n', trials['params'][0])
 
     df_prediction = trials['predictions'][0]
-    
+
     lc = Loss_Calculator()
     df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, 
                                               loss_method=loss['loss_method'],
                                               loss_compartments=loss['loss_compartments'])
-    
+
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
                         location_description=data['dataloading_params']['location_description'],
                         which_compartments=loss['loss_compartments'])
@@ -137,9 +141,17 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
 
     fitting_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    for name in ['default_params', 'df_prediction', 'df_district', 'df_train', 
-                 'df_val', 'df_loss', 'trials', 'data_last_date', 'fitting_date']:
-        results_dict[name] = eval(name)
+    results_dict = {
+        'default_params': default_params,
+        'df_prediction': df_prediction,
+        'df_district': df_district,
+        'df_train': df_train,
+        'df_val': df_val,
+        'df_loss': df_loss,
+        'trials': trials,
+        'data_last_date': data_last_date,
+        'fitting_date': fitting_date
+    }
 
     return results_dict
 
@@ -189,10 +201,9 @@ def single_fitting_cycle(data, model_family, model, variable_param_ranges, defau
     if not observed_dataframes['df_val'] is None:
         print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
         
-    predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
-            default_params, optimiser, optimiser_params, split, loss, forecast)
+    predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges,
+        default_params, optimiser, optimiser_params, split, loss, forecast)
 
-    
     predictions_dict['plots']['smoothing'] = smoothing_plot
     predictions_dict['smoothing_description'] = smoothing_description
     predictions_dict['df_district_unsmoothed'] = orig_df_district
