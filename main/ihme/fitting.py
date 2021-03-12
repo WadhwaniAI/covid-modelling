@@ -270,8 +270,6 @@ def single_fitting_cycle(data, model, model_params, default_params, fitting_meth
     run_params['model'] = model.__name__
     run_params['model_class'] = model
 
-    print('Performing {} fit ..'.format('m2' if split['val_period'] == 0 else 'm1'))
-
     # Get data
     params = {**data}
     params['split'] = split
