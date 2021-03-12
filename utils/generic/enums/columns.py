@@ -41,18 +41,30 @@ class Column:
 
 class Columns(Enum):
     date = Column('date', 'date', None)
-    critical = Column('critical', 'Critical', Colors.severity_colors[0])
-    symptomatic = Column('symptomatic', 'Stable Symptomatic', Colors.severity_colors[1])
-    asymptomatic = Column('asymptomatic', 'Stable Asymptomatic', Colors.severity_colors[2])
+    critical = Column('critical', 'Critical', Colors.severity_colors.value[0])
+    symptomatic = Column('symptomatic', 'Stable Symptomatic', Colors.severity_colors.value[1])
+    asymptomatic = Column('asymptomatic', 'Stable Asymptomatic', Colors.severity_colors.value[2])
     recovered = Column('recovered', 'Recovered Cases', 'green')
     deceased = Column('deceased', 'Deceased Cases', 'red')
     active = Column('active', 'Active Cases', 'orange')
     total = Column('total', 'Confirmed Cases', 'C0')
-    ventilator = Column('ventilator', 'Ventilator Beds', Colors.bed_colors[0])
-    icu = Column('icu', 'ICU Beds', Colors.bed_colors[1])
-    o2_beds = Column('o2_beds', 'O2 Beds', Colors.bed_colors[2])
-    non_o2_beds = Column('non_o2_beds', 'Non O2 Beds', Colors.bed_colors[3])
-    hq = Column('hq', 'Home Quarantine', Colors.bed_colors[4])
+    ventilator = Column('ventilator', 'Ventilator Beds', Colors.bed_colors.value[0])
+    icu = Column('icu', 'ICU Beds', Colors.bed_colors.value[1])
+    o2_beds = Column('o2_beds', 'O2 Beds', Colors.bed_colors.value[2])
+    non_o2_beds = Column('non_o2_beds', 'Non O2 Beds', Colors.bed_colors.value[3])
+    hq = Column('hq', 'Home Quarantine', Colors.bed_colors.value[4])
+
+    @property
+    def name(self):
+        return self.value.name
+
+    @property
+    def label(self):
+        return self.value.label
+
+    @property
+    def color(self):
+        return self.value.color
 
     @classmethod
     def CARD_compartments(cls):
@@ -92,15 +104,15 @@ compartments = {
         Column('daily_cases', 'New Cases Added', 'indigo')
     ],
     'severity': [
-        Column('critical', 'Critical', Colors.severity_colors[0]),
-        Column('symptomatic', 'Stable Symptomatic', Colors.severity_colors[1]),
-        Column('asymptomatic', 'Stable Asymptomatic', Colors.severity_colors[2])
+        Column('critical', 'Critical', Colors.severity_colors.value[0]),
+        Column('symptomatic', 'Stable Symptomatic', Colors.severity_colors.value[1]),
+        Column('asymptomatic', 'Stable Asymptomatic', Colors.severity_colors.value[2])
     ],
     'bed': [
-        Column('ventilator', 'Ventilator Beds', Colors.bed_colors[0]),
-        Column('icu', 'ICU Beds', Colors.bed_colors[1]),
-        Column('o2_beds', 'O2 Beds', Colors.bed_colors[2]),
-        Column('non_o2_beds', 'Non O2 Beds', Colors.bed_colors[3]),
-        Column('hq', 'Home Quarantine', Colors.bed_colors[4])
+        Column('ventilator', 'Ventilator Beds', Colors.bed_colors.value[0]),
+        Column('icu', 'ICU Beds', Colors.bed_colors.value[1]),
+        Column('o2_beds', 'O2 Beds', Colors.bed_colors.value[2]),
+        Column('non_o2_beds', 'Non O2 Beds', Colors.bed_colors.value[3]),
+        Column('hq', 'Home Quarantine', Colors.bed_colors.value[4])
     ]
 }
