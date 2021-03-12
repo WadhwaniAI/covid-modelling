@@ -111,7 +111,7 @@ class SEIRHD_Severity(SEIR):
 
         # Write differential equations
         dydt[0] = - I * S / self.T_trans  # S
-        dydt[1] = I * S / self.T_trans - (E/ self.T_inc)  # E
+        dydt[1] = I * S / self.T_trans - (E / self.T_inc)  # E
         dydt[2] = E / self.T_inc - I / self.T_inf  # I
         dydt[3] = (1/self.T_inf)*(self.P_mild*I) - R_mild/self.T_recov_mild # R_mild
         dydt[4] = (1/self.T_inf)*(self.P_moderate*I) - R_moderate/self.T_recov_moderate #R_moderate

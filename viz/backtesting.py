@@ -144,15 +144,16 @@ def plot_backtest_seir(gt_dataloader='AthenaLoader', preds_source='filename', fn
     fig.subplots_adjust(top=0.96)
     return fig, df_true.iloc[train_period:, :], df_prediction.iloc[train_period-1:, :]
 
-def plot_backtest(results, data, dist, which_compartments=Columns.which_compartments(), 
-                  scoring='mape', dtp=None, axis_name='No. People', savepath=None):
-    title = f'{dist}' +  ' backtesting'
+def plot_backtest(results, data, dist, which_compartments=Columns.which_compartments(), scoring='mape',
+                  axis_name='No. People', savepath=None):
+    title = f'{dist}' + ' backtesting'
     # plot predictions against actual
     setup_plt(axis_name)
     plt.yscale("linear")
     plt.title(title)
+
     def div(series):
-        if scoring=='mape':
+        if scoring == 'mape':
             return series/100
         return series
     
@@ -179,8 +180,7 @@ def plot_backtest(results, data, dist, which_compartments=Columns.which_compartm
                 ax.errorbar(val_dates, preds.loc[val_dates, col.name],
                     yerr=preds.loc[val_dates, col.name]*(div(run_dict['df_loss'].loc[col.name, errkey])), lw=0.5,
                     color='lightcoral', barsabove='False', label=scoring)
-                
-            
+
         # plot data we fit on
         ax.scatter(data['date'].values, data[col.name].values, c='crimson', marker='+', label='data')
         plt.text(x=data['date'].iloc[-1], y=data[col.name].iloc[-1], s=col.name)
