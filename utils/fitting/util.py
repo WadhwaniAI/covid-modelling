@@ -1,15 +1,23 @@
 import collections
 import itertools
+import json
 import os
 import sys
+from abc import ABCMeta
 from copy import deepcopy
+from datetime import datetime
+
+import numpy as np
+import yaml
 
 try:
     collectionsAbc = collections.abc
 except AttributeError:
     collectionsAbc = collections
 
-import numpy as np
+sys.path.append('../../')
+
+from utils.generic.enums.columns import Columns
 
 
 class HidePrints:
@@ -20,20 +28,6 @@ class HidePrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout.close()
         sys.stdout = self._original_stdout
-
-
-def train_test_split(df, threshold, threshold_col='date'):
-    return df[df[threshold_col] <= threshold], df[df[threshold_col] > threshold]
-
-
-def smooth(y, smoothing_window):
-    box = np.ones(smoothing_window) / smoothing_window
-    y_smooth = np.convolve(y, box, mode='same')
-    return y_smooth
-
-
-def rollingavg(series, window):
-    return series.rolling(window).mean()
 
 
 def update_dict(dict_1, dict_2):
@@ -53,11 +47,29 @@ def update_dict(dict_1, dict_2):
     return new_dict
 
 
-def chunked(it, size):
-    """Divide dictionary into chunks"""
-    it = iter(it)
-    while True:
-        p = dict(itertools.islice(it, size))
-        if not p:
-            break
-        yield p
+class CustomEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, datetime):
+            return obj.strftime('%m-%d-%Y')
+        elif isinstance(obj, ABCMeta):
+            return obj.__name__
+        elif isinstance(obj, Columns):
+            return obj.name
+        elif isinstance(obj, type):
+            return obj.__name__
+        elif callable(obj):
+            return obj.__name__
+        else:
+            return super(CustomEncoder, self).default(obj)
+
+
+def chunked(iterable, size=1):
+    """Divide iterable into chunks of specified size"""
+    for it in iterable:
+        yield itertools.chain([it], itertools.islice(iterable, size - 1))

@@ -56,7 +56,6 @@ class Covid19IndiaLoader(BaseLoader):
         data = requests.get('https://api.covid19india.org/state_district_wise.json').json()
         df_statecode = pd.DataFrame.from_dict(data)
         df_statecode = df_statecode.drop(['districtData']).T
-        state_to_statecode_dict = dict(zip(df_statecode.index, df_statecode['statecode']))
         statecode_to_state_dict = dict(zip(df_statecode['statecode'], df_statecode.index))
 
         return dataframes, statecode_to_state_dict
@@ -96,7 +95,6 @@ class Covid19IndiaLoader(BaseLoader):
 
     def _load_data_all_json_district(self, dataframes, statecode_to_state_dict):
         data = requests.get('https://api.covid19india.org/v4/data-all.json').json()
-        data_copy = copy.deepcopy(data)
 
         for date in data.keys():
             date_dict = data[date]

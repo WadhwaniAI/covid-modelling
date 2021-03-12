@@ -28,7 +28,7 @@ class SimulatedDataLoader(BaseLoader):
                     ['date', 'total', 'active', 'deceased', 'recovered']
                 actual_params {dict} -- parameter values used to create the simulated data
         """
-        if (not config['fix_params']):
+        if not config['fix_params']:
             for param in config['params']:
                 if param == 'N':
                     continue
@@ -47,7 +47,7 @@ class SimulatedDataLoader(BaseLoader):
         model_params['observed_values'] = pd.DataFrame.from_dict([observed_values]).iloc[0,:]
 
         solver = eval(config['model'])(**model_params)
-        if (config['total_days']):
+        if config['total_days']:
             df_result = solver.predict(total_days=config['total_days'])
         else:
             df_result = solver.predict()

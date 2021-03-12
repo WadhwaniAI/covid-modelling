@@ -1,349 +1,301 @@
-import os
+"""
+fitting.py
+"""
 import sys
-import json
-import pandas as pd
-import numpy as np
-from copy import copy
-from datetime import datetime, timedelta
-from pathos.multiprocessing import ProcessingPool as Pool
+import copy
+from datetime import timedelta
+from tabulate import tabulate
 
-from curvefit.core import functions
+import numpy as np
+import pandas as pd
+
+from data.processing.processing import get_data, train_val_test_split
+from viz import plot_smoothing, plot_fit
 
 sys.path.append('../..')
-from models.ihme.model import IHME
-from utils.fitting.data import get_rates
-from data.processing import get_district_timeseries_cached
-from utils.fitting.util import train_test_split, rollingavg
-
 
 from models.ihme.model import IHME
 from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative
 from utils.fitting.loss import Loss_Calculator
-from utils.generic.enums import Columns
 from main.ihme.optimiser import Optimiser
+from main.ihme.forecast import get_uncertainty_draws
 from utils.fitting.smooth_jump import smooth_big_jump
 
-def get_regional_data(dist, st, area_names, ycol, test_size, smooth_window, disable_tracker,
-            smooth_jump, smooth_jump_method, smooth_jump_days):
-    """
-    Function to get regional data and shape it for IHME consumption
+
+def transform_data(df, population):
+    """Adds population normalized versions for each time series in the dataframe
 
     Args:
-        dist ([type]): district
-        st ([type]): state
-        area_names ([type]): census area_names for the district
-        ycol ([type]): name of ycol
-        test_size ([type]): size of test set
-        smooth_window ([type]): apply rollingavg smoothing
-        disable_tracker ([type]): disable covid19api, use athena instead
-        smooth_jump (boolean): whether to smooth_big_jump
-        smooth_jump_method ([type]): passed to smooth_big_jump
-        smooth_jump_days ([type]): passed to smooth_big_jump
+        df (pd.DataFrame): dataframe of time series
+        population (int): population of the region
 
     Returns:
-        dict: contains smoothed and unsmoothed dataframes: train, test, df
-    """    
-    district_timeseries_nora = get_district_timeseries_cached(
-        dist, st, disable_tracker=disable_tracker)
+        pd.DataFrame: dataframe of time series with additional columns
+    """
+    data = df.set_index('date')
+    which_columns = df.select_dtypes(include='number').columns
+    for column in which_columns:
+        if column in data.columns:
+            data[f'{column}_rate'] = data[column] / population
+            data[f'log_{column}_rate'] = data[f'{column}_rate'].apply(lambda x: np.log(x))
+    data = data.reset_index()
+    data['date'] = pd.to_datetime(data['date'])
+    return data
+
+
+def get_covariates(df, covariates):
+    df.loc[:, 'default_cov'] = len(df) * [1.0]
+    if covariates[1] != 'default_cov':
+        pass  # TODO: Get covariate for beta
+    return df
+
+
+def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params, split,
+               loss_compartments, rolling_average, rolling_average_params, population, covariates, **kwargs):
+    """Helper function for single_fitting_cycle where data from different sources (given input) is imported
+
+    Creates the following dataframes:
+        df_train, df_val, df_test: Train, val and test splits which have been smoothed and transformed
+        df_train_nora, df_val_nora, df_test_nora: Train, val and test splits which have NOT been smoothed,
+            but have been transformed
+        df_train_nora_notrans, df_val_nora_notrans, df_test_nora_notrans: Train, val and test splits which have
+        neither been smoothed nor transformed
+
+    Args:
+        data_source ():
+        dataloading_params ():
+        smooth_jump ():
+        smooth_jump_params ():
+        split ():
+        loss_compartments ():
+        rolling_average ():
+        rolling_average_params ():
+        population():
+        covariates():
+        **kwargs ():
+
+    Returns:
+
+    """
+    # Fetch data dictionary
+    data_dict = get_data(data_source, dataloading_params)
+    df_district = data_dict['data_frame']
+
+    # Make a copy of original unsmoothed data
+    orig_df_district = copy.copy(df_district)
+
+    # Smoothing operations
+    smoothing = {}
     if smooth_jump:
-        district_timeseries = smooth_big_jump(district_timeseries_nora, smooth_jump_days, not disable_tracker, method=smooth_jump_method)
-    df_nora, _ = get_rates(district_timeseries_nora, st, area_names)
-    df, dtp = get_rates(district_timeseries, st, area_names)
-    
-    df.loc[:,'sd'] = df['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
-    df_nora.loc[:,'sd'] = df_nora['date'].apply(lambda x: [1.0 if x >= datetime(2020, 3, 24) else 0.0]).tolist()
+        # Perform smoothing
+        df_district, description = smooth_big_jump(df_district, smooth_jump_params)
 
-    if smooth_window > 0:
-        df[ycol] = rollingavg(df[ycol], smooth_window)
-        df = df.dropna(subset=[ycol])
-    
-    startday = df['date'][df['deceased_rate'].gt(1e-15).idxmax()]
-    
-    df = df.loc[df['deceased_rate'].gt(1e-15).idxmax():,:].reset_index()
-    df_nora = df_nora.loc[df_nora['deceased_rate'].gt(1e-15).idxmax():,:].reset_index()
+        # Plot smoothed data
+        smoothing_plot = plot_smoothing(orig_df_district, df_district, dataloading_params['state'],
+                                        dataloading_params['district'], which_compartments=loss_compartments,
+                                        description='Smoothing')
+        smoothing = {
+            'smoothing_description': description,
+            'smoothing_plot': smoothing_plot,
+            'df_district_unsmoothed': orig_df_district
+        }
+        print(smoothing['smoothing_description'])
 
-    df.loc[:, 'day'] = (df['date'] - np.min(df['date'])).apply(lambda x: x.days)
-    df_nora.loc[:, 'day'] = (df_nora['date'] - np.min(df_nora['date'])).apply(lambda x: x.days)
-    
-    threshold = df['date'].max() - timedelta(days=test_size)
-    
-    train, test = train_test_split(df, threshold)
-    train_nora, test_nora = train_test_split(df_nora, threshold)
-    dataframes = {
-        'train': train,
-        'test': test,
-        'df': df,
-        'train_nora': train_nora,
-        'test_nora': test_nora,
-        'df_nora': df_nora,
-    }
-    return dataframes, dtp
-    
-def setup(dist, st, area_names, model_params, 
-        sd, smooth, test_size, disable_tracker, 
-        smooth_jump, smooth_jump_method, smooth_jump_days, **config):
+    # Drop rows with NA values
+    df_district.dropna(axis=0, how='any', subset=['total'], inplace=True)  # TODO: Replace with ycol?
+    df_district.reset_index(drop=True, inplace=True)
+
+    # Make a copy of data without transformation or smoothing
+    df_district_notrans = copy.deepcopy(df_district)
+
+    # Convert data to population normalized rate and apply log transformation
+    df_district = transform_data(df_district, population)
+
+    # Add group and covs columns
+    df_district.loc[:, 'group'] = len(df_district) * [1.0]
+    # df_district.loc[:, 'covs'] = len(df_district) * [1.0]
+    df_district = get_covariates(df_district, covariates)
+
+    df_district.loc[:, 'day'] = (df_district['date'] - np.min(df_district['date'])).apply(lambda x: x.days)
+
+    # Perform split with/without rolling average
+    rap = rolling_average_params
+    if rolling_average:
+        df_train, df_val, df_test = train_val_test_split(
+            df_district, train_period=split['train_period'], val_period=split['val_period'],
+            test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
+            window_size=rap['window_size'], center=rap['center'],
+            win_type=rap['win_type'], min_periods=rap['min_periods'], trim_excess=True)
+    else:
+        df_train, df_val, df_test = train_val_test_split(
+            df_district, train_period=split['train_period'], val_period=split['val_period'],
+            test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
+            window_size=1, trim_excess=True)
+
+    df_train_nora, df_val_nora, df_test_nora = train_val_test_split(
+        df_district, train_period=split['train_period'], val_period=split['val_period'],
+        test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
+        window_size=1, trim_excess=True)
+
+    df_train_nora_notrans, df_val_nora_notrans, df_test_nora_notrans = train_val_test_split(
+        df_district_notrans, train_period=split['train_period'], val_period=split['val_period'],
+        test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
+        window_size=1, trim_excess=True)
+
+    observed_dataframes = {}
+    for name in ['df_district', 'df_district_notrans',
+                 'df_train', 'df_val', 'df_test',
+                 'df_train_nora', 'df_val_nora', 'df_test_nora',
+                 'df_train_nora_notrans', 'df_val_nora_notrans', 'df_test_nora_notrans']:
+        observed_dataframes[name] = eval(name)
+
+    return {"observed_dataframes": observed_dataframes, "smoothing": smoothing}
+
+
+def run_cycle(observed_dataframes, data, model, model_params, default_params, fitting_method_params, split, loss):
     """
-    gets data and sets up the model_parameters to be ready for IHME consumption
 
     Args:
-        dist (str): district
-        st (str): state
-        area_names (list): census area_names for the district
-        model_params (dict): model_params
-        sd (boolean): use social distancing covariates
-        smooth (int): apply rollingavg smoothing
-        test_size (int): size of test set
-        disable_tracker (boolean): disable covid19api, use athena instead
-        smooth_jump (boolean): whether to smooth_big_jump
-        smooth_jump_method ([type]): passed to smooth_big_jump
-        smooth_jump_days ([type]): passed to smooth_big_jump
+        observed_dataframes ():
+        data ():
+        model ():
+        model_params ():
+        default_params ():
+        fitting_method_params ():
+        split ():
+        loss ():
 
     Returns:
-        tuple: dataframes dict, district_total_population, and model_params (modified)
-    """    
-    model_params['func'] = getattr(functions, model_params['func'])
-    model_params['covs'] = ['covs', 'sd', 'covs'] if sd else ['covs', 'covs', 'covs']
-    dataframes, dtp = get_regional_data(
-        dist, st, area_names, ycol=model_params['ycol'], 
-        smooth_window=smooth, test_size=test_size,
-        disable_tracker=disable_tracker,
-        smooth_jump=smooth_jump, smooth_jump_method=smooth_jump_method, 
-        smooth_jump_days=smooth_jump_days)
-        
-    return dataframes, dtp, model_params
 
-def create_output_folder(fname):
     """
-    creates folder in outputs/ihme/
+    col = model_params['ycol']
+    transformed_col = f'log_{col}_rate' if data['log'] else f'{col}_rate'
+    model_params['ycol'] = transformed_col
 
-    Args:
-        fname (ste): name of folder within outputs/ihme
+    # Initialize the model
+    model = model(model_params)
 
-    Returns:
-        str: output_folder path
-    """    
-    output_folder = f'../../outputs/ihme/{fname}'
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    return output_folder
+    # Get the required data
+    df_district, df_district_notrans, df_train, df_val, df_test, \
+        df_train_nora, df_val_nora, df_test_nora, df_train_nora_notrans, df_val_nora_notrans, df_test_nora_notrans = [
+            observed_dataframes.get(k) for k in observed_dataframes.keys()]
 
-def run_cycle(dataframes, model_params, forecast_days=30, 
-    max_evals=1000, num_hyperopt=1, val_size=7,
-    min_days=7, scoring='mape', dtp=None, xform_func=None, **kwargs):
-    """
-    runs a fitting cycle for 1 compartment
+    # Results dictionary
+    results_dict = {}
 
-    Args:
-        dataframes (dict): contains smoothed and unsmoothed dataframes: train, test, df
-        model_params (dict): model_params
-        forecast_days (int, optional): how far to predict. Defaults to 30.
-        max_evals (int, optional): num evals in hyperparam optimisation. Defaults to 1000.
-        num_hyperopt (int, optional): number of times to run hyperopt in parallel. Defaults to 1.
-        val_size (int, optional): val size - hyperopt. Defaults to 7.
-        min_days (int, optional): min train_period. Defaults to 7.
-        scoring (str, optional): 'mape', 'rmse', or 'rmsle. Defaults to 'mape'.
-        dtp ([type], optional): district total population. Defaults to None.
-        xform_func ([type], optional): function to transform the data back to # cases. Defaults to None.
-
-    Returns:
-        dict: results_dict
-    """    
-    model = IHME(model_params)
-    train, test = dataframes['train'], dataframes['test']
-
-    # OPTIMIZE HYPERPARAMS
-    hyperopt_runs = {}
-    trials_dict = {}
+    # Initialize the optimizer
     args = {
-        'bounds': copy(model.priors['fe_bounds']), 
-        'iterations': max_evals,
-        'scoring': scoring, 
-        'val_size': val_size,
-        'min_days': min_days,
+        'bounds': copy.copy(model.priors['fe_bounds']),
+        'iterations': fitting_method_params['num_evals'],
+        'scoring': loss['loss_method'],
+        'num_trials': fitting_method_params['num_trials']
     }
-    o = Optimiser(model, train, args)
+    optimiser = Optimiser(model, df_train, df_val, args)
 
-    if num_hyperopt == 1:
-        (best_init, n_days), err, trials = o.optimisestar(0)
-        hyperopt_runs[err] = (best_init, n_days)
-        trials_dict[0] = trials
-    else:
-        pool = Pool(processes=5)
-        for i, ((best_init, n_days), err, trials) in enumerate(pool.map(o.optimisestar, list(range(num_hyperopt)))):
-            hyperopt_runs[err] = (best_init, n_days)
-            trials_dict[i] = trials
-    (fe_init, n_days_train) = hyperopt_runs[min(hyperopt_runs.keys())]
-    
-    train = train[-n_days_train:]
-    train.loc[:, 'day'] = (train['date'] - np.min(train['date'])).apply(lambda x: x.days)
-    test.loc[:, 'day'] = (test['date'] - np.min(train['date'])).apply(lambda x: x.days)
-    train.reset_index(inplace=True)
-    test.index = range(1 + train.index[-1], 1 + train.index[-1] + len(test))
-    model.priors['fe_init'] = fe_init
+    # Optimize initial parameters
+    model.priors['fe_init'], trials = optimiser.optimise()
+    results_dict['best_init'] = model.priors['fe_init']
 
-    # FIT/PREDICT
-    model.fit(train)
+    # Model fitting
+    fitting_data = pd.concat([df_train, df_val], axis=0)
+    model.fit(fitting_data)
 
-    predictions = pd.DataFrame(columns=[model.date, model.ycol])
-    if len(test) == 0:
-        n_days = (train[model.date].max() - train[model.date].min() + timedelta(days=1+forecast_days)).days
-        predictions.loc[:, model.ycol] = model.predict(train[model.date].min(),
-            train[model.date].max() + timedelta(days=forecast_days))
-    else:
-        n_days = (test[model.date].max() - train[model.date].min() + timedelta(days=1+forecast_days)).days
-        predictions.loc[:, model.ycol] = model.predict(train[model.date].min(),
-            test[model.date].max() + timedelta(days=forecast_days))
-    predictions.loc[:, model.date] = pd.to_datetime(pd.Series([timedelta(days=x)+train[model.date].min() for x in range(n_days)]))
+    # Prediction
+    # Create dataframe with date and prediction columns
+    df_prediction = pd.DataFrame(columns=[model.date, model.ycol])
+    # Set date column
+    df_prediction.loc[:, model.date] = pd.date_range(df_train[model.date].min(), df_district.iloc[-1, :][model.date])
+    # Get predictions from start of train period until last available date of data
+    df_prediction.loc[:, model.ycol] = model.predict(df_train[model.date].min(),
+                                                     df_train[model.date].min() + timedelta(days=len(df_prediction)-1))
 
-    # LOSS
+    # Evaluation
     lc = Loss_Calculator()
-    train_pred = predictions[model.ycol][:len(train)]
-    trainerr = lc.evaluate(train[model.ycol], train_pred)
-    testerr = None
-    if len(test) != 0:
-        test_pred = predictions[model.ycol][len(train):len(train) + len(test)]
-        testerr = lc.evaluate(test[model.ycol], test_pred)
-    if xform_func != None:
-        xform_trainerr = lc.evaluate(xform_func(train[model.ycol], dtp),
-            xform_func(train_pred, dtp))
-        xform_testerr = None
-        if len(test) != 0:
-            xform_testerr = lc.evaluate(xform_func(test[model.ycol], dtp),
-                xform_func(test_pred, dtp))
-    else:
-        xform_trainerr, xform_testerr = None, None
-    # UNCERTAINTY
-    draws_dict = model.calc_draws()
-    for k in draws_dict.keys():
-        low = draws_dict[k]['lower']
-        up = draws_dict[k]['upper']
-        # TODO: group handling
-        draws = np.vstack((low, up))   
-    
-    result_dict = {
-        'best_params': fe_init,
-        'variable_param_ranges': model.priors['fe_bounds'],
-        'optimiser': o,
-        'n_days': n_days_train,
-        'df_prediction': predictions,
-        'df_district': dataframes['df'],
-        'df_train': train,
-        'df_val': test,
-        'df_district_nora': dataframes['df_nora'],
-        'df_train_nora': dataframes['train_nora'],
-        'df_val_nora': dataframes['test_nora'],
-        'df_loss': pd.DataFrame({
-            'train': xform_trainerr,
-            "val": xform_testerr,
-            "train_no_xform": trainerr,
-            "val_no_xform": testerr,
-        }),
-        'trials': trials_dict,
-        'data_last_date': dataframes['df'][model.date].max(),
-        'draws': draws,
-        'mod.params': model.pipeline.mod.params,
-        'district_total_pop': dtp,
-    }
+    # Get inverse transformation function to transform predictions
+    transform_func = lograte_to_cumulative if data['log'] else rate_to_cumulative
+    # Create dataframe of transformed predictions
+    df_prediction_notrans = pd.DataFrame({
+        model.date: df_prediction[model.date],
+        col: df_prediction[transformed_col].apply(lambda x: transform_func(x, default_params['N']))
+    })
+    # Obtain mean and pointwise losses for train, val and test
+    df_loss = lc.create_loss_dataframe_region(df_train_nora_notrans, df_val_nora_notrans, df_test_nora_notrans,
+                                              df_prediction_notrans, which_compartments=[col])
+    df_loss_pointwise = lc.create_pointwise_loss_dataframe_region(df_test_nora_notrans, df_val_nora_notrans,
+                                                                  df_test_nora_notrans, df_prediction_notrans,
+                                                                  which_compartments=[col])
 
-    # for name in ['data_from_tracker', 
-    #              'df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'ax', 'trials', 'data_last_date']:
-    #     result_dict[name] = eval(name)
+    # Uncertainty
+    draws = get_uncertainty_draws(model, model_params)
+
+    # Plotting
+    fit_plot = plot_fit(df_prediction_notrans, df_train_nora_notrans, df_val_nora_notrans, df_district_notrans,
+                        split['train_period'], location_description=data['dataloading_params']['location_description'],
+                        which_compartments=loss['loss_compartments'])
+
+    # Collect results
+    results_dict['plots'] = {}
+    results_dict['plots']['fit'] = fit_plot
+    results_dict['best_params'] = model.pipeline.mod.params
+    results_dict['df_prediction'] = df_prediction_notrans
+    results_dict['df_district'] = df_district_notrans
+    data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
+    for name in ['optimiser', 'df_train', 'df_val', 'df_test',
+                 'df_train_nora_notrans', 'df_val_nora_notrans', 'df_test_nora_notrans',
+                 'df_loss', 'df_loss_pointwise', 'trials',
+                 'data_last_date', 'draws']:
+        results_dict[name] = eval(name)
+
+    return results_dict
 
 
-    return result_dict
-
-def run_cycle_compartments(dataframes, model_params, which_compartments=Columns.curve_fit_compartments(), forecast_days=30, 
-    max_evals=1000, num_hyperopt=1, val_size=7,
-    min_days=7, scoring='mape', dtp=None, xform_func=None, log=True, **config):
+def single_fitting_cycle(data, model, model_params, default_params, fitting_method_params, split, loss):
     """
-    runs fitting cycles for all compartments in which_compartments
-    model_params['ycol'] is ignored here
 
     Args:
-        dataframes (dict): contains smoothed and unsmoothed dataframes: train, test, df
-        model_params (dict): model_params
-        which_compartments (list, optional): List of compartments to fit. Defaults to Columns.curve_fit_compartments().
-        forecast_days (int, optional): how far to predict. Defaults to 30.
-        max_evals (int, optional): num evals in hyperparam optimisation. Defaults to 1000.
-        num_hyperopt (int, optional): number of times to run hyperopt in parallel. Defaults to 1.
-        val_size (int, optional): val size - hyperopt. Defaults to 7.
-        min_days (int, optional): min train_period. Defaults to 7.
-        scoring (str, optional): 'mape', 'rmse', or 'rmsle. Defaults to 'mape'.
-        dtp ([type], optional): district total population. Defaults to None.
-        xform_func ([type], optional): function to transform the data back to # cases. Defaults to None.
-        log (bool, optional): whether to fit to log(rate). Defaults to True.
+        data ():
+        model ():
+        model_params ():
+        default_params ():
+        fitting_method_params ():
+        split ():
+        loss ():
 
     Returns:
-        dict: results_dict
+
     """
-    xform_func = lograte_to_cumulative if log else rate_to_cumulative
-    compartment_names = [col.name for col in which_compartments]
-    results = {}
-    ycols = {col: '{log}{colname}_rate'.format(log='log_' if log else '', colname=col.name) for col in which_compartments}
-    for i, col in enumerate(which_compartments):
-        col_params = copy(model_params)
-        col_params['ycol'] = ycols[col]
-        results[col.name] = run_cycle(
-            dataframes, col_params, dtp=dtp, xform_func=xform_func, 
-            max_evals=max_evals, num_hyperopt=num_hyperopt, val_size=val_size,
-            min_days=min_days, scoring=scoring, log=log, forecast_days=forecast_days,
-            **config)
-        
-        # Aggregate Results
-        pred = results[col.name]['df_prediction'].set_index('date')
-        if i == 0:
-            predictions = pd.DataFrame(index=pred.index, columns=compartment_names + list(ycols.values()), dtype=float)
-            df_loss = pd.DataFrame(index=compartment_names, columns=results[col.name]['df_loss'].columns)
-        df_loss.loc[col.name, :] = results[col.name]['df_loss'].loc['mape', :]
-        predictions.loc[pred.index, col.name] = xform_func(pred[ycols[col]], dtp)
-        predictions.loc[pred.index, ycols[col]] = pred[ycols[col]]
 
-    predictions.reset_index(inplace=True)
-    df_train = dataframes['train'][compartment_names + list(ycols.values()) + [model_params['date']]]
-    df_val = dataframes['test'][compartment_names + list(ycols.values()) + [model_params['date']]]
-    df_district = dataframes['df'][compartment_names + list(ycols.values()) + [model_params['date']]]
-    df_train_nora = dataframes['train_nora'][compartment_names + list(ycols.values()) + [model_params['date']]]
-    df_val_nora = dataframes['test_nora'][compartment_names + list(ycols.values()) + [model_params['date']]]
-    df_district_nora = dataframes['df_nora'][compartment_names + list(ycols.values()) + [model_params['date']]]
-    
-    final = {
-        'best_params': {col.name: results[col.name]['best_params'] for col in which_compartments},
-        'variable_param_ranges': model_params['priors']['fe_bounds'],
-        'n_days': {col.name: results[col.name]['n_days'] for col in which_compartments},
-        'df_prediction': predictions,
-        'df_district': df_district,
-        'df_train': df_train,
-        'df_val': df_val,
-        'df_district_nora': df_district_nora,
-        'df_train_nora': df_train_nora,
-        'df_val_nora': df_val_nora,
-        'df_loss': df_loss,
-        'data_last_date': df_district[model_params['date']].max(),
-        'draws': {
-            col.name: {
-                'draws': xform_func(results[col.name]['draws'], dtp),
-                'no_xform_draws': results[col.name]['draws'],
-            } for col in which_compartments
-        },
-        'mod.params': {col.name: results[col.name]['mod.params'] for col in which_compartments},
-        'individual_results': results,
-        'district_total_pop': results[which_compartments[0].name]['district_total_pop'],
-    }
+    # record parameters for reproducibility
+    run_params = locals()
+    run_params['model'] = model.__name__
+    run_params['model_class'] = model
 
-    return final  
+    print('Performing {} fit ..'.format('m2' if split['val_period'] == 0 else 'm1'))
 
-def single_cycle(dist, st, area_names, model_params, which_compartments=Columns.curve_fit_compartments(), **config):
-    """[summary]
+    # Get data
+    params = {**data}
+    params['split'] = split
+    params['loss_compartments'] = loss['loss_compartments']
+    params['population'] = default_params['N']
+    data_dict = data_setup(**params)
 
-    Args:
-        dist (str): district
-        st (str): state
-        area_names (list): census area_names for the district
-        model_params (dict): model_params
-        which_compartments (list, optional): List of compartments to fit. Defaults to Columns.curve_fit_compartments().
+    observed_dataframes, smoothing = data_dict['observed_dataframes'], data_dict['smoothing']
+    smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
+    smoothing_description = smoothing['smoothing_description'] if 'smoothing_description' in smoothing else None
 
-    Returns:
-        dict: results_dict
-    """
-    dataframes, dtp, model_params = setup(dist, st, area_names, model_params, **config)
-    return run_cycle_compartments(dataframes, model_params, dtp=dtp, which_compartments=which_compartments, **config)
+    orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
+
+    print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
+    if not observed_dataframes['df_val'] is None:
+        print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
+
+    predictions_dict = run_cycle(observed_dataframes, data, model, model_params, default_params, fitting_method_params,
+                                 split, loss)
+
+    predictions_dict['plots']['smoothing'] = smoothing_plot
+    predictions_dict['smoothing_description'] = smoothing_description
+    predictions_dict['df_district_unsmoothed'] = orig_df_district
+
+    # record parameters for reproducibility
+    predictions_dict['run_params'] = run_params
+    return predictions_dict

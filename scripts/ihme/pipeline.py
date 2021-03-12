@@ -1,88 +1,76 @@
-import os
-import json
-from copy import copy
+"""
+pipeline.py
+Run a single fitting cycle using the IHME model.
+Loads data, optimizes initial parameters, fits the IHME model to the data and evaluates on the train, val and test sets.
+Run as: python3 -W ignore pipeline.py -c default.yaml
+"""
 import argparse
+import copy
+import datetime
+import json
+import os
+import pickle
+import sys
+import warnings
 import pandas as pd
 import numpy as np
-import dill as pickle
-import time
-from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
+from tabulate import tabulate
 
-import curvefit
+sys.path.append('../../')
 
-import sys
-sys.path.append('../..')
-from models.ihme.model import IHME
-from utils.fitting.data import cities
-from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative
+from main.ihme.fitting import single_fitting_cycle
+from utils.fitting.util import CustomEncoder
+from utils.generic.config import read_config, make_date_str
 
-from viz import plot_ihme_results
-from main.ihme.fitting import create_output_folder, single_cycle
-from utils.generic.config import read_config
-from utils.generic.enums import Columns
-
-import warnings
 pd.options.mode.chained_assignment = None
-warnings.filterwarnings('ignore', module='pandas', category=RuntimeWarning) #, message='invalid value encountered in')
-warnings.filterwarnings('ignore', module='curvefit', category=RuntimeWarning) #, message='invalid value encountered in')
+warnings.filterwarnings('ignore', module='pandas', category=RuntimeWarning)
+warnings.filterwarnings('ignore', module='curvefit', category=RuntimeWarning)
+warnings.filterwarnings('ignore', module='numpy', category=RuntimeWarning)
 
-val_size = 7
-test_size = 7
-min_days = 7
-scoring = 'mape'
-# -------------------
 
-def run_pipeline(dist, st, area_names, config, model_params, folder):
-    start_time = time.time()
-    ycol, xform_col = model_params['ycol'], '{log}{colname}_rate'.format(log='log_' if config['log'] else '', colname=model_params['ycol'])
-    results_dict = single_cycle(dist, st, area_names, model_params, which_compartments=[Columns.deceased], **config)
-    output_folder = create_output_folder(f'forecast/{folder}')
-    predictions = results_dict['df_prediction']
-    train, test, df = results_dict['df_train'], results_dict['df_val'], results_dict['df_district']
-    runtime = time.time() - start_time
-    print('runtime:', runtime)
-    # PLOTTING
-    plot_df, plot_test = copy(df), copy(test)
-    plot_df[ycol] = plot_df[ycol]
-    plot_test[ycol] = plot_test[xform_col]
+def create_output(predictions_dict, output_folder, config):
+    """Custom output generation function"""
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    d = {}
+    # Numpy
+    for key in ['best_init', 'best_params', 'draws']:
+        np.save(f'{output_folder}/{key}.npy', predictions_dict[key])
+    # Pickle
+    for key in ['trials', 'run_params', 'plots', 'smoothing_description']:
+        with open(f'{output_folder}/{key}.pkl', 'wb') as f:
+            pickle.dump(predictions_dict[key], f)
+    # Dataframes
+    for key in ['df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'df_loss_pointwise',
+                'df_district_unsmoothed', 'df_train_nora_notrans', 'df_val_nora_notrans', 'df_test_nora_notrans']:
+        if predictions_dict[key] is not None:
+            predictions_dict[key].to_csv(f'{output_folder}/{key}.csv')
+    # JSON
+    d['data_last_date'] = predictions_dict['data_last_date']
+    with open(f'{output_folder}/other.json', 'w') as f:
+        json.dump(d, f, indent=4)
+    with open(f'{output_folder}/config.json', 'w') as f:
+        json.dump(make_date_str(config), f, indent=4, cls=CustomEncoder)
 
-    plot_ihme_results(model_params, results_dict['mod.params'], plot_df, len(train), plot_test, predictions[ycol], 
-        predictions['date'], results_dict['df_loss']['val'], dist, val_size, draws=results_dict['draws'][ycol]['draws'], yaxis_name='cumulative deaths')
-    plt.savefig(f'{output_folder}/results.png')
-    plt.clf()
 
-    # SAVE PARAMS INFO
-    with open(f'{output_folder}/params.json', 'w') as pfile:
-        pargs = copy(model_params)
-        pargs.update(config)
-        pargs['func'] = pargs['func'].__name__
-        pargs['priors']['fe_init'] = results_dict['best_params'][ycol]
-        pargs['n_days_train'] = int(results_dict['n_days'][ycol])
-        pargs['error'] = results_dict['df_loss'].to_dict()
-        pargs['runtime'] = runtime
-        json.dump(pargs, pfile)
+def run_pipeline(config_filename):
+    """Run pipeline for a given config
 
-    # SAVE DATA, PREDICTIONS
-    picklefn = f'{output_folder}/data.pkl'
-    with open(picklefn, 'wb') as pickle_file:
-        pickle.dump(results_dict, pickle_file)
-    
-    print(f"yee we done see results here: {output_folder}")
+    Args:
+        config_filename (str): config file name
 
-# -------------------
+    """
+    config = read_config(config_filename, preprocess=True, config_dir='ihme')
+    timestamp = datetime.datetime.now()
+    output_folder = '../../misc/ihme/{}'.format(timestamp.strftime("%Y_%m%d_%H%M%S"))
+    predictions_dict = single_fitting_cycle(**copy.deepcopy(config['fitting']))
+    print('loss\n', tabulate(predictions_dict['df_loss'].tail().round(2).T, headers='keys', tablefmt='psql'))
+    create_output(predictions_dict, output_folder, config)
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser() 
-    parser.add_argument("-d", "--district", help="district name", required=True)
+    parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", help="config file name", required=True)
-    parser.add_argument("-f", "--folder", help="folder name", required=False, default=None, type=str)
     args = parser.parse_args()
-    
-    now = datetime.now().strftime("%Y%m%d-%H%M%S")
-    folder = f'{args.district}/{str(now)}' if args.folder is None else args.folder
-    
-    config, model_params = read_config(args.config)
-    dist, st, area_names = cities[args.district]
-    run_pipeline(dist, st, area_names, config, model_params, folder)
 
-# -------------------
+    run_pipeline(args.config)

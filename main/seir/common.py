@@ -6,7 +6,6 @@ sys.path.append('../..')
 
 from main.seir.fitting import single_fitting_cycle
 from main.seir.forecast import get_forecast
-from main.seir.sensitivity import calculate_sensitivity_and_plot
 from viz import plot_forecast, plot_top_k_trials, plot_ptiles
 from viz.uncertainty import plot_beta_loss
 
@@ -21,13 +20,6 @@ def fitting(predictions_dict, config):
 
     predictions_dict['fitting_date'] = datetime.datetime.now().strftime(
         "%Y-%m-%d")
-
-
-def sensitivity(predictions_dict, config):
-    predictions_dict['m1']['plots']['sensitivity'], _, _ = calculate_sensitivity_and_plot(
-        predictions_dict, config, which_fit='m1')
-    predictions_dict['m2']['plots']['sensitivity'], _, _ = calculate_sensitivity_and_plot(
-        predictions_dict, config, which_fit='m2')
 
 
 def fit_beta(predictions_dict, config):

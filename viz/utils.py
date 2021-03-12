@@ -1,9 +1,9 @@
-import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from matplotlib.dates import MO, TU, WE, TH, FR, SA, SU
+import matplotlib.pyplot as plt
 import seaborn as sns
-from pandas.plotting import register_matplotlib_converters
+from matplotlib.dates import SA
 from matplotlib.lines import Line2D
+from pandas.plotting import register_matplotlib_converters
 
 
 def axis_formatter(ax, legend_elements=None, custom_legend=False, log_scale=False):
