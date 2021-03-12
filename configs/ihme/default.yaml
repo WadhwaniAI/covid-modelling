@@ -38,7 +38,7 @@ fitting:
         end_date: 2020-06-30
         train_period: 21
         val_period: 7
-        test_period: 5
+        test_period: 0
     #Optimisation related parameters
     loss:
         loss_method: mape
