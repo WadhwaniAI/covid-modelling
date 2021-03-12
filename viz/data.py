@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
-from utils.generic.enums.columns import *
+from utils.generic.enums.columns import compartments
 from viz.utils import axis_formatter
 
 
@@ -48,10 +49,10 @@ def plot_smoothing(orig_df_district, new_df_district, state, district,
         comp_subset = np.array(which_compartments)[np.in1d(which_compartments, names)]
         for compartment in compartments[key]:
             if compartment.name in comp_subset:
-                ax.plot(orig_df_district[compartments['date'][0].name].to_numpy(), 
+                ax.plot(orig_df_district[compartments['date'].name].to_numpy(), 
                         orig_df_district[compartment.name].to_numpy(),
                         '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-                ax.plot(new_df_district[compartments['date'][0].name].to_numpy(), 
+                ax.plot(new_df_district[compartments['date'].name].to_numpy(), 
                         new_df_district[compartment.name].to_numpy(),
                         '-', color=compartment.color, label='{} (Smoothed)'.format(compartment.label))
         axis_formatter(ax)
@@ -87,7 +88,7 @@ def plot_data(data, region, sub_region, which_compartments=['active', 'total', '
         comp_subset = np.array(which_compartments)[np.in1d(which_compartments, names)]
         for compartment in compartments[key]:
             if compartment.name in comp_subset:
-                ax.plot(data[compartments['date'][0].name].to_numpy(),
+                ax.plot(data[compartments['date'].name].to_numpy(),
                         data[compartment.name].to_numpy(),
                         '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
         axis_formatter(ax)

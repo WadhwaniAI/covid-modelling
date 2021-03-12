@@ -6,7 +6,7 @@ import seaborn as sns
 from matplotlib.lines import Line2D
 from scipy.stats import entropy
 
-from utils.generic.enums.columns import *
+from utils.generic.enums.columns import Columns, compartments
 from utils.generic.stats import *
 from viz.utils import axis_formatter
 
@@ -76,13 +76,13 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, locatio
         legend_elements = []
         for compartment in compartments[key]:
             if compartment.name in comp_subset:
-                ax.plot(df_true_plotting[compartments['date'][0].name].to_numpy(), 
+                ax.plot(df_true_plotting[compartments['date'].name].to_numpy(), 
                         df_true_plotting[compartment.name].to_numpy(),
                         '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-                ax.plot(df_true_plotting_rolling[compartments['date'][0].name].to_numpy(), 
+                ax.plot(df_true_plotting_rolling[compartments['date'].name].to_numpy(), 
                         df_true_plotting_rolling[compartment.name].to_numpy(),
                         '-', color=compartment.color, label='{} (Obs RA)'.format(compartment.label))
-                ax.plot(df_predicted_plotting[compartments['date'][0].name].to_numpy(), 
+                ax.plot(df_predicted_plotting[compartments['date'].name].to_numpy(), 
                         df_predicted_plotting[compartment.name].to_numpy(),
                         '-.', color=compartment.color, label='{} (Predicted)'.format(compartment.label))
 

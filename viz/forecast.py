@@ -4,9 +4,11 @@ from datetime import timedelta
 
 import pandas as pd
 import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
 from adjustText import adjust_text
 
-from utils.generic.enums.columns import *
+from utils.generic.enums.columns import Columns, compartments
 from viz.utils import axis_formatter
 
 
@@ -83,10 +85,10 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
 
     for compartment in compartments['base']:
         if compartment.name in which_compartments:
-            ax.plot(df_true[compartments['date'][0].name], df_true[compartment.name],
+            ax.plot(df_true[compartments['date'].name], df_true[compartment.name],
                     '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
             for i, df_prediction in enumerate(predictions):
-                sns.lineplot(x=compartments['date'][0].name, y=compartment.name, data=df_prediction,
+                sns.lineplot(x=compartments['date'].name, y=compartment.name, data=df_prediction,
                              ls='-', color=compartment.color, 
                              label='{} ({} Forecast)'.format(compartment.label, legend_title_dict[fits_to_plot[i]]))
                 ax.lines[-1].set_linestyle(linestyles_arr[i])
@@ -102,9 +104,9 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
     return fig
 
 def plot_forecast_agnostic(df_true, df_prediction, region, log_scale=False, filename=None,
-                           model_name='M2', which_compartments=Columns.which_compartments()):
+                           model_name='M2', which_compartments=Columns.CARD_compartments()):
     fig, ax = plt.subplots(figsize=(12, 12))
-    for col in Columns.which_compartments():
+    for col in Columns.CARD_compartments():
         if col in which_compartments:
             ax.plot(df_true['date'], df_true[col.name],
                 '-o', color=col.color, label=f'{col.label} (Observed)')
@@ -209,3 +211,5 @@ def plot_errors_for_lookaheads(error_dict, path=None):
     plt.ylabel('MAPE')
     if path is not None:
         plt.savefig(path)
+
+    return fig, ax
