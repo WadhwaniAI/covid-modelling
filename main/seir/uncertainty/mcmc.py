@@ -7,15 +7,15 @@ from functools import partial
 import numpy as np
 from joblib import Parallel, delayed
 from main.seir.uncertainty.base import Uncertainty
-from main.seir.uncertainty.mcmc_utils import (accumulate, avg_sum_chain,
-                                              avg_sum_multiple_chains,
-                                              compute_B, compute_W, divide,
-                                              divide_dict,
-                                              get_formatted_trials)
+# from main.seir.uncertainty.mcmc_utils import (accumulate, avg_sum_chain,
+#                                               avg_sum_multiple_chains,
+#                                               compute_B, compute_W, divide,
+#                                               divide_dict,
+#                                               get_formatted_trials)
 from scipy.stats import invgamma as inv
 from scipy.stats import norm as N
 from tqdm import tqdm
-
+import pdb
 
 class MCMC(Uncertainty):
 
@@ -36,9 +36,9 @@ class MCMC(Uncertainty):
         timestamp (datetime.datetime): date and time when the model is run.
     """
     
-    def __init__(self, optimiser, df_train, default_params, variable_param_ranges, n_chains, total_days,
+    def __init__(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
                  algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,
-                 loss_weights, model, **ignored):
+                 loss_weights, model,partial_predict,partial_predict_and_compute_loss, **ignored):
         """
         Constructor. Fetches the data, initializes the optimizer and sets up the
         likelihood function.
@@ -54,15 +54,15 @@ class MCMC(Uncertainty):
         self.loss_indices = loss_indices
         self.df_train  = df_train[loss_indices[0]:loss_indices[1]]
         self.loss_method = loss_method
-
         self.n_chains =  n_chains
         self.total_days = total_days
+        self.partial_predict = partial_predict
+        self.partial_predict_and_compute_loss = partial_predict_and_compute_loss
         self.likelihood = algo
         self._default_params = default_params
         self.prior_ranges = variable_param_ranges
         self.iters = num_evals
         self.compartments = loss_compartments
-        self._optimiser = optimiser
         self.model = model
         self.proposal_sigmas = proposal_sigmas
         self.dist_log_likelihood = eval("self._{}_log_likelihood".format(self.likelihood))
@@ -145,9 +145,8 @@ class MCMC(Uncertainty):
         da = 0
         db = 0
         params_dict = {**theta, **self._default_params}
-        df_prediction = self._optimiser.solve(params_dict,model = self.model ,end_date = self.df_train[-1:]['date'].item())
+        df_prediction = self.partial_predict(params_dict)
         sigma = theta ['gamma']
-
         for compartment in self.compartments:
             pred = np.array(df_prediction[compartment], dtype=np.int64)
             true = np.array(self.df_train[compartment], dtype=np.int64)
@@ -250,17 +249,17 @@ class MCMC(Uncertainty):
 
         chain_sums_avg = []
         for chain in split_chains:
-            chain_sums_avg.append(avg_sum_chain(chain))
-        multiple_chain_sums_avg = avg_sum_multiple_chains(chain_sums_avg)
+            chain_sums_avg.append(self.avg_sum_chain(chain))
+        multiple_chain_sums_avg = self.avg_sum_multiple_chains(chain_sums_avg)
 
         m = len(split_chains)
         n = len(split_chains[0])
-        W =  compute_W(split_chains, chain_sums_avg, n, m)
-        B =  compute_B(multiple_chain_sums_avg, chain_sums_avg, n, m)
-        var_hat = accumulate([divide(W, n/(n-1)), divide(B, n) ])
-        R_hat_sq = divide_dict(var_hat, W)
+        W =  self.compute_W(split_chains, chain_sums_avg, n, m)
+        B =  self.compute_B(multiple_chain_sums_avg, chain_sums_avg, n, m)
+        var_hat = self.accumulate([self.divide(W, n/(n-1)), self.divide(B, n) ])
+        R_hat_sq = self.divide_dict(var_hat, W)
         R_hat = {key:np.sqrt(value) for key, value in R_hat_sq.items()}
-        neff = divide_dict(var_hat, B)
+        neff = self.divide_dict(var_hat, B)
         neff = {key: m*n*value for key, value in neff.items()}
 
         print("Gelman-Rubin convergence statistics (variance ratios):")
@@ -268,6 +267,23 @@ class MCMC(Uncertainty):
         pp.pprint(R_hat)
         self.R_hat = R_hat
 
+    def get_formatted_trials(self,params, losses):
+        """Summary
+        
+        Args:
+            params (TYPE): Description
+            losses (TYPE): Description
+        
+        Returns:
+            TYPE: Description
+        """
+        trials = list()
+        for i, param_dict in enumerate(params):
+            trial = {'result': dict(), 'misc': dict()}
+            trial['result']['loss'] = losses[i]
+            trial['misc']['vals'] = {k: [v] for k, v in param_dict.items()}
+            trials.append(trial)
+        return trials
 
     def _get_trials(self):
         """Summary      
@@ -288,14 +304,11 @@ class MCMC(Uncertainty):
         params = list()
         for i in tqdm(sample_indices):
             params.append(combined_acc[int(i)])
-            losses.append(self._optimiser.solve_and_compute_loss(combined_acc[int(i)], self._default_params,
-                                                                 self.df_train, self.total_days,
-                                                                 loss_indices=self.loss_indices,
-                                                                 loss_method=self.loss_method,model = self.model))
+            losses.append(self.partial_predict_and_compute_loss(combined_acc[int(i)]))
 
         least_loss_index = np.argmin(losses)
         best_params = params[int(least_loss_index)]
-        trials = get_formatted_trials(params, losses)
+        trials = self.get_formatted_trials(params, losses)
         return best_params, trials
 
     def run(self, parallelise=False):
@@ -320,3 +333,134 @@ class MCMC(Uncertainty):
             self.chains = chains
         self._check_convergence()
         return self._get_trials()
+
+    def get_PI(self,pred_dfs, date, key, multiplier=1.96):
+        """Summary
+        
+        Args:
+            pred_dfs (TYPE): Description
+            date (TYPE): Description
+            key (TYPE): Description
+            multiplier (float, optional): Description
+        
+        Returns:
+            TYPE: Description
+        """
+        pred_samples = list()
+        for df in pred_dfs:
+            pred_samples.append(df.loc[date, key])
+            
+        mu = np.array(pred_samples).mean()
+        sigma = np.array(pred_samples).std()
+        low = mu - multiplier*sigma
+        high = mu + multiplier*sigma
+        return mu, low, high
+
+    def accumulate(self,dict_list):
+        """Summary
+        
+        Args:
+            dict_list (TYPE): Description
+        
+        Returns:
+            TYPE: Description
+        """
+        accumulator = defaultdict(int)
+        for elt in dict_list:
+            for key in elt:
+                accumulator[key]+=elt[key]
+        return accumulator
+
+    def divide(self,dictvar, num):
+        """Summary
+        
+        Args:
+            dictvar (TYPE): Description
+            num (TYPE): Description
+        
+        Returns:
+            TYPE: Description
+        """
+        return {key:dictvar[key]/num for key in dictvar}
+
+    def avg_sum_chain(self,chain):
+        """Summary
+        
+        Args:
+            chain (TYPE): Description
+        
+        Returns:
+            TYPE: Description
+        """
+        chain_sums_avg = self.accumulate(chain)
+        return self.divide(chain_sums_avg, len(chain))
+
+    def avg_sum_multiple_chains(self,chain_sums_avg):
+        """Summary
+        
+        Args:
+            chain_sums_avg (TYPE): Description
+        
+        Returns:
+            TYPE: Description
+        """
+        multiple_chain_sums_avg = self.accumulate(chain_sums_avg)
+        return self.divide(multiple_chain_sums_avg, len(chain_sums_avg))
+
+    def compute_B(self,multiple_chain_sums_avg, chain_sums_avg, n, m):
+        """Summary
+        
+        Args:
+            multiple_chain_sums_avg (TYPE): Description
+            chain_sums_avg (TYPE): Description
+            n (TYPE): Description
+            m (TYPE): Description
+        
+        Returns:
+            TYPE: Description
+        """
+        B = defaultdict(int)
+        for elt in chain_sums_avg:
+            for key in elt:
+                B[key] += np.square(elt[key] - multiple_chain_sums_avg[key])
+        return self.divide(B, (m-1)/n)
+
+    def compute_W(self,split_chains, chain_sums_avg, n, m):
+        """Summary
+        
+        Args:
+            split_chains (TYPE): Description
+            chain_sums_avg (TYPE): Description
+            n (TYPE): Description
+            m (TYPE): Description
+        
+        Returns:
+            TYPE: Description
+        """
+        s = []
+        for j in range(m):
+            s_j_sq = defaultdict(int)
+            chain = split_chains[j]
+            chain_sum_avg_j = chain_sums_avg[j]
+            for i in range(n):
+                chain_elt = chain[i]
+                for key in chain_elt:
+                    s_j_sq[key] += np.square(chain_elt[key] - chain_sum_avg_j [key])
+            s_j_sq = self.divide(s_j_sq, n - 1)
+            s.append(s_j_sq)
+        return (self.divide (self.accumulate(s),m))
+
+    def divide_dict(self,d1, d2):
+        """Summary
+        
+        Args:
+            d1 (TYPE): Description
+            d2 (TYPE): Description
+        
+        Returns:
+            TYPE: Description
+        """
+        accumulator = defaultdict(int)
+        for key in d1:
+            accumulator[key] = d1[key]/d2[key]
+        return accumulator
