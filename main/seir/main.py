@@ -1,14 +1,13 @@
 import copy
 import datetime
 
-from data.processing.processing import get_data, train_val_test_split
 from tabulate import tabulate
-from utils.fitting.loss import Loss_Calculator
-from utils.fitting.smooth_jump import (smooth_big_jump,
-                                       smooth_big_jump_stratified)
-from viz import plot_fit, plot_smoothing
 
 import main.seir.optimisers as optimisers
+from data.processing.processing import get_data, train_val_test_split
+from utils.fitting.loss import Loss_Calculator
+from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
+from viz import plot_fit, plot_smoothing
 
 
 def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth_jump_params, split,
