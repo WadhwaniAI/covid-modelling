@@ -134,7 +134,7 @@ class JHULoader(BaseLoader):
         """Function for pullling dataframes from all modules on JHU's github repo
 
         Returns:
-            dict{str : pd.DatFrame}: Dict of dataframes 
+            dict{str : pd.DatFrame}: Dict of dataframes
 
             df_us_states : US States, from daily reports
             df_us_counties : US Counties, States, and US, from time series US
