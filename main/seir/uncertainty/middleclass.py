@@ -103,6 +103,8 @@ class MCUncertainty(Uncertainty):
         losses = self.predictions_dict['m1']['trials_processed']['losses']
         # This is done as rolling average on df_val has already been calculated, 
         # while df_district has no rolling average
+        if self.predictions_dict['m1']['df_val'] is None:
+            raise Exception('Validation set cannot be empty')
         df_val = self.predictions_dict['m1']['df_district'].set_index('date') \
             .loc[self.predictions_dict['m1']['df_val']['date'],:]
         beta_loss = np.exp(-beta*losses)
