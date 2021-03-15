@@ -98,13 +98,13 @@ def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth
     return {"processed_dataframes": processed_dataframes, "smoothing": smoothing}
 
 
-def run_cycle(processed_dataframes, data_args, model, variable_param_ranges, default_params, optimiser,
+def run_cycle(processed_dataframes, data, model, variable_param_ranges, default_params, optimiser,
               optimiser_params, split, loss, forecast):
     """Helper function for single_fitting_cycle where the fitting actually takes place.
 
     Args:
         processed_dataframes (dict): Dict of processed dataframes
-        data_args (dict): Dict of data_args
+        data (dict): Dict of data args
         model (class): The model class to be used during fitting/training
         variable_param_ranges (dict): Dict of searchspace ranges for all params
         default_params (dict): Dict of static params
@@ -138,11 +138,9 @@ def run_cycle(processed_dataframes, data_args, model, variable_param_ranges, def
                                               loss_compartments=loss['loss_compartments'])
 
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
-                        location_description=data_args['dataloading_params']['location_description'],
+                        location_description=data['dataloading_params']['location_description'],
                         which_compartments=loss['loss_compartments'])
 
-    results_dict['plots'] = {}
-    results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
 
     fitting_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -155,18 +153,20 @@ def run_cycle(processed_dataframes, data_args, model, variable_param_ranges, def
         'df_loss': df_loss,
         'trials': trials,
         'data_last_date': data_last_date,
-        'fitting_date': fitting_date
+        'fitting_date': fitting_date,
+        'plots' : {}
     }
+    results_dict['plots']['fit'] = fit_plot
 
     return results_dict
 
 
-def single_fitting_cycle(data_args, model_family, model, variable_param_ranges, default_params, 
+def single_fitting_cycle(data, model_family, model, variable_param_ranges, default_params, 
                          optimiser, optimiser_params, split, loss, forecast):
     """Main function which user runs for running an entire fitting cycle for a particular data input
 
     Args:
-        data_args (dict): Dict of data_args
+        data (dict): Dict of data
         model_family (str): The name of the family the model class belongs to
         model (class): The model class to be used during fitting/training
         variable_param_ranges (dict): Dict of searchspace ranges for all params
@@ -188,7 +188,7 @@ def single_fitting_cycle(data_args, model_family, model, variable_param_ranges, 
     print('Performing fit ..')
 
     # Get data
-    params = {**data_args}
+    params = {**data}
     params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
     data_dict = data_setup(**params)
@@ -202,7 +202,7 @@ def single_fitting_cycle(data_args, model_family, model, variable_param_ranges, 
     if not processed_dataframes['df_val'] is None:
         print('val\n', tabulate(processed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
         
-    predictions_dict = run_cycle(processed_dataframes, data_args, model, variable_param_ranges,
+    predictions_dict = run_cycle(processed_dataframes, data, model, variable_param_ranges,
         default_params, optimiser, optimiser_params, split, loss, forecast)
 
     predictions_dict['plots']['smoothing'] = smoothing_plot
