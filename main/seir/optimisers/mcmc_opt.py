@@ -5,7 +5,9 @@ from datetime import datetime
 import pdb
 from main.seir.uncertainty import MCMC
 from functools import partial
-
+from datetime import timedelta
+import copy
+import numpy as np
 class MCMC_Opt(OptimiserBase):
     """Class which implements all optimisation related activites (training, evaluation, etc)
     """
@@ -72,11 +74,35 @@ class MCMC_Opt(OptimiserBase):
         return super().predict_and_compute_loss(variable_params, default_params, df_true, total_days, 
                                                 model, loss_compartments, loss_weights, loss_indices, 
                                                 loss_method, debug)
+    def _order_trials_by_loss(self, trials_obj, sort_trials):
+        """Orders a set of trials by their corresponding loss value
+
+        Args:
+            m_dict (dict): predictions_dict
+
+        Returns:
+            array, array: Array of params and loss values resp
+        """
+        params_array = []
+        for trial in trials_obj:
+            params_dict = copy.copy(trial['misc']['vals'])
+            for key in params_dict.keys():
+                params_dict[key] = params_dict[key][0]
+            params_array.append(params_dict)
+        params_array = np.array(params_array)
+        losses_array = np.array([trial['result']['loss'] for trial in trials_obj])
+
+        if sort_trials:
+            least_losses_indices = np.argsort(losses_array)
+            losses_array = losses_array[least_losses_indices]
+            params_array = params_array[least_losses_indices]
+        return params_array, losses_array
+
     def forecast(self, params, train_last_date, forecast_days, model):
         return super().forecast(params, train_last_date, forecast_days, model)
 
-    def optimise(self, proposal_sigmas, end_date, num_evals=10000, stride=5, n_chains=10, loss_method='rmse',train_period=28 ,
-                 loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],
+    def optimise(self, proposal_sigmas, end_date, num_evals=10000, stride=5, n_chains=10, loss_method='rmse',train_period=28 , val_period=3,
+                 loss_indices=[-20, -10], loss_compartments=['total'], loss_weights=[1],forecast_days = 28,
                  prior='uniform', algo='gaussian', **kwargs):
         total_days = (self.df_train.iloc[-1, :]['date'].date() -
             self.default_params['starting_date']).days
@@ -97,5 +123,20 @@ class MCMC_Opt(OptimiserBase):
         mcmc_fit.run()
         
         metric = {"DIC": mcmc_fit.DIC, "GR-ratio": mcmc_fit.R_hat}
-        best, tri = mcmc_fit._get_trials()
-        return best, tri, metric
+        best, trials = mcmc_fit._get_trials()
+        params_array, losses_array = self._order_trials_by_loss(trials,sort_trials = True)
+        train_last_date = self.df_train.iloc[-1, :]['date'].date() + timedelta(days=val_period)
+
+        partial_forecast = partial(self.forecast, 
+                                   train_last_date=train_last_date,
+                                   forecast_days=forecast_days,
+                                   model=self.model)
+        predictions_array = [partial_forecast(param) for param in params_array]
+
+        return_dict = {
+            'params': params_array,
+            'predictions': predictions_array,
+            'losses': losses_array
+        }
+
+        return return_dict

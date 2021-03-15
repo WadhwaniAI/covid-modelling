@@ -128,7 +128,6 @@ def run_cycle(processed_dataframes, data_args, model, variable_param_ranges, def
     # Perform Optimisation
     args = {**optimiser_params, **split, **loss, **forecast}
     trials = op.optimise(**args)
-    import pdb;pdb.set_trace()
     print('best parameters\n', trials['params'][0])
 
     df_prediction = trials['predictions'][0]
@@ -142,8 +141,6 @@ def run_cycle(processed_dataframes, data_args, model, variable_param_ranges, def
                         location_description=data_args['dataloading_params']['location_description'],
                         which_compartments=loss['loss_compartments'])
 
-    results_dict['plots'] = {}
-    results_dict['plots']['fit'] = fit_plot
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
 
     fitting_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -158,11 +155,12 @@ def run_cycle(processed_dataframes, data_args, model, variable_param_ranges, def
         'data_last_date': data_last_date,
         'fitting_date': fitting_date
     }
-
+    results_dict['plots'] = {}
+    results_dict['plots']['fit'] = fit_plot
     return results_dict
 
 
-def single_fitting_cycle(data_args, model_family, model, variable_param_ranges, default_params, 
+def single_fitting_cycle(data, model_family, model, variable_param_ranges, default_params, 
                          optimiser, optimiser_params, split, loss, forecast):
     """Main function which user runs for running an entire fitting cycle for a particular data input
 
@@ -189,7 +187,7 @@ def single_fitting_cycle(data_args, model_family, model, variable_param_ranges, 
     print('Performing fit ..')
 
     # Get data
-    params = {**data_args}
+    params = {**data}
     params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
     data_dict = data_setup(**params)
@@ -203,7 +201,7 @@ def single_fitting_cycle(data_args, model_family, model, variable_param_ranges, 
     if not processed_dataframes['df_val'] is None:
         print('val\n', tabulate(processed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
         
-    predictions_dict = run_cycle(processed_dataframes, data_args, model, variable_param_ranges,
+    predictions_dict = run_cycle(processed_dataframes, data, model, variable_param_ranges,
         default_params, optimiser, optimiser_params, split, loss, forecast)
 
     predictions_dict['plots']['smoothing'] = smoothing_plot

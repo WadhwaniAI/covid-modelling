@@ -7,15 +7,9 @@ from functools import partial
 import numpy as np
 from joblib import Parallel, delayed
 from main.seir.uncertainty.base import Uncertainty
-# from main.seir.uncertainty.mcmc_utils import (accumulate, avg_sum_chain,
-#                                               avg_sum_multiple_chains,
-#                                               compute_B, compute_W, divide,
-#                                               divide_dict,
-#                                               get_formatted_trials)
 from scipy.stats import invgamma as inv
 from scipy.stats import norm as N
 from tqdm import tqdm
-import pdb
 
 class MCMC(Uncertainty):
 
