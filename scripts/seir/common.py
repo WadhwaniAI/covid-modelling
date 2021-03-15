@@ -24,7 +24,7 @@ def fit_beta(predictions_dict, config):
     return uncertainty
 
 
-def process_uncertainty_fitting(predictions_dict, config, uncertainty):
+def process_uncertainty_fitting(predictions_dict, uncertainty):
     predictions_dict['plots']['beta_loss'], _ = plot_beta_loss(
         uncertainty.dict_of_trials)
     uncertainty_forecasts = uncertainty.get_forecasts()
