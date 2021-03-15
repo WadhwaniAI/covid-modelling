@@ -21,7 +21,7 @@ from tqdm import tqdm
 
 sys.path.append('../../')
 
-from main.seir.fitting import single_fitting_cycle
+from main.seir.main import single_fitting_cycle
 from utils.fitting.util import update_dict, chunked, CustomEncoder
 from utils.generic.config import read_config, process_config_seir, make_date_str, generate_configs_from_driver
 
