@@ -74,7 +74,7 @@ class GridSearch(OptimiserBase):
         return super().forecast(params, train_last_date, forecast_days, model)
 
     def optimise(self, loss_method='rmse', loss_indices=[-20, -10], loss_compartments=['total'], 
-                 train_period=28, val_period=3, debug=False, forecast_days=30, **kwargs):
+                 train_period=28, val_period=3, forecast_days=30, parallelise=False, n_threads=40, **kwargs):
         """Implements gridsearch based optimisation
 
         Arguments:
@@ -118,12 +118,12 @@ class GridSearch(OptimiserBase):
                                                  loss_compartments=loss_compartments, debug=False)
         
         # If debugging is enabled the gridsearch is not parallelised
-        if debug:
+        if not parallelise:
             losses_array = []
             for params_dict in tqdm(params_array):
                 losses_array.append(partial_predict_and_compute_loss(variable_params=params_dict))
         else:
-            losses_array = Parallel(n_jobs=40)(delayed(partial_predict_and_compute_loss)(
+            losses_array = Parallel(n_jobs=n_threads)(delayed(partial_predict_and_compute_loss)(
                 params_dict) for params_dict in tqdm(params_array))
 
 
@@ -139,7 +139,7 @@ class GridSearch(OptimiserBase):
         return_dict = {
             'params': params_array,
             'predictions': predictions_array,
-            'losses': losses_array
+            'losses': np.array(losses_array)
         }
 
         return return_dict
