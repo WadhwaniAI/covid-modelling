@@ -14,7 +14,7 @@ class BaseLoader(ABC):
         pass
 
     @abstractmethod
-    def pull_dataframes(self):
+    def pull_dataframes(self, **kwargs):
         """Abstract Method for pulling dataframes from a given source
         """
         pass

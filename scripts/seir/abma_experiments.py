@@ -10,6 +10,7 @@ import multiprocessing
 import os
 import pickle
 import sys
+import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,7 +20,7 @@ from tqdm import tqdm
 
 sys.path.append('../../')
 
-from main.seir.common import *
+from scripts.seir.common import *
 from utils.fitting.util import update_dict, chunked, CustomEncoder
 from utils.generic.config import read_config, process_config_seir, make_date_str, generate_configs_from_driver
 
@@ -70,8 +71,7 @@ def get_experiment(driver_config_filename):
 
 def run(config):
     """Run single experiment for given config"""
-    predictions_dict = {}
-    fitting(predictions_dict, config)
+    predictions_dict = (config)
     predictions_dict['m1']['forecasts'] = {}
     predictions_dict['m2']['forecasts'] = {}
     uncertainty = fit_beta(predictions_dict, config)

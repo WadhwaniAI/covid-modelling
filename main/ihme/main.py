@@ -1,5 +1,5 @@
 """
-fitting.py
+main.py
 """
 import sys
 import copy
@@ -49,7 +49,7 @@ def get_covariates(df, covariates):
     return df
 
 
-def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params, split,
+def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth_jump_params, split,
                loss_compartments, rolling_average, rolling_average_params, population, covariates, **kwargs):
     """Helper function for single_fitting_cycle where data from different sources (given input) is imported
 
@@ -61,23 +61,24 @@ def data_setup(data_source, dataloading_params, smooth_jump, smooth_jump_params,
         neither been smoothed nor transformed
 
     Args:
-        data_source ():
-        dataloading_params ():
-        smooth_jump ():
-        smooth_jump_params ():
-        split ():
-        loss_compartments ():
-        rolling_average ():
-        rolling_average_params ():
-        population():
-        covariates():
+        dataloader (str): Name of the dataloader class
+        dataloading_params (dict): Dict of dataloading params
+        data_columns (list(str)): List of columns output dataframe is expected to have
+        smooth_jump (bool): If true, smoothing is done
+        smooth_jump_params (list): List of smooth jump params
+        split (dict): Dict of params for train val test split
+        loss_compartments (list): List of compartments to apply loss on
+        rolling_average (bool): If true, rolling average is done
+        rolling_average_params (dict): Dict of rolling average params
+        population (int): population of the region
+        covariates ():
         **kwargs ():
 
     Returns:
 
     """
     # Fetch data dictionary
-    data_dict = get_data(data_source, dataloading_params)
+    data_dict = get_data(dataloader, dataloading_params, data_columns)
     df_district = data_dict['data_frame']
 
     # Make a copy of original unsmoothed data
@@ -219,10 +220,10 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     })
     # Obtain mean and pointwise losses for train, val and test
     df_loss = lc.create_loss_dataframe_region(df_train_nora_notrans, df_val_nora_notrans, df_test_nora_notrans,
-                                              df_prediction_notrans, which_compartments=[col])
+                                              df_prediction_notrans, loss_compartments=[col])
     df_loss_pointwise = lc.create_pointwise_loss_dataframe_region(df_test_nora_notrans, df_val_nora_notrans,
                                                                   df_test_nora_notrans, df_prediction_notrans,
-                                                                  which_compartments=[col])
+                                                                  loss_compartments=[col])
 
     # Uncertainty
     draws = get_uncertainty_draws(model, model_params)

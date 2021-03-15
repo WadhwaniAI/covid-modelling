@@ -75,7 +75,7 @@ class RootnetLoader(BaseLoader):
         """
         dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
         df = copy.copy(dataframes['df_state_time_series'])
-        df[df['state'] == state]
+        df = df[df['state'] == state]
         df.reset_index(inplace=True, drop=True)
 
         return {"data_frame": df}

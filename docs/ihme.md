@@ -55,7 +55,7 @@ Outputs plots and csv in `outputs/ihme/backtesting/`.
 This is where the default config lives. Any other config files added in this directory will build off of the default one.
 
 # main/ihme
-## [fitting.py](../main/ihme/fitting.py)
+## [main.py](../main/ihme/main.py)
 Here lives the code to get the data, shape it, consume the model_parameters and config to set up appropriate arguments for the functions that run the model, which also live here.
 Forecast and fitting are not separate exercises in this case, so there is no separation into a `forecast.py` here.
 
