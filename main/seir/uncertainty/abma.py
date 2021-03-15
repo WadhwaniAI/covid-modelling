@@ -223,7 +223,7 @@ class ABMAUncertainty(Uncertainty):
             if not self.construct_percentiles_day_wise:
                 deciles_forecast[ptile]['params'] = params[df_ptile_idxs.iloc[0][ptile]]
             deciles_forecast[ptile]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
-                df_train_nora, None, df_prediction, loss_compartments=self.loss_compartments)
+                df_train_nora, None, None, df_prediction, loss_compartments=self.loss_compartments)
         return deciles_forecast
 
     def _ptile_idx_helper(self, percentiles, date):

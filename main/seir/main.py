@@ -1,35 +1,39 @@
 import copy
 import datetime
 
-from data.processing.processing import get_data, train_val_test_split
 from tabulate import tabulate
-from utils.fitting.loss import Loss_Calculator
-from utils.fitting.smooth_jump import (smooth_big_jump,
-                                       smooth_big_jump_stratified)
-from viz import plot_fit, plot_smoothing
 
 import main.seir.optimisers as optimisers
+from data.processing.processing import get_data, train_val_test_split
+from utils.fitting.loss import Loss_Calculator
+from utils.fitting.smooth_jump import smooth_big_jump, smooth_big_jump_stratified
+from viz import plot_fit, plot_smoothing
 
 
 def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth_jump_params, split,
                loss_compartments, rolling_average, rolling_average_params, **kwargs):
-    """Helper function for single_fitting_cycle where data from different sources (given input) is imported
+    """Helper function for single_fitting_cycle where data is loaded from given params input.
+    Smoothing is done if smoothing params are given as well. And then rolling average is done and 
+    the train val test split is implemented
 
-    Arguments:
-        dataframes {dict(pd.Dataframe)} -- dict of dataframes
-        state {str} -- State name in title case
-        district {str} -- District name in title case
-        data_from_tracker {bool} -- Whether data is from tracker or not
-        data_format {str} -- If using filename, what is the filename format
-        filename {str} -- Name of the filename to read file from
+    Args:
+        dataloader (str): Name of the dataloader class
+        dataloading_params (dict): Dict of dataloading params
+        data_columns (list(str)): List of columns output dataframe is expected to have
+        smooth_jump (bool): If true, smoothing is done
+        smooth_jump_params (list): List of smooth jump params
+        split (dict): Dict of params for train val test split
+        loss_compartments (list): List of compartments to apply loss on
+        rolling_average (bool): If true, rolling average is done
+        rolling_average_params (dict): Dict of rolling average params
 
     Returns:
-        pd.DataFrame, pd.DataFrame -- data from main source, and data from raw_data in covid19india
+        dict: Dict of processed dataframes and ideal params (if present)
     """
-    
+
     data_dict = get_data(dataloader, dataloading_params, data_columns)
     df_district = data_dict['data_frame']
-    
+
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
 
@@ -37,18 +41,18 @@ def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth
         if dataloading_params['stratified_data']:
             df_params_copy = copy.copy(dataloading_params)
             df_params_copy['stratified_data'] = False
-            df_not_strat = get_data(dataloader, df_params_copy, 
-                data_columns)['data_frame']
+            df_not_strat = get_data(dataloader, df_params_copy,
+                                    data_columns)['data_frame']
             df_district, description = smooth_big_jump_stratified(
                 df_district, df_not_strat, smooth_jump_params)
         else:
             df_district, description = smooth_big_jump(df_district, smooth_jump_params)
 
-        smoothing_plot = plot_smoothing(orig_df_district, df_district, dataloading_params['state'], 
-                                        dataloading_params['district'], which_compartments=loss_compartments, 
+        smoothing_plot = plot_smoothing(orig_df_district, df_district, dataloading_params['state'],
+                                        dataloading_params['district'], which_compartments=loss_compartments,
                                         description='Smoothing')
     df_district['daily_cases'] = df_district['total'].diff()
-    df_district.dropna(axis=0, how='any', subset=['total'], 
+    df_district.dropna(axis=0, how='any', subset=['total'],
                        inplace=True)
     df_district.reset_index(drop=True, inplace=True)
 
@@ -60,57 +64,62 @@ def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth
             'df_district_unsmoothed': orig_df_district
         }
         print(smoothing['smoothing_description'])
-     
+
     rap = rolling_average_params
     if rolling_average:
-        df_train, df_val, _ = train_val_test_split(
+        df_train, df_val, df_test = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
             test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
-            window_size=rap['window_size'], center=rap['center'], 
+            window_size=rap['window_size'], center=rap['center'],
             win_type=rap['win_type'], min_periods=rap['min_periods'])
     else:
-        df_train, df_val, _ = train_val_test_split(
+        df_train, df_val, df_test = train_val_test_split(
             df_district, train_period=split['train_period'], val_period=split['val_period'],
-            test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
+            test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
             window_size=1)
 
-    df_train_nora, df_val_nora, _ = train_val_test_split(
+    df_train_nora, df_val_nora, df_test_nora = train_val_test_split(
         df_district, train_period=split['train_period'], val_period=split['val_period'],
-        test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'], 
+        test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
         window_size=1)
 
-    observed_dataframes = {}
-    for name in ['df_district', 'df_train', 'df_val', 'df_train_nora', 'df_val_nora']:
-        observed_dataframes[name] = eval(name)
+    processed_dataframes = {
+        'df_train': df_train,
+        'df_val': df_val,
+        'df_test': df_test,
+        'df_train_nora': df_train_nora,
+        'df_val_nora': df_val_nora,
+        'df_test_nora': df_test_nora,
+        'df_district': df_district
+    }
     if 'ideal_params' in data_dict:
-        return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing, "ideal_params" : data_dict['ideal_params']}
-    return {"observed_dataframes" : observed_dataframes, "smoothing" : smoothing}
+        return {"processed_dataframes": processed_dataframes, "smoothing": smoothing,
+                "ideal_params": data_dict['ideal_params']}
+    return {"processed_dataframes": processed_dataframes, "smoothing": smoothing}
 
 
-def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_params, optimiser,
+def run_cycle(processed_dataframes, data_args, model, variable_param_ranges, default_params, optimiser,
               optimiser_params, split, loss, forecast):
-    """Helper function for single_fitting_cycle where the fitting actually takes place
+    """Helper function for single_fitting_cycle where the fitting actually takes place.
 
-    Arguments:
-        state {str} -- state name in title case
-        district {str} -- district name in title case
-        observed_dataframes {dict(pd.DataFrame)} -- Dict of all observed dataframes
-
-    Keyword Arguments:
-        model {class} -- The epi model class we're using to perform optimisation (default: {SEIRHD})
-        data_from_tracker {bool} -- If true, data is from covid19india API (default: {True})
-        train_period {int} -- Length of training period (default: {7})
-        loss_compartments {list} -- Whci compartments to apply loss over 
-        (default: {['active', 'total', 'recovered', 'deceased']})
-        num_evals {int} -- Number of evaluations for hyperopt (default: {1500})
-        N {float} -- Population of area (default: {1e7})
+    Args:
+        processed_dataframes (dict): Dict of processed dataframes
+        data_args (dict): Dict of data_args
+        model (class): The model class to be used during fitting/training
+        variable_param_ranges (dict): Dict of searchspace ranges for all params
+        default_params (dict): Dict of static params
+        optimiser (str): Name of the optimiser class
+        optimiser_params (dict): Dict of optimiser params
+        split (dict): Dict of train val test split params
+        loss (dict): Dict of loss params
+        forecast (dict): Dict of forecasting params
 
     Returns:
-        dict -- Dict of all predictions
+        dict: A predictions_dict file with the results of the fitting and more
     """
     results_dict = {}
-    df_district, df_train, df_val, df_train_nora, df_val_nora = [
-        observed_dataframes.get(k) for k in observed_dataframes.keys()]
+    df_train, df_val, _, df_train_nora, df_val_nora, df_test_nora, df_district = [
+        processed_dataframes.get(k) for k in processed_dataframes.keys()]
 
     # Initialise Optimiser
     op = getattr(optimisers, optimiser)(model, df_train, default_params,
@@ -123,14 +132,14 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     print('best parameters\n', trials['params'][0])
 
     df_prediction = trials['predictions'][0]
-    
+
     lc = Loss_Calculator()
-    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_prediction, 
+    df_loss = lc.create_loss_dataframe_region(df_train_nora, df_val_nora, df_test_nora, df_prediction,
                                               loss_method=loss['loss_method'],
                                               loss_compartments=loss['loss_compartments'])
-    
+
     fit_plot = plot_fit(df_prediction, df_train, df_val, df_district, split['train_period'], 
-                        location_description=data['dataloading_params']['location_description'],
+                        location_description=data_args['dataloading_params']['location_description'],
                         which_compartments=loss['loss_compartments'])
 
     results_dict['plots'] = {}
@@ -138,37 +147,41 @@ def run_cycle(observed_dataframes, data, model, variable_param_ranges, default_p
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
 
     fitting_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    for name in ['default_params', 'df_prediction', 'df_district', 'df_train', 
-                 'df_val', 'df_loss', 'trials', 'data_last_date', 'fitting_date']:
-        results_dict[name] = eval(name)
+    results_dict = {
+        'default_params': default_params,
+        'df_prediction': df_prediction,
+        'df_district': df_district,
+        'df_train': df_train,
+        'df_val': df_val,
+        'df_loss': df_loss,
+        'trials': trials,
+        'data_last_date': data_last_date,
+        'fitting_date': fitting_date
+    }
 
     return results_dict
 
 
-def single_fitting_cycle(data, model_family, model, variable_param_ranges, default_params, 
+def single_fitting_cycle(data_args, model_family, model, variable_param_ranges, default_params, 
                          optimiser, optimiser_params, split, loss, forecast):
-    """Main function which user runs for running an entire fitting cycle for a particular district
+    """Main function which user runs for running an entire fitting cycle for a particular data input
 
-    Arguments:
-        dataframes {dict(pd.DataFrame)} -- Dict of dataframes returned
-        state {str} -- State Name
-        district {str} -- District Name (in title case)
-
-    Keyword Arguments:
-        model_class {class} -- The epi model class to be used for modelling (default: {SEIRHD})
-        train_period {int} -- The training period (default: {7})
-        val_period {int} -- The validation period (default: {7})
-        num_evals {int} -- Number of evaluations of Bayesian Optimsation (default: {1500})
-        data_from_tracker {bool} -- If False, data from tracker is not used (default: {True})
-        filename {str} -- If None, Athena database is used. Otherwise, data in filename is read (default: {None})
-        data_format {str} -- The format type of the filename user is providing ('old'/'new') (default: {'new'})
-        N {float} -- The population of the geographical region (default: {1e7})
-        loss_compartments {list} -- Which compartments to fit on (default: {['active', 'total']})
+    Args:
+        data_args (dict): Dict of data_args
+        model_family (str): The name of the family the model class belongs to
+        model (class): The model class to be used during fitting/training
+        variable_param_ranges (dict): Dict of searchspace ranges for all params
+        default_params (dict): Dict of static params
+        optimiser (str): Name of the optimiser class
+        optimiser_params (dict): Dict of optimiser params
+        split (dict): Dict of train val test split params
+        loss (dict): Dict of loss params
+        forecast (dict): Dict of forecasting params
 
     Returns:
-        dict -- dict of everything related to prediction
+        dict: A predictions_dict file with the results of the fitting and more
     """
-    # record parameters for reproducability
+    # record parameters for reproducibility
     run_params = locals()
     run_params['model'] = model.__name__
     run_params['model_class'] = model
@@ -176,24 +189,23 @@ def single_fitting_cycle(data, model_family, model, variable_param_ranges, defau
     print('Performing fit ..')
 
     # Get data
-    params = {**data}
+    params = {**data_args}
     params['split'] = split
     params['loss_compartments'] = loss['loss_compartments']
     data_dict = data_setup(**params)
-    observed_dataframes, smoothing = data_dict['observed_dataframes'], data_dict['smoothing']
+    processed_dataframes, smoothing = data_dict['processed_dataframes'], data_dict['smoothing']
     smoothing_plot = smoothing['smoothing_plot'] if 'smoothing_plot' in smoothing else None
     smoothing_description = smoothing['smoothing_description'] if 'smoothing_description' in smoothing else None
 
     orig_df_district = smoothing['df_district_unsmoothed'] if 'df_district_unsmoothed' in smoothing else None
 
-    print('train\n', tabulate(observed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
-    if not observed_dataframes['df_val'] is None:
-        print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
+    print('train\n', tabulate(processed_dataframes['df_train'].tail().round(2).T, headers='keys', tablefmt='psql'))
+    if not processed_dataframes['df_val'] is None:
+        print('val\n', tabulate(processed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
         
-    predictions_dict = run_cycle(observed_dataframes, data, model, variable_param_ranges, 
-            default_params, optimiser, optimiser_params, split, loss, forecast)
+    predictions_dict = run_cycle(processed_dataframes, data_args, model, variable_param_ranges,
+        default_params, optimiser, optimiser_params, split, loss, forecast)
 
-    
     predictions_dict['plots']['smoothing'] = smoothing_plot
     predictions_dict['smoothing_description'] = smoothing_description
     predictions_dict['df_district_unsmoothed'] = orig_df_district

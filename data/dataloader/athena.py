@@ -50,13 +50,12 @@ class AthenaLoader(BaseLoader):
 
         # Create connection
         cursor = connect(aws_access_key_id=AWS_CREDS['AWS_ACCESS_KEY_ID'],
-                        aws_secret_access_key=AWS_CREDS['AWS_SECRET_ACCESS_KEY'],
-                        s3_staging_dir=AWS_CREDS['AWS_ATHENA_S3_STAGING_DIR'],
-                        region_name=AWS_CREDS['AWS_DEFAULT_REGION'],
-                        work_group=AWS_CREDS['AWS_ATHENA_WORK_GROUP'],
-                        schema_name=SCHEMA_NAME).cursor(PandasCursor)
+                         aws_secret_access_key=AWS_CREDS['AWS_SECRET_ACCESS_KEY'],
+                         s3_staging_dir=AWS_CREDS['AWS_ATHENA_S3_STAGING_DIR'],
+                         region_name=AWS_CREDS['AWS_DEFAULT_REGION'],
+                         work_group=AWS_CREDS['AWS_ATHENA_WORK_GROUP'],
+                         schema_name=SCHEMA_NAME).cursor(PandasCursor)
         return cursor
-
 
     def pull_dataframes(self, schema, tables, staging_dir, 
                         pyathena_rc_path='../../misc/pyathena/pyathena.rc', **kwargs):
@@ -122,7 +121,7 @@ class AthenaLoader(BaseLoader):
         dataframes = self.pull_dataframes_cached(reload_data=reload_data, label=label, ** kwargs)
         df_result = copy.copy(dataframes['case_summaries'])
         df_result.rename(columns={'deaths': 'deceased', 'total cases': 'total',
-                                'active cases': 'active', 'recoveries': 'recovered'}, inplace=True)
+                                  'active cases': 'active', 'recoveries': 'recovered'}, inplace=True)
         df_result = df_result[np.logical_and(
             df_result['state'] == state, df_result['district'] == district)]
         df_result = df_result.loc[:, :'deceased']
@@ -156,11 +155,11 @@ class AthenaLoader(BaseLoader):
         df = df.merge(df_bed, on=['state', 'district',
                                   'date', 'partition_0'], how='outer')
         df.rename(columns={'deaths': 'deceased', 'total cases': 'total',
-                        'active cases': 'active', 'recoveries': 'recovered'}, inplace=True)
+                           'active cases': 'active', 'recoveries': 'recovered'}, inplace=True)
         df.replace(',', '', regex=True, inplace=True)
         df = df[np.logical_and(df['state'] == state, df['district'] == district)]
         df.loc[:, 'total':'ventilator beds occupied'] = df.loc[:,
-                                                            'total':'ventilator beds occupied']
+                                                               'total':'ventilator beds occupied']
         df['date'] = pd.to_datetime(df['date'])
         df = df.infer_objects()
         df = df[(df.select_dtypes(include='int64') > 0).sum(axis=1)

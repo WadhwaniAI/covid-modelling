@@ -24,6 +24,7 @@
 sftp-configjson
 *__pycache__
 *DS_Store
+*.idea/
 
 # Folders (on Home dir and otherwise)
 data/data/
@@ -31,8 +32,6 @@ data/data/
 **plots/
 *outputs/
 **outputs/
-*reports/
-**reports/
 *reports/
 **reports/
 *misc/

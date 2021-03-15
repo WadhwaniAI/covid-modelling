@@ -227,8 +227,8 @@ def create_scatter_plot_mape(df_wadhwani, annotate=True, abbv=False, abbv_dict=N
         ax.set_yscale('log')
     ax.set_xlabel('MAPE on training data (calculated daily)')
     ax.set_ylabel(f'MAPE on unseen data (calculated weekly) ({"log" if log_scale else "linear"} scale)')
-    ax.axvline(1, ls=':', c='red', label='train error threshold (1\%)')
-    ax.axhline(5, ls=':', c='blue', label='test error threshold (5\%)')
+    ax.axvline(1, ls=':', c='red', label='train error threshold (1%)')
+    ax.axhline(5, ls=':', c='blue', label='test error threshold (5%)')
     ax.legend()
     ax.set_title(f'Scatter plot of train vs test error, point radii proportional to {stat_metric_to_use.replace("_", " ")}')
     return fig
