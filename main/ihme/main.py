@@ -1,5 +1,5 @@
 """
-fitting.py
+main.py
 """
 import sys
 import copy
