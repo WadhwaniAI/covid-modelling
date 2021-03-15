@@ -31,27 +31,26 @@ def create_output(predictions_dict, output_folder, tag):
     if not os.path.exists(directory):
         os.makedirs(directory)
     d = {}
-    for outer in ['m1', 'm2']:
-        for inner in ['variable_param_ranges', 'best_params', 'beta_loss']:
-            if inner in predictions_dict[outer]:
-                with open(f'{directory}/{outer}_{inner}.json', 'w') as f:
-                    json.dump(predictions_dict[outer][inner], f, indent=4)
-        for inner in ['df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'df_district_unsmoothed']:
-            if inner in predictions_dict[outer] and predictions_dict[outer][inner] is not None:
-                predictions_dict[outer][inner].to_csv(f'{directory}/{outer}_{inner}.csv')
-        for inner in ['trials', 'run_params', 'optimiser', 'plots', 'smoothing_description', 'default_params']:
-            with open(f'{directory}/{outer}_{inner}.pkl', 'wb') as f:
-                pickle.dump(predictions_dict[outer][inner], f)
-        if 'ensemble_mean' in predictions_dict[outer]['forecasts']:
-            predictions_dict[outer]['forecasts']['ensemble_mean'].to_csv(
-                f'{directory}/{outer}_ensemble_mean_forecast.csv')
-        predictions_dict[outer]['trials_processed']['predictions'][0].to_csv(
-            f'{directory}/{outer}_trials_processed_predictions.csv')
-        np.save(f'{directory}/{outer}_trials_processed_params.npy',
-                predictions_dict[outer]['trials_processed']['params'])
-        np.save(f'{directory}/{outer}_trials_processed_losses.npy',
-                predictions_dict[outer]['trials_processed']['losses'])
-        d[f'{outer}_data_last_date'] = predictions_dict[outer]['data_last_date']
+    for inner in ['variable_param_ranges', 'best_params', 'beta_loss']:
+        if inner in predictions_dict:
+            with open(f'{directory}/{inner}.json', 'w') as f:
+                json.dump(predictions_dict[inner], f, indent=4)
+    for inner in ['df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'df_district_unsmoothed']:
+        if inner in predictions_dict and predictions_dict[inner] is not None:
+            predictions_dict[inner].to_csv(f'{directory}/{inner}.csv')
+    for inner in ['trials', 'run_params', 'optimiser', 'plots', 'smoothing_description', 'default_params']:
+        with open(f'{directory}/{inner}.pkl', 'wb') as f:
+            pickle.dump(predictions_dict[inner], f)
+    if 'ensemble_mean' in predictions_dict['forecasts']:
+        predictions_dict['forecasts']['ensemble_mean'].to_csv(
+            f'{directory}/ensemble_mean_forecast.csv')
+    predictions_dict['trials_processed']['predictions'][0].to_csv(
+        f'{directory}/trials_processed_predictions.csv')
+    np.save(f'{directory}/trials_processed_params.npy',
+            predictions_dict['trials_processed']['params'])
+    np.save(f'{directory}/trials_processed_losses.npy',
+            predictions_dict['trials_processed']['losses'])
+    d[f'data_last_date'] = predictions_dict['data_last_date']
     d['fitting_date'] = predictions_dict['fitting_date']
     np.save(f'{directory}/m2_beta.npy', predictions_dict['m2']['beta'])
     with open(f'{directory}/other.json', 'w') as f:
