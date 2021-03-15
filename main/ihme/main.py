@@ -220,10 +220,10 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     })
     # Obtain mean and pointwise losses for train, val and test
     df_loss = lc.create_loss_dataframe_region(df_train_nora_notrans, df_val_nora_notrans, df_test_nora_notrans,
-                                              df_prediction_notrans, which_compartments=[col])
+                                              df_prediction_notrans, loss_compartments=[col])
     df_loss_pointwise = lc.create_pointwise_loss_dataframe_region(df_test_nora_notrans, df_val_nora_notrans,
                                                                   df_test_nora_notrans, df_prediction_notrans,
-                                                                  which_compartments=[col])
+                                                                  loss_compartments=[col])
 
     # Uncertainty
     draws = get_uncertainty_draws(model, model_params)
