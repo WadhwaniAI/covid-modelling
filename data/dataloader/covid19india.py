@@ -63,7 +63,6 @@ class Covid19IndiaLoader(BaseLoader):
         statecode_to_state_dict = dict(
             zip(df_statecode['statecode'], df_statecode.index))
 
-
         # Create df_districtwise
         states = data.keys()
         for state in states:
@@ -74,7 +73,7 @@ class Covid19IndiaLoader(BaseLoader):
                 del data[state]['districtData'][district]['delta']
 
         columns = ['state', 'district', 'active', 'confirmed', 'deceased',
-                'recovered', 'delta_confirmed', 'delta_deceased', 'delta_recovered']
+                   'recovered', 'delta_confirmed', 'delta_deceased', 'delta_recovered']
         df_districtwise = pd.DataFrame(columns=columns)
         for state in states:
             df = pd.DataFrame.from_dict(
@@ -95,7 +94,7 @@ class Covid19IndiaLoader(BaseLoader):
         Args:
             NUM_RAW_DFS (int, optional): Number of raw data json files to consider. Defaults to 30.
         """
-         # Parse raw_data.json file
+        # Parse raw_data.json file
         raw_data_dataframes = []
         for i in range(1, NUM_RAW_DFS+1):
             try:
@@ -116,7 +115,7 @@ class Covid19IndiaLoader(BaseLoader):
         """
         data = requests.get('https://api.covid19india.org/districts_daily.json').json()
         df_districts = pd.DataFrame(columns=['notes', 'active', 'confirmed', 'deceased', 
-                                            'recovered', 'date', 'state', 'district'])
+                                             'recovered', 'date', 'state', 'district'])
         for state in data['districtsDaily'].keys():
             for dist in data['districtsDaily'][state].keys():
                 df = pd.DataFrame.from_dict(data['districtsDaily'][state][dist])
@@ -228,12 +227,12 @@ class Covid19IndiaLoader(BaseLoader):
             data[date] = date_dict
             
         # Remove all the dates which have 0 states with district data after pruning
-        data = {date : date_dict for date, date_dict in data.items() if len(date_dict) > 0}
+        data = {date: date_dict for date, date_dict in data.items() if len(date_dict) > 0}
 
         df_states_all = pd.DataFrame(columns=['date', 'state', 'confirmed', 'active', 'recovered', 'deceased', 'tested', 'migrated'])
         for date in data.keys():
             df_date = pd.DataFrame.from_dict(data[date]).T.reset_index()
-            df_date = df_date.rename({'index' : 'state'}, axis='columns')
+            df_date = df_date.rename({'index': 'state'}, axis='columns')
             df_date['active'] = df_date['confirmed'] - (df_date['recovered'] + df_date['deceased'])
             df_date['state'] = pd.Series([statecode_to_state_dict[state_code] for state_code in df_date['state']])
             df_date['date'] = date
@@ -253,9 +252,9 @@ class Covid19IndiaLoader(BaseLoader):
         - df_india_time_series : Time series of cases in India (nationwide)
         - df_districtwise : Today's snapshot of cases in India, districtwise
         - df_raw_data : Patient level information of cases
-        - df_districts_daily : Histoty of cases district wise obtainted from districts_daily.json
-        - df_districts_all : Histoty of cases district wise obtainted from data_all.json
-        - df_states_all : Histoty of cases state wise obtainted from data_all.json
+        - df_districts_daily : History of cases district wise obtained from districts_daily.json
+        - df_districts_all : History of cases district wise obtained from data_all.json
+        - df_states_all : History of cases state wise obtained from data_all.json
         """
 
         # List of dataframes to return
@@ -331,7 +330,7 @@ class Covid19IndiaLoader(BaseLoader):
 
         Args:
             state (str, optional): State to fit on. Defaults to 'Karnataka'.
-            district (str, optional): Distrit to fit on. Defaults to 'Bengaluru'.
+            district (str, optional): District to fit on. Defaults to 'Bengaluru'.
             use_dataframe (str, optional) : Which dataframe to use. Can be `data_all`/`districts_daily`.
             reload_data (bool, optional): arg for pull_dataframes_cached. If true, data is
             pulled afresh, rather than using the cache. Defaults to False.
@@ -346,8 +345,7 @@ class Covid19IndiaLoader(BaseLoader):
             df_district = df_districts.loc[(df_districts['state'] == state) & (
                 df_districts['district'] == district)]
             df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
-            df_district = df_district.rename(
-                {'confirmed': 'total'}, axis='columns')
+            df_district = df_district.rename({'confirmed': 'total'}, axis='columns')
             del df_district['migrated']
             df_district.reset_index(inplace=True, drop=True)
             return df_district
@@ -359,7 +357,6 @@ class Covid19IndiaLoader(BaseLoader):
             del df_district['notes']
             df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
             df_district = df_district.loc[df_district['date'] >= '2020-04-24', :]
-            df_district = df_district.rename(
-                {'confirmed': 'total'}, axis='columns')
+            df_district = df_district.rename({'confirmed': 'total'}, axis='columns')
             df_district.reset_index(inplace=True, drop=True)
             return df_district
