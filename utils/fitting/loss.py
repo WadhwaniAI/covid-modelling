@@ -97,7 +97,7 @@ class Loss_Calculator():
         """
         y_pred = y_pred[y_true != 0]
         y_true = y_true[y_true != 0]
-        ape = ((y_true - y_pred + 0) / y_true) *  100
+        ape = ((y_true - y_pred + 0) / y_true) * 100
         A = np.multiply(ape,perc)
         B = np.multiply(ape,perc-1)
         perc_ape = np.maximum(A,B)
@@ -112,7 +112,7 @@ class Loss_Calculator():
     def error(self, y_pred, y_true):
         return y_pred - y_true
 
-    def se(self, y_pred, y_true, log=False):
+    def squared_error(self, y_pred, y_true, log=False):
         if log:
             y_true = np.log(y_true)
             y_pred = np.log(y_pred)
@@ -245,9 +245,9 @@ class Loss_Calculator():
         err = {}
         err['ape'] = self.ape(y_pred, y_true)
         err['error'] = self.error(y_pred, y_true)
-        err['se'] = self.se(y_pred, y_true)
+        err['se'] = self.squared_error(y_pred, y_true)
         with np.errstate(invalid='ignore'):
-            err['sle'] = self.se(y_pred, y_true, log=True)
+            err['sle'] = self.squared_error(y_pred, y_true, log=True)
         return err
 
     def create_pointwise_loss_dataframe(self, y_true, y_pred):
