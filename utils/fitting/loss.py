@@ -264,7 +264,7 @@ class Loss_Calculator():
         return pd.DataFrame.from_dict(loss_dict, orient='index')
 
     def create_pointwise_loss_dataframe_region(self, df_train, df_val, df_test, df_prediction,
-                                               which_compartments=['total']):
+                                               loss_compartments=['total']):
         """
 
         Args:
@@ -272,56 +272,56 @@ class Loss_Calculator():
             df_val ():
             df_test ():
             df_prediction ():
-            which_compartments ():
+            loss_compartments ():
 
         Returns:
 
         """
         # TODO: Take loss as arg
         df_temp = df_prediction.loc[df_prediction['date'].isin(
-            df_train['date']), ['date'] + which_compartments]
+            df_train['date']), ['date'] + loss_compartments]
         df_temp.reset_index(inplace=True, drop=True)
         df_train = df_train.loc[df_train['date'].isin(df_temp['date']), :]
         df_train.reset_index(inplace=True, drop=True)
         loss_df_dict = {}
-        for compartment in which_compartments:
+        for compartment in loss_compartments:
             df = self.create_pointwise_loss_dataframe(
                 np.array(df_train[compartment]).astype(float), np.array(df_temp[compartment]).astype(float))
             df.columns = df_train['date'].tolist()
             loss_df_dict[compartment] = df
-        df_train_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
+        df_train_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=loss_compartments,
                                             names=['compartment', 'loss_function'])
         df_train_loss_pointwise.name = 'loss'
 
         df_val_loss_pointwise = None
         if isinstance(df_val, pd.DataFrame):
             df_temp = df_prediction.loc[df_prediction['date'].isin(
-                df_val['date']), ['date']+which_compartments]
+                df_val['date']), ['date'] + loss_compartments]
             df_temp.reset_index(inplace=True, drop=True)
             df_val.reset_index(inplace=True, drop=True)
             loss_df_dict = {}
-            for compartment in which_compartments:
+            for compartment in loss_compartments:
                 df = self.create_pointwise_loss_dataframe(
                     np.array(df_val[compartment]).astype(float), np.array(df_temp[compartment]).astype(float))
                 df.columns = df_val['date'].tolist()
                 loss_df_dict[compartment] = df
-            df_val_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
+            df_val_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=loss_compartments,
                                               names=['compartment', 'loss_function'])
             df_val_loss_pointwise.name = 'loss'
 
         df_test_loss_pointwise = None
         if isinstance(df_test, pd.DataFrame):
             df_temp = df_prediction.loc[df_prediction['date'].isin(
-                df_test['date']), ['date'] + which_compartments]
+                df_test['date']), ['date'] + loss_compartments]
             df_temp.reset_index(inplace=True, drop=True)
             df_test.reset_index(inplace=True, drop=True)
             loss_df_dict = {}
-            for compartment in which_compartments:
+            for compartment in loss_compartments:
                 df = self.create_pointwise_loss_dataframe(
                     np.array(df_test[compartment]).astype(float), np.array(df_temp[compartment]).astype(float))
                 df.columns = df_test['date'].tolist()
                 loss_df_dict[compartment] = df
-            df_test_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
+            df_test_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=loss_compartments,
                                                names=['compartment', 'loss_function'])
             df_test_loss_pointwise.name = 'loss'
 
