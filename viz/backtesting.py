@@ -12,7 +12,8 @@ from viz.utils import axis_formatter, setup_plt
 
 def plot_backtest_seir(gt_dataloader='AthenaLoader', preds_source='filename', fname_format='old_output', filename=None,
                        predictions_dict=None, which_forecast=80, truncate_plotting_range=False,
-                       separate_compartments=False, dataloading_params={'state': 'Maharashtra', 'district': 'Mumbai'}):
+                       separate_compartments=False, dataloading_params={'state': 'Maharashtra', 'district': 'Mumbai'},
+                       data_columns=['total', 'active', 'recovered', 'deceased']):
     """Function of backtesting plotting
 
     Args:
@@ -41,7 +42,7 @@ def plot_backtest_seir(gt_dataloader='AthenaLoader', preds_source='filename', fn
     """
     
     # Getting gt data
-    df_true = get_data(gt_dataloader, dataloading_params)
+    df_true = get_data(gt_dataloader, dataloading_params, data_columns)
 
     # Setting train_period to None
     train_period = None
