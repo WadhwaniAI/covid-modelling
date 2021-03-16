@@ -10,6 +10,7 @@ import time
 import wandb
 import pickle as pkl
 import sys
+import os
 sys.path.append('../../')
 from data.processing import get_data
 import models
@@ -55,13 +56,13 @@ param_tuples = {
 
     'fixed_params':{'I_hosp_ratio': 'true', 'E_hosp_ratio': 'true'},
     # 'lat_time':{'I_hosp_ratio': 'true', 'E_hosp_ratio': 'true','T_inf_U':10,'d':0.2},
-    'ratios':{'I_hosp_ratio': 'true', 'E_hosp_ratio': 'true','T_recov_fatal':25,'T_recov':15},
+    # 'ratios':{'I_hosp_ratio': 'true', 'E_hosp_ratio': 'true','T_recov_fatal':25,'T_recov':15},
 }
 
 
 # %%
 configs = [read_config(config_filename) for config_filename in config_filenames]
-num_rep_trials = 4
+num_rep_trials = 2
 for tag, loc in param_tuples.items():
     predictions_dict[tag] = {}
     for j, config in enumerate(configs):

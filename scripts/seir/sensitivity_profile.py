@@ -33,9 +33,9 @@ model_configs = {'seirhd':'default.yaml'}
 params_to_fix = ['T_recov_fatal', 'T_inf', 'T_inc', 'lockdown_R0', 'T_recov', 'E_hosp_ratio']
 out_file = 'losses_trial'
 model_used = 'seirhd'
-n_iters = 4
+n_iters = 2
 n_jobs = 2
-n_trials = 500
+n_trials = 200
 varying_perc = np.array([-0.1])
 progress_filename = "./progress/" + out_file + ".txt"
 log_file = open(progress_filename, 'wb')
@@ -102,10 +102,10 @@ output_dict['losses'] = losses
 
 print (output_dict)
 
-# save_dir = '../../misc/predictions/sens_prof/'    
-# if not os.path.exists(save_dir):
-#     os.makedirs(save_dir)
-# with open(os.path.join(save_dir, out_file+".pickle"), 'wb') as handle:
-#     pkl.dump(output_dict, handle)
+save_dir = '../../misc/predictions/sens_prof/'    
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+with open(os.path.join(save_dir, out_file+".pickle"), 'wb') as handle:
+    pkl.dump(output_dict, handle)
 
 log_file.close()
