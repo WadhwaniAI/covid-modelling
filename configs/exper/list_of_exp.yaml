@@ -1,7 +1,7 @@
 # Driver config has three parts:
 #   configs: list of base config names
-#   base: condensed partial config with choices used across all base configs
-#   specific: condensed partial config with choices specific to each base config
+#   iterate: condensed partial config with choices used across all base configs
+#   constant: condensed partial config with choices specific to each base config
 
 # Each terminal element has the structure [pattern, choices, select]
 # pattern: the method of specification of the choices
@@ -15,7 +15,7 @@
 # Use generate_configs_from_driver (utils/generic/config.py) to generate all configs.
 
 configs: [default]
-base:
+iterate:
     fitting:
         fitting_method_params:
             algo: [list, [tpe, rand], FALSE]
@@ -25,7 +25,7 @@ base:
             val_period: [range, [2, 7, 1], FALSE]
         loss:
             loss_method: [list, [mape, rmse, rmsle], FALSE]
-specific:
+constant:
     default:
         fitting:
             split:
