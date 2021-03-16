@@ -17,7 +17,6 @@ def fitting(config):
 def fit_beta(predictions_dict, config):
     uncertainty_args = {'predictions_dict': predictions_dict,
                         'fitting_config': config['fitting'],
-                        'forecast_config': config['forecast'],
                         **config['uncertainty']['uncertainty_params']}
 
     uncertainty = config['uncertainty']['method'](**uncertainty_args)
@@ -70,12 +69,12 @@ def forecast_best(predictions_dict, config):
 
 def plot_forecasts_top_k_trials(predictions_dict, config):
     kforecasts = plot_top_k_trials(
-        predictions_dict, k=config['forecast']['num_trials_to_plot'],
-        which_compartments=config['forecast']['plot_topk_trials_for_columns']
+        predictions_dict, k=config['plotting']['num_trials_to_plot'],
+        which_compartments=config['plotting']['plot_topk_trials_for_columns']
     )
 
     predictions_dict['plots']['forecasts_topk'] = {}
-    for column in config['forecast']['plot_topk_trials_for_columns']:
+    for column in config['plotting']['plot_topk_trials_for_columns']:
         predictions_dict['plots']['forecasts_topk'][column.name] = kforecasts[column]
 
 
@@ -90,7 +89,7 @@ def plot_ensemble_forecasts(predictions_dict, config):
 
 def plot_forecasts_ptiles(predictions_dict, config):
     ptiles_plots = plot_ptiles(predictions_dict,
-                               which_compartments=config['forecast']['plot_ptiles_for_columns'])
+                               which_compartments=config['plotting']['plot_ptiles_for_columns'])
     predictions_dict['plots']['forecasts_ptiles'] = {}
-    for column in config['forecast']['plot_ptiles_for_columns']:
+    for column in config['plotting']['plot_ptiles_for_columns']:
         predictions_dict['plots']['forecasts_ptiles'][column.name] = ptiles_plots[column]
