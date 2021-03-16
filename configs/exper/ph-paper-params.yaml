@@ -18,20 +18,17 @@ configs: [default]
 iterate:
     fitting:
         split:
-            train_period: [repeat, [21, 3], FALSE]
-            starting_period: [list, [2020-05-01, 2020-05-22, 2020-06-12, 2020-07-03, 2020-07-24, 2020-08-14, 2020-09-04, 2020-09-25, 2020-10-16, 2020-11-06, 2020-11-27, 2020-12-18, 2021-01-08, 2021-01-29, 2021-02-19], TRUE]
+            starting_period: [list, [2020-05-01, 2020-05-15, 2020-05-29, 2020-06-12, 2020-06-26, 2020-07-10, 2020-07-24, 2020-08-07, 2020-08-21, 2020-09-04, 2020-09-18, 2020-10-02], TRUE]
+        optimiser_params:
+            seed: [list, [100, 200, 300, 400, 500], TRUE]
 constant:
     default:
         fitting:
             split:
                 train_period: [list, [21], TRUE]
-            optimiser: [list, [BO_Hyperopt], TRUE]
             optimiser_params:
-                num_evals: [list, [3000], TRUE]
-                algo: [list, [tpe], TRUE]
-                seed: [list, [42], TRUE]
+                num_evals: [list, [2000], TRUE]
         uncertainty:
-            method: [list, [ABMAUncertainty], TRUE]
             uncertainty_params:
                 construct_percentiles_day_wise: [list, [TRUE], TRUE]
                 date_of_sorting_trials: [list, [null], TRUE]
