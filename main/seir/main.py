@@ -11,7 +11,7 @@ from viz import plot_fit, plot_smoothing
 
 
 def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth_jump_params, split,
-               loss_compartments, rolling_average, rolling_average_params, **kwargs):
+               loss_compartments, rolling_average, rolling_average_params, add_noise=False, **kwargs):
     """Helper function for single_fitting_cycle where data is loaded from given params input.
     Smoothing is done if smoothing params are given as well. And then rolling average is done and 
     the train val test split is implemented
@@ -36,6 +36,19 @@ def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth
 
     smoothing_plot = None
     orig_df_district = copy.copy(df_district)
+
+    if add_noise:
+        columns_to_change = ['total', 'recovered', 'deceased']
+        daily_cases = df_district[columns_to_change] - df_district[columns_to_change].shift(1)
+        daily_cases[['date', 'tested']] = df_district[['date', 'tested']]
+        for col in columns_to_change:
+            daily_cases[col] = pd.Series([0] + list(np.random.poisson(daily_cases[col].to_list()[1:])))
+            daily_cases[col] = daily_cases[col].cumsum().add(df_district.loc[0, col])
+        daily_cases['active'] = daily_cases['total'] - daily_cases['recovered'] - daily_cases['deceased']
+        plot_smoothing(df_district, daily_cases, dataloading_params['state'], 
+                                        dataloading_params['district'], which_compartments=loss_compartments, 
+                                        description='Noise addition')
+        df_district[columns_to_change+['active']] = daily_cases[columns_to_change+['active']]
 
     if smooth_jump:
         if dataloading_params['stratified_data']:
