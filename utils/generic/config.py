@@ -170,7 +170,9 @@ def to_str(obj):
 
 
 def expand_choices(pattern, choices):
-    if pattern == 'repeat':
+    if pattern == 'list':
+        pass
+    elif pattern == 'repeat':
         choices = [choices[0]] * choices[1]
     elif pattern == 'range':
         choices = range(choices[0], choices[1], choices[2])
