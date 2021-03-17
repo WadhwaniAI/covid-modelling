@@ -5,7 +5,7 @@ import itertools
 
 import pandas as pd
 import yaml
-from curvefit.core import functions
+# from curvefit.core import functions
 
 import main.seir.uncertainty as uncertainty_module
 import models

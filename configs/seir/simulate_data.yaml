@@ -32,7 +32,7 @@ fitting:
         algo: tpe
     split:
         start_date: null
-        end_date: 2020-08-31
+        end_date: 2020-08-21
         train_period: 21
         val_period: 7
         test_period: 0
@@ -40,7 +40,7 @@ fitting:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
-forecast:
+    forecast:
         forecast_days: 30
 plotting:
     truncate_series: TRUE
