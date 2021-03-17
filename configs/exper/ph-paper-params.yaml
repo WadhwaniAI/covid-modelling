@@ -18,7 +18,7 @@ configs: [default]
 iterate:
     fitting:
         split:
-            starting_period: [date_range, [2020-05-01, 2020-10-01, null, 3D], TRUE]
+            start_date: [date_range, [2020-05-01, 2020-10-01, null, 14D], TRUE]
         optimiser_params:
             seed: [list, [100, 200, 300, 400, 500], TRUE]
 constant:
@@ -26,6 +26,7 @@ constant:
         fitting:
             split:
                 train_period: [list, [21], TRUE]
+                end_date: [list, [null], TRUE]
             optimiser_params:
                 num_evals: [list, [2000], TRUE]
         uncertainty:
