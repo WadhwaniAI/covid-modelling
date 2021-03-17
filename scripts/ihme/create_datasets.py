@@ -14,7 +14,7 @@ sys.path.append('../../')
 from data.processing import get_data
 
 
-def create_outputs(input_path, output_path, synthetic_days):
+def create_datasets(input_path, output_path, synthetic_days):
     folders = [f.name for f in os.scandir(input_path) if f.is_dir()]
     for folder in folders:
         folder_path = os.path.join(input_path, folder)
@@ -67,4 +67,4 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--synthetic_days", help="number of days of synthetic data used", type=int, required=True)
     args = parser.parse_args()
 
-    create_outputs(args.input_path, args.output_path, args.synthetic_days)
+    create_datasets(args.input_path, args.output_path, args.synthetic_days)
