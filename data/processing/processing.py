@@ -176,6 +176,12 @@ def get_custom_data_from_file(filename, data_format='new', **kwargs):
         df_result = pd.read_csv(filename)
         df_result['date'] = pd.to_datetime(df_result['date'])
         df_result.columns = [x if x != 'confirmed' else 'total' for x in df_result.columns]
+
+    elif data_format == 'simple':
+        # Assume a 'date' column and return all columns without any processing
+        df_result = pd.read_csv(filename)
+        df_result['date'] = pd.to_datetime(df_result['date'])
+
     else:
         raise ValueError('data_format can only be new or old')
 
