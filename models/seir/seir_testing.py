@@ -7,7 +7,7 @@ from collections import OrderedDict
 import datetime
 import copy
 
-from models.seir.seir import SEIR
+from models.seir.seir_base import SEIR
 from utils.fitting.ode import ODE_Solver
 
 class SEIR_Testing(SEIR):
