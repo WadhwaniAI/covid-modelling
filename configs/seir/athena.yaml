@@ -56,7 +56,7 @@ fitting:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
-forecast:
+    forecast:
         forecast_days: 30
 plotting:
     truncate_series: TRUE
