@@ -102,12 +102,14 @@ def run_parallel(key, params):
     return x
 
 
-def perform_batch_runs(driver_config_filename='list_of_exp.yaml', output_folder=None, n_jobs=None):
+def perform_batch_runs(driver_config_filename='list_of_exp.yaml', output_folder=None, n_jobs=None, 
+                       tag='other'):
     """Run all experiments"""
     # Specifying the folder where checkpoints will be saved
     timestamp = datetime.datetime.now().strftime("%Y_%m%d_%H%M%S")
     if output_folder is None:
-        output_folder = f'../../outputs/seir/{timestamp}'
+        output_folder = '../../outputs/seir/'
+    output_folder = os.path.join(output_folder, tag+'_'+timestamp)
     os.makedirs(output_folder, exist_ok=True)
     if n_jobs is None:
         n_jobs = multiprocessing.cpu_count()
@@ -140,6 +142,8 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--output_folder", type=str, required=True,
                         help="Where to save the outputs")
     parser.add_argument("--n_jobs", type=int, help="number of threads")
+    parser.add_argument("--tag", type=str, help="Experiments tag name")
     parsed_args = parser.parse_args()
     perform_batch_runs(parsed_args.driver_config,
-                       parsed_args.output_folder, parsed_args.n_jobs)
+                       parsed_args.output_folder, parsed_args.n_jobs,
+                       parsed_args.tag)

@@ -24,6 +24,7 @@ constant:
         fitting:
             split:
                 train_period: [list, [21], TRUE]
+                end_date: [list, [null], TRUE]
             optimiser_params:
                 num_evals: [list, [2000], TRUE]
         uncertainty:
