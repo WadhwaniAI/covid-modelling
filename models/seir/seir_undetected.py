@@ -7,10 +7,10 @@ from collections import OrderedDict
 import datetime
 import copy
 
-from models.seir.seir_base import SEIR
+from models.seir.seir_base import SEIRBase
 from utils.fitting.ode import ODE_Solver
 
-class SEIR_Undetected(SEIR):
+class SEIR_Undetected(SEIRBase):
     def __init__(self, lockdown_R0=2.2, T_inf_D=3.3, T_inf_U = 5.5, T_inc=5, T_recov_fatal=32,
                  P_fatal=0.2, T_recov_severe=14, N=1e7, d=1.0, psi=1.00, beta=0.1, starting_date='2020-03-09', 
                  observed_values=None, E_hosp_ratio=0.5, I_D_hosp_ratio=0.5, I_U_hosp_ratio=0.5, **kwargs):

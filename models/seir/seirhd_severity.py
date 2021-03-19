@@ -7,10 +7,10 @@ from collections import OrderedDict
 import datetime
 import copy
 
-from models.seir.seir_base import SEIR
+from models.seir.seir_base import SEIRBase
 from utils.fitting.ode import ODE_Solver
 
-class SEIRHD_Severity(SEIR):
+class SEIRHD_Severity(SEIRBase):
     def __init__(self, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2, #Transmission
                  P_moderate=0.4, P_severe=0.2, P_fatal=0.02,  #Clinical Probabs
                  T_recov_severe=14, T_recov_mild=11, T_recov_moderate=11, T_recov_fatal=32, #Clinical Time

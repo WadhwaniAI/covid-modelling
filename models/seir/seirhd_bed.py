@@ -7,10 +7,10 @@ from collections import OrderedDict
 import datetime
 import copy
 
-from models.seir.seir_base import SEIR
+from models.seir.seir_base import SEIRBase
 from utils.fitting.ode import ODE_Solver
 
-class SEIRHD_Bed(SEIR):
+class SEIRHD_Bed(SEIRBase):
     def __init__(self, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2,
                  P_nonoxy=0.4, P_oxy=0.2, P_icu=0.02, P_vent=0.02, P_fatal=0.02, 
                  T_recov_hq=14, T_recov_non_oxy=14, T_recov_oxy=14, T_recov_icu=14, T_recov_vent=14, T_recov_fatal=14,
