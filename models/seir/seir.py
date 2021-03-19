@@ -7,7 +7,6 @@ from models.seir.compartmental_base import CompartmentalBase
 
 class SEIR(CompartmentalBase):
 
-    @abstractmethod
     def __init__(self, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2, N=7e6,
                  starting_date='2020-03-09', observed_values=None,
                  E_tot_ratio=0.5, I_tot_ratio=0.5, **kwargs):
@@ -70,11 +69,9 @@ class SEIR(CompartmentalBase):
 
         self.state_init_values = state_init_values
 
-    @abstractmethod
     def get_derivative(self, t, y):
         pass
 
-    @abstractmethod
     def predict(self, total_days, time_step, method):
         df_prediction = super().predict(total_days=total_days, time_step=time_step,
                                         method=method)
