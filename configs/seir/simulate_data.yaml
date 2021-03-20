@@ -8,6 +8,9 @@ fitting:
             generate: TRUE
             config_file: seirhd_fixed.yaml
             filename: ../../data/data/simulated_data/simulated_data_1.csv
+        add_noise: TRUE
+        noise:
+            columns_to_change: [total, recovered]
         data_columns: [total, active, recovered, deceased]
         smooth_jump: FALSE
         smooth_jump_params: None
