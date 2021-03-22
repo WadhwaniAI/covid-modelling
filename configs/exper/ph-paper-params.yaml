@@ -18,7 +18,7 @@ configs: [default]
 iterate:
     fitting:
         split:
-            start_date: [date_range, [2020-05-01, 2020-10-01, null, 14D], TRUE]
+            start_date: [date_range, [2020-05-01, 2020-10-01, null, 7D], TRUE]
         optimiser_params:
             seed: [list, [100, 200, 300, 400, 500], TRUE]
 constant:
