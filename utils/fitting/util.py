@@ -2,6 +2,8 @@ import collections
 import copy
 import itertools
 import json
+import pickle
+import yaml
 import os
 import sys
 from abc import ABCMeta
@@ -20,6 +22,7 @@ except AttributeError:
 sys.path.append('../../')
 
 from utils.generic.enums.columns import Columns
+from utils.generic.config import make_date_str
 
 
 class HidePrints:
@@ -77,6 +80,44 @@ def get_ensemble_params(params, losses, beta, return_dev=False):
         return em_params, em_params_dev
     else:
         return em_params
+
+
+def create_output(predictions_dict, output_folder, tag):
+    """Custom output generation function"""
+    directory = f'{output_folder}/{tag}'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    d = {}
+    for key in ['variable_param_ranges', 'best_params', 'beta_loss']:
+        if key in predictions_dict:
+            with open(f'{directory}/{key}.json', 'w') as f:
+                json.dump(predictions_dict[key], f, indent=4)
+    for key in ['df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'df_district_unsmoothed']:
+        if key in predictions_dict and predictions_dict[key] is not None:
+            predictions_dict[key].to_csv(f'{directory}/{key}.csv')
+    for key in ['trials', 'run_params', 'plots', 'smoothing_description', 'default_params']:
+        with open(f'{directory}/{key}.pkl', 'wb') as f:
+            pickle.dump(predictions_dict[key], f)
+    if 'ensemble_mean' in predictions_dict['forecasts']:
+        predictions_dict['forecasts']['ensemble_mean'].to_csv(
+            f'{directory}/ensemble_mean_forecast.csv')
+    predictions_dict['trials']['predictions'][0].to_csv(
+        f'{directory}/trials_predictions.csv')
+    np.save(f'{directory}/trials_params.npy',
+            predictions_dict['trials']['params'])
+    np.save(f'{directory}/trials_losses.npy',
+            predictions_dict['trials']['losses'])
+    d[f'data_last_date'] = predictions_dict['data_last_date']
+    d['fitting_date'] = predictions_dict['fitting_date']
+    np.save(f'{directory}/beta.npy', predictions_dict['beta'])
+    with open(f'{directory}/other.json', 'w') as f:
+        json.dump(d, f, indent=4)
+    with open(f'{directory}/config.json', 'w') as f:
+        json.dump(make_date_str(
+            predictions_dict['config']), f, indent=4, cls=CustomEncoder)
+    with open(f'{directory}/config.yaml', 'w') as f:
+        yaml.dump(make_date_str(predictions_dict['config']), f)
+
 
 def train_test_split(df, threshold, threshold_col='date'):
     return df[df[threshold_col] <= threshold], df[df[threshold_col] > threshold]
