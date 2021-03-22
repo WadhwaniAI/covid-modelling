@@ -36,16 +36,16 @@ def create_output(predictions_dict, output_folder, tag):
     if not os.path.exists(directory):
         os.makedirs(directory)
     d = {}
-    for inner in ['variable_param_ranges', 'best_params', 'beta_loss']:
-        if inner in predictions_dict:
-            with open(f'{directory}/{inner}.json', 'w') as f:
-                json.dump(predictions_dict[inner], f, indent=4)
-    for inner in ['df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'df_district_unsmoothed']:
-        if inner in predictions_dict and predictions_dict[inner] is not None:
-            predictions_dict[inner].to_csv(f'{directory}/{inner}.csv')
-    for inner in ['trials', 'run_params', 'plots', 'smoothing_description', 'default_params']:
-        with open(f'{directory}/{inner}.pkl', 'wb') as f:
-            pickle.dump(predictions_dict[inner], f)
+    for key in ['variable_param_ranges', 'best_params', 'beta_loss']:
+        if key in predictions_dict:
+            with open(f'{directory}/{key}.json', 'w') as f:
+                json.dump(predictions_dict[key], f, indent=4)
+    for key in ['df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'df_district_unsmoothed']:
+        if key in predictions_dict and predictions_dict[key] is not None:
+            predictions_dict[key].to_csv(f'{directory}/{key}.csv')
+    for key in ['trials', 'run_params', 'plots', 'smoothing_description', 'default_params']:
+        with open(f'{directory}/{key}.pkl', 'wb') as f:
+            pickle.dump(predictions_dict[key], f)
     if 'ensemble_mean' in predictions_dict['forecasts']:
         predictions_dict['forecasts']['ensemble_mean'].to_csv(
             f'{directory}/ensemble_mean_forecast.csv')
