@@ -96,27 +96,35 @@ def create_output(predictions_dict, output_folder, tag):
         if key in predictions_dict and predictions_dict[key] is not None:
             predictions_dict[key].to_csv(f'{directory}/{key}.csv')
     for key in ['trials', 'run_params', 'plots', 'smoothing_description', 'default_params']:
-        with open(f'{directory}/{key}.pkl', 'wb') as f:
-            pickle.dump(predictions_dict[key], f)
+        if key in predictions_dict and predictions_dict[key] is not None:
+            with open(f'{directory}/{key}.pkl', 'wb') as f:
+                pickle.dump(predictions_dict[key], f)
     if 'ensemble_mean' in predictions_dict['forecasts']:
         predictions_dict['forecasts']['ensemble_mean'].to_csv(
             f'{directory}/ensemble_mean_forecast.csv')
-    predictions_dict['trials']['predictions'][0].to_csv(
+    pd.concat(predictions_dict['trials']['predictions']).to_csv(
         f'{directory}/trials_predictions.csv')
     np.save(f'{directory}/trials_params.npy',
             predictions_dict['trials']['params'])
     np.save(f'{directory}/trials_losses.npy',
             predictions_dict['trials']['losses'])
-    d[f'data_last_date'] = predictions_dict['data_last_date']
-    d['fitting_date'] = predictions_dict['fitting_date']
-    np.save(f'{directory}/beta.npy', predictions_dict['beta'])
-    with open(f'{directory}/other.json', 'w') as f:
-        json.dump(d, f, indent=4)
-    with open(f'{directory}/config.json', 'w') as f:
-        json.dump(make_date_str(
-            predictions_dict['config']), f, indent=4, cls=CustomEncoder)
-    with open(f'{directory}/config.yaml', 'w') as f:
-        yaml.dump(make_date_str(predictions_dict['config']), f)
+    for key in ['data_last_date', 'fitting_date']:
+        if key in predictions_dict:
+            d[key] = predictions_dict[key]
+    if len(d) > 0:
+        with open(f'{directory}/other.json', 'w') as f:
+            json.dump(d, f, indent=4)
+
+    if 'beta' in  predictions_dict:
+        np.save(f'{directory}/beta.npy', predictions_dict['beta'])
+    try:
+        with open(f'{directory}/config.json', 'w') as f:
+            json.dump(make_date_str(
+                predictions_dict['config']), f, indent=4, cls=CustomEncoder)
+        with open(f'{directory}/config.yaml', 'w') as f:
+            yaml.dump(make_date_str(predictions_dict['config']), f)
+    except Exception:
+        pass
 
 
 def train_test_split(df, threshold, threshold_col='date'):
