@@ -1,5 +1,6 @@
 import copy
 from abc import abstractmethod
+import numpy as np
 from collections import OrderedDict
 
 from models.seir.compartmental_base import CompartmentalBase
@@ -33,9 +34,9 @@ class SEIR(CompartmentalBase):
             'N': N,
 
             # Initialisation Params
-            'E_hosp_ratio': E_tot_ratio,
+            'E_tot_ratio': E_tot_ratio,
             # Ratio for Exposed to hospitalised for initialisation
-            'I_hosp_ratio': I_tot_ratio
+            'I_tot_ratio': I_tot_ratio
             # Ratio for Infected to hospitalised for initialisation
         }
 
@@ -58,8 +59,8 @@ class SEIR(CompartmentalBase):
             P_keyname = [k for k in p_params.keys() if k.split('P_')[1] == statename][0]
             state_init_values[state] = p_params[P_keyname] * observed_values['active']
 
-        state_init_values['E'] = self.E_hosp_ratio * observed_values['total']
-        state_init_values['I'] = self.I_hosp_ratio * observed_values['total']
+        state_init_values['E'] = self.E_tot_ratio * observed_values['total']
+        state_init_values['I'] = self.I_tot_ratio * observed_values['total']
         state_init_values['R'] = observed_values['total']
 
         nonSsum = sum(state_init_values.values())
@@ -70,9 +71,29 @@ class SEIR(CompartmentalBase):
         self.state_init_values = state_init_values
 
     def get_derivative(self, t, y):
-        pass
+        """
+                Calculates derivative at time t
+                """
 
-    def predict(self, total_days, time_step, method):
+        # Init state variables
+        for i, _ in enumerate(y):
+            y[i] = max(y[i], 0)
+        S, E, I, R = y
+
+        self.T_trans = self.T_inf / self.lockdown_R0
+
+        # Init derivative vector
+        dydt = np.zeros(y.shape)
+
+        # Write differential equations
+        dydt[0] = - I * S / self.T_trans  # S
+        dydt[1] = I * S / self.T_trans - (E / self.T_inc)  # E
+        dydt[2] = E / self.T_inc - I / self.T_inf  # I
+        dydt[3] = I / self.T_inf  # R
+
+        return dydt
+
+    def predict(self, total_days, time_step=1, method='Radau'):
         df_prediction = super().predict(total_days=total_days, time_step=time_step,
                                         method=method)
 
@@ -80,3 +101,4 @@ class SEIR(CompartmentalBase):
         df_prediction['recovered'] = float('nan')
         df_prediction['deceased'] = float('nan')
         df_prediction['total'] = df_prediction['R']
+        return df_prediction
