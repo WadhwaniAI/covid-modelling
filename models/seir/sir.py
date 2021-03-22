@@ -39,7 +39,12 @@ class SIR(CompartmentalBase):
 
             # Lockdown parameters
             'starting_date': starting_date,  # Datetime value that corresponds to Day 0 of modelling
-            'N': N
+            'N': N,
+
+            # Initialisation Params
+            # Ratio for Exposed to hospitalised for initialisation
+            'I_hosp_ratio': I_hosp_ratio
+            # Ratio for Infected to hospitalised for initialisation
         }
 
         for key in params:
