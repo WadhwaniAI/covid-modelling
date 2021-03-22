@@ -22,7 +22,6 @@ except AttributeError:
 sys.path.append('../../')
 
 from utils.generic.enums.columns import Columns
-from utils.generic.config import make_date_str
 
 
 class HidePrints:
@@ -83,6 +82,7 @@ def get_ensemble_params(params, losses, beta, return_dev=False):
 
 
 def create_output(predictions_dict, output_folder, tag):
+    from utils.generic.config import make_date_str
     """Custom output generation function"""
     directory = f'{output_folder}/{tag}'
     if not os.path.exists(directory):

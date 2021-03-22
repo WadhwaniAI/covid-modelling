@@ -6,13 +6,11 @@ import itertools
 import pandas as pd
 import yaml
 
-import main.seir.uncertainty as uncertainty_module
-import models
 from utils.fitting.util import update_dict
 from utils.generic.enums import Columns
 
 
-def read_config(filename='default.yaml', preprocess=True, config_dir='seir'):
+def read_config(filename='default.yaml', preprocess=True, config_dir='seir', abs_path=False):
     """Function for reading the YAML config file and doing some preprocessing
 
     Args:
@@ -25,7 +23,10 @@ def read_config(filename='default.yaml', preprocess=True, config_dir='seir'):
     Returns:
         dict: dict of config params
     """
-    config_path = f'../../configs/{config_dir}/{filename}'
+    if not abs_path:
+        config_path = f'../../configs/{config_dir}/{filename}'
+    else:
+        config_path = filename
     with open(config_path) as configfile:
         config = yaml.load(configfile, Loader=yaml.SafeLoader)
     
@@ -80,6 +81,7 @@ def process_config_seir(config):
     nconfig['plotting']['plot_ptiles_for_columns'] = [Columns.from_name(
         column) for column in nconfig['plotting']['plot_ptiles_for_columns']]
 
+    import main.seir.uncertainty as uncertainty_module
     nconfig['uncertainty']['method'] = getattr(uncertainty_module, nconfig['uncertainty']['method'])
     nconfig['uncertainty']['uncertainty_params']['sort_trials_by_column'] = Columns.from_name(
         nconfig['uncertainty']['uncertainty_params']['sort_trials_by_column'])
@@ -101,6 +103,7 @@ def process_config_ihme(config):
     nconfig = copy.deepcopy(config)
     create_location_description(nconfig)
 
+    import models
     nconfig['fitting']['model'] = getattr(models.ihme, nconfig['fitting']['model'])
     nconfig['fitting']['model_params']['func'] = getattr(functions, nconfig['fitting']['model_params']['func'])
     nconfig['fitting']['model_params']['covs'] = nconfig['fitting']['data']['covariates']
