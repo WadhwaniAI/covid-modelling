@@ -106,8 +106,5 @@ class SIR(CompartmentalBase):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['active'] = float('nan')
-        df_prediction['recovered'] = float('nan')
-        df_prediction['deceased'] = float('nan')
         df_prediction['total'] = df_prediction['R']
         return df_prediction
