@@ -86,7 +86,7 @@ isort==4.3.21
 itsdangerous==1.1.0
 jdcal==1.4.1
 jedi==0.16.0
-Jinja2==2.11.1
+Jinja2==2.11.3
 jmespath==0.9.5
 joblib==0.14.1
 json5==0.9.5
@@ -139,7 +139,7 @@ pathtools==0.1.2
 patsy==0.5.1
 pexpect==4.8.0
 pickleshare==0.7.5
-Pillow==7.1.1
+Pillow==8.1.1
 plotly==4.6.0
 plotly-express==0.4.1
 pox==0.2.7
