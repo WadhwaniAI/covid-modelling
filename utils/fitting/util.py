@@ -1,4 +1,5 @@
 import collections
+import copy
 import itertools
 import json
 import os
@@ -8,6 +9,7 @@ from copy import deepcopy
 from datetime import datetime
 
 import numpy as np
+import pandas as pd
 from hyperopt import hp
 
 try:
@@ -55,6 +57,26 @@ def set_variable_param_ranges(variable_param_ranges, fitting_method='bo_hyperopt
                                                         variable_param_ranges[key][1])
 
     return formatted_param_ranges
+
+
+def get_ensemble_params(params, losses, beta, return_dev=False):
+    df_trials = pd.DataFrame.from_dict(params.tolist())
+    df_trials['loss'] = losses
+    df_trials['loss_wt'] = np.exp(-beta * df_trials['loss'])
+    em_params = df_trials.iloc[:, :-2].apply(
+        lambda x: np.average(x, weights=df_trials['loss_wt'])).to_dict()
+
+    if return_dev:
+        df_mean = pd.DataFrame.from_dict(em_params, orient='index').T
+        df_var = copy.deepcopy(df_trials)
+        df_var.iloc[:, :-2] = (df_var.iloc[:, :-2] - df_mean.to_numpy())**2
+
+        em_params_dev = df_var.iloc[:, :-2].apply(lambda x: np.sqrt(
+            np.average(x, weights=df_var['loss_wt']))).to_dict()
+
+        return em_params, em_params_dev
+    else:
+        return em_params
 
 def train_test_split(df, threshold, threshold_col='date'):
     return df[df[threshold_col] <= threshold], df[df[threshold_col] > threshold]
