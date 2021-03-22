@@ -119,7 +119,10 @@ class MCUncertainty(Uncertainty):
         pruned_predictions = [df for i, df in enumerate(predictions) if i in correct_shape_idxs]
         pruned_losses = beta_loss[correct_shape_idxs]
         predictions_stacked = np.stack([df.loc[:, allcols].to_numpy() for df in pruned_predictions], axis=0)
-        predictions_stacked_weighted_by_beta = pruned_losses[:, None, None] * predictions_stacked / pruned_losses.sum()
+        predictions_stacked_weighted_by_beta = pruned_losses[:, None, None] * predictions_stacked
+        if pruned_losses.sum() > 0:
+            predictions_stacked_weighted_by_beta = \
+                predictions_stacked_weighted_by_beta / pruned_losses.sum()
         weighted_pred = np.sum(predictions_stacked_weighted_by_beta, axis=0)
         weighted_pred_df = pd.DataFrame(data=weighted_pred, columns=allcols)
         weighted_pred_df['date'] = predictions[0]['date']
