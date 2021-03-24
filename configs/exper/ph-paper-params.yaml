@@ -11,14 +11,14 @@
 #   - date_range: start, stop, periods, freq (specify EXACTLY three as per pd.date_range)
 # choices: representation of values using one of the above patterns
 # select: if True, produce combinations for this element else use default value from base config
-
+#2020-10-01
 # Use generate_configs_from_driver (utils/generic/config.py) to generate all configs.
 
 configs: [mcmc]
 iterate:
     fitting:
         split:
-            starting_period: [date_range, [2020-05-01, 2020-10-01, null, 3D], TRUE]
+            starting_period: [date_range, [2020-05-01, 2020-05-03, null, 3D], TRUE]
 constant:
     default:
         fitting:
