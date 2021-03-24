@@ -76,15 +76,15 @@ class ABMAUncertainty(Uncertainty):
             float: average relative error calculated over trials and a val set
         """    
         beta = params['beta']
-        losses = self.predictions_dict['trials']['losses']
+        losses = deepcopy(self.predictions_dict['trials']['losses'])
         # This is done as rolling average on df_val has already been calculated, 
         # while df_district has no rolling average
-        df_val = self.predictions_dict['df_district'].set_index('date') \
+        df_val = deepcopy(self.predictions_dict['df_district']).set_index('date') \
             .loc[self.predictions_dict['df_val']['date'],:]
         beta_loss = np.exp(-beta*losses)
 
-        predictions = self.predictions_dict['trials']['predictions']
-        loss_cols = self.loss_compartments
+        predictions = deepcopy(self.predictions_dict['trials']['predictions'])
+        loss_cols = deepcopy(self.loss_compartments)
         allcols = ['total', 'active', 'recovered', 'deceased', 'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator',
                    'asymptomatic', 'symptomatic', 'critical']
         allcols = list(set(allcols) & set(predictions[0].columns))
