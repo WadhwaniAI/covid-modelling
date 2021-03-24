@@ -1,5 +1,7 @@
 import copy
 import datetime
+import pandas as pd
+import numpy as np
 
 from tabulate import tabulate
 
@@ -11,7 +13,7 @@ from viz import plot_fit, plot_smoothing
 
 
 def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth_jump_params, split,
-               loss_compartments, rolling_average, rolling_average_params, add_noise, noise, **kwargs):
+               loss_compartments, rolling_average, rolling_average_params, add_noise=False, noise={}, **kwargs):
     """Helper function for single_fitting_cycle where data is loaded from given params input.
     Smoothing is done if smoothing params are given as well. And then rolling average is done and 
     the train val test split is implemented
@@ -50,9 +52,6 @@ def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth
         df_district[columns_to_change] = daily_cases[columns_to_change]
         if 'active' in noise['columns_to_change']:
             df_district['active'] = df_district['total'] - df_district['recovered'] - df_district['deceased']
-        plot_smoothing(df_district, daily_cases, dataloading_params['state'], 
-                                        dataloading_params['district'], which_compartments=loss_compartments, 
-                                        description='Noise addition')
 
     if smooth_jump:
         if dataloading_params['stratified_data']:
