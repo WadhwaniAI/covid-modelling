@@ -1,14 +1,14 @@
-import pandas as pd
 import numpy as np
-from main.seir.forecast import _order_trials_by_loss
+import pandas as pd
+
 
 def get_best_param_dist(model_dict):
     """Computes mean and variance of the best fit params accross different runs
 
     Args:
         model_dict (dict): Dict containing the predictions dict for all the runs for a given 
-            scenario, config setting
-        
+        scenario, config setting
+    
     Returns:
         dataframe containing mean, std for all the parameters 
     """
@@ -21,10 +21,10 @@ def get_ensemble_combined(model_dict, weighting='exp', beta=1):
 
     Args:
         model_dict (dict): Dict containing the predictions dict for all the runs for a given 
-            scenario, config setting
+        scenario, config setting
         weighting (str, optional): The weighting function. 
-            If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
-            If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
+        If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+        If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
         beta (float, optional): beta param for exponential weighting 
 
     Returns:
@@ -33,7 +33,8 @@ def get_ensemble_combined(model_dict, weighting='exp', beta=1):
     params_dict = { k: np.array([]) for k in model_dict[list(model_dict.keys())[0]]['best_params'].keys() }
     losses_array = np.array([])
     for _, run_dict in model_dict.items():
-        params_array, loss_array = _order_trials_by_loss(run_dict)
+        params_array = run_dict['trials']['params']
+        loss_array = run_dict['trials']['losses']
         losses_array = np.concatenate((losses_array, loss_array), axis=0)
         for param in params_dict.keys():
             params_vals = np.array([param_dict[param] for param_dict in params_array])
@@ -81,13 +82,13 @@ def get_loss_stats(model_dict, which_loss='train',method='best_loss_nora',weight
 
     Args:
         model_dict (dict): Dict containing the predictions dict for all the runs for a given 
-            scenario, config setting
+        scenario, config setting
         which_losses: Which losses have to considered? train or val
         method (str, optional): The method of aggregation of different runs. 
-            possible values: 'best_loss_nora', 'best_loss_ra', 'ensemble_loss_ra'
+        possible values: 'best_loss_nora', 'best_loss_ra', 'ensemble_loss_ra'
         weighting (str, optional): The weighting function. 
-            If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
-            If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
+        If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
+        If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
         
     Returns:
         dataframe containing mean, std loss values for all the compartments  
@@ -104,7 +105,7 @@ def get_loss_stats(model_dict, which_loss='train',method='best_loss_nora',weight
     elif method == 'best_loss_ra':
         losses_array = np.array([])
         for _, run_dict in model_dict.items():
-            params_array, loss_array = _order_trials_by_loss(run_dict)
+            loss_array = run_dict['trials']['losses']
             losses_array = np.append(losses_array, min(loss_array))
         df = pd.DataFrame(columns=['agg'],index=['mean','std'])
         df['agg']['mean'] = np.mean(losses_array)
@@ -114,7 +115,7 @@ def get_loss_stats(model_dict, which_loss='train',method='best_loss_nora',weight
     elif method == 'ensemble_loss_ra':
         losses_array = np.array([])
         for _, run_dict in model_dict.items():
-            params_array, loss_array = _order_trials_by_loss(run_dict)
+            loss_array = run_dict['trials']['losses']
             losses_array = np.concatenate((losses_array, loss_array), axis=0)
         df = pd.DataFrame(columns=['agg'],index=['mean','std'])
         if weighting == 'exp':

@@ -1,8 +1,9 @@
-import numpy as np
-import pandas as pd
+import copy
 from datetime import datetime, timedelta
 
-import copy
+import numpy as np
+import pandas as pd
+
 
 def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=None, smoothing_length=None, 
                            method='uniform', t_recov=14, description="", aux_var_add=False):
@@ -106,10 +107,7 @@ def smooth_big_jump_stratified(df_strat, df_not_strat, smooth_jump_params):
     del smooth_jump_params['stratified_smoothing']
     df_smoothed, description = smooth_big_jump(df_not_strat, smooth_jump_params)
     df_strat_smoothed = copy.copy(df_strat)
-    # Compute difference array
-    diff_array = df_smoothed.loc[df_smoothed['date'].isin(
-        df_strat['date']), 'active'].reset_index(drop=True) - df_strat['active']
-
+    
     # Copy the unstratified array smoothed columns to the smoothed stratified dataframe
     base_columns = ['total', 'active', 'recovered', 'deceased']
     df_strat_smoothed.loc[:, base_columns] = df_smoothed.loc[df_smoothed['date'].isin(

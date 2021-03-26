@@ -1,25 +1,26 @@
 fitting:
-    # Geographical Location
     data:
-        data_source: athena
-        stratified_data: FALSE
+        dataloader: AthenaLoader
         dataloading_params:
             reload_data: FALSE
+            cache_dir: "../../misc/cache/"
+            stratified_data: FALSE
             state: Maharashtra
             district: Mumbai
             tables: [bed_summaries, case_summaries, testing_summary]
             schema: city_data_mumbai
             staging_dir: mumbai
             label: mumbai
+            pyathena_rc_path: '../../misc/pyathena/pyathena.rc'
+        data_columns: [total, active, recovered, deceased]
         smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, recovered, active, FALSE, weighted-mag]
             2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, deceased, total, TRUE, weighted-mag]
+            2020-06-15: [null, deceased, total, FALSE, weighted-mag]
         rolling_average: TRUE
         rolling_average_params:
             center: TRUE
@@ -27,7 +28,7 @@ fitting:
             win_type: null
             min_periods: 7
             split_after_rolling: FALSE
-    #Choose Model and Ranges
+    model_family: seir
     model: SEIRHD
     variable_param_ranges:
         lockdown_R0: [[0.7, 1.2], uniform]
@@ -40,35 +41,40 @@ fitting:
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
-    fitting_method: bayes_opt
-    fitting_method_params:
+    optimiser: BO_Hyperopt
+    optimiser_params:
         num_evals: 1000
         algo: tpe
         seed: 42
-    #Choose Fitting Periods and num evaluations
     split:
         start_date: null
         end_date: 2020-08-31
         train_period: 21
         val_period: 7
         test_period: 0
-    #Optimisation related parameters
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
-forecast:
-    forecast_days: 30
+    forecast:
+        forecast_days: 30
+plotting:
+    truncate_series: TRUE
+    left_truncation_buffer: 7
+    right_truncation_buffer: forecast_days
+    separate_compartments_separate_ax: TRUE
     num_trials_to_plot: 10
-    plot_topk_trials_for_columns: [total, active]
-    plot_ptiles_for_columns: [total, active]
+    pair_fits_to_plot: [[best, ensemble_mean], [ensemble_mean, 50], [50, 80]]
+    plot_topk_trials_for_columns: [total, active, recovered, deceased]
+    plot_ptiles_for_columns: [total, active, recovered, deceased]
 uncertainty:
-    method: MCUncertainty
+    method: ABMAUncertainty
     uncertainty_params:
         which_fit: m1
         fitting_method: gridsearch
         fitting_method_params:
             parallelise: FALSE
+            n_jobs: 10
         variable_param_ranges:
             beta: [[0, 10], 101]
         construct_percentiles_day_wise: TRUE

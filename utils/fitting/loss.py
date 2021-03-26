@@ -5,28 +5,37 @@ import pandas as pd
 class Loss_Calculator():
 
     def __init__(self):
-      self.columns = ['active', 'recovered', 'deceased', 'total', 
-                      'asymptomatic', 'symptomatic', 'critical',
-                      'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator']
+        pass
 
-    def _calc_rmse(self, y_pred, y_true, log=False):
+    def rmse(self, y_pred, y_true):
         """Calculate RMSE Loss
 
         Args:
             y_pred (np.array): predicted array
             y_true (np.array): true array
-            log (bool, optional): If true, computes log rmse. Defaults to False.
 
         Returns:
             float: RMSE loss
         """
-        if log:
-            y_pred = np.log(y_pred[y_true > 0])
-            y_true = np.log(y_true[y_true > 0])
         loss = np.sqrt(np.mean((y_true - y_pred)**2))
         return loss
 
-    def _calc_mape(self, y_pred, y_true):
+    def rmsle(self, y_pred, y_true):
+        """Calculate RMSLE Loss
+
+        Args:
+            y_pred (np.array): predicted array
+            y_true (np.array): true array
+
+        Returns:
+            float: RMSLE loss
+        """
+        y_pred = np.log(y_pred[y_true > 0])
+        y_true = np.log(y_true[y_true > 0])
+        loss = np.sqrt(np.mean((y_true - y_pred)**2))
+        return loss
+
+    def mape(self, y_pred, y_true):
         """Calculate MAPE loss
 
         Args:
@@ -43,7 +52,7 @@ class Loss_Calculator():
         loss = np.mean(ape)
         return loss
 
-    def _calc_smape(self, y_pred, y_true):
+    def smape(self, y_pred, y_true):
         """Function for calculating symmetric mape
 
         Args:
@@ -60,13 +69,13 @@ class Loss_Calculator():
         loss = np.mean(ape)
         return loss
     
-    def _calc_l1_perc(self, y_pred, y_true,perc):
-        """Function for calculating L1 percentile loss
+    def qtile_l1(self, y_pred, y_true, perc):
+        """Function for calculating L1 quantile loss
 
         Args:
             y_pred (np.array): Predicted array
             y_true (np.array): GT array
-            perc (float): The percentile
+            perc (float): The quantile
 
         Returns:
             float: L1 Percentile Loss
@@ -75,41 +84,42 @@ class Loss_Calculator():
         loss = np.sum(np.max(e*perc,(perc-1)*e))
         return loss
 
-    def _calc_mape_perc(self, y_pred, y_true,perc):
-        """Function for calculating MAPE percentile loss
+    def qtile_mape(self, y_pred, y_true, perc):
+        """Function for calculating MAPE quantile loss
 
         Args:
             y_pred (np.array): Predicted array
             y_true (np.array): GT Array
-            perc (float): percentile
+            perc (float): quantile
 
         Returns:
             float: MAPE Percentile Loss
         """
         y_pred = y_pred[y_true != 0]
         y_true = y_true[y_true != 0]
-        ape = ((y_true - y_pred + 0) / y_true) *  100
+        ape = ((y_true - y_pred + 0) / y_true) * 100
         A = np.multiply(ape,perc)
         B = np.multiply(ape,perc-1)
         perc_ape = np.maximum(A,B)
         loss = np.mean(perc_ape)
         return loss
 
-    def _calc_ape(self, y_pred, y_true):
+    def ape(self, y_pred, y_true):
         # Allow NaNs to remain
         ape = np.abs((y_true - y_pred + 0) / y_true) * 100
         return ape
 
-    def _calc_error(self, y_pred, y_true):
+    def error(self, y_pred, y_true):
         return y_pred - y_true
 
-    def _calc_se(self, y_pred, y_true, log=False):
+    def squared_error(self, y_pred, y_true, log=False):
         if log:
             y_true = np.log(y_true)
             y_pred = np.log(y_pred)
-        return self._calc_error(y_pred, y_true)**2
+        return self.error(y_pred, y_true)**2
 
-    def calc_loss_dict(self, df_prediction, df_true, method='rmse'):
+    def calc_loss_dict(self, df_prediction, df_true, loss_compartments=['active', 'recovered', 'total', 'deceased'],
+                       loss_method='rmse'):
         """Caclculates dict of losses for each compartment using the method specified
 
         Args:
@@ -120,41 +130,33 @@ class Loss_Calculator():
         Returns:
             dict: dict of loss values {compartment : loss_value}
         """
-        if method == 'rmse':
-            calculate = lambda x, y : self._calc_rmse(x, y)
-        elif method == 'rmse_log':
-            calculate = lambda x, y : self._calc_rmse(x, y, log=True)
-        elif method == 'mape':
-            calculate = lambda x, y : self._calc_mape(x, y)
-        else:
-            raise ValueError('Pleae inputted a supported loss fn (mape, rmse or rmsle)')
+        loss_fn = getattr(self, loss_method)
         
         losses = {}
-        for compartment in self.columns:
-            try:
-                losses[compartment] = calculate(df_prediction[compartment], df_true[compartment])
-            except Exception:
-                continue
+        for compartment in loss_compartments:
+                losses[compartment] = loss_fn(df_prediction[compartment], df_true[compartment])
+        
         return losses
 
-    def calc_loss(self, df_prediction, df_true, method='rmse', 
-                  which_compartments=['active', 'recovered', 'total', 'deceased'], loss_weights=[1, 1, 1, 1]):
+    def calc_loss(self, df_prediction, df_true, loss_method='rmse', 
+                  loss_compartments=['active', 'recovered', 'total', 'deceased'], 
+                  loss_weights=[1, 1, 1, 1]):
         """Calculates loss using specified method, averaged across specified compartments using specified weights
 
         Args:
             df_prediction (pd.DataFrame): prediction dataframe
             df_true (pd.DataFrame): gt dataframe
-            method (str, optional): loss method. Defaults to 'rmse'.
-            which_compartments (list, optional): Compartments to calculate loss on.
+            loss_method (str, optional): loss loss_method. Defaults to 'rmse'.
+            loss_compartments (list, optional): Compartments to calculate loss on.
             Defaults to ['active', 'recovered', 'total', 'deceased'].
             loss_weights (list, optional): Weights for corresponding compartments. Defaults to [1, 1, 1, 1].
 
         Returns:
             float: loss value
         """
-        losses = self.calc_loss_dict(df_prediction, df_true, method)
+        losses = self.calc_loss_dict(df_prediction, df_true, loss_compartments, loss_method)
         loss = 0
-        for i, compartment in enumerate(which_compartments):
+        for i, compartment in enumerate(loss_compartments):
             loss += loss_weights[i]*losses[compartment]
         return loss
 
@@ -169,59 +171,61 @@ class Loss_Calculator():
             dict: Dict of losses
         """
         err = {}
-        err['mape'] = self._calc_mape(y_true, y_pred)
-        err['rmse'] = self._calc_rmse(y_true, y_pred)
+        err['mape'] = self.mape(y_true, y_pred)
+        err['rmse'] = self.rmse(y_true, y_pred)
         try:
-            err['rmsle'] = self._calc_rmse(y_true, y_pred, log=True)
+            err['rmsle'] = self.rmsle(y_true, y_pred)
         except:
             err['rmsle'] = None
         return err
 
-    def create_loss_dataframe_region(self, df_train, df_val, df_test, df_prediction,
-                                     which_compartments=['active', 'total']):
+
+    def create_loss_dataframe_region(self, df_train, df_val, df_test, df_prediction, loss_method='mape',
+                                     loss_compartments=['active', 'total']):
         """Helper function for calculating loss in training pipeline
 
         Arguments:
             df_train {pd.DataFrame} -- Train dataset
             df_val {pd.DataFrame} -- Val dataset
             df_prediction {pd.DataFrame} -- Model Prediction
-            train_period {int} -- Length of training Period
 
         Keyword Arguments:
-            which_compartments {list} -- List of buckets to calculate loss on (default: {['active', 'total']})
+            loss_compartments {list} -- List of buckets to calculate loss on (default: {['active', 'total']})
 
         Returns:
             pd.DataFrame -- A dataframe of train loss values and val (if val exists too)
         """
-        df_loss = pd.DataFrame(columns=['train', 'val', 'test'], index=which_compartments)
+        loss_fn = getattr(self, loss_method)
+
+        df_loss = pd.DataFrame(columns=['train', 'val', 'test'], index=loss_compartments)
 
         df_temp = df_prediction.loc[df_prediction['date'].isin(
-            df_train['date']), ['date']+which_compartments]
+            df_train['date']), ['date']+loss_compartments]
         df_temp.reset_index(inplace=True, drop=True)
         df_train = df_train.loc[df_train['date'].isin(df_temp['date']), :]
         df_train.reset_index(inplace=True, drop=True)
         for compartment in df_loss.index:
-            df_loss.loc[compartment, 'train'] = self._calc_mape(
+            df_loss.loc[compartment, 'train'] = loss_fn(
                 np.array(df_temp[compartment]), np.array(df_train[compartment]))
 
         if isinstance(df_val, pd.DataFrame):
             df_temp = df_prediction.loc[df_prediction['date'].isin(
-                df_val['date']), ['date']+which_compartments]
+                df_val['date']), ['date']+loss_compartments]
             df_temp.reset_index(inplace=True, drop=True)
             df_val.reset_index(inplace=True, drop=True)
             for compartment in df_loss.index:
-                df_loss.loc[compartment, 'val'] = self._calc_mape(
+                df_loss.loc[compartment, 'val'] = loss_fn(
                     np.array(df_temp[compartment]), np.array(df_val[compartment]))
         else:
             del df_loss['val']
 
         if isinstance(df_test, pd.DataFrame):
             df_temp = df_prediction.loc[df_prediction['date'].isin(
-                df_test['date']), ['date']+which_compartments]
+                df_test['date']), ['date'] + loss_compartments]
             df_temp.reset_index(inplace=True, drop=True)
             df_test.reset_index(inplace=True, drop=True)
             for compartment in df_loss.index:
-                df_loss.loc[compartment, 'test'] = self._calc_mape(
+                df_loss.loc[compartment, 'test'] = self.mape(
                     np.array(df_temp[compartment]), np.array(df_test[compartment]))
         else:
             del df_loss['test']
@@ -239,11 +243,11 @@ class Loss_Calculator():
             dict: Dict of losses
         """
         err = {}
-        err['ape'] = self._calc_ape(y_pred, y_true)
-        err['error'] = self._calc_error(y_pred, y_true)
-        err['se'] = self._calc_se(y_pred, y_true)
+        err['ape'] = self.ape(y_pred, y_true)
+        err['error'] = self.error(y_pred, y_true)
+        err['se'] = self.squared_error(y_pred, y_true)
         with np.errstate(invalid='ignore'):
-            err['sle'] = self._calc_se(y_pred, y_true, log=True)
+            err['sle'] = self.squared_error(y_pred, y_true, log=True)
         return err
 
     def create_pointwise_loss_dataframe(self, y_true, y_pred):
@@ -260,7 +264,7 @@ class Loss_Calculator():
         return pd.DataFrame.from_dict(loss_dict, orient='index')
 
     def create_pointwise_loss_dataframe_region(self, df_train, df_val, df_test, df_prediction,
-                                               which_compartments=['total']):
+                                               loss_compartments=['total']):
         """
 
         Args:
@@ -268,56 +272,56 @@ class Loss_Calculator():
             df_val ():
             df_test ():
             df_prediction ():
-            which_compartments ():
+            loss_compartments ():
 
         Returns:
 
         """
         # TODO: Take loss as arg
         df_temp = df_prediction.loc[df_prediction['date'].isin(
-            df_train['date']), ['date'] + which_compartments]
+            df_train['date']), ['date'] + loss_compartments]
         df_temp.reset_index(inplace=True, drop=True)
         df_train = df_train.loc[df_train['date'].isin(df_temp['date']), :]
         df_train.reset_index(inplace=True, drop=True)
         loss_df_dict = {}
-        for compartment in which_compartments:
+        for compartment in loss_compartments:
             df = self.create_pointwise_loss_dataframe(
                 np.array(df_train[compartment]).astype(float), np.array(df_temp[compartment]).astype(float))
             df.columns = df_train['date'].tolist()
             loss_df_dict[compartment] = df
-        df_train_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
+        df_train_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=loss_compartments,
                                             names=['compartment', 'loss_function'])
         df_train_loss_pointwise.name = 'loss'
 
         df_val_loss_pointwise = None
         if isinstance(df_val, pd.DataFrame):
             df_temp = df_prediction.loc[df_prediction['date'].isin(
-                df_val['date']), ['date']+which_compartments]
+                df_val['date']), ['date'] + loss_compartments]
             df_temp.reset_index(inplace=True, drop=True)
             df_val.reset_index(inplace=True, drop=True)
             loss_df_dict = {}
-            for compartment in which_compartments:
+            for compartment in loss_compartments:
                 df = self.create_pointwise_loss_dataframe(
                     np.array(df_val[compartment]).astype(float), np.array(df_temp[compartment]).astype(float))
                 df.columns = df_val['date'].tolist()
                 loss_df_dict[compartment] = df
-            df_val_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
+            df_val_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=loss_compartments,
                                               names=['compartment', 'loss_function'])
             df_val_loss_pointwise.name = 'loss'
 
         df_test_loss_pointwise = None
         if isinstance(df_test, pd.DataFrame):
             df_temp = df_prediction.loc[df_prediction['date'].isin(
-                df_test['date']), ['date'] + which_compartments]
+                df_test['date']), ['date'] + loss_compartments]
             df_temp.reset_index(inplace=True, drop=True)
             df_test.reset_index(inplace=True, drop=True)
             loss_df_dict = {}
-            for compartment in which_compartments:
+            for compartment in loss_compartments:
                 df = self.create_pointwise_loss_dataframe(
                     np.array(df_test[compartment]).astype(float), np.array(df_temp[compartment]).astype(float))
                 df.columns = df_test['date'].tolist()
                 loss_df_dict[compartment] = df
-            df_test_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=which_compartments,
+            df_test_loss_pointwise = pd.concat(loss_df_dict.values(), axis=0, keys=loss_compartments,
                                                names=['compartment', 'loss_function'])
             df_test_loss_pointwise.name = 'loss'
 
@@ -351,7 +355,7 @@ class Loss_Calculator():
 
             df_prediction_slice.reset_index(drop=True, inplace=True)
             df_true_slice.reset_index(drop=True, inplace=True)
-            ld = self.calc_loss_dict(df_prediction_slice, df_true_slice, method=method)
+            ld = self.calc_loss_dict(df_prediction_slice, df_true_slice, loss_method=method)
 
             ld = {key: round(value, round_precision) for key, value in ld.items()}
             if i+1 == len(week_indices)-1:
@@ -362,23 +366,10 @@ class Loss_Calculator():
 
         df_prediction.reset_index(drop=True, inplace=True)
         df_true.reset_index(drop=True, inplace=True)
-        ld = self.calc_loss_dict(df_prediction, df_true, method=method)
+        ld = self.calc_loss_dict(df_prediction, df_true, loss_method=method)
 
         ld = {key: round(value, round_precision) for key, value in ld.items()}
         forecast_errors_dict['total'] = ld
 
         df = pd.DataFrame.from_dict(forecast_errors_dict)
         return df
-
-    def create_loss_dataframe_master(self, predictions_dict, train_fit='m1'):
-        starting_key = list(predictions_dict.keys())[0]
-        loss_columns = pd.MultiIndex.from_product([predictions_dict[starting_key][train_fit]['df_loss'].columns, 
-                                                   predictions_dict[starting_key][train_fit]['df_loss'].index])
-        loss_index = predictions_dict.keys()
-
-        df_loss_master = pd.DataFrame(columns=loss_columns, index=loss_index)
-        for key in predictions_dict.keys():
-            df_loss_master.loc[key, :] = np.around(
-                predictions_dict[key][train_fit]['df_loss'].values.T.flatten().astype('float'), decimals=2)
-            
-        return df_loss_master
