@@ -57,7 +57,7 @@ fitting:
             E_hosp_ratio: .5
             I_hosp_ratio: .5
     split:
-        start_date: 2020-08-01
+        start_date: null
         end_date: null
         train_period: 28
         val_period: 28
