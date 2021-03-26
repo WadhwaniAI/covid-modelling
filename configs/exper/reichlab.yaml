@@ -1,0 +1,39 @@
+# Driver config has three parts:
+#   configs: list of base config names
+#   iterate: condensed partial config with choices used across all base configs
+#   constant: condensed partial config with choices specific to each base config
+
+# Each terminal element has the structure [pattern, choices, select]
+# pattern: the method of specification of the choices
+#   - list: list of choices
+#   - repeat: value, num_repetitions
+#   - range: start, stop (exclusive), step
+#   - date_range: start, stop, periods, freq (specify EXACTLY three as per pd.date_range)
+# choices: representation of values using one of the above patterns
+# select: if True, produce combinations for this element else use default value from base config
+
+# Use generate_configs_from_driver (utils/generic/config.py) to generate all configs.
+
+configs: [us]
+iterate:
+    data:
+        dataloading_params:
+            region: [list, [Alabama, Alaska, Arizona, Arkansas, Colorado, Connecticut, Delaware, District of Columbia, Hawaii, Idaho, Indiana, Iowa, Kansas, Kentucky, Louisiana, Maine, Maryland, Massachusetts, Michigan, Minnesota, Mississippi, Montana, Nebraska, Nevada, New Hampshire, New Jersey, New Mexico, New York, North Carolina, North Dakota, Ohio, Oklahoma, Oregon, Pennsylvania, Puerto Rico, Rhode Island, South Carolina, South Dakota, Tennessee, Texas, Utah, Vermont, Virginia, Washington, West Virginia, Wisconsin, Wyoming], TRUE]
+    fitting:
+        optimiser_params:
+            seed: [list, [100, 200, 300], TRUE]
+constant:
+    default:
+        fitting:
+            split:
+                train_period: [list, [30], TRUE]
+                val_period: [list, [3], TRUE]
+                end_date: [list, [null], TRUE]
+            optimiser_params:
+                num_evals: [list, [3000], TRUE]
+            forecast:
+                forecast_days: [list, [45], TRUE]
+        uncertainty:
+            uncertainty_params:
+                construct_percentiles_day_wise: [list, [TRUE], TRUE]
+                date_of_sorting_trials: [list, [null], TRUE]
