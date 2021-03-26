@@ -1,13 +1,17 @@
 fitting:
     data:
-        dataloader: Covid19IndiaLoader
+        dataloader: AthenaLoader
         dataloading_params:
             reload_data: FALSE
-            stratified_data: FALSE
             cache_dir: "../../misc/cache/"
+            stratified_data: FALSE
             state: Maharashtra
             district: Mumbai
-            use_dataframe: data_all
+            tables: [bed_summaries, case_summaries, testing_summary]
+            schema: city_data_mumbai
+            staging_dir: mumbai
+            label: mumbai
+            pyathena_rc_path: '../../misc/pyathena/pyathena.rc'
         data_columns: [total, active, recovered, deceased]
         smooth_jump: TRUE
         smooth_jump_params:
@@ -87,8 +91,8 @@ uncertainty:
             n_jobs: 10
         variable_param_ranges:
             beta: [[0, 10], 101]
-        construct_percentiles_day_wise: FALSE
-        date_of_sorting_trials: 2020-11-30
+        construct_percentiles_day_wise: TRUE
+        date_of_sorting_trials: null
         sort_trials_by_column: total
         loss:
             loss_method: mape
