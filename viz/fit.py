@@ -1,15 +1,16 @@
-from datetime import timedelta
 import copy
 import math
 from datetime import timedelta
 
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 import seaborn as sns
 from matplotlib.lines import Line2D
 from scipy.stats import entropy
 
-from main.seir.forecast import _order_trials_by_loss
-from utils.generic.enums.columns import *
-from utils.generic.stats import *
+from utils.generic.enums.columns import compartments
+from utils.generic.stats import get_param_stats, get_loss_stats
 from viz.utils import axis_formatter
 
 
@@ -78,13 +79,13 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, locatio
         legend_elements = []
         for compartment in compartments[key]:
             if compartment.name in comp_subset:
-                ax.plot(df_true_plotting[compartments['date'][0].name].to_numpy(), 
+                ax.plot(df_true_plotting[compartments['date'].name].to_numpy(), 
                         df_true_plotting[compartment.name].to_numpy(),
                         '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-                ax.plot(df_true_plotting_rolling[compartments['date'][0].name].to_numpy(), 
+                ax.plot(df_true_plotting_rolling[compartments['date'].name].to_numpy(), 
                         df_true_plotting_rolling[compartment.name].to_numpy(),
                         '-', color=compartment.color, label='{} (Obs RA)'.format(compartment.label))
-                ax.plot(df_predicted_plotting[compartments['date'][0].name].to_numpy(), 
+                ax.plot(df_predicted_plotting[compartments['date'].name].to_numpy(), 
                         df_predicted_plotting[compartment.name].to_numpy(),
                         '-.', color=compartment.color, label='{} (Predicted)'.format(compartment.label))
 
@@ -107,50 +108,6 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, locatio
     plt.tight_layout()
     if savepath is not None:
         plt.savefig(savepath)
-    return fig
-
-
-def plot_fit_multiple_preds(predictions_dict, which_fit='m1'):
-
-    df_train = predictions_dict[which_fit]['df_train']
-    df_val = predictions_dict[which_fit]['df_val']
-    df_true_plotting_rolling = pd.concat([df_train, df_val], ignore_index=True)
-    df_true_plotting = predictions_dict[which_fit]['df_district']
-    df_prediction = predictions_dict[which_fit]['df_prediction']
-    train_period = predictions_dict[which_fit]['which_fit_params']['train_period']
-
-    fig, ax = plt.subplots(figsize=(12, 12))
-    for compartment in compartments['base']:
-        ax.plot(df_true_plotting[compartments['date'][0].name], df_true_plotting[compartment.name],
-                '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-        ax.plot(df_true_plotting_rolling[compartments['date'][0].name], df_true_plotting_rolling[compartment.name],
-                '-', color=compartment.color, label='{} (Obs RA)'.format(compartment.label))
-        ax.plot(df_prediction[compartments['date'][0].name], df_prediction[compartment.name],
-                '-.', color=compartment.color, label='{} BO Best (Predicted)'.format(compartment.label))
-        try:
-            df_prediction_decile50 = predictions_dict[which_fit]['df_prediction_decile50']
-            ax.plot(df_prediction_decile50[compartments['date'][0].name], df_prediction_decile50[compartment.name],
-                    '--', color=compartment.color, label='{} 50th Decile (Predicted)'.format(compartment.label))
-        except:
-            print('')
-
-        try:
-            df_prediction_gsbo = predictions_dict[which_fit]['df_prediction_gsbo']
-            ax.plot(df_prediction_gsbo[compartments['date'][0].name], df_prediction_gsbo[compartment.name],
-                    '-x', color=compartment.color, label='{} GS+BO (Predicted)'.format(compartment.label))
-        except:
-            print('')
-
-
-        ax.axvline(x=df_train.iloc[-train_period, :]['date'],
-                ls=':', color='brown', label='Train starts')
-        if isinstance(df_val, pd.DataFrame) and len(df_val) > 0:
-            ax.axvline(x=df_val.iloc[0, ]['date'], ls=':',
-                    color='black', label='Val starts')
-
-    axis_formatter(ax, None, custom_legend=False)
-
-    plt.tight_layout()
     return fig
 
 
@@ -177,7 +134,8 @@ def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lin
     Returns:
         dict: a dict of histograms of all the params for a particular run
     """
-    params_array, losses_array = _order_trials_by_loss(predictions_dict)
+    params_array = predictions_dict['trials']['params']
+    losses_array = predictions_dict['trials']['losses']
     params_dict = {param: [param_dict[param] for param_dict in params_array]
                    for param in params_array[0].keys()}
     if weighting == 'exp':
@@ -240,7 +198,7 @@ def plot_all_histograms(predictions_dict, description, weighting='exp', beta=1):
         mpl.Figure, mpl.Axes, pd.DataFrame: The matplotlib figure, matplotlib axes, 
         a dict of histograms of all the params for all the runs
     """
-    params_array, _ = _order_trials_by_loss(predictions_dict['m1'])
+    params_array = predictions_dict['trials']['params']
 
     fig, axs = plt.subplots(nrows=round(len(params_array[0].keys())/2), ncols=2, 
                             figsize=(18, 6*round(len(params_array[0].keys())/2)))
@@ -276,14 +234,15 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
         mpl.Figure, mpl.Axes, pd.DataFrame: The matplotlib figure, matplotlib axes, 
         a dataframe of mean and variance values for all parameters and all runs
     """
-    params_array, _ = _order_trials_by_loss(predictions_dict['m1'])
+    params_array = predictions_dict['trials']['params']
     params = list(params_array[0].keys())
     df_mean_var = pd.DataFrame(columns=list(predictions_dict.keys()),
                                index=pd.MultiIndex.from_product([params,
                                                                 ['mean', 'std']]))
 
     for run in predictions_dict.keys():
-        params_array, losses_array = _order_trials_by_loss(predictions_dict[run])
+        params_array = predictions_dict[run]['trials']['params']
+        losses_array = predictions_dict[run]['trials']['losses']
         params_dict = {param: [param_dict[param] for param_dict in params_array]
                        for param in params_array[0].keys()}
         if weighting == 'exp':

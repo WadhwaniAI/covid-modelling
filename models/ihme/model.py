@@ -1,12 +1,9 @@
-import pandas as pd
-import numpy as np
-from datetime import timedelta, datetime
 from copy import copy
 
-import curvefit
-from curvefit.pipelines.basic_model import BasicModel
-from curvefit.core.functions import *
+import numpy as np
+import pandas as pd
 from curvefit.core.utils import data_translator
+from curvefit.pipelines.basic_model import BasicModel
 
 import sys
 

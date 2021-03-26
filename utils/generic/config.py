@@ -1,10 +1,10 @@
 import copy
 import datetime
+import importlib
 import itertools
-import pandas as pd
 
+import pandas as pd
 import yaml
-from curvefit.core import functions
 
 import main.seir.uncertainty as uncertainty_module
 import models
@@ -51,8 +51,10 @@ def create_location_description(nconfig):
         location_description = (dl_nconfig['region'], dl_nconfig['sub_region'])
     elif 'state' in dl_nconfig.keys() and 'county' in dl_nconfig.keys():
         location_description = (dl_nconfig['state'], dl_nconfig['county'])
-    else:
+    elif 'state' in dl_nconfig.keys():
         location_description = (dl_nconfig['state'])
+    else:
+        location_description = ''
     dl_nconfig['location_description'] = location_description
 
 
@@ -68,12 +70,15 @@ def process_config_seir(config):
     nconfig = copy.deepcopy(config)
     create_location_description(nconfig)
     
-    nconfig['fitting']['model'] = getattr(models.seir, nconfig['fitting']['model'])
+    model_family = importlib.import_module(
+        f".{nconfig['fitting']['model_family']}", 'models')
 
-    nconfig['forecast']['plot_topk_trials_for_columns'] = [Columns.from_name(
-        column) for column in nconfig['forecast']['plot_topk_trials_for_columns']]
-    nconfig['forecast']['plot_ptiles_for_columns'] = [Columns.from_name(
-        column) for column in nconfig['forecast']['plot_ptiles_for_columns']]
+    nconfig['fitting']['model'] = getattr(model_family, nconfig['fitting']['model'])
+
+    nconfig['plotting']['plot_topk_trials_for_columns'] = [Columns.from_name(
+        column) for column in nconfig['plotting']['plot_topk_trials_for_columns']]
+    nconfig['plotting']['plot_ptiles_for_columns'] = [Columns.from_name(
+        column) for column in nconfig['plotting']['plot_ptiles_for_columns']]
 
     nconfig['uncertainty']['method'] = getattr(uncertainty_module, nconfig['uncertainty']['method'])
     nconfig['uncertainty']['uncertainty_params']['sort_trials_by_column'] = Columns.from_name(
@@ -91,6 +96,8 @@ def process_config_ihme(config):
     Returns:
         dict: Processed config dict
     """
+    from curvefit.core import functions
+
     nconfig = copy.deepcopy(config)
     create_location_description(nconfig)
 
@@ -247,14 +254,14 @@ def generators_product(g1, g2):
 
 
 def generate_configs_from_driver(driver_config_filename):
-    driver_config = read_config(driver_config_filename, preprocess=False, config_dir='other')
-    if 'specific' in driver_config and driver_config['specific'] is not None:
+    driver_config = read_config(driver_config_filename, preprocess=False, config_dir='exper')
+    if 'constant' in driver_config and driver_config['constant'] is not None:
         configs = []
         for config_name in driver_config['configs']:
-            base_configs = generate_config(driver_config['base'])
+            base_configs = generate_config(driver_config['iterate'])
             base_configs = split_dict_combinations(base_configs)
-            if config_name in driver_config['specific']:
-                temp = generate_config(driver_config['specific'][config_name])
+            if config_name in driver_config['constant']:
+                temp = generate_config(driver_config['constant'][config_name])
                 if temp == {}:
                     config = base_configs
                 else:
@@ -265,7 +272,11 @@ def generate_configs_from_driver(driver_config_filename):
             configs.append(config)
         configs = chain(driver_config['configs'], configs)
     else:
-        base_configs = generate_config(driver_config['base'])
+        base_configs = generate_config(driver_config['iterate'])
         configs = chain(driver_config['configs'], (split_dict_combinations(base_configs)
                                                    for _ in driver_config['configs']))
     return configs
+
+
+if __name__ == '__main__':
+    configs = generate_configs_from_driver('list_of_exp.yaml')

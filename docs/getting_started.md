@@ -1,6 +1,6 @@
 Hi!
 
-The focus here in this project is to model covid19 cases in different geographical regions, and accurately forecast future cases.
+This codebase is a framework for 
 
 # Setting Up
 
@@ -23,7 +23,7 @@ run the cells in `notebooks/seir/[STABLE] generate_report.ipynb` ([here](../note
 # Further Reading
 
 - To read more about the data, [click here](data.md)
-- To read more about data processing and smoothing, [click here](smoothing.md)
+- To read more about data smoothing methods, [click here](smoothing.md)
 - To read more about SEIR models, [click here](seir.md)
 - To read more about IHME, [click here](ihme.md)
 - To read more about fitting process, [click here](fitting.md)

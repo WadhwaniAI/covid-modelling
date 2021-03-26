@@ -7,7 +7,6 @@
 # Git Policy
 
 ## Committing
-
 ## Branching Strategy 
 
 ## Merging

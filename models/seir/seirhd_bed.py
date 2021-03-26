@@ -1,14 +1,9 @@
 import numpy as np
-import pandas as pd
-from scipy.integrate import solve_ivp
-import matplotlib.pyplot as plt
 
 from collections import OrderedDict
-import datetime
 import copy
 
 from models.seir.seir_base import SEIRBase
-from utils.fitting.ode import ODE_Solver
 
 class SEIRHD_Bed(SEIRBase):
     def __init__(self, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2,

@@ -1,20 +1,21 @@
-import numpy as np
 import argparse
-from functools import partial
-from tqdm import tqdm
-from joblib import Parallel, delayed
 import datetime
-
 import sys
+from functools import partial
+
+import numpy as np
+from joblib import Parallel, delayed
+from tqdm import tqdm
+
 sys.path.append('../../')
 
-import os
 import copy
+import os
 import pickle
 
 from utils.generic.config import read_config
-from viz import plot_ptiles
 from viz.uncertainty import plot_beta_loss
+
 
 # Load all predictions_dict files_load_all_pdicts(parsed_args)
 def _load_all_pdicts(parsed_args):
@@ -32,38 +33,34 @@ def _create_combined_pdict(predictions_dict_list, parsed_args):
     predictions_dict_comb = {}
     for loc in predictions_dict_list[0].keys():
         predictions_dict_comb[loc] = {}
-        predictions_dict_comb[loc]['m1'] = {}
-        predictions_dict_comb[loc]['m2'] = {}
-        predictions_dict_comb[loc]['m2']['plots'] = {}
-        predictions_dict_comb[loc]['m2']['forecasts'] = {}
+        predictions_dict_comb[loc]['plots'] = {}
+        predictions_dict_comb[loc]['forecasts'] = {}
         # Copy all params
-        predictions_dict_comb[loc]['m1']['run_params'] = copy.deepcopy(
-            predictions_dict_list[0][loc]['m1']['run_params'])
-        predictions_dict_comb[loc]['m2']['run_params'] = copy.deepcopy(
-            predictions_dict_list[0][loc]['m2']['run_params'])
+        predictions_dict_comb[loc]['run_params'] = copy.deepcopy(
+            predictions_dict_list[0][loc]['run_params'])
         # Copy all dataframes
-        predictions_dict_comb[loc]['m1']['df_district'] = copy.deepcopy(
-            predictions_dict_list[0][loc]['m1']['df_district'])
-        predictions_dict_comb[loc]['m1']['df_train'] = copy.deepcopy(
-            predictions_dict_list[0][loc]['m1']['df_train'])
-        predictions_dict_comb[loc]['m1']['df_val'] = copy.deepcopy(
-            predictions_dict_list[0][loc]['m1']['df_val'])
+        predictions_dict_comb[loc]['df_district'] = copy.deepcopy(
+            predictions_dict_list[0][loc]['df_district'])
+        predictions_dict_comb[loc]['df_train'] = copy.deepcopy(
+            predictions_dict_list[0][loc]['df_train'])
+        predictions_dict_comb[loc]['df_val'] = copy.deepcopy(
+            predictions_dict_list[0][loc]['df_val'])
 
         # Concatenate all predictions
         predictions_arr, losses_arr, params_arr = ([], [], [])
-        for i, pdict in enumerate(predictions_dict_list):
-            predictions_arr += pdict[loc]['m1']['trials_processed']['predictions'][:parsed_args.num_trials]
+        for _, pdict in enumerate(predictions_dict_list):
+            predictions_arr += pdict[loc]['trials']['predictions'][:parsed_args.num_trials]
 
-            losses_arr.append(pdict[loc]['m1']['trials_processed']['losses'][:parsed_args.num_trials])
+            losses_arr.append(pdict[loc]['trials']['losses'][:parsed_args.num_trials])
 
-            params_arr.append(pdict[loc]['m1']['trials_processed']['params'][:parsed_args.num_trials])
+            params_arr.append(pdict[loc]['trials']['params'][:parsed_args.num_trials])
         
         # Add them to predictions_dict_comb
-        predictions_dict_comb[loc]['m1']['trials_processed'] = {}
-        predictions_dict_comb[loc]['m1']['trials_processed']['predictions'] = predictions_arr
-        predictions_dict_comb[loc]['m1']['trials_processed']['losses'] = np.concatenate(
+        predictions_dict_comb[loc]['trials'] = {}
+        predictions_dict_comb[loc]['trials']['predictions'] = predictions_arr
+        predictions_dict_comb[loc]['trials']['losses'] = np.concatenate(
             tuple(losses_arr), axis=None)
-        predictions_dict_comb[loc]['m1']['trials_processed']['params'] = np.concatenate(
+        predictions_dict_comb[loc]['trials']['params'] = np.concatenate(
             tuple(params_arr), axis=None)
 
     return predictions_dict_comb
@@ -77,22 +74,16 @@ def _perform_beta_fitting(loc_dict, config):
 
     uncertainty_forecasts = uncertainty.get_forecasts()
     for key in uncertainty_forecasts.keys():
-        loc_dict['m2']['forecasts'][key] = uncertainty_forecasts[key]['df_prediction']
+        loc_dict['forecasts'][key] = uncertainty_forecasts[key]['df_prediction']
 
-    loc_dict['m2']['forecasts']['ensemble_mean'] = uncertainty.ensemble_mean_forecast
+    loc_dict['forecasts']['ensemble_mean'] = uncertainty.ensemble_mean_forecast
 
-    loc_dict['m2']['plots']['beta_loss'], _ = plot_beta_loss(
+    loc_dict['plots']['beta_loss'], _ = plot_beta_loss(
         uncertainty.dict_of_trials)
-    loc_dict['m2']['beta'] = uncertainty.beta
-    loc_dict['m2']['beta_loss'] = uncertainty.beta_loss
-    loc_dict['m2']['deciles'] = uncertainty_forecasts
+    loc_dict['beta'] = uncertainty.beta
+    loc_dict['beta_loss'] = uncertainty.beta_loss
+    loc_dict['deciles'] = uncertainty_forecasts
     
-    # ptiles_plots = plot_ptiles(loc_dict, which_compartments=config['forecast']['plot_ptiles_for_columns'])
-
-    # loc_dict['m2']['plots']['forecasts_ptiles'] = {}
-    # for column in config['forecast']['plot_ptiles_for_columns']:
-    #     loc_dict['m2']['plots']['forecasts_ptiles'][column.name] = ptiles_plots[column]
-
     return loc_dict
 
 if __name__ == '__main__':

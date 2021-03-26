@@ -4,13 +4,19 @@ from data.dataloader.base import BaseLoader
 
 
 class CovidTrackingLoader(BaseLoader):
+    """Dataloader that time series case data for US states from
+        Covid Tracking API 'https://covidtracking.com/data/api'
+
+    Args:
+        BaseLoader (abstract class): Abstract Data Loader Class
+    """
     def __init__(self):
         super().__init__()
 
-    # Loads time series case data for US states from the Covid Tracking API 'https://covidtracking.com/data/api'
-    def load_data(self):
+    def pull_dataframes(self, **kwargs):
         """
-        This function parses the us-states and us-counties CSVs on NY Times's github repo and converts them to pandas dataframes
+        This function parses the us-states and us-counties CSVs obtained from the 
+        covidtracking API and converts them to pandas dataframes
         Returns dict of dataframes for states and counties
         """
         dataframes = dict()
@@ -31,10 +37,25 @@ class CovidTrackingLoader(BaseLoader):
         dataframes['df_states_metadata'] = df_states_metadata
         return dataframes
 
-    def get_covid_tracking_data(self):
-        return self.load_data()
+    def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
+        return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
 
-if __name__ == '__main__':
-    obj = CovidTrackingLoader()
-    dataframes = obj.load_data()
-    import pdb; pdb.set_trace()
+    def get_data(self, state, reload_data=False, **kwargs):
+        """Main function serving as handshake between data and fitting modules
+
+        Args:
+            state (str): Name of the US state to do fitting on
+            reload_data (bool, optional): Param for `pull_dataframes_cached`. Defaults to False.
+
+        Returns:
+            dict{str : pd.DataFrame}: Processed dataframe
+        """
+        dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
+        df_states = dataframes['df_states']
+        df_states = df_states.loc[:, ['date', 'state', 'state_name', 'positive',
+                                    'active', 'recovered', 'death']]
+        df_states.rename(columns={"positive": "total",
+                                  "death": "deceased"}, inplace=True)
+        df = df_states[df_states['state_name'] == state]
+        df.reset_index(drop=True, inplace=True)
+        return {"data_frame": df}
