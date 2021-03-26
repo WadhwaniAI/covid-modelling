@@ -14,11 +14,11 @@
 
 # Use generate_configs_from_driver (utils/generic/config.py) to generate all configs.
 
-configs: [default]
+configs: [athena]
 iterate:
     fitting:
         split:
-            start_date: [date_range, [2020-05-01, 2020-10-01, null, 3D], TRUE]
+            start_date: [date_range, [2020-05-01, 2020-10-01, null, 7D], TRUE]
         optimiser_params:
             seed: [list, [100, 200, 300, 400, 500], TRUE]
 constant:
