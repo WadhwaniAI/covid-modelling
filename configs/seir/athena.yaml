@@ -43,21 +43,21 @@ fitting:
         N: 1.0e+7
     optimiser: BO_Hyperopt
     optimiser_params:
-        num_evals: 1000
+        num_evals: 2000
         algo: tpe
         seed: 42
     split:
         start_date: null
-        end_date: 2020-08-31
+        end_date: null
         train_period: 21
-        val_period: 7
+        val_period: 3
         test_period: 0
     loss:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
     forecast:
-        forecast_days: 30
+        forecast_days: 45
 plotting:
     truncate_series: TRUE
     left_truncation_buffer: 7
@@ -78,7 +78,7 @@ uncertainty:
         variable_param_ranges:
             beta: [[0, 10], 101]
         construct_percentiles_day_wise: TRUE
-        date_of_sorting_trials: 2020-09-30
+        date_of_sorting_trials: null
         sort_trials_by_column: total
         loss:
             loss_method: mape
