@@ -47,7 +47,7 @@ def _create_md_file(predictions_dict, config, ROOT_DIR):
     return mdFile, filename
 
 
-def _log_hyperparams(mdFile, predictions_dict, config):
+def _log_hyperparams(mdFile, predictions_dict):
     mdFile.new_paragraph("---")
     mdFile.new_paragraph(f"Data available till: {predictions_dict['m2']['data_last_date']}")
     mdFile.new_paragraph(f"Fitting Date: {predictions_dict['fitting_date']}")
@@ -172,7 +172,7 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
     os.system(f'cp {config_ROOT_DIR}/{config_filename} {ROOT_DIR}/{config_filename}')
     
     mdFile, filename = _create_md_file(predictions_dict, config, ROOT_DIR)
-    _log_hyperparams(mdFile, predictions_dict, config)
+    _log_hyperparams(mdFile, predictions_dict)
 
     if 'smoothing' in m1_dict and m1_dict['plots']['smoothing'] is not None:
         _log_smoothing(mdFile, ROOT_DIR, m1_dict)

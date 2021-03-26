@@ -113,8 +113,8 @@ class SEIRHD_t(SEIR):
         dydt = np.zeros(y.shape)
 
         # Write differential equations
-        dydt[0] = - I * S / (self.T_trans)  # S
-        dydt[1] = I * S / (self.T_trans) - (E/ self.T_inc)  # E
+        dydt[0] = - I * S / self.T_trans  # S
+        dydt[1] = I * S / self.T_trans - (E / self.T_inc)  # E
         dydt[2] = E / self.T_inc - I / self.T_inf  # I
         dydt[3] = (1/self.T_inf)*(self.P_mild*I) - R_mild/self.T_recov_mild # R_mild
         dydt[4] = (1/self.T_inf)*(self.P_severe*I) - R_severe/self.T_recov_severe #R_severe

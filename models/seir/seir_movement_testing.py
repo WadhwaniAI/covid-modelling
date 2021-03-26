@@ -114,8 +114,8 @@ class SEIR_Movement_Testing(SEIR):
         dydt = np.zeros(y.shape)
 
         # Write differential equations
-        dydt[0] = - ((I + self.q * D_I) * S) / (self.T_trans) - (self.mu*S) # S
-        dydt[1] = ((I + self.q * D_I) * S ) / (self.T_trans) - (E / self.T_inc) - (self.theta_E * self.psi_E * E) - (self.mu*E) # E
+        dydt[0] = - ((I + self.q * D_I) * S) / self.T_trans - (self.mu * S) # S
+        dydt[1] = ((I + self.q * D_I) * S ) / self.T_trans - (E / self.T_inc) - (self.theta_E * self.psi_E * E) - (self.mu * E) # E
         dydt[2] = E / self.T_inc - I / self.T_inf - (self.theta_I * self.psi_I * I) - (self.mu*I) # I
         dydt[3] = (self.theta_E * self.psi_E * E) - (1 / self.T_inc) * D_E # D_E
         dydt[4] = (self.theta_I * self.psi_I * I) + (1 / self.T_inc) * D_E - (1 / self.T_inf) * D_I # D_I 

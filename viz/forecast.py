@@ -1,14 +1,11 @@
-
-import matplotlib.pyplot as plt
+import copy
+import datetime
 from datetime import timedelta
+
 import pandas as pd
-import numpy as np
 import seaborn as sns
 from adjustText import adjust_text
-import datetime
-import copy
 
-from utils.generic.enums import Columns
 from utils.generic.enums.columns import *
 from viz.utils import axis_formatter
 
@@ -99,7 +96,7 @@ def plot_forecast(predictions_dict: dict, region: tuple, fits_to_plot=['best'], 
                ls=':', color='black', label='Data Last Date')
     axis_formatter(ax, log_scale=log_scale)
     fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
-    if filename != None:
+    if filename is not None:
         plt.savefig(filename, format=fileformat)
 
     return fig
@@ -116,7 +113,7 @@ def plot_forecast_agnostic(df_true, df_prediction, region, log_scale=False, file
 
     axis_formatter(ax, log_scale=log_scale)
     fig.suptitle('Forecast - ({} {})'.format(region[0], region[1]), fontsize=16)
-    if filename != None:
+    if filename is not None:
         plt.savefig(filename)
 
     return fig
@@ -150,7 +147,7 @@ def plot_top_k_trials(predictions_dict, train_fit='m2', k=10, vline=None, log_sc
         texts = []
         ax.plot(df_true[Columns.date.name].to_numpy(), df_true[compartment.name].to_numpy(),
                 '-o', color='C0', label=f'{compartment.label} (Observed)')
-        if plot_individual_curves == True:
+        if plot_individual_curves:
             for i, df_prediction in enumerate(predictions):
                 loss_value = np.around(top_k_losses[i], 2)
                 if 'lockdown_R0' in top_k_params[i]:
@@ -190,7 +187,7 @@ def plot_r0_multipliers(region_dict, predictions_mul_dict, log_scale=False):
     for i, (mul, mul_dict) in enumerate(predictions_mul_dict.items()):
         df_prediction = mul_dict['df_prediction']
         true_r0 = mul_dict['params']['post_lockdown_R0']
-        sns.lineplot(x="date", y="hospitalised", data=df_prediction,
+        sns.lineplot(x="date", y="active", data=df_prediction,
                     ls='-', label=f'Active Cases ({mul} - R0 {true_r0})')
         plt.text(
             x=df_prediction['date'].iloc[-1],
@@ -200,3 +197,20 @@ def plot_r0_multipliers(region_dict, predictions_mul_dict, log_scale=False):
     state, dist = region_dict['state'], region_dict['dist']
     fig.suptitle(f'Forecast - ({state} {dist})', fontsize=16)
     return fig
+
+
+def plot_errors_for_lookaheads(error_dict, path=None):
+    # error dict format:
+    # {'lookahead': lookaheads, 'errors': {'model1': errors, 'model2': errors, ...}}
+    lookaheads = np.array(error_dict['lookahead'])
+    errors = error_dict['errors']
+    fig, ax = plt.subplots(figsize=(10, 10))
+    width = 0.2
+
+    for i, key in enumerate(errors):
+        ax.bar(x=lookaheads+i*width, height=errors[key], label=key, width=width)
+        ax.legend(loc='upper right')
+    plt.xlabel('Lookahead (days)')
+    plt.ylabel('MAPE')
+    if path is not None:
+        plt.savefig(path)

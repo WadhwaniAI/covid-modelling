@@ -1,20 +1,13 @@
-
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import matplotlib as mpl
-import pandas as pd
-import numpy as np
-import seaborn as sns
-from adjustText import adjust_text
-import datetime
 import copy
 from datetime import timedelta
 
-from viz.utils import setup_plt
-from utils.generic.enums import Columns, SEIRParams
-from viz.utils import axis_formatter
+import matplotlib as mpl
+import pandas as pd
+
 from data.processing.processing import get_data
 from utils.generic.enums.columns import *
+from viz.utils import axis_formatter
+from viz.utils import setup_plt
 
 
 def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_format='old_output', filename=None, 
@@ -103,7 +96,6 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
 
         df_prediction = copy.copy(
             predictions_dict['m2']['forecasts'][which_forecast])
-        df_train = copy.copy(predictions_dict['m2']['df_train'])
         train_period = predictions_dict['m2']['run_params']['split']['train_period']
     else:
         raise ValueError('Please give legal preds_source : either filename or pickle')
@@ -152,15 +144,16 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
     fig.subplots_adjust(top=0.96)
     return fig, df_true.iloc[train_period:, :], df_prediction.iloc[train_period-1:, :]
 
-def plot_backtest(results, data, dist, which_compartments=Columns.which_compartments(), 
-                  scoring='mape', dtp=None, axis_name='No. People', savepath=None):
-    title = f'{dist}' +  ' backtesting'
+def plot_backtest(results, data, dist, which_compartments=Columns.which_compartments(), scoring='mape',
+                  axis_name='No. People', savepath=None):
+    title = f'{dist}' + ' backtesting'
     # plot predictions against actual
     setup_plt(axis_name)
     plt.yscale("linear")
     plt.title(title)
+
     def div(series):
-        if scoring=='mape':
+        if scoring == 'mape':
             return series/100
         return series
     
@@ -187,8 +180,7 @@ def plot_backtest(results, data, dist, which_compartments=Columns.which_compartm
                 ax.errorbar(val_dates, preds.loc[val_dates, col.name],
                     yerr=preds.loc[val_dates, col.name]*(div(run_dict['df_loss'].loc[col.name, errkey])), lw=0.5,
                     color='lightcoral', barsabove='False', label=scoring)
-                
-            
+
         # plot data we fit on
         ax.scatter(data['date'].values, data[col.name].values, c='crimson', marker='+', label='data')
         plt.text(x=data['date'].iloc[-1], y=data[col.name].iloc[-1], s=col.name)

@@ -11,11 +11,12 @@ import sys
 sys.path.append('../../')
 
 from main.seir.common import *
-from utils.generic.config import read_config, process_config, make_date_key_str
+from utils.generic.config import read_config, process_config_seir, make_date_key_str
 from utils.generic.logging import log_wandb
 from viz import plot_forecast
 
 import wandb
+
 
 def plot_forecasts_of_best_candidates(predictions_dict, config):
     predictions_dict['m2']['plots']['forecast_best_50'] = plot_forecast(
@@ -46,7 +47,7 @@ def run_single_config_end_to_end(config, wandb_config, run_name, log_wandb_flag=
     fitting(predictions_dict, config)
     forecast_best(predictions_dict, config)
     uncertainty = fit_beta(predictions_dict, config)
-    process_uncertainty_fitting(predictions_dict, config, uncertainty)
+    process_uncertainty_fitting(predictions_dict, uncertainty)
 
     plot_forecasts_top_k_trials(predictions_dict, config)
     plot_forecasts_of_best_candidates(predictions_dict, config)
@@ -63,7 +64,7 @@ def run_single_config_end_to_end(config, wandb_config, run_name, log_wandb_flag=
 def single_run_fn_for_parallel(state, base_config_filename):
     wandb_config = read_config(base_config_filename, preprocess=False)
     wandb_config['fitting']['data']['dataloading_params']['region'] = state
-    config = process_config(wandb_config)
+    config = process_config_seir(wandb_config)
     wandb_config = make_date_key_str(wandb_config)
     try:
         x = run_single_config_end_to_end(

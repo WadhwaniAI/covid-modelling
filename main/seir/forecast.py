@@ -31,7 +31,7 @@ def get_forecast(predictions_dict: dict, forecast_days: int = 37, train_end_date
     else:
         simulate_till = train_end_date + datetime.timedelta(days=forecast_days)
         simulate_till = datetime.datetime.combine(simulate_till, datetime.datetime.min.time())
-    if best_params == None:
+    if best_params is None:
         best_params = predictions_dict[train_fit]['best_params']
 
     default_params = copy.copy(predictions_dict[train_fit]['default_params'])
@@ -126,14 +126,12 @@ def create_decile_csv(predictions_dict: dict, region: str, regionType: str):
             df_output.loc[df_prediction.index, f'{column}_{decile}'] = df_prediction[column]
 
     df_true = df_true.set_index('date')
-    df_output.loc[df_true.index, 'current_total'] = df_true['total_infected'].to_numpy()
-    df_output.loc[df_true.index, 'current_active'] = df_true['hospitalised'].to_numpy()
+    df_output.loc[df_true.index, 'current_total'] = df_true['total'].to_numpy()
+    df_output.loc[df_true.index, 'current_active'] = df_true['active'].to_numpy()
     df_output.loc[df_true.index, 'current_deceased'] = df_true['deceased'].to_numpy()
     df_output.loc[df_true.index, 'current_recovered'] = df_true['recovered'].to_numpy()
     
     df_output.reset_index(inplace=True)
-    df_output.columns = [x.replace('hospitalised', 'active') for x in df_output.columns]
-    df_output.columns = [x.replace('total_infected', 'total') for x in df_output.columns]
     return df_output
 
 def write_csv(df_final: pd.DataFrame, filename:str=None):
@@ -143,7 +141,7 @@ def write_csv(df_final: pd.DataFrame, filename:str=None):
         df_final {pd.DataFrame} -- the final CSV to be saved
         filename {str} -- the name of the file
     """
-    if filename == None:
+    if filename is None:
         filename = '../../output-{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     df_final.to_csv(filename, index=False)
 
@@ -280,7 +278,7 @@ def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
             model=model,
             best_params=new_params,
             lockdown_removal_date=lockdown_removal_date,
-            days=days)    
+            forecast_days=days)
     return predictions_mul_dict
 
 def save_r0_mul(predictions_mul_dict, folder):
