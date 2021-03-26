@@ -1,0 +1,35 @@
+# Driver config has three parts:
+#   configs: list of base config names
+#   iterate: condensed partial config with choices used across all base configs
+#   constant: condensed partial config with choices specific to each base config
+
+# Each terminal element has the structure [pattern, choices, select]
+# pattern: the method of specification of the choices
+#   - list: list of choices
+#   - repeat: value, num_repetitions
+#   - range: start, stop (exclusive), step
+#   - date_range: start, stop, periods, freq (specify EXACTLY three as per pd.date_range)
+# choices: representation of values using one of the above patterns
+# select: if True, produce combinations for this element else use default value from base config
+#2020-10-01
+# Use generate_configs_from_driver (utils/generic/config.py) to generate all configs.
+
+configs: [mcmc]
+iterate:
+    fitting:
+        split:
+            start_date: [date_range, [2020-05-01, 2020-10-01, null, 1D], TRUE]
+        optimiser_params:
+            seed: [list, [100, 200, 300, 400, 500], TRUE]
+constant:
+    default:
+        fitting:
+            split:
+                train_period: [list, [21], TRUE]
+                end_date: [list, [null], TRUE]
+            optimiser_params:
+                num_evals: [list, [2000], TRUE]
+        uncertainty:
+            uncertainty_params:
+                construct_percentiles_day_wise: [list, [TRUE], TRUE]
+                date_of_sorting_trials: [list, [null], TRUE]
