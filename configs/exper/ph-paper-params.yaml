@@ -14,11 +14,13 @@
 #2020-10-01
 # Use generate_configs_from_driver (utils/generic/config.py) to generate all configs.
 
-configs: [mcmc]
+configs: [athena]
 iterate:
     fitting:
         split:
-            starting_period: [date_range, [2020-05-01, 2020-05-03, null, 3D], TRUE]
+            start_date: [date_range, [2020-05-01, 2020-10-01, null, 3D], TRUE]
+        optimiser_params:
+            seed: [list, [100, 200, 300, 400, 500], TRUE]
 constant:
     default:
         fitting:
