@@ -1,15 +1,18 @@
 fitting:
     data:
-        dataloader: Covid19IndiaLoader
+        dataloader: FileLoader
         dataloading_params:
             reload_data: FALSE
             stratified_data: FALSE
-            cache_dir: "../../misc/cache/"
-            state: Maharashtra
-            district: Mumbai
-            use_dataframe: data_all
+            filename: ../../data/data/bmc_18032021.csv
+            columns_to_delete: [New daily cases, New Daily Recoveries, New Daily Deaths (Twitter)]
+            columns_to_rename:
+                Cum Active: active
+                Cum Total (inferred): total
+                Cum deaths (inferred): deceased
+                Cum Recoveries (Inferred): recovered
         data_columns: [total, active, recovered, deceased]
-        smooth_jump: TRUE
+        smooth_jump: FALSE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
@@ -27,25 +30,25 @@ fitting:
     model_family: seir
     model: SEIRHD
     variable_param_ranges:
-        lockdown_R0: [[0.7, 1.2], 101]
-        T_recov: [[1.e-4, 40], 11]
+        lockdown_R0: [[0.7, 2], uniform]
+        T_inc: [[4, 5], uniform]
+        T_inf: [[3, 4], uniform]
+        T_recov: [[0, 40], uniform]
+        T_recov_fatal: [[0, 40], uniform]
+        P_fatal: [[0, 0.1], uniform]
+        E_hosp_ratio: [[0, 2], uniform]
+        I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
-        T_inc: 4.5
-        T_inf: 3.5
-        T_recov_fatal: 25
-        P_fatal: 0.07
-        E_hosp_ratio: 0.2
-        I_hosp_ratio: 0.1
-    optimiser: GridSearch
+    optimiser: BO_Hyperopt
     optimiser_params:
-        # parallelise: TRUE doesn't work with notebooks!
-        parallelise: FALSE
-        n_threads: 40
+        num_evals: 2000
+        algo: tpe
+        seed: 42
     split:
         start_date: null
-        end_date: 2020-10-31
-        train_period: 30
+        end_date: null
+        train_period: 7
         val_period: 3
         test_period: 0
     loss:
@@ -53,7 +56,7 @@ fitting:
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
     forecast:
-        forecast_days: 30
+        forecast_days: 15
 plotting:
     truncate_series: TRUE
     left_truncation_buffer: 7
@@ -74,7 +77,7 @@ uncertainty:
         variable_param_ranges:
             beta: [[0, 10], 101]
         construct_percentiles_day_wise: FALSE
-        date_of_sorting_trials: 2020-11-30
+        date_of_sorting_trials: 2021-03-31
         sort_trials_by_column: total
         loss:
             loss_method: mape

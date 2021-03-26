@@ -56,7 +56,7 @@ fitting:
         loss_method: mape
         loss_compartments: [total, active, recovered, deceased]
         loss_weights: [0.25, 0.25, 0.25, 0.25]
-forecast:
+    forecast:
         forecast_days: 30
 plotting:
     truncate_series: TRUE
@@ -64,6 +64,7 @@ plotting:
     right_truncation_buffer: forecast_days
     separate_compartments_separate_ax: TRUE
     num_trials_to_plot: 10
+    pair_fits_to_plot: [[best, ensemble_mean], [ensemble_mean, 50], [50, 80]]
     plot_topk_trials_for_columns: [total, active, recovered, deceased]
     plot_ptiles_for_columns: [total, active, recovered, deceased]
 uncertainty:

@@ -10,6 +10,46 @@ import pypandoc
 import yaml
 from mdutils.mdutils import MdUtils
 
+from utils.fitting.util import CustomEncoder
+from utils.generic.config import make_date_str
+
+
+def create_output(predictions_dict, output_folder, tag):
+    """Custom output generation function"""
+    directory = f'{output_folder}/{tag}'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    d = {}
+    for inner in ['variable_param_ranges', 'best_params', 'beta_loss']:
+        if inner in predictions_dict:
+            with open(f'{directory}/{inner}.json', 'w') as f:
+                json.dump(predictions_dict[inner], f, indent=4)
+    for inner in ['df_prediction', 'df_district', 'df_train', 'df_val', 'df_loss', 'df_district_unsmoothed']:
+        if inner in predictions_dict and predictions_dict[inner] is not None:
+            predictions_dict[inner].to_csv(f'{directory}/{inner}.csv')
+    for inner in ['trials', 'run_params', 'plots', 'smoothing_description', 'default_params']:
+        with open(f'{directory}/{inner}.pkl', 'wb') as f:
+            pickle.dump(predictions_dict[inner], f)
+    if 'ensemble_mean' in predictions_dict['forecasts']:
+        predictions_dict['forecasts']['ensemble_mean'].to_csv(
+            f'{directory}/ensemble_mean_forecast.csv')
+    predictions_dict['trials']['predictions'][0].to_csv(
+        f'{directory}/trials_predictions.csv')
+    np.save(f'{directory}/trials_params.npy',
+            predictions_dict['trials']['params'])
+    np.save(f'{directory}/trials_losses.npy',
+            predictions_dict['trials']['losses'])
+    d[f'data_last_date'] = predictions_dict['data_last_date']
+    d['fitting_date'] = predictions_dict['fitting_date']
+    np.save(f'{directory}/beta.npy', predictions_dict['beta'])
+    with open(f'{directory}/other.json', 'w') as f:
+        json.dump(d, f, indent=4)
+    with open(f'{directory}/config.json', 'w') as f:
+        json.dump(make_date_str(
+            predictions_dict['config']), f, indent=4, cls=CustomEncoder)
+    with open(f'{directory}/config.yaml', 'w') as f:
+        yaml.dump(make_date_str(predictions_dict['config']), f)
+
 
 def _dump_predictions_dict(predictions_dict, ROOT_DIR):
     filepath = os.path.join(ROOT_DIR, 'predictions_dict.pkl')
@@ -35,11 +75,9 @@ def _save_trials(predictions_dict, ROOT_DIR):
 def _create_md_file(predictions_dict, config, ROOT_DIR):
     fitting_date = predictions_dict['fitting_date']
     data_last_date = predictions_dict['data_last_date']
-    state = config['fitting']['data']['dataloading_params']['state']
-    dist = config['fitting']['data']['dataloading_params']['district']
-    dist = '' if dist is None else dist
-    filename = os.path.join(ROOT_DIR, f'{state.title()}-{dist.title()}_report_{fitting_date}')
-    mdFile = MdUtils(file_name=filename, title=f'{dist.title()} Fits [Based on data until {data_last_date}]')
+    ld = config['fitting']['data']['dataloading_params']['location_description']
+    filename = os.path.join(ROOT_DIR, f'{ld}_report_{fitting_date}')
+    mdFile = MdUtils(file_name=filename, title=f'{ld} Fit [Based on data until {data_last_date}]')
     return mdFile, filename
 
 
@@ -159,13 +197,13 @@ def save_dict_and_create_report(predictions_dict, config, ROOT_DIR='../../misc/r
 
     _dump_predictions_dict(predictions_dict, ROOT_DIR)
 
-    with open(f'{config_ROOT_DIR}/{config_filename}') as configfile:
-        config = yaml.load(configfile, Loader=yaml.SafeLoader)
-
     os.system(f'cp {config_ROOT_DIR}/{config_filename} {ROOT_DIR}/{config_filename}')
     
     mdFile, filename = _create_md_file(predictions_dict, config, ROOT_DIR)
     _log_hyperparams(mdFile, predictions_dict)
+
+    with open(f'{config_ROOT_DIR}/{config_filename}') as configfile:
+        config = yaml.load(configfile, Loader=yaml.SafeLoader)
 
     if 'smoothing' in predictions_dict and predictions_dict['plots']['smoothing'] is not None:
         _log_smoothing(mdFile, ROOT_DIR, predictions_dict)

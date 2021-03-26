@@ -28,10 +28,10 @@ utils.generic.create\_report module
    :undoc-members:
    :show-inheritance:
 
-utils.generic.logging module
+utils.generic.logger module
 ----------------------------
 
-.. automodule:: utils.generic.logging
+.. automodule:: utils.generic.logger
    :members:
    :undoc-members:
    :show-inheritance:
