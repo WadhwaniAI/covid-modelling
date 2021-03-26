@@ -16,7 +16,7 @@ def axis_formatter(ax, legend_elements=None, custom_legend=False, log_scale=Fals
     ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=SA))
     ax.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax.set_ylabel('No of People')
+    ax.set_ylabel('No of Cases')
     ax.set_xlabel('Time')
     ax.tick_params('x', labelrotation=45)
     ax.grid()

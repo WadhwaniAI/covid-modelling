@@ -16,17 +16,11 @@ import pdb
 import json
 import argparse
 
-import pandas as pd
-from tqdm import tqdm
-from os.path import exists, join, splitext
-# from utils.generic.config import read_config
-from main.seir.mcmc import MCMC
-from utils.fitting.mcmc_utils import predict, get_state
-from main.seir.forecast import get_forecast, forecast_all_trials, create_all_trials_csv, create_decile_csv_new
-def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments=[Columns.active], 
+
+def plot_ptiles(predictions_dict, vline=None, which_compartments=[Columns.active], 
                 plot_individual_curves=True, log_scale=False, truncate_series=True, 
                 left_truncation_buffer=30, ci_lb=2.5, ci_ub=97.5):
-    predictions = copy(predictions_dict[train_fit]['forecasts'])
+    predictions = copy(predictions_dict['forecasts'])
     try:
         del predictions['best']
     except:
@@ -40,10 +34,10 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
             df = df['df_prediction']
         df_master = pd.concat([df_master, df], ignore_index=True)
     
-    train_period = predictions_dict[train_fit]['run_params']['split']['train_period']
-    val_period = predictions_dict[train_fit]['run_params']['split']['val_period']
+    train_period = predictions_dict['run_params']['split']['train_period']
+    val_period = predictions_dict['run_params']['split']['val_period']
     val_period = 0 if val_period is None else val_period
-    df_true = predictions_dict[train_fit]['df_district']
+    df_true = predictions_dict['df_district']
     if truncate_series:
         df_true = df_true[df_true['date'] >
                           (list(predictions.values())[0]['date'].iloc[0] -
@@ -57,11 +51,7 @@ def plot_ptiles(predictions_dict, train_fit='m2', vline=None, which_compartments
         ax.plot(df_true[Columns.date.name].to_numpy(), df_true[compartment.name].to_numpy(),
                 '-o', color='C0', label=f'{compartment.label} (Observed)')
         if plot_individual_curves:
-            for i, (ptile, df_prediction) in enumerate(predictions.items()):
-                if isinstance(df_prediction, pd.DataFrame):
-                    df_prediction = df_prediction.reset_index()
-                else:
-                    df_prediction = df_prediction['df_prediction']
+            for _, (ptile, df_prediction) in enumerate(predictions.items()):
                 sns.lineplot(x=Columns.date.name, y=compartment.name, data=df_prediction,
                             ls='-', label=f'{compartment.label} Percentile :{ptile}')
                 texts.append(plt.text(

@@ -1,13 +1,14 @@
 fitting:
-    # Geographical Location
     data:
-        data_source: jhu
+        dataloader: JHULoader
         stratified_data: FALSE
         dataloading_params:
             reload_data: FALSE
+            cache_dir: "../../misc/cache/"
             dataframe: us_states
             region: Kentucky
             sub_region: null
+        data_columns: [total, active, recovered, deceased]
         smooth_jump: FALSE
         smooth_jump_params:
             2020-09-15: [2020-08-22, deceased, active, FALSE, weighted-mag]
@@ -18,7 +19,7 @@ fitting:
             win_type: null
             min_periods: 7
             split_after_rolling: FALSE
-    #Choose Model and Ranges
+    model_family: seir
     model: SEIRHD
     variable_param_ranges:
         lockdown_R0: [[0.7, 1.5], uniform]
@@ -31,35 +32,40 @@ fitting:
         I_hosp_ratio: [[0, 1], uniform]
     default_params:
         N: 1.0e+7
-    fitting_method: bayes_opt
-    fitting_method_params:
+    optimiser: BO_Hyperopt
+    optimiser_params:
         num_evals: 2000
         algo: tpe
         seed: null
-    #Choose Fitting Periods and num evaluations
     split:
         start_date: null
         end_date: 2020-12-21
         train_period: 30
         val_period: 3
         test_period: 0
-    #Optimisation related parameters
     loss:
         loss_method: mape
         loss_compartments: [deceased]
         loss_weights: [1]
-forecast:
-    forecast_days: 45
+    forecast:
+        forecast_days: 45
+plotting:
+    truncate_series: TRUE
+    left_truncation_buffer: 7
+    right_truncation_buffer: forecast_days
+    separate_compartments_separate_ax: TRUE
     num_trials_to_plot: 10
+    pair_fits_to_plot: [[best, ensemble_mean], [ensemble_mean, 50], [50, 80]]
     plot_topk_trials_for_columns: [deceased]
     plot_ptiles_for_columns: [deceased]
 uncertainty:
-    method: MCUncertainty
+    method: ABMAUncertainty
     uncertainty_params:
         which_fit: m1
         fitting_method: gridsearch
         fitting_method_params:
             parallelise: FALSE
+            n_jobs: 10
         variable_param_ranges:
             beta: [[0, 10], 101]
         construct_percentiles_day_wise: TRUE

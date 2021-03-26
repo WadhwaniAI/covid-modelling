@@ -19,8 +19,8 @@ We may add a 5th key for `whatifs` scenarios, but that depends on how formally i
 - `model` : 
 - `variable_param_ranges` :
 - `default_params` :
-- `fitting_method` :
-- `fitting_method_params` : str. Can be `gridsearch` or  `bayes_opt`
+- `optimiser` :
+- `optimiser_params` : str. Can be `GridSearch` or  `BO_Hyperopt`
     - `num_evals`: int
     - `algo`: str. Can be `tpe` (TPE), `atpe` (adaptive TPE), or `rand` (random search)
     - `seed`: int
@@ -45,15 +45,15 @@ Giving train, val and test period is a must. If both start and end date are null
 
 ## Uncertainty
 
-- `method`: MCUncertainty, or MCMCUncertainty
+- `method`: ABMAUncertainty, or MCMCUncertainty
 
 Parameters for each uncertainty class come inside `uncertainty_params`. 
 
-For MCUncertainty : 
+For ABMAUncertainty : 
 - `num_evals` : int
-- `fitting_method`: str. Can be `gridsearch` or  `bayes_opt`
-For `gridsearch` -  
-- `fitting_method_params`:
+- `optimiser`: str. Can be `GridSearch` or  `BO_Hyperopt`
+For `GridSearch` -  
+- `optimiser_params`:
     - `parallelise`: bool
 Specify the range for beta - 
 - `variable_param_ranges`:

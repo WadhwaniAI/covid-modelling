@@ -3,20 +3,21 @@ from datetime import timedelta
 
 import matplotlib as mpl
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from data.processing.processing import get_data
-from utils.generic.enums.columns import *
-from viz.utils import axis_formatter
-from viz.utils import setup_plt
+from utils.generic.enums.columns import Columns, compartments
+from viz.utils import axis_formatter, setup_plt
 
 
-def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_format='old_output', filename=None, 
+def plot_backtest_seir(gt_dataloader='AthenaLoader', preds_source='filename', fname_format='old_output', filename=None,
                        predictions_dict=None, which_forecast=80, truncate_plotting_range=False,
-                       separate_compartments=False, dataloading_params={'state': 'Maharashtra', 'district': 'Mumbai'}):
+                       separate_compartments=False, dataloading_params={'state': 'Maharashtra', 'district': 'Mumbai'},
+                       data_columns=['total', 'active', 'recovered', 'deceased']):
     """Function of backtesting plotting
 
     Args:
-        gt_data_source (str, optional): Ground Truth data source. Defaults to 'athena'.
+        gt_dataloader (str, optional): Ground Truth data source. Defaults to 'athena'.
         preds_source (str, optional): Source of predictions ('filename'/'pickle'). Defaults to 'filename'.
         fname_format (str, optional): Format of predictions fname ('old_output'/'new_deciles'). 
         Required if preds_source == 'filename'. Defaults to 'old_output'.
@@ -41,7 +42,7 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
     """
     
     # Getting gt data
-    df_true = get_data(gt_data_source, dataloading_params)
+    df_true = get_data(gt_dataloader, dataloading_params, data_columns)
 
     # Setting train_period to None
     train_period = None
@@ -95,8 +96,8 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
             raise ValueError('Please give a predictions_dict input, current input is None')
 
         df_prediction = copy.copy(
-            predictions_dict['m2']['forecasts'][which_forecast])
-        train_period = predictions_dict['m2']['run_params']['split']['train_period']
+            predictions_dict['forecasts'][which_forecast])
+        train_period = predictions_dict['run_params']['split']['train_period']
     else:
         raise ValueError('Please give legal preds_source : either filename or pickle')
 
@@ -119,10 +120,10 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
     for i, compartment in enumerate(compartments['base']):
         if separate_compartments:
             ax = axs.flat[i]
-        ax.plot(df_true[compartments['date'][0].name].to_numpy(),
+        ax.plot(df_true[compartments['date'].name].to_numpy(),
                 df_true[compartment.name].to_numpy(),
                 '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-        ax.plot(df_prediction[compartments['date'][0].name].to_numpy(),
+        ax.plot(df_prediction[compartments['date'].name].to_numpy(),
                 df_prediction[compartment.name].to_numpy(),
                 '-.', color=compartment.color, label='{} (Predicted)'.format(compartment.label))
 
@@ -144,7 +145,7 @@ def plot_backtest_seir(gt_data_source='athena', preds_source='filename', fname_f
     fig.subplots_adjust(top=0.96)
     return fig, df_true.iloc[train_period:, :], df_prediction.iloc[train_period-1:, :]
 
-def plot_backtest(results, data, dist, which_compartments=Columns.which_compartments(), scoring='mape',
+def plot_backtest(results, data, dist, which_compartments=Columns.CARD_compartments(), scoring='mape',
                   axis_name='No. People', savepath=None):
     title = f'{dist}' + ' backtesting'
     # plot predictions against actual
@@ -157,7 +158,7 @@ def plot_backtest(results, data, dist, which_compartments=Columns.which_compartm
             return series/100
         return series
     
-    fig, ax = plt.subplots(figsize=(12, 12))
+    _, ax = plt.subplots(figsize=(12, 12))
     # plot predictions
     cmap = mpl.cm.get_cmap('winter')
     for col in which_compartments:
@@ -191,7 +192,7 @@ def plot_backtest(results, data, dist, which_compartments=Columns.which_compartm
         plt.clf()
     return
 
-def plot_backtest_errors(results, data, file_prefix, which_compartments=Columns.which_compartments(), 
+def plot_backtest_errors(results, data, file_prefix, which_compartments=Columns.CARD_compartments(), 
                          scoring='mape', savepath=None):
     start = data['date'].min()
     

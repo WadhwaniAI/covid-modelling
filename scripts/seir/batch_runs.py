@@ -1,39 +1,41 @@
-import matplotlib.pyplot as plt
-import pandas as pd
+import argparse
+import datetime
 import os
 import pickle
-import argparse
+import sys
 from functools import partial
+
+import matplotlib.pyplot as plt
+import pandas as pd
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-import sys
 sys.path.append('../../')
 
-from main.seir.common import *
+from scripts.seir.common import *
 from utils.generic.config import read_config, process_config_seir, make_date_key_str
-from utils.generic.logging import log_wandb
+from utils.generic.logger import log_wandb
 from viz import plot_forecast
 
 import wandb
 
 
 def plot_forecasts_of_best_candidates(predictions_dict, config):
-    predictions_dict['m2']['plots']['forecast_best_50'] = plot_forecast(
+    predictions_dict['plots']['forecast_best_50'] = plot_forecast(
         predictions_dict,
         config['fitting']['data']['dataloading_params']['location_description'],
         which_compartments=config['fitting']['loss']['loss_compartments'],
         fits_to_plot=['best', 50], error_bars=False
     )
 
-    predictions_dict['m2']['plots']['forecast_best_80'] = plot_forecast(
+    predictions_dict['plots']['forecast_best_80'] = plot_forecast(
         predictions_dict,
         config['fitting']['data']['dataloading_params']['location_description'],
         which_compartments=config['fitting']['loss']['loss_compartments'],
         fits_to_plot=['best', 80], error_bars=False
     )
 
-    predictions_dict['m2']['plots']['forecast_ensemble_mean_50'] = plot_forecast(
+    predictions_dict['plots']['forecast_ensemble_mean_50'] = plot_forecast(
         predictions_dict,
         config['fitting']['data']['dataloading_params']['location_description'],
         which_compartments=config['fitting']['loss']['loss_compartments'],
@@ -42,9 +44,7 @@ def plot_forecasts_of_best_candidates(predictions_dict, config):
 
 
 def run_single_config_end_to_end(config, wandb_config, run_name, log_wandb_flag=False):
-    predictions_dict = {}
-
-    fitting(predictions_dict, config)
+    predictions_dict = fitting(config)
     forecast_best(predictions_dict, config)
     uncertainty = fit_beta(predictions_dict, config)
     process_uncertainty_fitting(predictions_dict, uncertainty)

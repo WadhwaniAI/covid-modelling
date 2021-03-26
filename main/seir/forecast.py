@@ -1,56 +1,14 @@
+import datetime
 import os
+
 import numpy as np
 import pandas as pd
 
-from tqdm import tqdm
-import datetime
-import copy
-
-from models.seir import SEIRHD
-
-def get_forecast(predictions_dict: dict, forecast_days: int = 37, train_end_date=None, train_fit='m2', model=SEIRHD,
-                 best_params=None, verbose=True, lockdown_removal_date=None):
-    """Returns the forecasts for a given set of params of a particular geographical area
-
-    Arguments:
-        predictions_dict {dict} -- [description]
-
-    Keyword Arguments:
-        train_end_date {[type]} -- [description] (default: {None})
-        train_fit {str} -- [description] (default: {'m2'})
-        best_params {[type]} -- [description] (default: {None})
-
-    Returns:
-        [type] -- [description]
-    """
-    if verbose:
-        print("getting forecasts ..")
-    if train_end_date is None:
-        simulate_till = predictions_dict[train_fit]['df_district'].iloc[-1]['date'] + \
-            datetime.timedelta(days=forecast_days)
-    else:
-        simulate_till = train_end_date + datetime.timedelta(days=forecast_days)
-        simulate_till = datetime.datetime.combine(simulate_till, datetime.datetime.min.time())
-    if best_params is None:
-        best_params = predictions_dict[train_fit]['best_params']
-
-    default_params = copy.copy(predictions_dict[train_fit]['default_params'])
-    if lockdown_removal_date is not None:
-        train_period = predictions_dict[train_fit]['run_params']['train_period']
-        start_date = predictions_dict[train_fit]['df_train'].iloc[-train_period, :]['date']
-        lockdown_removal_date = datetime.datetime.strptime(lockdown_removal_date, '%Y-%m-%d')
-        default_params['lockdown_removal_day'] = (lockdown_removal_date - start_date).days
-    
-    df_prediction = predictions_dict[train_fit]['optimiser'].solve({**best_params, **default_params},
-                                                                   model=model,
-                                                                   end_date=simulate_till)
-
-    return df_prediction
 
 def create_all_trials_csv(predictions_dict: dict):
-    df_all = pd.DataFrame(columns=predictions_dict['m2']['trials_processed']['predictions'][0].columns)
-    for i, df_prediction in enumerate(predictions_dict['m2']['trials_processed']['predictions']):
-        df_prediction['loss'] = predictions_dict['m2']['trials_processed']['losses'][i]
+    df_all = pd.DataFrame(columns=predictions_dict['trials']['predictions'][0].columns)
+    for i, df_prediction in enumerate(predictions_dict['trials']['predictions']):
+        df_prediction['loss'] = predictions_dict['trials']['losses'][i]
         df_all = pd.concat([df_all, df_prediction])
 
     forecast_columns = [x for x in df_all.columns if not x[0].isupper()]
@@ -66,14 +24,14 @@ def create_decile_csv_new(predictions_dict: dict):
     Returns:
         pd.DataFrame: Dataframe in the format that Keshav wants
     """
-    forecast_columns = [x for x in predictions_dict['m2']['forecasts']['best'].columns if not x[0].isupper()]
+    forecast_columns = [x for x in predictions_dict['forecasts']['best'].columns if not x[0].isupper()]
     forecast_columns = [x for x in forecast_columns if x != 'date']
     column_mapping = {k:k for k in forecast_columns}
 
     df_percentiles_list = []
     percentile_labels = []
 
-    for decile, df_prediction in predictions_dict['m2']['forecasts'].items():
+    for decile, df_prediction in predictions_dict['forecasts'].items():
         if decile == 'best':
             continue
         percentile_labels.append(" ".join([str(decile), "Percentile"]))
@@ -90,24 +48,23 @@ def create_decile_csv_new(predictions_dict: dict):
     
     return df_output
 
-
 def create_decile_csv(predictions_dict: dict, region: str, regionType: str):
     print("compiling csv data ..")
     columns = ['forecastRunDate', 'regionType', 'region', 'model_name', 'error_function', 'predictionDate',
                'current_total', 'current_active', 'current_recovered', 'current_deceased']
     
-    forecast_columns = [x for x in predictions_dict['m2']['forecasts']['best'].columns if not x[0].isupper()]
+    forecast_columns = [x for x in predictions_dict['forecasts']['best'].columns if not x[0].isupper()]
     forecast_columns = [x for x in forecast_columns if x != 'date']
 
-    for decile in predictions_dict['m2']['forecasts'].keys():
+    for decile in predictions_dict['forecasts'].keys():
         columns += [f'{x}_{decile}' for x in forecast_columns]
 
     df_output = pd.DataFrame(columns=columns)
 
-    df_true = predictions_dict['m2']['df_district']
+    df_true = predictions_dict['df_district']
 
-    dateseries = predictions_dict['m2']['forecasts'][list(
-        predictions_dict['m2']['forecasts'].keys())[0]]['date']
+    dateseries = predictions_dict['forecasts'][list(
+        predictions_dict['forecasts'].keys())[0]]['date']
     prediction_daterange = np.union1d(df_true['date'], dateseries)
     no_of_data_points = len(prediction_daterange)
     df_output['predictionDate'] = prediction_daterange
@@ -116,11 +73,11 @@ def create_decile_csv(predictions_dict: dict, region: str, regionType: str):
         predictions_dict['fitting_date'], '%Y-%m-%d')]*no_of_data_points
     df_output['regionType'] = [regionType]*no_of_data_points
     df_output['region'] = [region]*no_of_data_points
-    df_output['model_name'] = [predictions_dict['m2']['run_params']['model']]*no_of_data_points
+    df_output['model_name'] = [predictions_dict['run_params']['model']]*no_of_data_points
     df_output['error_function'] = ['MAPE']*no_of_data_points
     df_output.set_index('predictionDate', inplace=True)
 
-    for decile, df_prediction in predictions_dict['m2']['forecasts'].items():
+    for decile, df_prediction in predictions_dict['forecasts'].items():
         df_prediction = df_prediction.set_index('date')
         for column in forecast_columns:
             df_output.loc[df_prediction.index, f'{column}_{decile}'] = df_prediction[column]
@@ -134,103 +91,6 @@ def create_decile_csv(predictions_dict: dict, region: str, regionType: str):
     df_output.reset_index(inplace=True)
     return df_output
 
-def write_csv(df_final: pd.DataFrame, filename:str=None):
-    """Helper function for saving the CSV files
-
-    Arguments:
-        df_final {pd.DataFrame} -- the final CSV to be saved
-        filename {str} -- the name of the file
-    """
-    if filename is None:
-        filename = '../../output-{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-    df_final.to_csv(filename, index=False)
-
-def _order_trials_by_loss(m_dict: dict, sort_trials: bool=True):
-    """Orders a set of trials by their corresponding loss value
-
-    Args:
-        m_dict (dict): predictions_dict for a particular train_fit
-
-    Returns:
-        array, array: Array of params and loss values resp
-    """
-    params_array = []
-    for trial in m_dict['trials']:
-        params_dict = copy.copy(trial['misc']['vals'])
-        for key in params_dict.keys():
-            params_dict[key] = params_dict[key][0]
-        params_array.append(params_dict)
-    params_array = np.array(params_array)
-    losses_array = np.array([trial['result']['loss'] for trial in m_dict['trials']])
-
-    if sort_trials:
-        least_losses_indices = np.argsort(losses_array)
-        losses_array = losses_array[least_losses_indices]
-        params_array = params_array[least_losses_indices]
-    return params_array, losses_array
-
-def _get_top_k_trials(m_dict: dict, k=10):
-    """Returns Top k trials ordered by loss
-
-    Args:
-        m_dict (dict): predictions_dict for a particular train_fit
-        k (int, optional): Number of trials. Defaults to 10.
-
-    Returns:
-        array, array: array of params and losses resp (of len k each)
-    """
-    params_array, losses_array = _order_trials_by_loss(m_dict)
-    return params_array[:k], losses_array[:k]
-
-
-def forecast_top_k_trials(predictions_dict: dict, model=SEIRHD, k=10, train_fit='m2', train_end_date=None, 
-                          forecast_days=37):
-    """Creates forecasts for the top k Bayesian Opt trials (ordered by loss) for a specified number of days
-
-    Args:
-        predictions_dict (dict): The dict of predictions for a particular region
-        k (int, optional): The number of trials to forecast for. Defaults to 10.
-        train_fit (str, optional): Which train fit (m1 or m2). Defaults to 'm2'.
-        forecast_days (int, optional): Number of days to forecast for. Defaults to 37.
-
-    Returns:
-        array, array, array: array of predictions, losses, and parameters resp
-    """
-    top_k_params, top_k_losses = _get_top_k_trials(predictions_dict[train_fit], k=k)
-    predictions = []
-    print("getting forecasts ..")
-    for i, params_dict in tqdm(enumerate(top_k_params)):
-        predictions.append(get_forecast(predictions_dict, best_params=params_dict, model=model, 
-                                        train_fit=train_fit, train_end_date=train_end_date, 
-                                        forecast_days=forecast_days, verbose=False))
-    return predictions, top_k_losses, top_k_params
-
-
-def forecast_all_trials(predictions_dict, model=SEIRHD, train_fit='m2', train_end_date=None, forecast_days=37):
-    """Forecasts all trials in a particular train_fit, in predictions dict
-
-    Args:
-        predictions_dict (dict): The dict of predictions for a particular region
-        train_fit (str, optional): Which train fit (m1 or m2). Defaults to 'm2'.
-        forecast_days (int, optional): How many days to forecast for. Defaults to 37.
-
-    Returns:
-        [type]: [description]
-    """
-    predictions, losses, params = forecast_top_k_trials(
-        predictions_dict, 
-        k=len(predictions_dict[train_fit]['trials']), 
-        model=model,
-        train_fit=train_fit,
-        train_end_date=train_end_date,
-        forecast_days=forecast_days
-    )
-    return_dict = {
-        'predictions': predictions, 
-        'losses': losses, 
-        'params': params
-    }
-    return return_dict
 
 def set_r0_multiplier(params_dict, mul):
     """[summary]
@@ -247,13 +107,13 @@ def set_r0_multiplier(params_dict, mul):
     return new_params
 
 
-def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
-                           multipliers=[0.9, 1, 1.1, 1.25], lockdown_removal_date='2020-06-01'):
+def predict_r0_multipliers(region_dict, params_dict, days, model,
+                           multipliers=[0.9, 1, 1.1, 1.25]):
     """
     Function to predict what-if scenarios with different post-lockdown R0s
 
     Args:
-        region_dict (dict): region_dict as returned by main.seir.fitting.single_fitting_cycle
+        region_dict (dict): region_dict as returned by main.seir.main.single_fitting_cycle
         params_dict (dict): model parameters
         multipliers (list, optional): list of multipliers to get post_lockdown_R0 from lockdown_R0. 
             Defaults to [0.9, 1, 1.1, 1.25].
@@ -273,12 +133,10 @@ def predict_r0_multipliers(region_dict, params_dict, days, model=SEIRHD,
         predictions_mul_dict[mul] = {}
         new_params = set_r0_multiplier(params_dict, mul)
         predictions_mul_dict[mul]['params'] = new_params
-        predictions_mul_dict[mul]['df_prediction'] = get_forecast(region_dict,
-            train_fit = "m2",
-            model=model,
-            best_params=new_params,
-            lockdown_removal_date=lockdown_removal_date,
-            forecast_days=days)
+        params_dict = {**new_params, **region_dict['default_params']}
+        solver = model(**params_dict)
+        predictions_mul_dict[mul]['df_prediction'] = solver.predict(
+            total_days=days) 
     return predictions_mul_dict
 
 def save_r0_mul(predictions_mul_dict, folder):

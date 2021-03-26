@@ -45,7 +45,17 @@ The API for accessing their data is [here](https://api.rootnet.in/). Their state
 
 This was implemented to setup a proper pipeline for accessing custom data from different goverment organisations that we serve. Someone from the government organisation/our organisation would input the data in a google sheet with a particular defined schema. That google sheet is then linked to AWS Athena, which allows us to query that google sheet like an SQL database, without creating a backend database. 
 
-The user can check out [this](https://wadhwaniai.github.io/covid-data/) link to get a better idea of how to get credentials to access this data, tables supported by Athena and their respective schemas. 
+The user can check out [this](https://wadhwaniai.github.io/covid-data/) link to get a better idea of how to get credentials to access this data, tables supported by Athena and their respective schemas. Once you get access to credentials, you will get a csv file with your access key and secret access key. Please create a PyAthena RC file in the format given below, and replace Access Key with Secret Key variables with your keys. Save the file in `/misc/pyathena/pyathena.rc`.
+
+This is what a sample PyAthena RC file looks like : 
+
+```
+export AWS_ACCESS_KEY_ID=
+export AWS_SECRET_ACCESS_KEY=
+export AWS_DEFAULT_REGION="ap-south-1"
+export AWS_ATHENA_S3_STAGING_DIR="s3://wiai-athena-query-results/S3_STAGING_DIR_NAME/"
+export AWS_ATHENA_WORK_GROUP=primary
+```
 
 Currently this data source is used only for Mumbai data (our primary customer). It was earlier used for Pune as well. `new_covid_case_summary` is the table that is used. 
 

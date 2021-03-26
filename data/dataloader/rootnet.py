@@ -1,16 +1,23 @@
+import copy
 import pandas as pd
-import numpy as np
-import datetime
 import requests
 
 from data.dataloader.base import BaseLoader
 
 
 class RootnetLoader(BaseLoader):
+    """Dataloader that outputs time series case data for Indian states from 
+        'https://api.rootnet.in/'
+
+        Allows the user to do fitting on Indian states
+
+    Args:
+        BaseLoader (abstract class): Abstract Data Loader Class
+    """
     def __init__(self):
         super().__init__()
 
-    def load_data(self):
+    def pull_dataframes(self, **kwargs):
         """
         This function parses multiple JSONs from api.rootnet.in
         It then converts the data into pandas dataframes
@@ -52,6 +59,23 @@ class RootnetLoader(BaseLoader):
 
         return dataframes
 
-    def get_rootnet_api_data(self):
-        return self.load_data()
+    def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
+        return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
 
+
+    def get_data(self, state='Delhi', reload_data=False, **kwargs):
+        """Main function serving as handshake between data and fitting modules
+
+        Args:
+            state (str, optional): State in India to fit on. Defaults to 'Delhi'.
+            reload_data (bool, optional): Param for pull_dataframes_cached. Defaults to False.
+
+        Returns:
+            dict{str : pd.DataFrame}: Processed dataframe
+        """
+        dataframes = self.pull_dataframes_cached(reload_data=reload_data, **kwargs)
+        df = copy.copy(dataframes['df_state_time_series'])
+        df = df[df['state'] == state]
+        df.reset_index(inplace=True, drop=True)
+
+        return {"data_frame": df}

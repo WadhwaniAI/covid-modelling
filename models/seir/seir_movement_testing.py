@@ -1,14 +1,6 @@
 import numpy as np
-import pandas as pd
-from scipy.integrate import solve_ivp
-import matplotlib.pyplot as plt
-
-from collections import OrderedDict
-import datetime
 import copy
-
-from models.seir.seir import SEIR
-from utils.fitting.ode import ODE_Solver
+from models.seir.base import SEIR
 
 class SEIR_Movement_Testing(SEIR):
 

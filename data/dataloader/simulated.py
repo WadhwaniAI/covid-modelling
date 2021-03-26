@@ -1,19 +1,24 @@
 import pandas as pd
 import numpy as np
 import os
+import yaml
 import copy
-from models.seir import *
 
 from data.dataloader.base import BaseLoader
 
 class SimulatedDataLoader(BaseLoader):
+    """Dataloader that simulates data (ie, generates data from casecounts of a given model, eg SEIR)å
+
+    Args:
+        BaseLoader (abstract class): Abstract Data Loader Class
+    """
     def __init__(self):
         super().__init__()
 
-    def load_data(self, **config):
+    def pull_dataframes(self, **config):
         """generates simulated data using the input params in config
-        Keyword Arguments
-        -----------------
+
+        Args: 
             config {dict} -- keys required:
                 model {str} -- Name of model to use to generate the data (in title case)
                 starting_date {datetime} -- Starting date of the simulated data (in YYYY-MM-DD format)
@@ -21,8 +26,7 @@ class SimulatedDataLoader(BaseLoader):
                 initial_values {dict} -- Initial values for 'Active', 'Recovered' and 'Deceased' bucket
                 params {dict} -- Parameters to generate the simulated data
         
-        Returns
-        -------
+        Returns:
             dict:
                 data_frame {pd.DataFrame} -- dataframe of cases for a particular state, district with 5 columns : 
                     ['date', 'total', 'active', 'deceased', 'recovered']
@@ -57,4 +61,68 @@ class SimulatedDataLoader(BaseLoader):
             os.makedirs(save_dir)
         df_result.to_csv(os.path.join(save_dir, config['output_file_name']))
         pd.DataFrame([actual_params]).to_csv(os.path.join(save_dir, 'params_'+config['output_file_name']), index=False)
-        return {"data_frame": df_result, "actual_params": actual_params} 
+        return {"data_frame": df_result, "actual_params": actual_params}
+
+    def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
+        return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
+
+    def get_data(self, **dataloading_params):
+        """Main function serving as handshake between data and fitting modules
+
+        Returns:
+            dict{str : pd.DataFrame}: The processed dataframe
+        """
+        if dataloading_params['generate']:
+            return self.generate_data(**dataloading_params)
+        else:
+            return self.get_data_from_file(**dataloading_params)
+
+    def generate_data(self, config_file, sim_data_configs_dir="../../configs/simulated_data/",
+                      columns=['total', 'active', 'deceased', 'recovered'], **kwargs):
+        """Generates simulated data using the input params in config file
+
+        Args:
+            configfile {str} -- Name of config file (located at '../../configs/simulated_data/') 
+            required to generate the simulated data
+        
+        Returns:
+            pd.DataFrame -- dataframe of cases for a particular state, district with 5 columns : 
+                ['date', 'total', 'active', 'deceased', 'recovered'] and params used to generate data
+        """
+
+        with open(os.path.join(sim_data_configs_dir, config_file)) as configfile:
+            config = yaml.load(configfile, Loader=yaml.SafeLoader)
+
+        data_dict = self.pull_dataframes_cached(**config)
+        df_result, params = data_dict['data_frame'], data_dict['actual_params']
+
+        for col in df_result.columns:
+            if col in columns:
+                df_result[col] = df_result[col].astype('int64')
+        return {"data_frame": df_result[['date'] + columns],
+                "actual_params": params}
+
+    def get_data_from_file(self, filename, params_filename=None,
+                           columns=['total', 'active', 'deceased', 'recovered'], **kwargs):
+        """Gets simulated data already generated in a file
+
+        Args:
+            filename (str): The filename containing the generated data
+            params_filename (str, optional): Filename of params used to generate data. Defaults to None.
+            columns (list, optional): List of columns to return. 
+            Defaults to ['total', 'active', 'deceased', 'recovered'].
+
+        Returns:
+            dict{str : pd.DataFrame, str : params}: Processed dataframes, ideal params
+        """
+        params = {}
+        if params_filename:
+            params = pd.read_csv(params_filename).iloc[0, :].to_dict()
+        df_result = pd.read_csv(filename)
+        df_result['date'] = pd.to_datetime(df_result['date'])
+        df_result.loc[:, columns] = df_result[columns].apply(pd.to_numeric)
+        for col in df_result.columns:
+            if col in columns:
+                df_result[col] = df_result[col].astype('int64')
+        return {"data_frame": df_result[['date' + columns]],
+                "actual_params": params}

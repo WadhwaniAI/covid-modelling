@@ -18,7 +18,7 @@ from tabulate import tabulate
 
 sys.path.append('../../')
 
-from main.ihme.fitting import single_fitting_cycle
+from main.ihme.main import single_fitting_cycle
 from utils.fitting.util import CustomEncoder
 from utils.generic.config import read_config, make_date_str
 

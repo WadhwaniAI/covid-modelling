@@ -1,34 +1,28 @@
 
-import os
-import pdb
 import sys
-import json
-import itertools
 import datetime
 from copy import copy, deepcopy
 import numpy as np
 import pandas as pd
-from functools import partial
-from hyperopt import fmin, tpe, hp, Trials
+from hyperopt import fmin, tpe, Trials
 from tqdm import tqdm
 from joblib import Parallel, delayed
 
 sys.path.append('../../../')
-from main.seir.forecast import forecast_all_trials
-from main.seir.optimiser import Optimiser
-from .uncertainty_base import Uncertainty
+from utils.fitting.util import set_variable_param_ranges
+from .base import Uncertainty
 from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 
-class MCUncertainty(Uncertainty):
-    def __init__(self, predictions_dict, fitting_config, forecast_config, variable_param_ranges, fitting_method, 
-                 fitting_method_params, which_fit, construct_percentiles_day_wise,date_of_sorting_trials, 
-                 sort_trials_by_column, loss, percentiles, fitting_type='bo', process_trials=True):
+class ABMAUncertainty(Uncertainty):
+    def __init__(self, predictions_dict, fitting_config, variable_param_ranges, fitting_method,
+                 fitting_method_params, which_fit, construct_percentiles_day_wise, date_of_sorting_trials, 
+                 sort_trials_by_column, loss, percentiles, fitting_type='bo'):
         """
         Initializes uncertainty object, finds beta for distribution
 
         Args:
-            predictions_dict (dict): predictions_dict as returned by main.seir.fitting.single_fitting_cycle
+            predictions_dict (dict): predictions_dict as returned by main.seir.main.single_fitting_cycle
             date_of_sorting_trials (str): prediction date by which trials should be sorted + distributed
         """
         super().__init__(predictions_dict)
@@ -41,13 +35,10 @@ class MCUncertainty(Uncertainty):
             setattr(self, key, loss[key])
         self.percentiles = percentiles
         self.fitting_config = fitting_config
-        self.forecast_config = forecast_config
         self.construct_percentiles_day_wise = construct_percentiles_day_wise
         # Processing all trials
-        if process_trials:
-            self.process_trials(predictions_dict, fitting_config, forecast_config)
-        self.p_val = self.p_test()
         # Finding Best Beta
+        self.p_val = self.p_test()
         if(fitting_type == 'mcmc'):
             self.beta = 0
             self.beta_loss = 0
@@ -58,21 +49,6 @@ class MCUncertainty(Uncertainty):
         # Creating Ensemble Mean Forecast
         self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta}, return_dict=False,
                                                               return_ensemble_mean_forecast=True)
-
-    def process_trials(self, predictions_dict, fitting_config, forecast_config):
-        predictions_dict['m1']['trials_processed'] = forecast_all_trials(
-            predictions_dict, train_fit='m1',
-            model=fitting_config['model'],
-            train_end_date=fitting_config['split']['end_date'],
-            forecast_days=forecast_config['forecast_days']
-        )
-
-        # predictions_dict['m2']['trials_processed'] = forecast_all_trials(
-        #     predictions_dict, train_fit='m2',
-        #     model=fitting_config['model'],
-        #     train_end_date=fitting_config['split']['end_date'],
-        #     forecast_days=forecast_config['forecast_days']
-        # )
 
     def trials_to_df(self, trials_processed, column=Columns.active):
         predictions = trials_processed['predictions']
@@ -122,15 +98,16 @@ class MCUncertainty(Uncertainty):
             float: average relative error calculated over trials and a val set
         """    
         beta = params['beta']
-        losses = self.predictions_dict['m1']['trials_processed']['losses']
+        losses = self.predictions_dict['trials']['losses']
         # This is done as rolling average on df_val has already been calculated, 
         # while df_district has no rolling average
-        df_val = self.predictions_dict['m1']['df_district'].set_index('date') \
-            .loc[self.predictions_dict['m1']['df_val']['date'],:]
-        df_test = self.predictions_dict['m1']['df_district'].set_index('date') \
-            .loc[self.predictions_dict['m1']['df_test']['date'],:]
+        df_val = self.predictions_dict['df_district'].set_index('date') \
+            .loc[self.predictions_dict['df_val']['date'],:]
+        df_test = self.predictions_dict['df_district'].set_index('date') \
+            .loc[self.predictions_dict['df_test']['date'], :]
         beta_loss = np.exp(-beta*losses)
-        predictions = self.predictions_dict['m1']['trials_processed']['predictions']
+
+        predictions = self.predictions_dict['trials']['predictions']
         loss_cols = self.loss_compartments
         allcols = ['total', 'active', 'recovered', 'deceased', 'hq', 'non_o2_beds', 'o2_beds', 'icu', 'ventilator',
                    'asymptomatic', 'symptomatic', 'critical']
@@ -149,18 +126,18 @@ class MCUncertainty(Uncertainty):
         lc = Loss_Calculator()
         if return_dict:
             weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
-            return lc.calc_loss_dict(weighted_pred_df_loss, df_val, method=self.loss_method)
-        
+            return lc.calc_loss_dict(weighted_pred_df_loss, df_val, loss_method=self.loss_method, 
+                                     loss_compartments=loss_cols)
         if return_ensemble_mean_forecast:
             weighted_pred_df.reset_index(inplace=True)
-            return {'df_prediction':weighted_pred_df,'df_loss':lc.calc_loss_dict(weighted_pred_df_loss, df_test, method = 'mape')}
-        weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
-        return lc.calc_loss(weighted_pred_df_loss, df_val, method=self.loss_method,
-                            which_compartments=loss_cols, loss_weights=self.loss_weights)
+            # df_loss':lc.calc_loss_dict(weighted_pred_df_loss, df_test, method = 'mape')}
+            return weighted_pred_df
+        return lc.calc_loss(weighted_pred_df_loss, df_val, loss_method=self.loss_method,
+                            loss_compartments=loss_cols, loss_weights=self.loss_weights)
 
     def find_beta(self, fitting_method, fitting_method_params, variable_param_ranges):
         """
-        Runs a search over m1 trials to find best beta for a probability distro
+        Runs a search over trials to find best beta for a probability distro
 
         Args:
             num_evals (int, optional): number of iterations to run hyperopt. Defaults to 1000.
@@ -168,11 +145,10 @@ class MCUncertainty(Uncertainty):
         Returns:
             float: optimal beta value
         """
-        op = Optimiser()
-        formatted_searchspace = op.format_variable_param_ranges(
+        formatted_searchspace = set_variable_param_ranges(
             variable_param_ranges, fitting_method)
 
-        if fitting_method == 'bayes_opt':
+        if fitting_method == 'bo_hyperopt':
             trials = Trials()
             best = fmin(self.avg_weighted_error,
                         space=formatted_searchspace,
@@ -183,7 +159,8 @@ class MCUncertainty(Uncertainty):
             return best['beta'], trials
         elif fitting_method == 'gridsearch':
             if fitting_method_params['parallelise']:
-                loss_values = Parallel(n_jobs=40)(delayed(self.avg_weighted_error)(
+                n_jobs = fitting_method_params['n_jobs']
+                loss_values = Parallel(n_jobs=n_jobs)(delayed(self.avg_weighted_error)(
                     {'beta': beta_value}) for beta_value in tqdm(formatted_searchspace['beta']))
             else:
                 loss_values = [self.avg_weighted_error({'beta': beta_value})
@@ -199,7 +176,7 @@ class MCUncertainty(Uncertainty):
     def get_distribution(self):
         """
         Computes probability distribution based on given beta and date 
-        over the trials in predictions_dict[self.which_fit]['all_trials']
+        over the trials in predictions_dict['all_trials']
 
         Args:
 
@@ -215,10 +192,10 @@ class MCUncertainty(Uncertainty):
         """    
         
         df = pd.DataFrame(columns=['loss', 'weight', 'pdf'])
-        df['loss'] = self.predictions_dict[self.which_fit]['trials_processed']['losses']
+        df['loss'] = self.predictions_dict['trials']['losses']
         df['weight'] = np.exp(-self.beta*df['loss'])
         df['pdf'] = df['weight'] / df['weight'].sum()
-        df_trials = self.trials_to_df(self.predictions_dict[self.which_fit]['trials_processed'], 
+        df_trials = self.trials_to_df(self.predictions_dict['trials'], 
                                       self.sort_trials_by_column)
         # Removing non time stamp columns
         df_trials = df_trials.loc[:, [x for x in df_trials.columns if type(x) is pd.Timestamp]]
@@ -249,17 +226,14 @@ class MCUncertainty(Uncertainty):
             df_ptile_idxs = self.get_ptiles_idx(percentiles=percentiles)
                 
         deciles_forecast = {}
-        predictions = self.predictions_dict[self.which_fit]['trials_processed']['predictions']
+        
+        predictions = self.predictions_dict['trials']['predictions']
         predictions = [df.loc[:, :'total'] for df in predictions]
         predictions_stacked = np.stack([df.to_numpy() for df in predictions], axis=0)
-        params = self.predictions_dict[self.which_fit]['trials_processed']['params']
-        df_district = self.predictions_dict[self.which_fit]['df_district']
+        params = self.predictions_dict['trials']['params']
+        df_district = self.predictions_dict['df_district']
         df_train_nora = df_district.set_index('date').loc[
-            self.predictions_dict[self.which_fit]['df_train']['date'], :].reset_index()
-        df_val_nora = df_district.set_index('date').loc[
-            self.predictions_dict[self.which_fit]['df_val']['date'], :].reset_index()
-        df_test_nora = df_district.set_index('date').loc[
-            self.predictions_dict[self.which_fit]['df_test']['date'], :].reset_index()
+            self.predictions_dict['df_train']['date'], :].reset_index()
         for ptile in df_ptile_idxs.columns:
             deciles_forecast[ptile] = {}
             if self.construct_percentiles_day_wise:
@@ -273,9 +247,8 @@ class MCUncertainty(Uncertainty):
             deciles_forecast[ptile]['df_prediction'] = df_prediction
             if not self.construct_percentiles_day_wise:
                 deciles_forecast[ptile]['params'] = params[df_ptile_idxs.iloc[0][ptile]]
-            deciles_forecast[ptile]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(df_train_nora, None,
-                                                                                                None, df_prediction,
-                                                                                                which_compartments=self.loss_compartments)
+            deciles_forecast[ptile]['df_loss'] = Loss_Calculator().create_loss_dataframe_region(
+                df_train_nora, None, None, df_prediction, loss_compartments=self.loss_compartments)
         return deciles_forecast
 
     def _ptile_idx_helper(self, percentiles, date):
@@ -301,7 +274,7 @@ class MCUncertainty(Uncertainty):
                 will be returned. Defaults to all deciles 10-90, as well as 2.5/97.5 and 5/95.
 
         Returns:
-            dict: {percentile: index} where index is the trial index (to arrays in predictions_dict)
+            pd.DataFrame
         """
         if self.distribution is None:
             raise Exception(
