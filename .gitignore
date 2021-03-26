@@ -13,6 +13,7 @@
 *log
 *xls
 *xlsx
+*xlsb
 
 # Configs with some number in the filename will not be put on git
 *[0-9]*.yaml
@@ -30,6 +31,8 @@ sftp-configjson
 data/data/
 *plots/
 **plots/
+*catboost_info/
+**catboost_info/
 *outputs/
 **outputs/
 *reports/
