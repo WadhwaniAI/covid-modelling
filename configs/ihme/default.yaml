@@ -1,17 +1,18 @@
 fitting:
     data:
-        dataloader: covid19india
-        stratified_data: FALSE
+        dataloader: Covid19IndiaLoader
         dataloading_params:
             reload_data: FALSE
+            stratified_data: FALSE
+            cache_dir: "../../misc/cache/"
             state: Maharashtra
             district: Mumbai
             use_dataframe: data_all
+        data_columns: [total, active, recovered, deceased]
         smooth_jump: TRUE
         smooth_jump_params:
             2020-05-28: [null, recovered, active, FALSE, weighted-mag]
             2020-06-14: [null, recovered, active, FALSE, weighted-mag]
-            2020-06-15: [null, recovered, active, FALSE, weighted-mag]
             2020-06-23: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-06-24: [2020-06-15, recovered, active, FALSE, weighted-mag]
             2020-07-01: [2020-05-28, recovered, active, FALSE, weighted-mag]
@@ -28,7 +29,7 @@ fitting:
     model: IHME
     default_params:
         N: 1.0e+7
-    fitting_method_params:
+    optimiser_params:
         num_evals: 100
         num_trials: 1
         seed: 42
