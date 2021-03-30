@@ -15,9 +15,9 @@ from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 
 class ABMAUncertainty(Uncertainty):
-    def __init__(self, predictions_dict, fitting_config, variable_param_ranges, fitting_method,
-                 fitting_method_params, which_fit, construct_percentiles_day_wise, date_of_sorting_trials, 
-                 sort_trials_by_column, loss, percentiles, fitting_type='bo'):
+    def __init__(self, predictions_dict, variable_param_ranges, fitting_method,
+                 fitting_method_params, construct_percentiles_day_wise, date_of_sorting_trials, 
+                 sort_trials_by_column, loss, percentiles, fit_beta=True):
         """
         Initializes uncertainty object, finds beta for distribution
 
@@ -28,18 +28,19 @@ class ABMAUncertainty(Uncertainty):
         super().__init__(predictions_dict)
         # Setting all variables as class variables
         self.variable_param_ranges = variable_param_ranges
-        self.which_fit = which_fit
         self.date_of_sorting_trials = date_of_sorting_trials
         self.sort_trials_by_column = sort_trials_by_column
-        for key in loss:
-            setattr(self, key, loss[key])
+
+        self.loss_method = loss['loss_method']
+        self.loss_compartments = loss['loss_compartments']
+        self.loss_weights = loss['loss_weights']
+
         self.percentiles = percentiles
-        self.fitting_config = fitting_config
         self.construct_percentiles_day_wise = construct_percentiles_day_wise
         # Processing all trials
         # Finding Best Beta
         self.p_val = self.p_test()
-        if(fitting_type == 'mcmc'):
+        if not fit_beta:
             self.beta = 0
             self.beta_loss = 0
         else:
@@ -70,15 +71,16 @@ class ABMAUncertainty(Uncertainty):
                 'date').loc[:, [column.name]].transpose(), ignore_index=True)
         return pd.concat([trials, pred], axis=1)
     
-    def p_test(self):
-        df_trials = self.trials_to_df(self.predictions_dict[self.which_fit]['trials_processed'], 
+    def p_test(self, COLUMN_NAME='total'):
+        df_trials = self.trials_to_df(self.predictions_dict['trials'], 
                                       self.sort_trials_by_column)
+        
         p = []
-        total_time = len(self.predictions_dict[self.which_fit]['df_val']['date'].keys())
-        for i in self.predictions_dict[self.which_fit]['df_val']['date'].keys():
-            date_to_eval = self.predictions_dict[self.which_fit]['df_val']['date'][i]
+        total_time = len(self.predictions_dict['df_val']['date'].keys())
+        for i in self.predictions_dict['df_val']['date'].keys():
+            date_to_eval = self.predictions_dict['df_val']['date'][i]
             datetime_to_eval = datetime.datetime.combine(date_to_eval,datetime.time())
-            gt = self.predictions_dict[self.which_fit]['df_val']['total'][i]
+            gt = self.predictions_dict['df_val'][COLUMN_NAME][i]
             trials_on_day = df_trials.loc[:,datetime_to_eval]
             N = len(trials_on_day)
             p_u = (trials_on_day>gt).sum()/N
