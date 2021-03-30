@@ -79,7 +79,7 @@ class ABMAUncertainty(Uncertainty):
         losses = self.predictions_dict['trials']['losses']
         # This is done as rolling average on df_val has already been calculated, 
         # while df_district has no rolling average
-        if self.predictions_dict['m1']['df_val'] is None:
+        if self.predictions_dict['df_val'] is None:
             raise Exception('Validation set cannot be empty')
         df_val = self.predictions_dict['df_district'].set_index('date') \
             .loc[self.predictions_dict['df_val']['date'],:]
