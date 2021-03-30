@@ -39,7 +39,12 @@ class SIR(CompartmentalBase):
 
             # Lockdown parameters
             'starting_date': starting_date,  # Datetime value that corresponds to Day 0 of modelling
-            'N': N
+            'N': N,
+
+            # Initialisation Params
+            # Ratio for Exposed to hospitalised for initialisation
+            'I_hosp_ratio': I_hosp_ratio
+            # Ratio for Infected to hospitalised for initialisation
         }
 
         for key in params:
@@ -101,8 +106,5 @@ class SIR(CompartmentalBase):
         df_prediction = super().predict(total_days=total_days,
                                         time_step=time_step, method=method)
 
-        df_prediction['active'] = float('nan')
-        df_prediction['recovered'] = float('nan')
-        df_prediction['deceased'] = float('nan')
         df_prediction['total'] = df_prediction['R']
         return df_prediction

@@ -1,8 +1,9 @@
 import numpy as np
 import copy
-from models.seir.base import SEIR
 
-class SEIR_Movement_Testing(SEIR):
+from models.seir.seir_base import SEIRBase
+
+class SEIR_Movement_Testing(SEIRBase):
 
     def __init__(self, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2,
                  T_recov_fatal=32, P_severe=0.2, P_fatal=0.02, T_recov_severe=14, T_recov_mild=11, N=7e6,
