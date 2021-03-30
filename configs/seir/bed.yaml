@@ -87,6 +87,7 @@ plotting:
 uncertainty:
     method: ABMAUncertainty
     uncertainty_params:
+        fit_beta: TRUE
         fitting_method: gridsearch
         fitting_method_params:
             parallelise: FALSE
