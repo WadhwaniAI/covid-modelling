@@ -66,7 +66,6 @@ plotting:
 uncertainty:
     method: ABMAUncertainty
     uncertainty_params:
-        which_fit: m1
         fitting_method: gridsearch
         fitting_method_params:
             parallelise: FALSE
