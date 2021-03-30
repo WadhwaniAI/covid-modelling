@@ -81,7 +81,7 @@ def plot_forecasts_top_k_trials(predictions_dict, config):
 def plot_ensemble_forecasts(predictions_dict, config):
     predictions_dict['plots']['forecast_ensemble_mean'] = plot_forecast(
         predictions_dict,
-        config['fitting']['data']['dataloading_params']['location_description'],
+        # config['fitting']['data']['dataloading_params']['location_description'],
         which_compartments=config['fitting']['loss']['loss_compartments'],
         fits_to_plot=['ensemble_mean'], error_bars=False
     )
