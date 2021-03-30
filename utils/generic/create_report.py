@@ -60,16 +60,14 @@ def _dump_predictions_dict(predictions_dict, ROOT_DIR):
 def _dump_params(predictions_dict, ROOT_DIR):
     filepath = os.path.join(ROOT_DIR, 'params.json')
     with open(filepath, 'w+') as dump:
-        run_params = {
-            'm1': copy.copy(predictions_dict['run_params']),
-        }
+        run_params = copy.copy(predictions_dict['run_params'])
         del run_params['model_class']
         del run_params['variable_param_ranges']
 
         json.dump(run_params, dump, indent=4)
 
 def _save_trials(predictions_dict, ROOT_DIR):
-    predictions_dict['all_trials'].to_csv(os.path.join(ROOT_DIR, 'm1-trials.csv'))
+    predictions_dict['all_trials'].to_csv(os.path.join(ROOT_DIR, 'trials.csv'))
 
 
 def _create_md_file(predictions_dict, config, ROOT_DIR):
