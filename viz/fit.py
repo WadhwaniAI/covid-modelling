@@ -132,50 +132,6 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, locatio
         plt.savefig(savepath)
     return fig
 
-
-def plot_fit_multiple_preds(predictions_dict, which_fit='m1'):
-
-    df_train = predictions_dict[which_fit]['df_train']
-    df_val = predictions_dict[which_fit]['df_val']
-    df_true_plotting_rolling = pd.concat([df_train, df_val], ignore_index=True)
-    df_true_plotting = predictions_dict[which_fit]['df_district']
-    df_prediction = predictions_dict[which_fit]['df_prediction']
-    train_period = predictions_dict[which_fit]['which_fit_params']['train_period']
-
-    fig, ax = plt.subplots(figsize=(12, 12))
-    for compartment in compartments['base']:
-        ax.plot(df_true_plotting[compartments['date'][0].name], df_true_plotting[compartment.name],
-                '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-        ax.plot(df_true_plotting_rolling[compartments['date'][0].name], df_true_plotting_rolling[compartment.name],
-                '-', color=compartment.color, label='{} (Obs RA)'.format(compartment.label))
-        ax.plot(df_prediction[compartments['date'][0].name], df_prediction[compartment.name],
-                '-.', color=compartment.color, label='{} BO Best (Predicted)'.format(compartment.label))
-        try:
-            df_prediction_decile50 = predictions_dict[which_fit]['df_prediction_decile50']
-            ax.plot(df_prediction_decile50[compartments['date'][0].name], df_prediction_decile50[compartment.name],
-                    '--', color=compartment.color, label='{} 50th Decile (Predicted)'.format(compartment.label))
-        except:
-            print('')
-
-        try:
-            df_prediction_gsbo = predictions_dict[which_fit]['df_prediction_gsbo']
-            ax.plot(df_prediction_gsbo[compartments['date'][0].name], df_prediction_gsbo[compartment.name],
-                    '-x', color=compartment.color, label='{} GS+BO (Predicted)'.format(compartment.label))
-        except:
-            print('')
-
-
-        ax.axvline(x=df_train.iloc[-train_period, :]['date'],
-                ls=':', color='brown', label='Train starts')
-        if isinstance(df_val, pd.DataFrame) and len(df_val) > 0:
-            ax.axvline(x=df_val.iloc[0, ]['date'], ls=':',
-                    color='black', label='Val starts')
-
-    axis_formatter(ax, None, custom_legend=False)
-
-    plt.tight_layout()
-    return fig
-
 def plot_comp_density_plots(predictions_dict,fig,axs):
     params_dict_mcmc = {}
     params_dict_bo = {}
