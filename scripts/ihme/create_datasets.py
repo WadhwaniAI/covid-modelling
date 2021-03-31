@@ -57,7 +57,7 @@ def create_datasets(input_path, output_path, synthetic_days):
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        dataset.to_csv(os.path.join(output_folder, 'data.csv'))
+        dataset.to_csv(os.path.join(output_folder, 'data.csv'), index=False)
 
 
 if __name__ == '__main__':
