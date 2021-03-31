@@ -1,7 +1,7 @@
 import datetime
 from copy import copy
 from datetime import timedelta
-
+import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -214,7 +214,7 @@ def plot_ptiles_comp(PD, train_fit='m1', vline=None, compartment=Columns.active,
     return fig,ax
 
 
-def plot_chains(mcmc: MCMC):
+def plot_chains(mcmc):
     """Summary
     
     Args:
@@ -264,48 +264,3 @@ def plot_chains(mcmc: MCMC):
         plt.title("Density plot of {} samples".format(param))
         plt.show()
 
-# def plot_comp_CI95(PD):
-    
-#     predictions_dict_b = PD['BO']
-#     predictions_dict_m = PD['MCMC']
-#     config_filename1 = 'default.yaml'
-#     config_filename2 = 'uncer.yaml'
-#     config1 = read_config(config_filename1)
-#     config2 = read_config(config_filename2)
-#     columns = ['total','active','recovered','deceased' ]
-#     fig,axs = plt.subplots(figsize=(12,12),nrows=2,ncols=2)
-    
-#     for i,col in enumerate(columns):
-#         print('Sorting trials by ',col)
-#         config1['uncertainty']['uncertainty_params']['sort_trials_by_column'] = Columns.from_name(col)
-#         config2['uncertainty']['uncertainty_params']['sort_trials_by_column'] = Columns.from_name(col)
-#         uncertainty_args_m = {'predictions_dict': predictions_dict_m, 'fitting_config': config2['fitting'],
-#                         'forecast_config': config2['forecast'], **config2['uncertainty']['uncertainty_params']}
-#         uncertainty_args_b = {'predictions_dict': predictions_dict_b, 'fitting_config': config1['fitting'],
-#                             'forecast_config': config1['forecast'], **config1['uncertainty']['uncertainty_params']}
-        
-#         predictions_dict_m['m1']['trials_processed'] = forecast_all_trials(predictions_dict_m, train_fit='m1', 
-#                                                                             model=config2['fitting']['model'], 
-#                                                                             forecast_days=config2['forecast']['forecast_days'])
-#         predictions_dict_b['m1']['trials_processed'] = forecast_all_trials(predictions_dict_b, train_fit='m1', 
-#                                                                             model=config2['fitting']['model'], 
-#                                                                             forecast_days=config2['forecast']['forecast_days'])
-#         print(config1['uncertainty']['uncertainty_params']['sort_trials_by_column'])
-#         uncertainty_m = config2['uncertainty']['method'](**uncertainty_args_m)
-#         predictions_dict_m['uncertainty_forecasts'] = uncertainty_m.get_forecasts()
-#         predictions_dict_m['ensemble_mean_forecast'] = uncertainty_m.ensemble_mean_forecast
-#         uncertainty_b = config1['uncertainty']['method'](**uncertainty_args_b)
-#         predictions_dict_b['uncertainty_forecasts'] = uncertainty_b.get_forecasts()
-#         predictions_dict_b['ensemble_mean_forecast'] = uncertainty_b.ensemble_mean_forecast
-#         PD_plot= {}
-#         try:
-#             del predictions_dict_b['m1']['plots']
-#         except:
-#             continue
-#         try:
-#             del predictions_dict_m['m1']['plots']
-#         except:
-#             continue
-#         PD_plot['MCMC'] = deepcopy(predictions_dict_m)
-#         PD_plot['BO'] = deepcopy(predictions_dict_b)
-#         plot_ptiles_comp(PD_plot, compartment=Columns.from_name(col),ax=axs.flat[i])
