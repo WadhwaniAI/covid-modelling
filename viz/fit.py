@@ -113,52 +113,96 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, locatio
     return fig
 
 
-def plot_fit_multiple_preds(predictions_dict, which_fit='m1'):
+def plot_comp_density_plots(predictions_dict,fig,axs):
+    params_dict_mcmc = {}
+    params_dict_bo = {}
+    params = list(predictions_dict['m0']['BO']['m1']['best_params'].keys())
+    loss_arr = []
+    for  param in params:
+        params_dict_bo[param] = []
+        params_dict_mcmc[param] = []
+    for run_number,run_dict in predictions_dict.items():
+        params_array_mcmc, loss_mcmc = _order_trials_by_loss(run_dict['MCMC']['m1'])
+        params_array_bo, loss_bo = _order_trials_by_loss(run_dict['BO']['m1'])
+        loss_arr.extend(loss_bo)
+        for param_set in params_array_mcmc:
+            for param in params:
+                params_dict_mcmc[param].append(param_set[param])
+        for param_set in params_array_bo:
+            for param in params:
+                params_dict_bo[param].append(param_set[param])
+    
+    weights = np.exp(-1*np.array(loss_arr))
+    W =  weights / np.sum(weights)
+    params_dict_bo['W'] = W
+    latex  = {"lockdown_R0": r'$\mathcal{R}_0$',
+    "T_inc": r"$T_{\rm inc}$",
+    "T_inf": r"$T_{\rm inf}$",
+    "T_recov": r"$T_{\rm recov}$",
+    "T_recov_fatal": r"$T_{\rm fatal}$" ,
+    "P_fatal": r"$P_{\rm fatal}$",
+    "E_hosp_ratio": r"$E_{\rm active\_ratio}$",
+    "I_hosp_ratio": r"$I_{\rm active\_ratio}$"}
+    for i, param in enumerate(params_dict_mcmc.keys()):
+        if (param == 'gamma'):
+            continue
+        ax = axs.flat[i]
+        a = min(params_dict_mcmc[param])
+        b = max(params_dict_mcmc[param])
+        sns.distplot(params_dict_mcmc[param], hist = True,bins= 100,hist_kws={'weights':np.ones(len(W))/len(W),"range":[a,b],"alpha":0.5},color = 'tab:blue',kde = False,label = ['MCMC'] ,ax=ax)
+        sns.distplot(params_dict_bo[param], hist = True,bins= 100,hist_kws={'weights':W,"range":[a,b],"alpha":0.5},color = 'tab:orange',kde = False,label = ['ABMA'] ,ax=ax)
+        ax.set_xlabel(latex[param],fontsize = 30)
+        # ax.text(.5, .85, latex[param], horizontalalignment='center', fontsize=30, transform=ax.transAxes, backgroundcolor='white')
+        if(i%3==0):
+            ax.set_ylabel('Density')
+        if(param == 'P_fatal'):
+            ax.legend(loc = 'upper right')
+    return fig,axs
+    #     params_array_mcmc, loss_mcmc = _order_trials_by_loss(predictions_dict['MCMC']['m1'])
+    # params_dict_mcmc = {param: [param_dict[param] for param_dict in params_array_mcmc]
+    #                for param in params_array_mcmc[0].keys()}
+    # params_array_bo, loss_bo = _order_trials_by_loss(predictions_dict['BO']['m1'])
+    # params_dict_bo = {param: [param_dict[param] for param_dict in params_array_bo]
+    #                for param in params_array_bo[0].keys()}
+    # for i, param in enumerate(params_dict_mcmc.keys()):
+    #     if (param == 'gamma'):
+    #         continue
+    #     ax = axs.flat[i]
+    #     sns.distplot(params_dict_mcmc[param], hist = True, kde = False,
+    #              kde_kws = {'shade': True, 'linewidth': 3},label = 'MCMC' ,ax=ax)
+    #     sns.distplot(params_dict_bo[param], hist = True, kde = False,
+    #              kde_kws = {'shade': True, 'linewidth': 3},label = 'BO', ax=ax)
 
-    df_train = predictions_dict[which_fit]['df_train']
-    df_val = predictions_dict[which_fit]['df_val']
-    df_true_plotting_rolling = pd.concat([df_train, df_val], ignore_index=True)
-    df_true_plotting = predictions_dict[which_fit]['df_district']
-    df_prediction = predictions_dict[which_fit]['df_prediction']
-    train_period = predictions_dict[which_fit]['which_fit_params']['train_period']
+    #     ax.set_title(f'Denisty Plot of parameter {param}')
+    #     ax.set_ylabel('Density')
+    #     ax.legend()
+    # return fig,axs
+    
+def plot_log_density(predictions_dict, arr, true_val, fig, axs, weighting='exp', beta=1, 
+                     plot_lines=False, weighted=True, savefig=False, filename=None, label=None):
+    params_array,_ = _order_trials_by_loss(predictions_dict)
+    
+    params_array = predictions_dict['trials']['params']
+    params_dict = {param: [param_dict[param] for param_dict in params_array]
+                   for param in arr}
+    histograms = {}
+    for i, param in enumerate(arr):
+        if (param == 'gamma'):
+            continue
+        ax = axs.flat[i]
+        ax.axvline(x=true_val[param],linewidth=1, color='r',label='True value',ls = '--')
+        density,ranges = np.histogram(params_dict[param],bins = 50,range = [0.001,2*true_val[param]],density = True)
+        density[density == 0] = 0.000001
+        l_density = -1 *np.log(density)
+        ad_ranges = [(ranges[i]+ranges[i+1])/2 for i in np.arange(len(ranges) -1 )]
+        ax.plot(ad_ranges,l_density)
+        # ax.set_ylim(-3,8)
+        ax.set_title(param)
+        ax.legend()
+    return histograms
 
-    fig, ax = plt.subplots(figsize=(12, 12))
-    for compartment in compartments['base']:
-        ax.plot(df_true_plotting[compartments['date'][0].name], df_true_plotting[compartment.name],
-                '-o', color=compartment.color, label='{} (Observed)'.format(compartment.label))
-        ax.plot(df_true_plotting_rolling[compartments['date'][0].name], df_true_plotting_rolling[compartment.name],
-                '-', color=compartment.color, label='{} (Obs RA)'.format(compartment.label))
-        ax.plot(df_prediction[compartments['date'][0].name], df_prediction[compartment.name],
-                '-.', color=compartment.color, label='{} BO Best (Predicted)'.format(compartment.label))
-        try:
-            df_prediction_decile50 = predictions_dict[which_fit]['df_prediction_decile50']
-            ax.plot(df_prediction_decile50[compartments['date'][0].name], df_prediction_decile50[compartment.name],
-                    '--', color=compartment.color, label='{} 50th Decile (Predicted)'.format(compartment.label))
-        except:
-            print('')
-
-        try:
-            df_prediction_gsbo = predictions_dict[which_fit]['df_prediction_gsbo']
-            ax.plot(df_prediction_gsbo[compartments['date'][0].name], df_prediction_gsbo[compartment.name],
-                    '-x', color=compartment.color, label='{} GS+BO (Predicted)'.format(compartment.label))
-        except:
-            print('')
-
-
-        ax.axvline(x=df_train.iloc[-train_period, :]['date'],
-                ls=':', color='brown', label='Train starts')
-        if isinstance(df_val, pd.DataFrame) and len(df_val) > 0:
-            ax.axvline(x=df_val.iloc[0, ]['date'], ls=':',
-                    color='black', label='Val starts')
-
-    axis_formatter(ax, None, custom_legend=False)
-
-    plt.tight_layout()
-    return fig
-
-
-def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
-                   savefig=False, filename=None, label=None):
+def plot_histogram(predictions_dict, arr, true_val, fig, axs, weighting='exp', beta=1, 
+                   plot_lines=False, weighted=True, savefig=False, filename=None, label=None):
     """Plots histograms for all the sampled params for a particular run in a particular fig.
        The ith subplot will have the histogram corresponding to the ith parameter
 
@@ -169,8 +213,8 @@ def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lin
         weighting (str, optional): The weighting function.
         If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
         If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
-        beta (float, optional): beta param for exponential weighting 
-        plot_lines (bool, optional): If true line joining top of histogram bars is instead plotted. 
+        beta (float, optional): beta param for exponential weighting
+        plot_lines (bool, optional): If true line joining top of histogram bars is instead plotted.
         Defaults to False.
         weighted (bool, optional): If false uniform weighting is applied. Defaults to True.
         savefig (bool, optional): If true the figure is saved. Defaults to False.
@@ -180,48 +224,118 @@ def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lin
     Returns:
         dict: a dict of histograms of all the params for a particular run
     """
-    params_array, losses_array = _order_trials_by_loss(predictions_dict)
+    param_range = {"beta": [0, 1],
+        "T_inc": [1, 100],
+        "T_inf": [1, 100],
+        "T_recov": [1, 100],
+        "T_recov_fatal": [1, 100],
+        "P_fatal": [0, 1],
+        'E_hosp_ratio': [0, 5],
+        'I_hosp_ratio': [0, 5]}
+    params_array,_ = _order_trials_by_loss(predictions_dict)
     params_dict = {param: [param_dict[param] for param_dict in params_array]
-                   for param in params_array[0].keys()}
-    if weighting == 'exp':
-        weights = np.exp(-np.array(losses_array))
-    elif weighting == 'inverse':
-        weights = 1/np.array(losses_array)
-    else:
-        weights = np.ones(np.array(losses_array).shape)
-
+                   for param in arr}
     histograms = {}
-    for i, param in enumerate(params_dict.keys()):
-        histograms[param] = {}
+    for i, param in enumerate(arr):
+        if (param == 'gamma'):
+            continue
         ax = axs.flat[i]
-        if plot_lines:
-            bar_heights, endpoints = np.histogram(params_dict[param], density=True, bins=20, weights=weights)
-            centers = (endpoints[1:] + endpoints[:-1]) / 2
-            ax.plot(centers, bar_heights, label=label)
+        ax.axvline(x=true_val[param],linewidth=2, color='r',label='True value')
+        sns.distplot(params_dict[param],norm_hist = True, kde = False,bins= 100,ax=ax)
+        y = ax.get_ylim()
+        ax.set_xlim(param_range[param][0],param_range[param][1])
+        ax.errorbar(x = np.mean(params_dict[param]),y = 0.5*y[1],xerr = np.std(params_dict[param]),fmt='*',capthick=2,capsize=y[1]*.05,color = 'purple',label = 'Mean and std')
+        if param == 'T_recov_fatal':
+            ax.set_title(f'Denisty Plot of parameter T_Death')
         else:
-            if weighted:
-                histogram = ax.hist(params_dict[param], density=True, histtype='bar', bins=20, 
-                                    weights=weights, label=label, alpha=1)
-            else:
-                histogram = ax.hist(params_dict[param], density=True, histtype='bar', bins=20, 
-                                    label=label, alpha=1)
-            bar_heights, endpoints = histogram[0], histogram[1]
-            centers = (endpoints[1:] + endpoints[:-1]) / 2
-        
-        ax.set_title(f'Histogram of parameter {param}')
+            ax.set_title(f'Denisty Plot of parameter {param}')
         ax.set_ylabel('Density')
         ax.legend()
-            
-        histograms[param]['density'] = bar_heights
-        histograms[param]['endpoints'] = endpoints
-        histograms[param]['centers'] = centers
-        histograms[param]['probability'] = bar_heights*np.mean(np.diff(endpoints))
-        
-    if savefig:
-        fig.savefig(filename)
     return histograms
 
-def plot_all_histograms(predictions_dict, description, weighting='exp', beta=1):
+def plot_2_histogram(SD, key1, key2, arr, true_val, fig, axs, weighting='exp', beta=1, 
+                     plot_lines=False, weighted=True, savefig=False, filename=None, label=None):
+    
+    param_range = {"lockdown_R0": [0.5, 2],
+        "T_inc": [0, 15],
+        "T_inf": [0, 15],
+        "T_recov": [0, 40],
+        "T_recov_fatal": [0, 40],
+        "P_fatal": [0, 0.5],
+        'E_hosp_ratio': [0, 2],
+        'I_hosp_ratio': [0, 2]}
+    # cmap = {
+    #     'exp0': 'y',
+    #     'exp1':'b',
+    #     'exp2':'r',
+    #     'exp3':'g',
+    #     'exp4':'orchid',
+    #     'exp5':'darkviolet',
+    #     'exp6':'deeppink'
+    # }
+    cmap = {
+        'exp0': 'y',
+        'exp1':'b',
+        'exp2':'r',
+        'exp3':'g',
+        'exp4':'orchid',
+        'exp5':'saddlebrown',
+        'exp6':'forestgreen'
+    }
+    latex  = {"lockdown_R0": r'$\mathcal{R}_0$',
+    "T_inc": r"$T_{\rm inc}$",
+    "T_inf": r"$T_{\rm inf}$",
+    "T_recov": r"$T_{\rm recov}$",
+    "T_recov_fatal": r"$T_{\rm fatal}$" ,
+    "P_fatal": r"$P_{\rm fatal}$",
+    "E_hosp_ratio": r"$E_{\rm active\_ratio}$",
+    "I_hosp_ratio": r"$I_{\rm active\_ratio}$"}
+    params_array1,_ = _order_trials_by_loss(SD[key1])
+    params_dict1 = {param: [param_dict[param] for param_dict in params_array1]
+                   for param in arr}
+    params_array2,_ = _order_trials_by_loss(SD[key2])
+    params_dict2 = {param: [param_dict[param] for param_dict in params_array2]
+                   for param in arr}
+    params_to_plot = {
+        'exp0': arr,
+        'exp1':[i for i in arr if i not in ['T_recov_fatal']],
+        'exp2':[i for i in arr if i not in ['T_recov_fatal','T_inf']],
+        'exp3':[i for i in arr if i not in ['T_recov_fatal','T_inc','T_inf']],
+        'exp4':[i for i in arr if i not in ['T_recov_fatal','T_inc','T_inf','T_recov']],
+        'exp5': arr,
+        'exp6': arr
+    }
+
+    histograms = {}
+    for i, param in enumerate(arr):
+        if (param == 'gamma'):
+            continue
+        ax = axs.flat[i]
+        ax.axvline(x=true_val[param],linewidth=2, color='black',label='True value',ls = '--')
+        if(param in params_to_plot[key1]):
+            # ax.axvline(x=np.mean(params_dict1[param]),linewidth=3,ls = '--', color=cmap[key1],label='Mean '+ key1)
+            sns.distplot(params_dict1[param],norm_hist = True, kde = False,bins= 80, 
+                         ax=ax,color = cmap[key1],label = 'Constrained', 
+                         hist_kws={"alpha":0.55,"range":(param_range[param][0],param_range[param][1])})
+        if(param in params_to_plot[key2]):
+            # ax.axvline(x=np.mean(params_dict2[param]),linewidth=3,ls='--', color=cmap[key2],label='Mean '+key2)
+            sns.distplot(params_dict2[param],norm_hist = True, kde = False, bins= 80, 
+                         ax=ax,color = cmap[key2],label = "Unconstrained",
+                         hist_kws={"alpha":0.4,'range':(param_range[param][0],param_range[param][1])})
+        # y = ax.get_ylim()
+        # ax.set_xlim(param_range[param][0],param_range[param][1])
+        # ax.errorbar(x = np.mean(params_dict[param]),y = 0.5*y[1],xerr = np.std(params_dict[param]),fmt='*',capthick=2,capsize=y[1]*.05,color = 'purple',label = 'Mean and std')
+        # ax.text(.5, .85, latex[param], horizontalalignment='center', fontsize=20, transform=ax.transAxes, backgroundcolor='white')
+        ax.set_xlabel(latex[param],fontsize = 23)
+
+        if(param == 'I_hosp_ratio' or param == 'E_hosp_ratio'):
+            ax.set_ylabel('Density')
+        if(param =='T_inc'):
+            ax.legend(prop={"size":15},loc ='upper right')
+    return histograms
+
+def plot_all_histograms(SD, arr, true_val, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
+                        savefig=False, filename=None, label=None):
     """Plots histograms for all the sampled params for all runs. 
        It is assumed that the user provides a dict of N elements, 
        each corresponding to the predictions_dict of 1 run. 
@@ -243,18 +357,42 @@ def plot_all_histograms(predictions_dict, description, weighting='exp', beta=1):
         mpl.Figure, mpl.Axes, pd.DataFrame: The matplotlib figure, matplotlib axes, 
         a dict of histograms of all the params for all the runs
     """
-    params_array, _ = _order_trials_by_loss(predictions_dict['m1'])
-
-    fig, axs = plt.subplots(nrows=round(len(params_array[0].keys())/2), ncols=2, 
-                            figsize=(18, 6*round(len(params_array[0].keys())/2)))
-    histograms = {}
-    for run in predictions_dict.keys():
-        histograms[run] = plot_histogram(predictions_dict[run], fig, axs, 
-                                         weighting=weighting, label=run)
-
-    fig.suptitle(f'Histogram plots for {description}')
-    fig.subplots_adjust(top=0.96)
-    return fig, axs, histograms
+    param_range = {"lockdown_R0": [0.1, 9.5],
+        "T_inc": [1, 100],
+        "T_inf": [1, 100],
+        "T_recov": [1, 250],
+        "T_recov_fatal": [1, 250],
+        "P_fatal": [0, 1],
+        'E_hosp_ratio': [0, 5],
+        'I_hosp_ratio': [0, 5]}
+    params_to_plot = {
+        'exp0': arr,
+        'exp1':[i for i in arr if i not in ['T_recov_fatal']],
+        'exp2':[i for i in arr if i not in ['T_recov_fatal','T_inf']],
+        'exp3':[i for i in arr if i not in ['T_recov_fatal','T_inc','T_inf']],
+        'exp4':[i for i in arr if i not in ['T_recov_fatal','T_inc','T_inf','T_recov']]
+    }
+    for j,predictions_dict in SD.items():
+        params_array, _ = _order_trials_by_loss(predictions_dict)
+        params_dict = {param: [param_dict[param] for param_dict in params_array]
+                    for param in arr}
+        for i, param in enumerate(arr):
+            if (param == 'gamma'):
+                continue
+            if(param  not in params_to_plot[j]):
+                continue 
+            ax = axs.flat[i]
+            if(j == 'exp0'):
+                ax.axvline(x=true_val[param],linewidth=2, color='r',label='True value')
+            sns.distplot(params_dict[param],norm_hist = True, kde = False,bins= 100,ax=ax,label = j)
+            ax.set_xlim(param_range[param][0],param_range[param][1])
+            if param == 'T_recov_fatal':
+                ax.set_title(f'Denisty Plot of parameter T_Death')
+            else:
+                ax.set_title(f'Denisty Plot of parameter {param}')
+            ax.set_ylabel('Density')
+            ax.legend()
+    return
 
 
 def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
@@ -314,6 +452,112 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
     fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
 
+def get_losses(model_dict, method='best', start_iter=100):
+    if method=='best':
+        best_losses = []
+        for trial in model_dict['m0']['trials']:
+            if len(best_losses) == 0:
+                best_losses.append(trial['result']['loss'])
+            else:
+                best_losses.append(min(best_losses[-1], trial['result']['loss']))
+        return best_losses[start_iter:]
+    elif method=='aggregate':
+        best_losses = np.array([0.0 for i in range(len(model_dict['m0']['trials']))])
+        for run, run_dict in model_dict.items():
+            min_loss = 1e+5
+            for i,trial in enumerate(run_dict['trials']):
+                best_losses[i] += min(min_loss,trial['result']['loss'])
+                min_loss = min(min_loss,trial['result']['loss'])
+        best_losses /= len(model_dict)
+        return list(best_losses[start_iter:])
+ 
+def plot_variation_with_iterations(predictions_dict, compare='model', method='best', start_iter=0):
+    # compute the total number of graphs => #locations * #models
+    ncols = 3
+    nrows = len(predictions_dict)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    fig.suptitle('Loss Vs #iterations')
+    ax_counter = 0
+    for tag, tag_dict in predictions_dict.items():
+        ax = axs.flat[ax_counter]
+        for model, model_dict in tag_dict.items():
+            losses = get_losses(model_dict, method=method, start_iter=start_iter)
+            ax.plot(range(start_iter, start_iter + len(losses)), losses, label=model)
+            plt.sca(ax)
+            plt.ylabel('loss')
+            plt.xlabel('iteration')
+            plt.legend(loc='best')
+            plt.title(tag)
+        ax_counter += 1
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
+    plt.show()
+
+def plot_all_buckets(predictions_dict, which_buckets=[], compare='model', param_method='ensemble_combined', model_types=None):
+    extra_cols = ['date', 'active', 'total', 'recovered', 'deceased']
+    buckets_values = {which_bucket:{} for which_bucket in which_buckets}
+    layer2_vals = []
+    for loc, loc_dict in predictions_dict.items():
+        for model_name, model_dict in loc_dict.items():
+            params = get_param_stats(model_dict, param_method).loc[['mean']].to_dict('records')[0]
+
+            first_run_dict = model_dict[list(model_dict.keys())[0]]
+            model_type = model_types[model_name]
+            solver = eval(model_type)(**params, **first_run_dict['default_params'])
+            total_days = (list(first_run_dict['df_prediction']['date'])[-1] - list(first_run_dict['df_prediction']['date'])[0]).days
+            df_prediction = solver.predict(total_days=total_days)
+            cols = df_prediction.columns.to_list()
+            needed_cols = [col for col in cols if col not in extra_cols]
+            df_prediction['N'] = df_prediction[needed_cols].sum(axis=1)
+
+            for bucket in which_buckets:
+                if bucket not in df_prediction.columns:
+                    continue
+                if compare=='model':
+                    if loc not in buckets_values[bucket]:
+                        buckets_values[bucket][loc] = {}
+                    if model_name not in layer2_vals :
+                        layer2_vals.append(model_name)
+                    buckets_values[bucket][loc][model_name] = df_prediction[['date',bucket]]
+                elif compare=='location':
+                    if model_name not in buckets_values[bucket]:
+                        buckets_values[bucket][model_name] = {}
+                    if loc not in layer2_vals :
+                        layer2_vals.append(loc)
+                    buckets_values[bucket][model_name][loc] = df_prediction[['date',bucket]]
+
+    # upper limit of n_subplots
+    if compare == 'model' :
+        n_subplots = len(which_buckets)*len(predictions_dict)
+    elif compare == 'location':
+        n_subplots = len(which_buckets)*len(list(predictions_dict.values())[0])
+    ncols = 3
+    nrows = math.ceil(n_subplots/ncols)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    fig.suptitle('Buckets')
+
+    colors = "bgrcmy"
+    color_map = {}
+    for i,layer2_val in enumerate(layer2_vals):
+        color_map[layer2_val] = colors[i]
+    
+    ax_counter = 0
+    for bucket, bucket_dict in buckets_values.items():
+        for layer_1, layer_1_dict in bucket_dict.items():
+            ax = axs.flat[ax_counter]
+            for k, layer_2 in enumerate(layer_1_dict):
+                ax.plot(layer_1_dict[layer_2]['date'], layer_1_dict[layer_2][bucket], color=color_map[layer_2], label=layer_2)
+            plt.sca(ax)
+            plt.ylabel(bucket)
+            plt.xticks(rotation=45)
+            plt.legend(loc='best')
+            plt.title(layer_1)
+            ax_counter += 1
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
+    plt.show()
 
 def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_axes=True):
     """Plots KL divergence heatmaps for all the sampled params for all runs. 
@@ -362,7 +606,6 @@ def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_ax
     fig.subplots_adjust(top=0.96)
 
     return fig, axs, kl_dict_reg
-
 
 
 def plot_scatter(mean_var_dict, var_1, var_2, stat_measure='mean'):
@@ -445,7 +688,8 @@ def plot_heatmap_distribution_sigmas(mean_var_dict, stat_measure='mean', cmap='R
 
     return fig, df_comparison
 
-def plot_all_losses(predictions_dict, which_losses=['train', 'val'], method='best_loss_nora', weighting='exp'):
+def plot_all_losses(predictions_dict, which_losses=['train', 'val'], method='best_loss_nora', weighting='exp', 
+                    which_compartments=['total', 'active', 'recovered']):
     """Plots mean and variance bar graphs for losses from all the compartments for different (scenario, config). 
        It is assumed that the user provides a dict with 1st layer of keys as the scenarios and 2nd layer 
        of keys as the config file used. For each (scenario, config), the user should provide prediction_dicts
@@ -466,49 +710,61 @@ def plot_all_losses(predictions_dict, which_losses=['train', 'val'], method='bes
     Returns:
         mpl.Figure: The matplotlib figure
     """
-    loss_wise_stats = {which_loss : {} for which_loss in which_losses}
-    num_compartments = 0
+    all_compartments = []
+    # TODO: handle when which_compartments is None
+    for compartments in which_compartments:
+        for which_loss in which_losses:
+            all_compartments += [compartment for compartment in compartments if compartment not in all_compartments]
+    all_compartments.append('agg')
+    loss_wise_stats = {}
+    for which_loss in which_losses:
+        loss_wise_stats[which_loss] = {compartment:{} for compartment in all_compartments}
     for loc, loc_dict in predictions_dict.items():
-        for config, config_dict in loc_dict.items():
+        for model, model_dict in loc_dict.items():
             for which_loss in which_losses:
-                loss_stats = get_loss_stats(config_dict, which_loss=which_loss, method=method)
-                for compartment in loss_stats.columns:
-                    if compartment not in loss_wise_stats[which_loss]:
-                        loss_wise_stats[which_loss][compartment] = {}
-                    if config not in loss_wise_stats[which_loss][compartment]:
-                        loss_wise_stats[which_loss][compartment][config] = {'mean':{}, 'std':{}}
-                    loss_wise_stats[which_loss][compartment][config]['mean'][loc] = loss_stats[compartment]['mean']
-                    loss_wise_stats[which_loss][compartment][config]['std'][loc] = loss_stats[compartment]['std']
-                    num_compartments += 1
-    
-    n_subplots = num_compartments
-    ncols = 3
+                loss_values_stats = get_loss_stats(model_dict['m1'], which_loss=which_loss)
+                # import pdb; pdb.set_trace()
+                for compartment in loss_values_stats.columns:
+                    if model not in loss_wise_stats[which_loss][compartment]:
+                        loss_wise_stats[which_loss][compartment][model] = {'mean':{}, 'std':{}}
+                    loss_wise_stats[which_loss][compartment][model]['mean'][loc] = loss_values_stats[compartment]['mean']
+                    loss_wise_stats[which_loss][compartment][model]['std'][loc] = loss_values_stats[compartment]['std']
+
+    n_subplots = len(all_compartments)*len(which_losses)
+    ncols = 5
     nrows = math.ceil(n_subplots/ncols)
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
-    bar_width = (1-0.2)/num_compartments
+    colors = "grmybc"
+    color_map = {}
+    for i,model in enumerate(list( list( predictions_dict.values() )[0].keys() )):
+        color_map[model] = colors[i]
 
+    bar_width = (1-0.4)/len(which_compartments)
     ax_counter=0
     for which_loss in which_losses:
-        for compartment, compartment_values in loss_wise_stats[which_loss].items():
+        for compartment in all_compartments:
             ax = axs.flat[ax_counter]
+            compartment_values = loss_wise_stats[which_loss][compartment]
             mean_vals, std_vals = {},{}
             for m,model in enumerate(compartment_values.keys()):
                 mean_vals[model] = compartment_values[model]['mean']
                 std_vals[model] = compartment_values[model]['std']
                 pos = [m*bar_width+n for n in range(len(mean_vals[model]))]
-                ax.bar(pos, mean_vals[model].values(), width=bar_width, align='center', alpha=0.5, label=model)
+                ax.bar(pos, mean_vals[model].values(), width=bar_width, color=color_map[model], align='center', alpha=0.5, label=model)
                 ax.errorbar(pos, mean_vals[model].values(), yerr=std_vals[model].values(), fmt='o', color='k')
             plt.sca(ax)
             plt.title(which_loss)
-            plt.ylabel(compartment)
+            plt.xlabel(compartment)
             xtick_vals = mean_vals[model].keys()
             plt.xticks(range(len(xtick_vals)), xtick_vals, rotation=45)
             plt.legend(loc='best')
             ax_counter += 1
     for i in range(ax_counter,nrows*ncols):
         fig.delaxes(axs.flat[i])
-    return fig
+    plt.show()
+
+
 
 def plot_all_params(predictions_dict, method='best', weighting='exp'):
     """Plots mean and variance bar graphs for all the sampled params for different (scenario, config). 
@@ -529,39 +785,54 @@ def plot_all_params(predictions_dict, method='best', weighting='exp'):
     Returns:
         mpl.Figure: The matplotlib figure
     """
-    param_wise_stats = {}
-    for loc, loc_dict in predictions_dict.items():
-        for config, config_dict in loc_dict.items():
-            param_stats = get_param_stats(config_dict, method=method, weighting=weighting)
-            for param in param_stats:
-                if param not in param_wise_stats:
-                    param_wise_stats[param] = {}
-                param_wise_stats[param][config] = {'mean':{},'std':{}}
-                param_wise_stats[param][config]['mean'][loc] = param_stats[param]['mean']
-                param_wise_stats[param][config]['std'][loc] = param_stats[param]['std']
+    all_params = []
+    model_params = {}
+    loc = list(predictions_dict.keys())[0]
+    for model_name, model_dict in predictions_dict[loc].items():
+        model_params[model_name] = list(model_dict['m0']['best_params'].keys())
+    
+    # TODO: change to set
+    for _, params in model_params.items():
+        all_params += [param for param in params if param not in all_params]
 
-    n_subplots = len(param_wise_stats)
-    ncols = 3
+    param_wise_stats = { param:{} for param in all_params }
+    for loc, loc_dict in predictions_dict.items():
+        for model, model_dict in loc_dict.items():
+            param_values_stats = get_param_stats(model_dict, method, weighting)
+            for param in param_values_stats.columns:
+                if model not in param_wise_stats[param]:
+                    param_wise_stats[param][model] = {'mean':{},'std':{}}
+                param_wise_stats[param][model]['mean'][loc] = param_values_stats[param]['mean']
+                param_wise_stats[param][model]['std'][loc] = param_values_stats[param]['std']
+
+    n_subplots = len(all_params)
+    ncols = 5
     nrows = math.ceil(n_subplots/ncols)
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(18, 8*nrows))
-    bar_width = (1-0.2)/len(param_wise_stats)
-
+    colors = "bgrcmy"
+    color_map = {}
+    for i,model in enumerate(list(model_params.keys())):
+        color_map[model] = colors[i]
+    
+    bar_width = (1-0.5)/len(model_params)
     ax_counter=0
-    for param, param_values in param_wise_stats.items():
+    for param in all_params:
         ax = axs.flat[ax_counter]
+        param_values = param_wise_stats[param]
         mean_vals, std_vals = {},{}
         for k,model in enumerate(param_values.keys()):
             mean_vals[model] = param_values[model]['mean']
             std_vals[model] = param_values[model]['std']
             pos = [k*bar_width+j for j in range(len(mean_vals[model]))]
-            ax.bar(pos, mean_vals[model].values(), width=bar_width, align='center', alpha=0.5, label=model)
+            ax.bar(pos, mean_vals[model].values(), width=bar_width, color=color_map[model], align='center', alpha=0.5, label=model)
             ax.errorbar(pos, mean_vals[model].values(), yerr=std_vals[model].values(), fmt='o', color='k')
         plt.sca(ax)
-        plt.ylabel(param)
+        plt.xlabel(param)
+        xtick_vals = mean_vals[model].keys()
         plt.xticks(range(len(mean_vals[model].keys())), mean_vals[model].keys(), rotation=45)
         plt.legend(loc='best')
         ax_counter += 1
     for i in range(ax_counter,nrows*ncols):
         fig.delaxes(axs.flat[i])
-    return fig
+    plt.show()
