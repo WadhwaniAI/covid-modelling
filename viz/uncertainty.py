@@ -81,7 +81,7 @@ def plot_ptiles(predictions_dict, vline=None, which_compartments=[Columns.active
 
 
 def plot_ptiles_reichlab(df_comb, model, location, target='inc death', plot_true=False, plot_point=True,
-                         plot_individual_curves=True, ci_lb=2.5, ci_ub=97.5, color='C0', ax=None, latex=False):
+                         plot_individual_curves=True, ci_lb=2.5, ci_ub=97.5, color='C0', ax=None, ):
     compartment = 'deceased' if 'death' in target else 'total'
     mode = 'inc' if 'inc' in target else 'cum'
     compartment = Columns.from_name(compartment)
@@ -101,8 +101,6 @@ def plot_ptiles_reichlab(df_comb, model, location, target='inc death', plot_true
         df_point = df_plot[df_plot['type'] == 'point']
         ax.plot(df_point['target_end_date'].to_numpy(), df_point['forecast_value'].to_numpy(),
                 '-o', color=color)
-    if latex:
-        model = model.replace('_', '\_')
     texts = []
     df_quantiles = df_plot[df_plot['type'] == 'quantile']
     quantiles = df_quantiles.groupby('quantile').sum().index
@@ -163,75 +161,22 @@ def plot_beta_loss(dict_of_trials):
     return fig, ax
 
 
-def plot_ptiles_comp(PD, train_fit='m1', vline=None, compartment=Columns.active, 
-                plot_individual_curves=True, log_scale=False,ax = None):
-    predictions_mcmc =  PD['MCMC']['uncertainty_forecasts']
-    predictions_bo =  PD['BO']['uncertainty_forecasts']
-    df_master_mcmc = list(predictions_mcmc.values())[0]['df_prediction']
-    for df in list(predictions_mcmc.values())[1:]:
-        if isinstance(df, pd.DataFrame):
-           df = df.reset_index()
-        else:
-            df = df['df_prediction']
-        df_master_mcmc = pd.concat([df_master_mcmc, df], ignore_index=True)
-    df_master_bo = list(predictions_bo.values())[0]['df_prediction']
-    for df in list(predictions_bo.values())[1:]:
-        if isinstance(df, pd.DataFrame):
-           df = df.reset_index()
-        else:
-            df = df['df_prediction']
-        df_master_bo = pd.concat([df_master_bo, df], ignore_index=True)
-    
-    df_true = PD['MCMC']['m1']['df_district']
-
-    if ax is None:
-        fig, ax = plt.subplots(figsize=(24, 24))
-    else:
-        fig = None
-    
-    texts = []
-    sns.set_color_codes()
-    df_true = df_true[(df_true['date'] >= PD['BO']['ensemble_mean_forecast']['df_prediction']['date'][0]) & (df_true['date']<=PD['BO']['ensemble_mean_forecast']['df_prediction']['date'].iloc[-1])]
-    ax.plot(df_true[Columns.date.name].to_numpy(), df_true[compartment.name].to_numpy(),
-            '--', color=compartment.color, label= 'Observed',lw = 3.5)
-    print(compartment.name)
-    ax.plot(PD['MCMC']['ensemble_mean_forecast']['df_prediction']['date'],PD['MCMC']['ensemble_mean_forecast']['df_prediction'][compartment.name],c ='tab:blue',lw = 2)
-    ax.fill_between(list(predictions_mcmc.values())[0]['df_prediction']['date'],list(predictions_bo.values())[0]['df_prediction'][compartment.name],list(predictions_bo.values())[-1]['df_prediction'][compartment.name],color='tab:orange',alpha = .2,lw = 0.01)
-    ax.fill_between(list(predictions_mcmc.values())[0]['df_prediction']['date'],list(predictions_mcmc.values())[0]['df_prediction'][compartment.name],list(predictions_mcmc.values())[-1]['df_prediction'][compartment.name],color='tab:blue',alpha = 0.2,lw = 0.01)
-    ax.plot(PD['BO']['ensemble_mean_forecast']['df_prediction']['date'],PD['BO']['ensemble_mean_forecast']['df_prediction'][compartment.name],c ='tab:orange',lw = 2)
-    if vline:
-        plt.axvline(datetime.datetime.strptime(vline, '%Y-%m-%d'))
-    adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
-    axis_formatter(ax, log_scale=log_scale)
-    ax.grid(False)
-    ax.set_xlabel("")
-    if(compartment == Columns.total):
-        ax.text(.5, .915, 'Confirmed', horizontalalignment='center', fontsize=18, transform=ax.transAxes, backgroundcolor='white')
-    else:
-        ax.text(.5, .915, compartment.name.title(), horizontalalignment='center', fontsize=18, transform=ax.transAxes, backgroundcolor='white')
-    # ax.set_title(compartment.name.title())
-    
-    return fig,ax
-
-
-def plot_chains(mcmc):
+def plot_chains(mcmc, figsize=(20, 20)):
     """Summary
     
     Args:
         mcmc (MCMC): Description
         out_dir (str): Description
     """
-    color = plt.cm.rainbow(np.linspace(0, 1, mcmc.n_chains))
     params = [*mcmc.prior_ranges.keys()]
 
     for param in params:
-        plt.figure(figsize=(20, 20))
+        plt.figure(figsize=figsize)
         plt.subplot(2,1,1)
 
         for i, chain in enumerate(mcmc.chains):
             df = pd.DataFrame(chain[0])
             samples = np.array(df[param])
-            # plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
             plt.plot(list(range(len(samples))), samples, label='chain {}'.format(i+1))
 
         plt.xlabel("iterations")
@@ -244,7 +189,6 @@ def plot_chains(mcmc):
             df = pd.DataFrame(chain[1])
             try:
                 samples = np.array(df[param])
-                # plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
                 plt.scatter(list(range(len(samples))), samples, s=4, label='chain {}'.format(i+1))
             except:
                 continue
@@ -259,7 +203,6 @@ def plot_chains(mcmc):
             df = pd.DataFrame(chain[0])
             samples = np.array(df[param])
             mean = np.mean(samples)
-            # plt.scatter(list(range(len(samples))), samples, s=4, c=color[i].reshape(1,-1), label='chain {}'.format(i+1))
             sns.kdeplot(np.array(samples), bw=0.005*mean)
         plt.title("Density plot of {} samples".format(param))
         plt.show()
