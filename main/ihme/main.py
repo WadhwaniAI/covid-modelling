@@ -152,7 +152,8 @@ def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth
     return {"observed_dataframes": observed_dataframes, "smoothing": smoothing}
 
 
-def run_cycle(observed_dataframes, data, model, model_params, default_params, fitting_method_params, split, loss):
+def run_cycle(observed_dataframes, data, model, model_params, default_params,
+              optimiser_params, split, loss, **kwargs):
     """
 
     Args:
@@ -161,7 +162,7 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
         model ():
         model_params ():
         default_params ():
-        fitting_method_params ():
+        optimiser_params ():
         split ():
         loss ():
 
@@ -186,9 +187,9 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     # Initialize the optimizer
     args = {
         'bounds': copy.copy(model.priors['fe_bounds']),
-        'iterations': fitting_method_params['num_evals'],
+        'iterations': optimiser_params['num_evals'],
         'scoring': loss['loss_method'],
-        'num_trials': fitting_method_params['num_trials']
+        'num_trials': optimiser_params['num_trials']
     }
     optimiser = Optimiser(model, df_train, df_val, args)
 
@@ -249,7 +250,8 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params, fi
     return results_dict
 
 
-def single_fitting_cycle(data, model, model_params, default_params, fitting_method_params, split, loss):
+def single_fitting_cycle(data, model, model_params, default_params, optimiser_params,
+                         split, loss, **kwargs):
     """
 
     Args:
@@ -257,7 +259,7 @@ def single_fitting_cycle(data, model, model_params, default_params, fitting_meth
         model ():
         model_params ():
         default_params ():
-        fitting_method_params ():
+        optimiser_params ():
         split ():
         loss ():
 
@@ -269,8 +271,6 @@ def single_fitting_cycle(data, model, model_params, default_params, fitting_meth
     run_params = locals()
     run_params['model'] = model.__name__
     run_params['model_class'] = model
-
-    print('Performing {} fit ..'.format('m2' if split['val_period'] == 0 else 'm1'))
 
     # Get data
     params = {**data}
@@ -289,8 +289,8 @@ def single_fitting_cycle(data, model, model_params, default_params, fitting_meth
     if not observed_dataframes['df_val'] is None:
         print('val\n', tabulate(observed_dataframes['df_val'].tail().round(2).T, headers='keys', tablefmt='psql'))
 
-    predictions_dict = run_cycle(observed_dataframes, data, model, model_params, default_params, fitting_method_params,
-                                 split, loss)
+    predictions_dict = run_cycle(observed_dataframes, data, model, model_params,
+                                 default_params, optimiser_params, split, loss)
 
     predictions_dict['plots']['smoothing'] = smoothing_plot
     predictions_dict['smoothing_description'] = smoothing_description

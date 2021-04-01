@@ -111,13 +111,14 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, locatio
     return fig
 
 
-def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
+def plot_histogram(params_dict, arr, true_val, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
                    savefig=False, filename=None, label=None):
     """Plots histograms for all the sampled params for a particular run in a particular fig.
        The ith subplot will have the histogram corresponding to the ith parameter
-
     Args:
-        predictions_dict (dict): predictions_dict for a particular run
+        params_dict (dict): parameter samples for each parameter for a particular run
+        arr (list) : array of all parameters
+        true_val (dict) : true value for each parameter
         fig (mpl.Figure): The mpl.Figure to plot in
         axs (mpl.Axes): The mpl.Axes to plot in
         weighting (str, optional): The weighting function.
@@ -130,50 +131,36 @@ def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lin
         savefig (bool, optional): If true the figure is saved. Defaults to False.
         filename (str, optional): if savefig is true what filename to save as. Defaults to None.
         label (str, optional): What is the label of the histogram. Defaults to None.
-
     Returns:
         dict: a dict of histograms of all the params for a particular run
     """
-    params_array = predictions_dict['trials']['params']
-    losses_array = predictions_dict['trials']['losses']
-    params_dict = {param: [param_dict[param] for param_dict in params_array]
-                   for param in params_array[0].keys()}
-    if weighting == 'exp':
-        weights = np.exp(-np.array(losses_array))
-    elif weighting == 'inverse':
-        weights = 1/np.array(losses_array)
-    else:
-        weights = np.ones(np.array(losses_array).shape)
-
+    
+    param_range = {"lockdown_R0": [0.7, 1.2],
+        "T_inc": [4, 5],
+        "T_inf": [3, 4],
+        "T_recov": [0, 40],
+        "T_recov_fatal": [0, 40],
+        "P_fatal": [0, 0.2],
+        'E_hosp_ratio': [0, 2],
+        'I_hosp_ratio': [0, 1]}
     histograms = {}
-    for i, param in enumerate(params_dict.keys()):
-        histograms[param] = {}
+    for i, param in enumerate(arr):
+        if (param == 'gamma'):
+            continue
         ax = axs.flat[i]
-        if plot_lines:
-            bar_heights, endpoints = np.histogram(params_dict[param], density=True, bins=20, weights=weights)
-            centers = (endpoints[1:] + endpoints[:-1]) / 2
-            ax.plot(centers, bar_heights, label=label)
+        ax.axvline(x=true_val[param],linewidth=2, color='r',label='True value')
+        sns.distplot(params_dict[param],norm_hist = True, kde = False,bins= 100,ax=ax)
+        y = ax.get_ylim()
+        ax.set_xlim(param_range[param][0],param_range[param][1])
+        from arviz import hdi as hdi
+        lower_bound,upper_bound = hdi(np.array(params_dict[param]),hdi_prob=.95)
+        ax.errorbar(x = np.mean(params_dict[param]),y = 0.5*y[1],xerr = np.array([np.mean(params_dict[param])-lower_bound,upper_bound - np.mean(params_dict[param])]).reshape(-1,1),fmt='*',capthick=2,capsize=3,color = 'purple',label = 'Mean and 95 % HDI')
+        if param == 'T_recov_fatal':
+            ax.set_title(f'Denisty Plot of parameter T_Death')
         else:
-            if weighted:
-                histogram = ax.hist(params_dict[param], density=True, histtype='bar', bins=20, 
-                                    weights=weights, label=label, alpha=1)
-            else:
-                histogram = ax.hist(params_dict[param], density=True, histtype='bar', bins=20, 
-                                    label=label, alpha=1)
-            bar_heights, endpoints = histogram[0], histogram[1]
-            centers = (endpoints[1:] + endpoints[:-1]) / 2
-        
-        ax.set_title(f'Histogram of parameter {param}')
+            ax.set_title(f'Denisty Plot of parameter {param}')
         ax.set_ylabel('Density')
         ax.legend()
-            
-        histograms[param]['density'] = bar_heights
-        histograms[param]['endpoints'] = endpoints
-        histograms[param]['centers'] = centers
-        histograms[param]['probability'] = bar_heights*np.mean(np.diff(endpoints))
-        
-    if savefig:
-        fig.savefig(filename)
     return histograms
 
 def plot_all_histograms(predictions_dict, description, weighting='exp', beta=1):

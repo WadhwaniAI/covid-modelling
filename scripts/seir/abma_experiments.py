@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
+sys.path.append('../../')
+
 from scripts.seir.common import *
 from utils.fitting.util import chunked, create_output, update_dict
 from utils.generic.config import (
@@ -96,10 +98,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="SEIR ABMA Batch Running Script")
     parser.add_argument("-d", "--driver_config", type=str, required=True,
                         help="driver config used for multiple experiments")
-    parser.add_argument("-o", "--output_folder", type=str, required=True,
+    parser.add_argument("-o", "--output_folder", type=str, required=False, default=None,
                         help="Where to save the outputs")
     parser.add_argument("--n_jobs", type=int, help="number of threads")
-    parser.add_argument("--tag", type=str, help="Experiments tag name")
+    parser.add_argument("--tag", type=str, help="Experiments tag name", default="other")
     parsed_args = parser.parse_args()
     perform_batch_runs(parsed_args.driver_config,
                        parsed_args.output_folder, parsed_args.n_jobs,
