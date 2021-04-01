@@ -68,6 +68,18 @@ class SimulatedDataLoader(BaseLoader):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
 
     def add_noise_to_df(self, df, noise_params):
+        """Add random Poisson noise to the simulated data to specified time series columns
+
+        Args:
+            df {pd.dataframe} -- dataframe of cases with 5 columns : 
+                ['date', 'total', 'active', 'deceased', 'recovered']
+            noise_params {dict} -- dictionary containing description of parameters used to add noise
+        
+        Returns:
+            pd.DataFrame -- dataframe of cases with noise with 5 columns : 
+                ['date', 'total', 'active', 'deceased', 'recovered'] 
+        """
+        
         if 'active' in noise_params['columns_to_change']:
             columns_to_change = list(set(noise_params['columns_to_change'] + ['total', 'recovered', 'deceased']))
             columns_to_change.remove('active')
