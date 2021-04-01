@@ -1,5 +1,6 @@
 # Fileformats
 *csv
+*npy
 *pdf
 *png
 *jpg
@@ -28,6 +29,8 @@ sftp-configjson
 
 # Folders (on Home dir and otherwise)
 data/data/
+*athena/
+**athena/
 *plots/
 **plots/
 *outputs/
