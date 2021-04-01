@@ -765,6 +765,89 @@ def plot_all_losses(predictions_dict, which_losses=['train', 'val'], method='bes
     plt.show()
 
 
+def def comp_bar(PD, loss_type):
+    which_compartments = ['total', 'active', 'recovered', 'deceased', 'agg']
+    title_comp = ['Confirmed', 'Active', 'Recovered', 'Deceased', 'Aggregate']
+    df_compiled = {"MCMC": [], "BO": []}
+    for run, run_dict in PD.items():
+        for model, model_dict in run_dict.items():
+            if loss_type in ['train', 'test']:
+                df = model_dict['m1']['df_loss'][loss_type]
+                df['agg'] = df.mean()
+                df_compiled[model].append(df)
+            else:
+                df = model_dict['ensemble_mean_forecast']['df_loss']
+                df['agg'] = np.mean(list(df.values()))
+                df2 = {comp: df[comp] for comp in which_compartments}
+                df_compiled[model].append(df2)
+    stats = {}
+    n = len(df_compiled["MCMC"])
+    stats['MCMC'] = (pd.DataFrame(df_compiled['MCMC']
+                                  ).describe()).loc[['mean', 'std']]
+    stats['BO'] = (pd.DataFrame(df_compiled['BO']).describe()
+                   ).loc[['mean', 'std']]
+    barWidth = .4
+    bars1 = stats['MCMC'].loc[['mean']].values[0]
+    bars2 = stats['BO'].loc[['mean']].values[0]
+    yer1 = stats['MCMC'].loc[['std']].values[0]/np.sqrt(n)
+    yer2 = stats['BO'].loc[['std']].values[0]/np.sqrt(n)
+    yticks = np.arange(len(bars1))
+    r1 = yticks - (barWidth/2)
+    r2 = yticks + (barWidth/2)
+    plt.barh(r1, width=bars1, height=barWidth, color='tab:blue', edgecolor='tab:blue', xerr=yer1,
+             capsize=0, label='MCMC', alpha=0.5, linewidth=0, error_kw={"elinewidth": 2}, ecolor='black')
+    plt.barh(r2, width=bars2, height=barWidth, color='tab:orange', edgecolor='tab:orange', xerr=yer2,
+             capsize=0, label='ABMA', alpha=0.5, linewidth=0, error_kw={"elinewidth": 2}, ecolor='black')
+    plt.yticks(yticks, labels=title_comp)
+    plt.gca().invert_yaxis()
+    plt.grid(axis='x', alpha=0.25)
+    plt.xlabel('MAPE loss (\%)')
+    # if(loss_type == 'train'):
+    #     ax.text(.025,4.25,'\\textbf{(a)}',fontweight='bold')
+    # elif(loss_type == 'test'):
+    #     ax.text(.025,30,'\\textbf{(b)}',fontweight='bold')
+    # else:
+    #     ax.text(.025,17.3,'\\textbf{(c)}',fontweight='bold')
+    plt.legend()(PD, loss_type):
+    which_compartments = ['total', 'active', 'recovered', 'deceased','agg']
+    title_comp = ['Confirmed', 'Active', 'Recovered', 'Deceased','Aggregate']
+    df_compiled = {"MCMC":[],"BO":[]}
+    for run,run_dict in PD.items():
+        for model,model_dict in run_dict.items():
+            if loss_type in ['train','test']:
+                df = model_dict['m1']['df_loss'][loss_type]
+                df['agg'] = df.mean()
+                df_compiled[model].append(df)
+            else:
+                df = model_dict['ensemble_mean_forecast']['df_loss']
+                df['agg'] = np.mean(list(df.values()))
+                df2 = {comp:df[comp] for comp in which_compartments}
+                df_compiled[model].append(df2)
+    stats = {}
+    n = len(df_compiled["MCMC"])
+    stats['MCMC'] = (pd.DataFrame(df_compiled['MCMC']).describe()).loc[['mean','std']]
+    stats['BO'] = (pd.DataFrame(df_compiled['BO']).describe()).loc[['mean','std']]
+    barWidth = .4
+    bars1 = stats['MCMC'].loc[['mean']].values[0]
+    bars2 = stats['BO'].loc[['mean']].values[0]
+    yer1 = stats['MCMC'].loc[['std']].values[0]/np.sqrt(n)
+    yer2 = stats['BO'].loc[['std']].values[0]/np.sqrt(n)
+    yticks = np.arange(len(bars1))
+    r1 = yticks - (barWidth/2)
+    r2 = yticks + (barWidth/2)
+    plt.barh(r1, width=bars1  ,height= barWidth, color = 'tab:blue', edgecolor = 'tab:blue', xerr=yer1, capsize=0, label='MCMC',alpha = 0.5,linewidth=0,error_kw = {"elinewidth":2},ecolor = 'black')
+    plt.barh(r2, width= bars2  ,height= barWidth, color = 'tab:orange', edgecolor = 'tab:orange', xerr=yer2, capsize=0, label='ABMA',alpha = 0.5,linewidth=0,error_kw = {"elinewidth":2},ecolor = 'black')
+    plt.yticks(yticks,labels = title_comp)
+    plt.gca().invert_yaxis()
+    plt.grid(axis='x',alpha =  0.25)
+    plt.xlabel('MAPE loss (\%)')
+    # if(loss_type == 'train'):
+    #     ax.text(.025,4.25,'\\textbf{(a)}',fontweight='bold')
+    # elif(loss_type == 'test'):
+    #     ax.text(.025,30,'\\textbf{(b)}',fontweight='bold')
+    # else:
+    #     ax.text(.025,17.3,'\\textbf{(c)}',fontweight='bold')
+    plt.legend()
 
 def plot_all_params(predictions_dict, method='best', weighting='exp'):
     """Plots mean and variance bar graphs for all the sampled params for different (scenario, config). 
