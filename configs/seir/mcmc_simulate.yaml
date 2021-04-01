@@ -8,9 +8,6 @@ fitting:
             generate: TRUE
             config_file: seirhd_fixed.yaml
             filename: ../../data/data/simulated_data/simulated_data_1.csv
-            add_noise: TRUE
-            noise:
-                columns_to_change: [total, active, recovered]
         data_columns: [total, active, recovered, deceased]
         smooth_jump: FALSE
         smooth_jump_params: None
@@ -27,17 +24,33 @@ fitting:
         P_fatal: [[0, 0.1], uniform]
         E_hosp_ratio: [[0, 2], uniform]
         I_hosp_ratio: [[0, 1], uniform]
+        gamma: [[0, 5], uniform]
     default_params:
         N: 1.0e+7
-    optimiser: BO_Hyperopt
+    optimiser: MCMC_Opt
     optimiser_params:
-        num_evals: 1000
-        algo: tpe
+        num_evals: 2000
+        seed: 42
+        algo: gaussian
+        n_chains: 1
+        stride: 7
+        n_iters: 1500
+        gamma_prior: [40,0.0028571]
+        proposal_sigmas:
+            lockdown_R0: 0.25
+            T_inc: 0.04
+            T_inf: 0.04
+            T_recov: 2
+            T_recov_fatal: 2
+            P_fatal: 0.01
+            E_hosp_ratio: .5
+            I_hosp_ratio: .5
+            gamma: 1
     split:
-        start_date: null
-        end_date: 2020-08-21
-        train_period: 21
-        val_period: 7
+        start_date: 2020-08-01
+        end_date: null
+        train_period: 28
+        val_period: 28
         test_period: 0
     loss:
         loss_method: mape
@@ -51,7 +64,6 @@ plotting:
     right_truncation_buffer: forecast_days
     separate_compartments_separate_ax: TRUE
     num_trials_to_plot: 10
-    pair_fits_to_plot: [[best, ensemble_mean], [ensemble_mean, 50], [50, 80]]
     plot_topk_trials_for_columns: [total, active, recovered, deceased]
     plot_ptiles_for_columns: [total, active, recovered, deceased]
 uncertainty:
