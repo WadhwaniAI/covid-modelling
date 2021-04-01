@@ -145,6 +145,63 @@ def plot_ptiles_reichlab(df_comb, model, location, target='inc death', plot_true
 
     return fig, ax
 
+def plot_ptiles_comp(PD, train_fit='m1', vline=None, compartment=Columns.active,
+                        plot_individual_curves=True, log_scale=False, ax=None):
+    predictions_mcmc = PD['MCMC']['uncertainty_forecasts']
+    predictions_bo = PD['BO']['uncertainty_forecasts']
+    df_master_mcmc = list(predictions_mcmc.values())[0]['df_prediction']
+    for df in list(predictions_mcmc.values())[1:]:
+        if isinstance(df, pd.DataFrame):
+           df = df.reset_index()
+        else:
+            df = df['df_prediction']
+        df_master_mcmc = pd.concat([df_master_mcmc, df], ignore_index=True)
+    df_master_bo = list(predictions_bo.values())[0]['df_prediction']
+    for df in list(predictions_bo.values())[1:]:
+        if isinstance(df, pd.DataFrame):
+           df = df.reset_index()
+        else:
+            df = df['df_prediction']
+        df_master_bo = pd.concat([df_master_bo, df], ignore_index=True)
+
+    df_true = PD['MCMC']['m1']['df_district']
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(24, 24))
+    else:
+        fig = None
+
+    texts = []
+    sns.set_color_codes()
+    df_true = df_true[(df_true['date'] >= PD['BO']['ensemble_mean_forecast']['df_prediction']['date'][0]) & (
+        df_true['date'] <= PD['BO']['ensemble_mean_forecast']['df_prediction']['date'].iloc[-1])]
+    ax.plot(df_true[Columns.date.name].to_numpy(), df_true[compartment.name].to_numpy(),
+            '--', color=compartment.color, label='Observed', lw=3.5)
+    print(compartment.name)
+    ax.plot(PD['MCMC']['ensemble_mean_forecast']['df_prediction']['date'], PD['MCMC']
+            ['ensemble_mean_forecast']['df_prediction'][compartment.name], c='tab:blue', lw=2)
+    ax.fill_between(list(predictions_mcmc.values())[0]['df_prediction']['date'], list(predictions_bo.values())[
+                    0]['df_prediction'][compartment.name], list(predictions_bo.values())[-1]['df_prediction'][compartment.name], color='tab:orange', alpha=.2, lw=0.01)
+    ax.fill_between(list(predictions_mcmc.values())[0]['df_prediction']['date'], list(predictions_mcmc.values())[
+                    0]['df_prediction'][compartment.name], list(predictions_mcmc.values())[-1]['df_prediction'][compartment.name], color='tab:blue', alpha=0.2, lw=0.01)
+    ax.plot(PD['BO']['ensemble_mean_forecast']['df_prediction']['date'], PD['BO']
+            ['ensemble_mean_forecast']['df_prediction'][compartment.name], c='tab:orange', lw=2)
+    if vline:
+        plt.axvline(datetime.datetime.strptime(vline, '%Y-%m-%d'))
+    adjust_text(texts, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
+    axis_formatter(ax, log_scale=log_scale)
+    ax.grid(False)
+    ax.set_xlabel("")
+    if(compartment == Columns.total):
+        ax.text(.5, .915, 'Confirmed', horizontalalignment='center',
+                fontsize=18, transform=ax.transAxes, backgroundcolor='white')
+    else:
+        ax.text(.5, .915, compartment.name.title(), horizontalalignment='center',
+                fontsize=18, transform=ax.transAxes, backgroundcolor='white')
+    # ax.set_title(compartment.name.title())
+
+    return fig, ax
+
 
 def plot_beta_loss(dict_of_trials):
     fig, ax = plt.subplots(figsize=(12, 8))

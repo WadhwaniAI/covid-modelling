@@ -765,7 +765,7 @@ def plot_all_losses(predictions_dict, which_losses=['train', 'val'], method='bes
     plt.show()
 
 
-def def comp_bar(PD, loss_type):
+def comp_bar(PD, loss_type):
     which_compartments = ['total', 'active', 'recovered', 'deceased', 'agg']
     title_comp = ['Confirmed', 'Active', 'Recovered', 'Deceased', 'Aggregate']
     df_compiled = {"MCMC": [], "BO": []}
@@ -808,7 +808,7 @@ def def comp_bar(PD, loss_type):
     #     ax.text(.025,30,'\\textbf{(b)}',fontweight='bold')
     # else:
     #     ax.text(.025,17.3,'\\textbf{(c)}',fontweight='bold')
-    plt.legend()(PD, loss_type):
+    plt.legend()(PD, loss_type)
     which_compartments = ['total', 'active', 'recovered', 'deceased','agg']
     title_comp = ['Confirmed', 'Active', 'Recovered', 'Deceased','Aggregate']
     df_compiled = {"MCMC":[],"BO":[]}
