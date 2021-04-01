@@ -11,10 +11,6 @@ from matplotlib.patches import Patch
 
 from utils.generic.enums import Columns
 from viz.utils import axis_formatter
-import os
-import pdb
-import json
-import argparse
 
 
 def plot_ptiles(predictions_dict, vline=None, which_compartments=[Columns.active], 
