@@ -67,6 +67,21 @@ class SimulatedDataLoader(BaseLoader):
     def pull_dataframes_cached(self, reload_data=False, label=None, **kwargs):
         return super().pull_dataframes_cached(reload_data=reload_data, label=label, **kwargs)
 
+    def add_noise_to_df(self, df, noise_params):
+        if 'active' in noise_params['columns_to_change']:
+            columns_to_change = list(set(noise_params['columns_to_change'] + ['total', 'recovered', 'deceased']))
+            columns_to_change.remove('active')
+        else:
+            columns_to_change = noise_params['columns_to_change']
+        daily_cases = df[columns_to_change] - df[columns_to_change].shift(1)
+        for col in columns_to_change:
+            daily_cases[col] = pd.Series([0] + list(np.random.poisson(daily_cases[col].to_list()[1:])))
+            daily_cases[col] = daily_cases[col].cumsum().add(df.loc[0, col])
+        df[columns_to_change] = daily_cases[columns_to_change]
+        if 'active' in noise_params['columns_to_change']:
+            df['active'] = df['total'] - df['recovered'] - df['deceased']
+        return df
+    
     def get_data(self, **dataloading_params):
         """Main function serving as handshake between data and fitting modules
 
@@ -74,9 +89,13 @@ class SimulatedDataLoader(BaseLoader):
             dict{str : pd.DataFrame}: The processed dataframe
         """
         if dataloading_params['generate']:
-            return self.generate_data(**dataloading_params)
+            data_dict =  self.generate_data(**dataloading_params)
         else:
-            return self.get_data_from_file(**dataloading_params)
+            data_dict = self.get_data_from_file(**dataloading_params)
+
+        if dataloading_params['add_noise'] : 
+            data_dict['data_frame'] = self.add_noise_to_df(data_dict['data_frame'],dataloading_params['noise'])
+        return data_dict
 
     def generate_data(self, config_file, sim_data_configs_dir="../../configs/simulated_data/",
                       columns=['total', 'active', 'deceased', 'recovered'], **kwargs):
