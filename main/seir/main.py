@@ -118,7 +118,7 @@ def run_cycle(processed_dataframes, data, model, variable_param_ranges, default_
         dict: A predictions_dict file with the results of the fitting and more
     """
     results_dict = {}
-    df_train, df_val, _, df_train_nora, df_val_nora, df_test_nora, df_district = [
+    df_train, df_val, df_test, df_train_nora, df_val_nora, df_test_nora, df_district = [
         processed_dataframes.get(k) for k in processed_dataframes.keys()]
 
     # Initialise Optimiser
@@ -149,6 +149,7 @@ def run_cycle(processed_dataframes, data, model, variable_param_ranges, default_
         'df_prediction': df_prediction,
         'df_district': df_district,
         'df_train': df_train,
+        'df_test':df_test,
         'df_val': df_val,
         'df_loss': df_loss,
         'trials': trials,

@@ -105,8 +105,11 @@ class ABMAUncertainty(Uncertainty):
         # while df_district has no rolling average
         df_val = self.predictions_dict['df_district'].set_index('date') \
             .loc[self.predictions_dict['df_val']['date'],:]
-        df_test = self.predictions_dict['df_district'].set_index('date') \
-            .loc[self.predictions_dict['df_test']['date'], :]
+        try:
+            df_test = self.predictions_dict['df_district'].set_index('date') \
+                .loc[self.predictions_dict['df_test']['date'], :]
+        except:
+            pass            
         beta_loss = np.exp(-beta*losses)
 
         predictions = self.predictions_dict['trials']['predictions']

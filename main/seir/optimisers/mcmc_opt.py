@@ -123,7 +123,7 @@ class MCMC_Opt(OptimiserBase):
         mcmc_fit = MCMC(self.df_train, self.default_params, self.variable_param_ranges, n_chains, total_days,
                         algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, 
                         loss_indices, loss_weights, self.model,partial_predict,partial_predict_and_compute_loss)
-        mcmc_fit.run()
+        mcmc_fit.run(parallelise=False)
         
         metric = {"DIC": mcmc_fit.DIC, "GR-ratio": mcmc_fit.R_hat}
         _, trials = mcmc_fit._get_trials()
