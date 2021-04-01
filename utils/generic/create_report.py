@@ -52,6 +52,10 @@ def create_output(predictions_dict, output_folder, tag):
 
 
 def _dump_predictions_dict(predictions_dict, ROOT_DIR):
+    try:
+        del predictions_dict['run_params']['model_class']
+    except Exception:
+        pass
     filepath = os.path.join(ROOT_DIR, 'predictions_dict.pkl')
     with open(filepath, 'wb+') as dump:
         pickle.dump(predictions_dict, dump)
@@ -121,14 +125,13 @@ def _log_uncertainty_fit(mdFile, fit_dict):
 
 
 def _log_forecasts(mdFile, ROOT_DIR, fit_dict):
-    _log_plots_util(mdFile, ROOT_DIR, 'forecast-best.png',
-                    fit_dict['plots']['forecast_best'], 'Forecast using M2 Best Params')
-    _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-50.png',
-                    fit_dict['plots']['forecast_best_50'], 'Forecast using best fit, 50th decile params')
-    _log_plots_util(mdFile, ROOT_DIR, 'forecast-best-80.png',
-                    fit_dict['plots']['forecast_best_80'], 'Forecast using best fit, 80th decile params')
-    _log_plots_util(mdFile, ROOT_DIR, 'forecast-ensemble-mean-50.png',
-                    fit_dict['plots']['forecast_ensemble_mean_50'], 'Forecast of ensemble fit, 50th decile')
+    plots_to_save = []
+    for key, val in fit_dict['plots'].items():
+        if 'forecast_' in key and type(val) != dict:
+            plots_to_save.append(key)
+    for key in plots_to_save:
+        _log_plots_util(mdFile, ROOT_DIR, f'{key}.png',
+                        fit_dict['plots'][f'{key}'], key)
 
     for column, figure in fit_dict['plots']['forecasts_topk'].items():
         _log_plots_util(mdFile, ROOT_DIR, f'forecast-topk-{column}.png',
