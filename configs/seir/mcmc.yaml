@@ -88,7 +88,7 @@ uncertainty:
         variable_param_ranges:
             beta: [[0, 10], 101]
         construct_percentiles_day_wise: FALSE
-        date_of_sorting_trials: 2020-11-30
+        date_of_sorting_trials: 2020-09-26
         sort_trials_by_column: total
         loss:
             loss_method: mape
