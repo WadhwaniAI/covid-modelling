@@ -14,7 +14,7 @@ sys.path.append('../../')
 
 from scripts.seir.common import *
 from utils.generic.config import read_config, process_config_seir, make_date_key_str
-from utils.generic.logging import log_wandb
+from utils.generic.logger import log_wandb
 from viz import plot_forecast
 
 import wandb
