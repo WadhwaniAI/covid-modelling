@@ -133,12 +133,10 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, locatio
 
 
 
-def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, 
-                   plot_lines=False, weighted=True, true_val= None, 
-                   savefig=False, filename=None, label=None):
+def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True,
+                   true_val= None, savefig=False, filename=None, label=None):
     """Plots histograms for all the sampled params for a particular run in a particular fig.
        The ith subplot will have the histogram corresponding to the ith parameter
-
     Args:
         predictions_dict (dict): predictions_dict for a particular run
         true_val(dict):True values of the parameters if available. 
@@ -154,7 +152,6 @@ def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1,
         savefig (bool, optional): If true the figure is saved. Defaults to False.
         filename (str, optional): if savefig is true what filename to save as. Defaults to None.
         label (str, optional): What is the label of the histogram. Defaults to None.
-
     Returns:
         dict: a dict of histograms of all the params for a particular run
     """

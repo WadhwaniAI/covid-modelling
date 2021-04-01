@@ -170,6 +170,28 @@ def make_date_str(config):
     return new_config
 
 
+def to_str(obj):
+    if isinstance(obj, datetime.datetime):
+        return obj.strftime('%Y-%m-%d')
+    return str(obj)
+
+
+def expand_choices(pattern, choices):
+    if pattern == 'list':
+        pass
+    elif pattern == 'repeat':
+        choices = [choices[0]] * choices[1]
+    elif pattern == 'range':
+        choices = range(choices[0], choices[1], choices[2])
+    elif pattern == 'date_range':
+        choices = {k: v for k, v in zip(['start', 'end', 'periods', 'freq'],
+                                        choices) if v is not None}
+        choices = pd.date_range(**choices).date
+    else:
+        raise Exception('Undefined pattern')
+    return choices
+
+
 def generate_config(config):
     """Generate configuration from template
 
@@ -188,13 +210,18 @@ def generate_config(config):
         elif isinstance(v, list):
             pattern, choices, select = v
             if select:
-                if pattern == 'repeat':
-                    choices = [choices[0]] * choices[1]
-                if pattern == 'range':
-                    choices = range(choices[0], choices[1], choices[2])
-                if pattern == 'date_range':
-                    choices = {k: v for k, v in zip(['start', 'end', 'periods', 'freq'], choices) if v is not None}
-                    choices = pd.date_range(**choices).date
+                if pattern == 'string':
+                    if len(choices) < 2:
+                        raise Exception('Insufficient arguments')
+                    else:
+                        format_strings = [choices[0]] * choices[1]
+                        for i in range(2, len(choices)):
+                            choice_list = expand_choices(choices[i][0], choices[i][1])
+                            format_strings = [fs.replace('<>', to_str(c)) for fs, c in
+                                              zip(format_strings, choice_list)]
+                        choices = format_strings
+                else:
+                    choices = expand_choices(pattern, choices)
                 new_config[k] = choices
     return new_config
 
