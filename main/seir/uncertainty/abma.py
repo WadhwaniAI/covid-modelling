@@ -43,6 +43,7 @@ class ABMAUncertainty(Uncertainty):
         if not fit_beta:
             self.beta = 0
             self.beta_loss = 0
+            self.dict_of_trials = {}
         else:
             self.beta, self.dict_of_trials = self.find_beta(
                 fitting_method, fitting_method_params, variable_param_ranges)
@@ -165,7 +166,8 @@ class ABMAUncertainty(Uncertainty):
                         algo=tpe.suggest,
                         max_evals=fitting_method_params['num_evals'],
                         trials=trials)
-
+            
+            #TODO : Add trials processing step here (to convert them to dict_of_trials)
             return best['beta'], trials
         elif fitting_method == 'gridsearch':
             if fitting_method_params['parallelise']:
