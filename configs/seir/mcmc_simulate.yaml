@@ -3,6 +3,7 @@ fitting:
         dataloader: SimulatedDataLoader
         stratified_data: FALSE
         dataloading_params:
+            add_noise : FALSE
             reload_data: FALSE
             cache_dir: "../../misc/cache/"
             generate: TRUE
@@ -69,7 +70,7 @@ plotting:
 uncertainty:
     method: ABMAUncertainty
     uncertainty_params:
-        which_fit: m1
+        fit_beta: FALSE
         fitting_method: gridsearch
         fitting_method_params:
             parallelise: FALSE
@@ -77,7 +78,7 @@ uncertainty:
         variable_param_ranges:
             beta: [[0, 10], 101]
         construct_percentiles_day_wise: FALSE
-        date_of_sorting_trials: 2020-11-30
+        date_of_sorting_trials: 2020-09-30
         sort_trials_by_column: total
         loss:
             loss_method: mape
