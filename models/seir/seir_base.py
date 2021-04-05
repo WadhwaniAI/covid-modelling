@@ -1,14 +1,9 @@
-import datetime
 from abc import abstractmethod
 from collections import OrderedDict
 
-import pandas as pd
-
 from models.seir.compartmental_base import CompartmentalBase
-from utils.fitting.ode import ODE_Solver
 
-
-class SEIR(CompartmentalBase):
+class SEIRBase(CompartmentalBase):
 
     @abstractmethod
     def __init__(self, STATES, R_STATES, p_params, t_params, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2, N=7e6, 

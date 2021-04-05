@@ -15,9 +15,9 @@ from utils.fitting.loss import Loss_Calculator
 from utils.generic.enums import Columns
 
 class ABMAUncertainty(Uncertainty):
-    def __init__(self, predictions_dict, fitting_config, variable_param_ranges, fitting_method,
-                 fitting_method_params, which_fit, construct_percentiles_day_wise, date_of_sorting_trials, 
-                 sort_trials_by_column, loss, percentiles):
+    def __init__(self, predictions_dict, variable_param_ranges, fitting_method,
+                 fitting_method_params, construct_percentiles_day_wise, date_of_sorting_trials, 
+                 sort_trials_by_column, loss, percentiles, fit_beta=True):
         """
         Initializes uncertainty object, finds beta for distribution
 
@@ -28,19 +28,26 @@ class ABMAUncertainty(Uncertainty):
         super().__init__(predictions_dict)
         # Setting all variables as class variables
         self.variable_param_ranges = variable_param_ranges
-        self.which_fit = which_fit
         self.date_of_sorting_trials = date_of_sorting_trials
         self.sort_trials_by_column = sort_trials_by_column
-        for key in loss:
-            setattr(self, key, loss[key])
+
+        self.loss_method = loss['loss_method']
+        self.loss_compartments = loss['loss_compartments']
+        self.loss_weights = loss['loss_weights']
+
         self.percentiles = percentiles
-        self.fitting_config = fitting_config
         self.construct_percentiles_day_wise = construct_percentiles_day_wise
         # Processing all trials
         # Finding Best Beta
-        self.beta, self.dict_of_trials = self.find_beta(
-            fitting_method, fitting_method_params, variable_param_ranges)
-        self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
+        self.p_val = self.p_test()
+        if not fit_beta:
+            self.beta = 0
+            self.beta_loss = 0
+            self.dict_of_trials = {}
+        else:
+            self.beta, self.dict_of_trials = self.find_beta(
+                fitting_method, fitting_method_params, variable_param_ranges)
+            self.beta_loss = self.avg_weighted_error({'beta': self.beta}, return_dict=True)
         # Creating Ensemble Mean Forecast
         self.ensemble_mean_forecast = self.avg_weighted_error({'beta': self.beta}, return_dict=False,
                                                               return_ensemble_mean_forecast=True)
@@ -64,6 +71,24 @@ class ABMAUncertainty(Uncertainty):
             pred = pred.append(predictions[i].set_index(
                 'date').loc[:, [column.name]].transpose(), ignore_index=True)
         return pd.concat([trials, pred], axis=1)
+    
+    def p_test(self, COLUMN_NAME='total'):
+        df_trials = self.trials_to_df(self.predictions_dict['trials'], 
+                                      self.sort_trials_by_column)
+        
+        p = []
+        total_time = len(self.predictions_dict['df_val']['date'].keys())
+        for i in self.predictions_dict['df_val']['date'].keys():
+            date_to_eval = self.predictions_dict['df_val']['date'][i]
+            datetime_to_eval = datetime.datetime.combine(date_to_eval,datetime.time())
+            gt = self.predictions_dict['df_val'][COLUMN_NAME][i]
+            trials_on_day = df_trials.loc[:,datetime_to_eval]
+            N = len(trials_on_day)
+            p_u = (trials_on_day>gt).sum()/N
+            p_l = 1- p_u
+            p.append( 2 * min(p_u,p_l))
+        answer = sum(p)/total_time
+        return answer
 
     def avg_weighted_error(self, params, return_dict=False, return_ensemble_mean_forecast=False):
         """
@@ -79,8 +104,15 @@ class ABMAUncertainty(Uncertainty):
         losses = deepcopy(self.predictions_dict['trials']['losses'])
         # This is done as rolling average on df_val has already been calculated, 
         # while df_district has no rolling average
-        df_val = deepcopy(self.predictions_dict['df_district']).set_index('date') \
+        if self.predictions_dict['df_val'] is None:
+            raise Exception('Validation set cannot be empty')
+        df_val = self.predictions_dict['df_district'].set_index('date') \
             .loc[self.predictions_dict['df_val']['date'],:]
+        try:
+            df_test = self.predictions_dict['df_district'].set_index('date') \
+                .loc[self.predictions_dict['df_test']['date'], :]
+        except:
+            pass            
         beta_loss = np.exp(-beta*losses)
 
         predictions = deepcopy(self.predictions_dict['trials']['predictions'])
@@ -93,18 +125,23 @@ class ABMAUncertainty(Uncertainty):
         pruned_predictions = [df for i, df in enumerate(predictions) if i in correct_shape_idxs]
         pruned_losses = beta_loss[correct_shape_idxs]
         predictions_stacked = np.stack([df.loc[:, allcols].to_numpy() for df in pruned_predictions], axis=0)
-        predictions_stacked_weighted_by_beta = pruned_losses[:, None, None] * predictions_stacked / pruned_losses.sum()
+        predictions_stacked_weighted_by_beta = pruned_losses[:, None, None] * predictions_stacked
+        if pruned_losses.sum() > 0:
+            predictions_stacked_weighted_by_beta = \
+                predictions_stacked_weighted_by_beta / pruned_losses.sum()
         weighted_pred = np.sum(predictions_stacked_weighted_by_beta, axis=0)
         weighted_pred_df = pd.DataFrame(data=weighted_pred, columns=allcols)
         weighted_pred_df['date'] = predictions[0]['date']
         weighted_pred_df.set_index('date', inplace=True)
-        weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
+        weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_test.index), :]
         lc = Loss_Calculator()
         if return_dict:
+            weighted_pred_df_loss = weighted_pred_df.loc[weighted_pred_df.index.isin(df_val.index), :]
             return lc.calc_loss_dict(weighted_pred_df_loss, df_val, loss_method=self.loss_method, 
                                      loss_compartments=loss_cols)
         if return_ensemble_mean_forecast:
             weighted_pred_df.reset_index(inplace=True)
+            # df_loss':lc.calc_loss_dict(weighted_pred_df_loss, df_test, method = 'mape')}
             return weighted_pred_df
         return lc.calc_loss(weighted_pred_df_loss, df_val, loss_method=self.loss_method,
                             loss_compartments=loss_cols, loss_weights=self.loss_weights)
@@ -129,7 +166,8 @@ class ABMAUncertainty(Uncertainty):
                         algo=tpe.suggest,
                         max_evals=fitting_method_params['num_evals'],
                         trials=trials)
-
+            
+            #TODO : Add trials processing step here (to convert them to dict_of_trials)
             return best['beta'], trials
         elif fitting_method == 'gridsearch':
             if fitting_method_params['parallelise']:
@@ -208,7 +246,6 @@ class ABMAUncertainty(Uncertainty):
         df_district = self.predictions_dict['df_district']
         df_train_nora = df_district.set_index('date').loc[
             self.predictions_dict['df_train']['date'], :].reset_index()
-        
         for ptile in df_ptile_idxs.columns:
             deciles_forecast[ptile] = {}
             if self.construct_percentiles_day_wise:

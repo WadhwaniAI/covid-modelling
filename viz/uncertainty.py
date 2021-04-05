@@ -1,7 +1,7 @@
 import datetime
 from copy import copy
 from datetime import timedelta
-
+import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -24,6 +24,10 @@ def plot_ptiles(predictions_dict, vline=None, which_compartments=[Columns.active
 
     df_master = list(predictions.values())[0]
     for df in list(predictions.values())[1:]:
+        if isinstance(df, pd.DataFrame):
+           df = df.reset_index()
+        else:
+            df = df['df_prediction']
         df_master = pd.concat([df_master, df], ignore_index=True)
     
     train_period = predictions_dict['run_params']['split']['train_period']
@@ -73,7 +77,7 @@ def plot_ptiles(predictions_dict, vline=None, which_compartments=[Columns.active
 
 
 def plot_ptiles_reichlab(df_comb, model, location, target='inc death', plot_true=False, plot_point=True,
-                         plot_individual_curves=True, ci_lb=2.5, ci_ub=97.5, color='C0', ax=None, latex=False):
+                         plot_individual_curves=True, ci_lb=2.5, ci_ub=97.5, color='C0', ax=None, ):
     compartment = 'deceased' if 'death' in target else 'total'
     mode = 'inc' if 'inc' in target else 'cum'
     compartment = Columns.from_name(compartment)
@@ -93,8 +97,6 @@ def plot_ptiles_reichlab(df_comb, model, location, target='inc death', plot_true
         df_point = df_plot[df_plot['type'] == 'point']
         ax.plot(df_point['target_end_date'].to_numpy(), df_point['forecast_value'].to_numpy(),
                 '-o', color=color)
-    if latex:
-        model = model.replace('_', '\_')
     texts = []
     df_quantiles = df_plot[df_plot['type'] == 'quantile']
     quantiles = df_quantiles.groupby('quantile').sum().index
@@ -153,3 +155,51 @@ def plot_beta_loss(dict_of_trials):
     ax.set_xlabel('Beta value')
     ax.set_title('How the beta loss changes with beta')
     return fig, ax
+
+
+def plot_chains(mcmc, figsize=(20, 20)):
+    """Summary
+    
+    Args:
+        mcmc (MCMC): Description
+        out_dir (str): Description
+    """
+    params = [*mcmc.prior_ranges.keys()]
+
+    for param in params:
+        plt.figure(figsize=figsize)
+        plt.subplot(2,1,1)
+
+        for i, chain in enumerate(mcmc.chains):
+            df = pd.DataFrame(chain[0])
+            samples = np.array(df[param])
+            plt.plot(list(range(len(samples))), samples, label='chain {}'.format(i+1))
+
+        plt.xlabel("iterations")
+        plt.title("Accepted {} samples".format(param))
+        plt.legend()
+
+        plt.subplot(2,1,2)
+
+        for i, chain in enumerate(mcmc.chains):
+            df = pd.DataFrame(chain[1])
+            try:
+                samples = np.array(df[param])
+                plt.scatter(list(range(len(samples))), samples, s=4, label='chain {}'.format(i+1))
+            except:
+                continue
+
+        plt.xlabel("iterations")
+        plt.title("Rejected {} samples".format(param))
+        plt.legend()
+
+    for param in params:
+        plt.figure(figsize=(20, 10))
+        for i, chain in enumerate(mcmc.chains):
+            df = pd.DataFrame(chain[0])
+            samples = np.array(df[param])
+            mean = np.mean(samples)
+            sns.kdeplot(np.array(samples), bw=0.005*mean)
+        plt.title("Density plot of {} samples".format(param))
+        plt.show()
+

@@ -1,9 +1,9 @@
 import numpy as np
 import copy
 
-from models.seir.base import SEIR
+from models.seir.seir_base import SEIRBase
 
-class SEIRHD(SEIR):
+class SEIRHD(SEIRBase):
     def __init__(self, lockdown_R0=2.2, T_inf=2.9, T_inc=5.2, P_fatal=0.02, T_recov_fatal=32, T_recov=14, N=7e6,
                  starting_date='2020-03-09', observed_values=None, E_hosp_ratio=0.5, I_hosp_ratio=0.5, **kwargs):
         """
