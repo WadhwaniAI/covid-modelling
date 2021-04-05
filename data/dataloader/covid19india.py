@@ -40,11 +40,8 @@ class Covid19IndiaLoader(BaseLoader):
 
         # Create dataframe for time series data
         df_india_time_series = pd.DataFrame.from_dict(data['cases_time_series'])
-        try:
-            df_india_time_series['date'] = pd.to_datetime([datetime.datetime.strptime(
-                x[:6] + ' 2020', '%d %b %Y') for x in df_india_time_series['date']])
-        except Exception:
-            pass
+        df_india_time_series['date'] = pd.to_datetime([datetime.datetime.strptime(
+            x[:6] + ' 2020', '%d %b %Y') for x in df_india_time_series['date']])
         
         return df_tested, df_statewise, df_india_time_series
 
