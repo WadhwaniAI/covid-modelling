@@ -13,6 +13,27 @@ from utils.generic.enums.columns import compartments
 from utils.generic.stats import get_param_stats, get_loss_stats
 from viz.utils import axis_formatter
 
+def plot_buckets(df_prediction, title, which_buckets=None):
+    if (which_buckets == None):
+        which_buckets = df_prediction.columns.to_list()
+        which_buckets.remove('date')
+    plt.figure(figsize=(20,35))
+    fig,a =  plt.subplots(math.ceil(len(which_buckets)/2),2, figsize=(20,30))
+    fig.suptitle(title, fontsize=16)
+    col = 0
+    for i in range(math.ceil(len(which_buckets)/2)):
+        for j in range(2):
+            # import pdb; pdb.set_trace()
+            if (col >= len(which_buckets)):
+                break
+            a[i][j].plot(df_prediction['date'], df_prediction[which_buckets[col]], label=which_buckets[col])
+            plt.sca(a[i][j])
+            plt.xticks(rotation=45)
+            plt.ylabel(which_buckets[col])
+            plt.legend(loc='best')
+            col += 1
+    plt.show()
+
 
 def plot_fit(df_prediction, df_train, df_val, df_district, train_period, location_description,
              which_compartments=['active', 'total'], description='', savepath=None, 
@@ -111,21 +132,21 @@ def plot_fit(df_prediction, df_train, df_val, df_district, train_period, locatio
     return fig
 
 
-def plot_histogram(params_dict, arr, true_val, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True, 
-                   savefig=False, filename=None, label=None):
+
+def plot_histogram(predictions_dict, fig, axs, weighting='exp', beta=1, plot_lines=False, weighted=True,
+                   true_val= None, savefig=False, filename=None, label=None):
     """Plots histograms for all the sampled params for a particular run in a particular fig.
        The ith subplot will have the histogram corresponding to the ith parameter
     Args:
-        params_dict (dict): parameter samples for each parameter for a particular run
-        arr (list) : array of all parameters
-        true_val (dict) : true value for each parameter
+        predictions_dict (dict): predictions_dict for a particular run
+        true_val(dict):True values of the parameters if available. 
         fig (mpl.Figure): The mpl.Figure to plot in
         axs (mpl.Axes): The mpl.Axes to plot in
         weighting (str, optional): The weighting function.
         If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
         If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
-        beta (float, optional): beta param for exponential weighting 
-        plot_lines (bool, optional): If true line joining top of histogram bars is instead plotted. 
+        beta (float, optional): beta param for exponential weighting
+        plot_lines (bool, optional): If true line joining top of histogram bars is instead plotted.
         Defaults to False.
         weighted (bool, optional): If false uniform weighting is applied. Defaults to True.
         savefig (bool, optional): If true the figure is saved. Defaults to False.
@@ -134,69 +155,24 @@ def plot_histogram(params_dict, arr, true_val, fig, axs, weighting='exp', beta=1
     Returns:
         dict: a dict of histograms of all the params for a particular run
     """
-    
-    param_range = {"lockdown_R0": [0.7, 1.2],
-        "T_inc": [4, 5],
-        "T_inf": [3, 4],
-        "T_recov": [0, 40],
-        "T_recov_fatal": [0, 40],
-        "P_fatal": [0, 0.2],
-        'E_hosp_ratio': [0, 2],
-        'I_hosp_ratio': [0, 1]}
+    params_array = predictions_dict['trials']['params']
+    params_dict = {param: [param_dict[param] for param_dict in params_array]
+                   for param in list(params_array[0].keys())}
     histograms = {}
-    for i, param in enumerate(arr):
+    for i, param in enumerate(list(params_array[0].keys())):
         if (param == 'gamma'):
             continue
         ax = axs.flat[i]
-        ax.axvline(x=true_val[param],linewidth=2, color='r',label='True value')
+        if true_val is not None:
+            ax.axvline(x=true_val[param],linewidth=2, color='r',label='True value')
         sns.distplot(params_dict[param],norm_hist = True, kde = False,bins= 100,ax=ax)
         y = ax.get_ylim()
-        ax.set_xlim(param_range[param][0],param_range[param][1])
-        from arviz import hdi as hdi
-        lower_bound,upper_bound = hdi(np.array(params_dict[param]),hdi_prob=.95)
-        ax.errorbar(x = np.mean(params_dict[param]),y = 0.5*y[1],xerr = np.array([np.mean(params_dict[param])-lower_bound,upper_bound - np.mean(params_dict[param])]).reshape(-1,1),fmt='*',capthick=2,capsize=3,color = 'purple',label = 'Mean and 95 % HDI')
-        if param == 'T_recov_fatal':
-            ax.set_title(f'Denisty Plot of parameter T_Death')
-        else:
-            ax.set_title(f'Denisty Plot of parameter {param}')
+        ax.errorbar(x = np.mean(params_dict[param]),y = 0.5*y[1],xerr = np.std(params_dict[param]),fmt='*',capthick=2,capsize=y[1]*.05,color = 'purple',label = 'Mean and std')
+        ax.set_title(f'Denisty Plot of parameter {param}')
         ax.set_ylabel('Density')
         ax.legend()
     return histograms
 
-def plot_all_histograms(predictions_dict, description, weighting='exp', beta=1):
-    """Plots histograms for all the sampled params for all runs. 
-       It is assumed that the user provides a dict of N elements, 
-       each corresponding to the predictions_dict of 1 run. 
-       It is assumed that each run will have the same set of P parameters
-       If N runs are provided, a figure with P subplots is created (in a P//2*2 grid).
-       Each subplot corresponds to one parameter 
-       The ith subplot will have N histograms with each jth histogram corresponding to the ith 
-       parameter in the corresponding jth run
-
-    Args:
-        predictions_dict (dict): Dict of all predictions
-        description (str): Description of all the N runs given by the user. Used in the suptitle function
-        weighting (str, optional): The weighting function. 
-        If 'exp', np.exp(-beta*loss) is the weighting function used. (beta is separate param here)
-        If 'inv', 1/loss is used. Else, uniform weighting is used. Defaults to 'exp'.
-        beta (float, optional): beta param for exponential weighting 
-
-    Returns:
-        mpl.Figure, mpl.Axes, pd.DataFrame: The matplotlib figure, matplotlib axes, 
-        a dict of histograms of all the params for all the runs
-    """
-    params_array = predictions_dict['trials']['params']
-
-    fig, axs = plt.subplots(nrows=round(len(params_array[0].keys())/2), ncols=2, 
-                            figsize=(18, 6*round(len(params_array[0].keys())/2)))
-    histograms = {}
-    for run in predictions_dict.keys():
-        histograms[run] = plot_histogram(predictions_dict[run], fig, axs, 
-                                         weighting=weighting, label=run)
-
-    fig.suptitle(f'Histogram plots for {description}')
-    fig.subplots_adjust(top=0.96)
-    return fig, axs, histograms
 
 
 def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
@@ -245,8 +221,8 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
             df_mean_var.loc[(param, 'std'), run] = np.sqrt(variance)
 
     cmap = plt.get_cmap('plasma')
-    fig, axs = plt.subplots(nrows=round(len(params)/2), ncols=2,
-                            figsize=(18, 6*(len(params)/2)))
+    fig, axs = plt.subplots(nrows=len(params)//2, ncols=2,
+                            figsize=(18, 6*(len(params)//2)))
     for i, param in enumerate(params):
         ax = axs.flat[i]
         ax.bar(np.arange(len(predictions_dict)), df_mean_var.loc[(param, 'mean'), :],
@@ -257,6 +233,47 @@ def plot_mean_variance(predictions_dict, description, weighting='exp', beta=1):
     fig.subplots_adjust(top=0.96)
     return fig, axs, df_mean_var
 
+def get_losses(model_dict, method='best', start_iter=100):
+    if method=='best':
+        best_losses = []
+        for trial in model_dict['m0']['trials']:
+            if len(best_losses) == 0:
+                best_losses.append(trial['result']['loss'])
+            else:
+                best_losses.append(min(best_losses[-1], trial['result']['loss']))
+        return best_losses[start_iter:]
+    elif method=='aggregate':
+        best_losses = np.array([0.0 for i in range(len(model_dict['m0']['trials']))])
+        for _, run_dict in model_dict.items():
+            min_loss = 1e+5
+            for i,trial in enumerate(run_dict['trials']):
+                best_losses[i] += min(min_loss,trial['result']['loss'])
+                min_loss = min(min_loss,trial['result']['loss'])
+        best_losses /= len(model_dict)
+        return list(best_losses[start_iter:])
+ 
+def plot_variation_with_iterations(predictions_dict, compare='model', method='best', start_iter=0):
+    # compute the total number of graphs => #locations * #models
+    ncols = 3
+    nrows = len(predictions_dict)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(18, 8*nrows))
+    fig.suptitle('Loss Vs #iterations')
+    ax_counter = 0
+    for tag, tag_dict in predictions_dict.items():
+        ax = axs.flat[ax_counter]
+        for model, model_dict in tag_dict.items():
+            losses = get_losses(model_dict, method=method, start_iter=start_iter)
+            ax.plot(range(start_iter, start_iter + len(losses)), losses, label=model)
+            plt.sca(ax)
+            plt.ylabel('loss')
+            plt.xlabel('iteration')
+            plt.legend(loc='best')
+            plt.title(tag)
+        ax_counter += 1
+    for i in range(ax_counter,nrows*ncols):
+        fig.delaxes(axs.flat[i])
+    plt.show()
 
 def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_axes=True):
     """Plots KL divergence heatmaps for all the sampled params for all runs. 
@@ -280,8 +297,8 @@ def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_ax
         a dict of KL divergence matrices for all parameters
     """
     params = histograms_dict['m1'].keys()
-    fig, axs = plt.subplots(nrows=round(len(params)/2), ncols=2,
-                            figsize=(18, 6*round((len(params)/2))))
+    fig, axs = plt.subplots(nrows=len(params)//2, ncols=2,
+                            figsize=(18, 6*(len(params)//2)))
     kl_dict_reg = {}
     for i, param in enumerate(params):
         kl_matrix = [[entropy(histograms_dict[run1][param]['probability'],
@@ -305,7 +322,6 @@ def plot_kl_divergence(histograms_dict, description, cmap='Reds', shared_cmap_ax
     fig.subplots_adjust(top=0.96)
 
     return fig, axs, kl_dict_reg
-
 
 
 def plot_scatter(mean_var_dict, var_1, var_2, stat_measure='mean'):
@@ -342,7 +358,7 @@ def plot_scatter(mean_var_dict, var_1, var_2, stat_measure='mean'):
     return fig, axs
 
 
-def plot_heatmap_distribution_sigmas(mean_var_dict, stat_measure='mean', cmap='Reds', figsize=(10, 16)):
+def plot_heatmap_distribution_sigmas(mean_var_dict, stat_measure='mean', cmap='Reds'):
     """Plots a heatmap of sigma/mu where sigma/mu will be defined as follows : 
     Suppose there are Q locations for which we are doing distribution analyis,
     Each time we run the config N times, and there are P parameters.
@@ -380,7 +396,7 @@ def plot_heatmap_distribution_sigmas(mean_var_dict, stat_measure='mean', cmap='R
 
     df_sigma_mu = df_comparison.loc[:, (slice(None), ['sigma_by_mu'])]
 
-    fig, ax = plt.subplots(figsize=figsize)
+    fig, ax = plt.subplots(figsize=(10, 16))
     sns.heatmap(df_sigma_mu.values.astype(float), annot=True, cmap=cmap, ax=ax,
                 xticklabels=[x[0] for x in df_sigma_mu.columns], 
                 yticklabels=[f'{x[0]}, {x[1]}' for x in df_sigma_mu.index])
