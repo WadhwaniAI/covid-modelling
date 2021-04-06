@@ -316,7 +316,7 @@ class MCMC(Uncertainty):
         
         if parallelise:
             print("Executing in Parallel")
-            partial_metropolis = partial(self._metropolis, iters=self.iters)
+            partial_metropolis = partial(self._metropolis, iters=self.num_samples)
             self.chains = Parallel(n_jobs=self.n_chains)(
                 delayed(partial_metropolis)() for _ in range(self.n_chains))
         else:
