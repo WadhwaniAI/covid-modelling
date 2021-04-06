@@ -25,8 +25,6 @@ constant:
             split:
                 train_period: [list, [21], TRUE]
                 end_date: [list, [null], TRUE]
-            optimiser_params:
-                num_evals: [list, [2000], TRUE]
         uncertainty:
             uncertainty_params:
                 construct_percentiles_day_wise: [list, [TRUE], TRUE]

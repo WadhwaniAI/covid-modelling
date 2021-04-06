@@ -31,7 +31,7 @@ class MCMC(Uncertainty):
     """
     
     def __init__(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
-                 algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,
+                 algo, num_evals,num_samples, stride, proposal_sigmas, loss_method, loss_compartments, loss_indices,
                  loss_weights, model,partial_predict,partial_predict_and_compute_loss, **ignored):
         """
         Constructor. Fetches the data, initializes the optimizer and sets up the
@@ -55,7 +55,8 @@ class MCMC(Uncertainty):
         self.likelihood = algo
         self._default_params = default_params
         self.prior_ranges = variable_param_ranges
-        self.iters = num_evals
+        self.num_samples = num_samples
+        self.num_evals = num_evals
         self.compartments = loss_compartments
         self.model = model
         self.proposal_sigmas = proposal_sigmas
@@ -290,7 +291,7 @@ class MCMC(Uncertainty):
         for _, run in enumerate(self.chains):
             burn_in = int(len(run) / 2)
             combined_acc += run[0][burn_in:][::self.stride]
-        n_samples = 2000
+        n_samples = self.num_samples
         sample_indices = np.random.uniform(0, len(combined_acc), n_samples)
         #Total day is 1 less than training_period
         sample_indices = [int(i) for i in sample_indices]
@@ -322,7 +323,7 @@ class MCMC(Uncertainty):
             print("Executing in Serial")
             chains = []
             for _ in range(self.n_chains):
-                chains.append(self._metropolis(self.iters))
+                chains.append(self._metropolis(self.num_samples))
 
             self.chains = chains
         self._check_convergence()

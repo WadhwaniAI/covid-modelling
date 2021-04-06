@@ -103,7 +103,7 @@ class MCMC_Opt(OptimiserBase):
     def forecast(self, params, train_last_date, forecast_days, model):
         return super().forecast(params, train_last_date, forecast_days, model)
 
-    def optimise(self, proposal_sigmas, end_date, num_evals=10000, stride=5, n_chains=10, 
+    def optimise(self, proposal_sigmas, end_date, num_evals=1000,num_samples = 15000, stride=5, n_chains=10, 
                  train_period=28 , val_period=3, loss_method='rmse', loss_indices=[-20, -10], 
                  loss_compartments=['total'], loss_weights=[1], forecast_days=28,
                  algo='gaussian', **kwargs):
@@ -121,9 +121,9 @@ class MCMC_Opt(OptimiserBase):
         total_days = (self.df_train.iloc[-1, :]['date'].date() -
                       self.default_params['starting_date']).days
         mcmc_fit = MCMC(self.df_train, self.default_params, self.variable_param_ranges, n_chains, total_days,
-                        algo, num_evals, stride, proposal_sigmas, loss_method, loss_compartments, 
+                        algo, num_evals,num_samples, stride, proposal_sigmas, loss_method, loss_compartments, 
                         loss_indices, loss_weights, self.model,partial_predict,partial_predict_and_compute_loss)
-        mcmc_fit.run(parallelise=False)
+        mcmc_fit.run(parallelise=True)
         
         metric = {"DIC": mcmc_fit.DIC, "GR-ratio": mcmc_fit.R_hat}
         _, trials = mcmc_fit._get_trials()
