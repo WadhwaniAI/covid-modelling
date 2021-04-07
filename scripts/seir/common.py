@@ -15,10 +15,8 @@ def fitting(config):
     return predictions_dict
 
 def fit_beta(predictions_dict, config):
-    uncertainty_args = {'predictions_dict': predictions_dict,
-                        'fitting_config': config['fitting'],
-                        **config['uncertainty']['uncertainty_params']}
-
+    uncertainty_args = {'predictions_dict': predictions_dict,  "variable_param_ranges" :config['fitting']['variable_param_ranges'],
+                     **config['uncertainty']['uncertainty_params']}
     uncertainty = config['uncertainty']['method'](**uncertainty_args)
     return uncertainty
 
