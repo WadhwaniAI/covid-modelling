@@ -1,6 +1,6 @@
 fitting:
     data:
-        dataloader: Covid19IndiaLoader
+        dataloader: AthenaLoader
         dataloading_params:
             reload_data: FALSE
             cache_dir: "../../misc/cache/"
@@ -57,7 +57,7 @@ fitting:
             T_inf: 2
             T_recov: 2
             T_recov_fatal: 2
-            P_fatal: 0.01
+            P_fatal: 0.001
             E_hosp_ratio: .5
             I_hosp_ratio: .5
     split:
