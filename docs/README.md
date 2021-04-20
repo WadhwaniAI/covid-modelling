@@ -36,7 +36,8 @@ run the cells in `notebooks/seir/[STABLE] generate_report.ipynb` ([here](../note
 - To read more about SEIR models, [click here](seir.md)
 - To read more about IHME, [click here](ihme.md)
 - To read more about fitting process, [click here](fitting.md)
-- To read more about uncertainty estimation, [click here](uncertainty.md)
+- To read more about uncertainty estimation using ABMA, [click here](abma.md)
+- To read more about uncertainty estimation using MCMC, [click here](mcmc.md)
 - To read more about config file and how everything comes together, [click here](config.md)
 - To read more about the oncall process, [click here](oncall.md)
 - If you want to contribute, do check out [general principles](general_principles.md) before writing code
