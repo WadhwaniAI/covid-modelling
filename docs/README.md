@@ -28,6 +28,10 @@ If any line fails, install the packages using -
 
 run the cells in `notebooks/seir/[STABLE] generate_report.ipynb` ([here](../notebooks/seir/)) end to end to get an idea of the end-to-end modelling pipeline.
 
+# Docstrings
+
+Detailed function and class level documentation can be found in [sphinx](sphinx). The HTML files are not on git, but the instructions to create them are given in [sphinx/README.md](sphinx/README.md)
+
 # Further Reading
 
 - To read more about the codebase structure, [click here](codebase_structure.md)
