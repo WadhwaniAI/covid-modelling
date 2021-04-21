@@ -16,6 +16,9 @@
 ├── main/
 │   ├── ihme/
 │   ├── seir/
+│   ├───├─── optimisers/
+│   ├───├─── uncertainty/
+│   ├───├─── main.py/
 ├── models/
 │   ├── ihme/
 │   ├── seir/
