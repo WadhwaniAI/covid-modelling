@@ -39,7 +39,7 @@ utils.fitting.population module
 utils.fitting.smooth\_jump module
 ---------------------------------
 
-.. automodule:: utils.fitting.smooth_jump
+.. automodule:: data.processing.smooth_jump
    :members:
    :undoc-members:
    :show-inheritance:
