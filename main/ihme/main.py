@@ -13,12 +13,11 @@ from data.processing.processing import get_data, train_val_test_split
 from viz import plot_smoothing, plot_fit
 
 sys.path.append('../..')
-from models.ihme.model import IHME
 from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative
 from utils.fitting.loss import Loss_Calculator
 from main.ihme.optimiser import Optimiser
 from main.ihme.forecast import get_uncertainty_draws
-from utils.fitting.smooth_jump import smooth_big_jump
+from data.processing.smooth_jump import smooth_big_jump
 
 
 def transform_data(df, population):
