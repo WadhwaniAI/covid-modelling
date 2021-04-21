@@ -1,5 +1,6 @@
 # Folder Strucure
 
+```
 .
 +-- configs/
 |   +-- seir/
@@ -27,3 +28,4 @@
 |   +-- fitting/
 |   +-- generic/
 +-- viz/
+```
