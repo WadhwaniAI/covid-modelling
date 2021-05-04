@@ -132,6 +132,16 @@ class Covid19IndiaLoader(BaseLoader):
             pd.to_numeric)
         return df_districts
 
+    def _load_districts_csv(self):
+        df = pd.read_csv('https://api.covid19india.org/csv/latest/districts.csv')
+        df.columns = [x.lower() for x in df.columns]
+        df['active'] = df['confirmed'] - (df['recovered'] + df['deceased'])
+        numeric_cols = ['confirmed', 'active', 'recovered', 'deceased', 'tested', 'other']
+        df.loc[:, numeric_cols] = df.loc[:, numeric_cols].apply(pd.to_numeric)
+        df = df.fillna(0)
+        # df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d")
+        return df
+
     def _load_data_all_json_district(self, statecode_to_state_dict):
         """Loads history of cases district wise from data-all.json
 
@@ -265,18 +275,20 @@ class Covid19IndiaLoader(BaseLoader):
         dataframes['df_tested'] = df_tested
         dataframes['df_statewise'] = df_statewise
         dataframes['df_india_time_series'] = df_india_time_series
-        df_districtwise, statecode_to_state_dict = self._load_state_district_wise_json()
-        dataframes['df_districtwise'] = df_districtwise
+        # df_districtwise, statecode_to_state_dict = self._load_state_district_wise_json()
+        # dataframes['df_districtwise'] = df_districtwise
         if load_raw_data:
             df_raw = self._load_raw_data_json()
             dataframes['df_raw_data'] = df_raw
         if load_districts_daily:
             df_districts = self._load_districts_daily_json()
             dataframes['df_districts_daily'] = df_districts
-        df_districts_all = self._load_data_all_json_district(statecode_to_state_dict)
-        dataframes['df_districts_all'] = df_districts_all
-        df_states_all = self._load_data_all_json_state(statecode_to_state_dict)
-        dataframes['df_states_all'] = df_states_all
+        # df_districts_all = self._load_data_all_json_district(statecode_to_state_dict)
+        # dataframes['df_districts_all'] = df_districts_all
+        # df_states_all = self._load_data_all_json_state(statecode_to_state_dict)
+        # dataframes['df_states_all'] = df_states_all
+        df_districts = self._load_districts_csv()
+        dataframes['df_districts'] = df_districts
 
         return dataframes
 
@@ -356,6 +368,16 @@ class Covid19IndiaLoader(BaseLoader):
             df_district = df_districts.loc[(df_districts['state'] == state) & (
                 df_districts['district'] == district)]
             del df_district['notes']
+            df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
+            df_district = df_district.loc[df_district['date'] >= '2020-04-24', :]
+            df_district = df_district.rename({'confirmed': 'total'}, axis='columns')
+            df_district.reset_index(inplace=True, drop=True)
+            return df_district
+
+        if use_dataframe == 'districts':
+            df_districts = copy.copy(dataframes['df_districts'])
+            df_district = df_districts.loc[(df_districts['state'] == state) & (
+                    df_districts['district'] == district)]
             df_district.loc[:, 'date'] = pd.to_datetime(df_district.loc[:, 'date'])
             df_district = df_district.loc[df_district['date'] >= '2020-04-24', :]
             df_district = df_district.rename({'confirmed': 'total'}, axis='columns')
