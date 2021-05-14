@@ -18,11 +18,14 @@ Typically, it is expected that every data source will at least provide the above
 
 # Data Sources
 
-Currently, we have implemented dataloaders from 4 data sources :
+Currently, we have implemented dataloaders from the following data sources :
 - Covid19India
 - Rootnet
 - Athena
 - JHU
+- NYTimes
+- Covidtracking
+- Simulated
 
 ## Covid19India
 
@@ -59,6 +62,8 @@ export AWS_ATHENA_WORK_GROUP=primary
 
 Currently this data source is used only for Mumbai data (our primary customer). It was earlier used for Pune as well. `new_covid_case_summary` is the table that is used. 
 
+### stratified data 
+
 Mumbai further provides us with "stratified data" : data where the active column is stratified further on different basis. It can be stratified in 3 different ways:
 
 - severity (of infection)
@@ -85,8 +90,22 @@ Currently we use only stratification by bed type and severity as that is what ou
 
 This gets data from the [JHU dashboard](https://github.com/CSSEGISandData/COVID-19/) which tracks time series of cases for all countries and specific subregions of certain countries. The main use case of this data is for running experiments of different models across different geographies. 
 
+## NYTimes
+This dataloader that outputs time series case data for US states, counties, and US from the [NY Times github repo](https://www.github.com/nytimes/covid-19-data/)
+
+Allows the user to do fitting on US states, US counties.
+## Covidtracking
+This dataloader that time series case data for US states from the [Covid Tracking API](https://covidtracking.com/data/api).
+
+Allows the user to do fitting on US states.
+## Simulated
+This dataloader generates simulated data (ie, generates data from the predicted casecounts of a given model, eg SEIRHD, for a given set of parameter inputs)
+
+This can be used to test for the degeneracy in various SEIR models
 # Code
 
 The classes for loading data from the above sources have been implemented [here](../data/dataloader/). There are 4 classes - `Covid19IndiaLoader, RootnetLoader, AthenaLoader, JHULoader`. Each class has a `_load_data` function that returns a dict of `pd.DataFrame`s. Filtering/Processing of that data is done [here](../data/processing/processing.py). The function user is going to interact with most is `get_data` [here](../data/processing/processing.py).
+
+## Contributing
 
 If the user wishes to implement a new class of dataloader, that class should be a child of the abstract class [here](../data/dataloader/base.py) (as are all other classes).
