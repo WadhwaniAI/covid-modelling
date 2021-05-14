@@ -8,7 +8,7 @@ from data.dataloader.base import BaseLoader
 from models.seir import *
 
 class SimulatedDataLoader(BaseLoader):
-    """Dataloader that simulates data (ie, generates data from casecounts of a given model, eg SEIR)å
+    """Dataloader that simulates data (ie, generates data from casecounts of a given model, eg SEIR)
 
     Args:
         BaseLoader (abstract class): Abstract Data Loader Class
