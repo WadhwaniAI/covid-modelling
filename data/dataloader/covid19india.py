@@ -79,8 +79,8 @@ class Covid19IndiaLoader(BaseLoader):
         for state in states:
             df = pd.DataFrame.from_dict(
                 data[state]['districtData']).T.reset_index()
-            del df['notes']
-            df.columns = columns[1:]
+            df.drop(['notes'], axis=1, inplace=True)
+            df.rename({'index' : 'district'}, axis=1, inplace=True)
             df['state'] = state
             df = df[columns]
             df_districtwise = pd.concat([df_districtwise, df], ignore_index=True)
@@ -243,6 +243,14 @@ class Covid19IndiaLoader(BaseLoader):
         df_states_all.loc[:, numeric_cols] = df_states_all.loc[:, numeric_cols].apply(pd.to_numeric)
         return df_states_all
 
+    def _load_vaccination_data_state(self):
+        df = pd.read_csv('http://api.covid19india.org/csv/latest/cowin_vaccine_data_statewise.csv')
+        return df
+
+    def _load_vaccination_data_district(self):
+        df = pd.read_csv('http://api.covid19india.org/csv/latest/cowin_vaccine_data_districtwise.csv')
+        return df
+
     def pull_dataframes(self, load_raw_data=False, load_districts_daily=False, **kwargs):
         """
         This function parses multiple JSONs from covid19india.org
@@ -277,6 +285,10 @@ class Covid19IndiaLoader(BaseLoader):
         dataframes['df_districts_all'] = df_districts_all
         df_states_all = self._load_data_all_json_state(statecode_to_state_dict)
         dataframes['df_states_all'] = df_states_all
+        df_vaccine_state = self._load_vaccination_data_state()
+        dataframes['df_vaccine_state'] = df_vaccine_state
+        df_vaccine_district = self._load_vaccination_data_district()
+        dataframes['df_vaccine_district'] = df_vaccine_district
 
         return dataframes
 
