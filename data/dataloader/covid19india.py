@@ -74,13 +74,14 @@ class Covid19IndiaLoader(BaseLoader):
                 del data[state]['districtData'][district]['delta']
 
         columns = ['state', 'district', 'active', 'confirmed', 'deceased',
-                   'recovered', 'delta_confirmed', 'delta_deceased', 'delta_recovered']
+                   'recovered', 'migratedother', 'delta_confirmed', 'delta_deceased', 
+                   'delta_recovered']
         df_districtwise = pd.DataFrame(columns=columns)
         for state in states:
             df = pd.DataFrame.from_dict(
                 data[state]['districtData']).T.reset_index()
             del df['notes']
-            df.columns = columns[1:]
+            df.rename({'index': 'district'}, axis=1, inplace=True)
             df['state'] = state
             df = df[columns]
             df_districtwise = pd.concat([df_districtwise, df], ignore_index=True)
