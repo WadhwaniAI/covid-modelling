@@ -1,8 +1,33 @@
-Hi!
+# Wadhwani AI Covid Modelling
 
-This codebase is a framework for fitting blackbox models like epi-models (eg SEIR) using black box optimisation techniques (using hyperopt), and estimating uncertainty on top of optimisation trials, using an approximate technique we developed called ABMA.
+This repository holds the codebase for the Wadhwani AI Covid modelling
+effort. During the epidemic (2020 and early 2021) this codebase was
+developed and used by the Wadhwani AI team to provide estimates of
+caseload and resource burden to various local governments around
+India. This codebase is now freely available for others to use and to
+build upon.
 
-It was initially developed to deal with covid casecount data (ie, Confirmed, Active, Recovered, Deceased numbers), SEIR models, and optimisation using hyperopt. However, the code has been abstracted to deal with different data types/sources (ie, any multivariate timeseries data source), any blackbox model, and any blackbox optimisation method. 
+Our primary approach to forecasting covid-related outcomes was through
+parameter estimation of SEIR-like models from count data (_confirmed,
+active, recovered, deceased_) using hyper-parameter optimization
+(hyperopt). However, the code has been abstracted such that that
+initial case was an instance of a broader theme. There is support to
+deal with a variety of data types and sources, forecasting models and
+uncertainty, and techniques for parameter estimation. For example, in
+addition to the SEIR-family, curve fit models like those developed at
+IHME can be used; instead of using hyperopt, Bayesian parameter
+estimation via Markov chain Monte Carlo (MCMC) is also supported. The
+codebase design treats these concepts as compnents that can be swapped
+in and out of a workflow depending on requirements or taste.
+
+In addition to estimation and forecasting, this codebase includes
+tools for visualizations; making it an end-to-end resource for public
+health policy makers. There are several Jupyter Notebooks within this
+repository that can be run to build a standard set of reports. More
+advanced users can build custome report by piecing together other
+components that this repository provides. Finally, developers can
+extend the capabilities of this codebase by creating concrete modules
+that extend our abstractions.
 
 Please find the detailed documentation of this repo in this folder.
 
