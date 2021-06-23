@@ -8,7 +8,7 @@ India. This codebase is now freely available for others to use and to
 build upon.
 
 Our primary approach to forecasting covid-related outcomes was through
-parameter estimation of SEIR-like models from count data (_confirmed,
+parameter estimation of compartmental, SEIR-like models from count data (_confirmed,
 active, recovered, deceased_) using hyper-parameter optimization
 (hyperopt). However, the code has been abstracted such that that
 initial case was an instance of a broader theme. There is support to
@@ -17,14 +17,14 @@ uncertainty, and techniques for parameter estimation. For example, in
 addition to the SEIR-family, curve fit models like those developed at
 IHME can be used; instead of using hyperopt, Bayesian parameter
 estimation via Markov chain Monte Carlo (MCMC) is also supported. The
-codebase design treats these concepts as compnents that can be swapped
+codebase design treats these concepts as components that can be swapped
 in and out of a workflow depending on requirements or taste.
 
 In addition to estimation and forecasting, this codebase includes
 tools for visualizations; making it an end-to-end resource for public
 health policy makers. There are several Jupyter Notebooks within this
 repository that can be run to build a standard set of reports. More
-advanced users can build custome report by piecing together other
+advanced users can build custom reports by piecing together other
 components that this repository provides. Finally, developers can
 extend the capabilities of this codebase by creating concrete modules
 that extend our abstractions.
