@@ -244,6 +244,17 @@ class Covid19IndiaLoader(BaseLoader):
         df_states_all.loc[:, numeric_cols] = df_states_all.loc[:, numeric_cols].apply(pd.to_numeric)
         return df_states_all
 
+    def _load_districts_csv(self):
+        df = pd.read_csv('https://api.covid19india.org/csv/latest/districts.csv')
+        df.columns = [x.lower() for x in df.columns]
+        df['active'] = df['confirmed'] - (df['recovered'] + df['deceased'])
+        numeric_cols = ['confirmed', 'active',
+                        'recovered', 'deceased', 'tested', 'other']
+        df.loc[:, numeric_cols] = df.loc[:, numeric_cols].apply(pd.to_numeric)
+        df = df.fillna(0)
+        df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d")
+        return df
+
     def pull_dataframes(self, load_raw_data=False, load_districts_daily=False, **kwargs):
         """
         This function parses multiple JSONs from covid19india.org
@@ -278,6 +289,8 @@ class Covid19IndiaLoader(BaseLoader):
         dataframes['df_districts_all'] = df_districts_all
         df_states_all = self._load_data_all_json_state(statecode_to_state_dict)
         dataframes['df_states_all'] = df_states_all
+        df_districts = self._load_districts_csv()
+        dataframes['df_districts'] = df_districts
 
         return dataframes
 
