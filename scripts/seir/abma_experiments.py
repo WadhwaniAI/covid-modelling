@@ -96,9 +96,6 @@ def run_parallel(key, params):
     x = run(config)
     x['config'] = config_copy
     plt.close('all')
-    # except Exception as e:
-    #     x = e
-    #     logging.error(e)
     return x
 
 
