@@ -35,7 +35,7 @@ Please find the detailed documentation of this repo in this folder.
 
 ### Clone the repo
 
-`git clone https://github.com/WadhwaniAI/covid-modelling.git`
+`git clone --single-branch --branch master --depth 1 https://github.com/WadhwaniAI/covid-modelling.git`
 
 If you prefer using SSH, use SSH
 
