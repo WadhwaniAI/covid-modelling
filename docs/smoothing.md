@@ -12,7 +12,7 @@ Currently rolling average is done before the data is split. Therefore, there is 
 - Dynamic window (that steadily reduces to 1 at the endpoint)
 - Using model prediction as endpoint data input instead
 
-# Big Jump Smoothing
+# Spike Smoothing
 
 Sometimes, there is too much delay in reporting some case numbers. The `recovered` data for several days ends up getting reported on a single day due to some data pipeline issues. Mumbai reported ~6200 `recovered` on 1 day, for example. The magnitude of the jump is so large that the distribution of the data prior and post the jump are not the same. Furthermore, the cause of the jump is delay in reporting `recovered`/`deceased`, not those many people actually recovering/dying on that particular day; therefore it is not a reflection of the distribution of true cases. So it is important to smooth the jump back in time such that the post-smoothing curve is A. smooth and B. close to the distribution of true cases. 
 

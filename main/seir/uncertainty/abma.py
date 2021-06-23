@@ -1,18 +1,23 @@
 
-import sys
 import datetime
+import sys
 from copy import copy, deepcopy
+
 import numpy as np
 import pandas as pd
-from hyperopt import fmin, tpe, Trials
-from tqdm import tqdm
+from hyperopt import Trials, fmin, tpe
 from joblib import Parallel, delayed
+from tqdm import tqdm
+
+from utils.generic.exceptions import ABMAException
 
 sys.path.append('../../../')
-from utils.fitting.util import set_variable_param_ranges
-from .base import Uncertainty
 from utils.fitting.loss import Loss_Calculator
+from utils.fitting.util import set_variable_param_ranges
 from utils.generic.enums import Columns
+
+from .base import Uncertainty
+
 
 class ABMAUncertainty(Uncertainty):
     def __init__(self, predictions_dict, variable_param_ranges, fitting_method,
@@ -105,7 +110,7 @@ class ABMAUncertainty(Uncertainty):
         # This is done as rolling average on df_val has already been calculated, 
         # while df_district has no rolling average
         if self.predictions_dict['df_val'] is None:
-            raise Exception('Validation set cannot be empty')
+            raise ABMAException('Validation set cannot be empty')
         df_val = self.predictions_dict['df_district'].set_index('date') \
             .loc[self.predictions_dict['df_val']['date'],:]
         try:
@@ -289,7 +294,7 @@ class ABMAUncertainty(Uncertainty):
             pd.DataFrame
         """
         if self.distribution is None:
-            raise Exception(
+            raise ABMAException(
                 "No distribution found. Must call get_distribution first.")
 
         if percentiles is None:

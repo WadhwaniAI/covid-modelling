@@ -8,7 +8,7 @@ India. This codebase is now freely available for others to use and to
 build upon.
 
 Our primary approach to forecasting covid-related outcomes was through
-parameter estimation of compartmental, SEIR-like models from count data (_confirmed,
+parameter estimation of SEIR-like models from count data (_confirmed,
 active, recovered, deceased_) using hyper-parameter optimization
 (hyperopt). However, the code has been abstracted such that that
 initial case was an instance of a broader theme. There is support to
@@ -17,19 +17,20 @@ uncertainty, and techniques for parameter estimation. For example, in
 addition to the SEIR-family, curve fit models like those developed at
 IHME can be used; instead of using hyperopt, Bayesian parameter
 estimation via Markov chain Monte Carlo (MCMC) is also supported. The
-codebase design treats these concepts as components that can be swapped
+codebase design treats these concepts as compnents that can be swapped
 in and out of a workflow depending on requirements or taste.
 
 In addition to estimation and forecasting, this codebase includes
 tools for visualizations; making it an end-to-end resource for public
 health policy makers. There are several Jupyter Notebooks within this
 repository that can be run to build a standard set of reports. More
-advanced users can build custom reports by piecing together other
+advanced users can build custome report by piecing together other
 components that this repository provides. Finally, developers can
 extend the capabilities of this codebase by creating concrete modules
 that extend our abstractions.
 
 Please find the detailed documentation of this repo in this folder.
+
 # Setting Up
 
 ### Clone the repo
@@ -58,13 +59,14 @@ Detailed function and class level documentation can be found in [sphinx](sphinx)
 
 # Further Reading
 
-- To read more about the codebase structure, [click here](docs/codebase_structure.md)
-- To read more about the data, [click here](docs/data.md)
-- To read more about data smoothing methods, [click here](docs/smoothing.md)
-- To read more about SEIR models, [click here](docs/seir.md)
-- To read more about IHME, [click here](docs/ihme.md)
-- To read more about fitting process, [click here](docs/fitting.md)
-- To read more about uncertainty estimation using ABMA, [click here](docs/abma.md)
-- To read more about uncertainty estimation using MCMC, [click here](docs/mcmc.md)
-- To read more about config file and how everything comes together, [click here](docs/config.md)
-- To read more about the oncall process, [click here](docs/oncall.md)
+- To read more about the codebase structure, [click here](codebase_structure.md)
+- To read more about the data, [click here](data.md)
+- To read more about data smoothing methods, [click here](smoothing.md)
+- To read more about SEIR models, [click here](seir.md)
+- To read more about IHME, [click here](ihme.md)
+- To read more about fitting process, [click here](fitting.md)
+- To read more about uncertainty estimation using ABMA, [click here](abma.md)
+- To read more about uncertainty estimation using MCMC, [click here](mcmc.md)
+- To read more about config file and how everything comes together, [click here](config.md)
+- To read more about the oncall process, [click here](oncall.md)
+- If you want to contribute, do check out [general principles](general_principles.md) before writing code

@@ -14,20 +14,17 @@ from tqdm import tqdm
 class MCMC(Uncertainty):
 
     """
-    MCMC class to perform metropolis-hastings. Supports gaussian and poisson likelihoods.
+    MCMC class to perform metropolis-hastings. Supports gaussian likelihood.
     
     Attributes:
-        chains (list): List of chains where each chain contains a list of accepted and rejected parameters.
-        df_district (pd.DataFrame): dataframe containing district data.
-        df_train (pd.DataFrame): dataframe containing district data to train on.
-        df_val (pd.DataFrame): dataframe containing district data to evaluate performance on.
-        dist_log_likelihood (func): pointer to the log-likelihood function to use.
-        fit_days (int): no. of days to evaluate performance on.
-        fit_end (int): no. of days to fit the model on.
-        fit_start (int): dataframe index to fit start day.
-        R_hat (dict): dictionary containing the convergence metrics for each parameter.
-        state (str): state that the district belongs to.
-        timestamp (datetime.datetime): date and time when the model is run.
+        timestamp (datetime): Stores the current datetime.
+        df_train (pd.DataFrame): dataframe containing processed time series.
+        default_params (dict): dict taken from default config.
+        variable_param_ranges (dict): dict with parameter ranges for each of the varying parameters.
+        n_chains (int): number of chains to generate.
+        total_days (int): no. of days to fit the model on.
+        algo (str): type of likelihood used (currently only supports gaussian).
+        num_evals (int): no. of samples per chain.
     """
     
     def __init__(self, df_train, default_params, variable_param_ranges, n_chains, total_days,
@@ -67,7 +64,9 @@ class MCMC(Uncertainty):
         mentioned in the config.
         
         Returns:
-            dict: dictionary containing initial param-value pairs.
+            theta(dict): dictionary containing initial param-value pairs
+            da(float):Updated parametersfor alpha in Inv gamma prior of sigma
+            db(float):Updated parametersfor beta in Inv gamma prior of sigma
         """
         theta = defaultdict()
         for key in self.prior_ranges:
@@ -154,7 +153,7 @@ class MCMC(Uncertainty):
 
     def truncated_gaussian(self,theta):
         """
-        Calculates Multiplier offset to take care of truncated gaussian
+        Calculates Multiplier offset to take care of truncated gaussian in acceptance probablity
         
         Args:
             theta(OrderedDict): set of parameters
@@ -181,9 +180,14 @@ class MCMC(Uncertainty):
         Args:
             theta_old (OrderedDict): previous parameter-value pairs.
             theta_new (OrderedDict): new proposed parameter-value pairs.
-        
+            explored(int): Number of times we chose a sample even when it had lower likelihood than the previous sample
+            optimized(int): Number of times we chose a sample with higher likelihood than the previous sample
         Returns:
             bool: whether or not to accept the new parameter set.
+            explored(int): updated number of explored samples
+            optimized(int): updated number of optimized samples to
+            da(float):Update parameters for alpha for InvGamma Prior
+            db(float): Update parameters for beta for InvGamma Prior
         """
         x_new,da,db= self._log_likelihood(theta_new)
         x_old,_,_ = self._log_likelihood(theta_old)
@@ -202,7 +206,9 @@ class MCMC(Uncertainty):
     def _metropolis(self, iters, A=0, alpha_0=40, beta_0=2/700, seed=None):
         """
         Implementation of the metropolis loop.
-        
+            iters (int) : length of MCMC chains. 
+            A (int) : initial value of accepted samples.
+
         Returns:
             tuple: tuple containing a list of accepted and a list of rejected parameter values.
         """
@@ -265,11 +271,10 @@ class MCMC(Uncertainty):
         """Summary
         
         Args:
-            params (TYPE): Description
-            losses (TYPE): Description
-        
+            params (dict): dict of all params in a chain
+            losses (list): list of losses for each of the corresponding parameters
         Returns:
-            TYPE: Description
+            trials (list): list of trials in the consistent format across optimizers 
         """
         trials = list()
         for i, param_dict in enumerate(params):

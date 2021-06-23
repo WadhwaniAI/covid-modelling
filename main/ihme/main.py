@@ -13,12 +13,11 @@ from data.processing.processing import get_data, train_val_test_split
 from viz import plot_smoothing, plot_fit
 
 sys.path.append('../..')
-from models.ihme.model import IHME
 from utils.fitting.data import lograte_to_cumulative, rate_to_cumulative
 from utils.fitting.loss import Loss_Calculator
 from main.ihme.optimiser import Optimiser
 from main.ihme.forecast import get_uncertainty_draws
-from utils.fitting.smooth_jump import smooth_big_jump
+from data.processing.smooth_jump import smooth_big_jump
 
 
 def transform_data(df, population):
@@ -142,12 +141,19 @@ def data_setup(dataloader, dataloading_params, data_columns, smooth_jump, smooth
         test_period=split['test_period'], start_date=split['start_date'], end_date=split['end_date'],
         window_size=1, trim_excess=True)
 
-    observed_dataframes = {}
-    for name in ['df_district', 'df_district_notrans',
-                 'df_train', 'df_val', 'df_test',
-                 'df_train_nora', 'df_val_nora', 'df_test_nora',
-                 'df_train_nora_notrans', 'df_val_nora_notrans', 'df_test_nora_notrans']:
-        observed_dataframes[name] = eval(name)
+    observed_dataframes = {
+        'df_district': df_district, 
+        'df_district_notrans': df_district_notrans, 
+        'df_train': df_train,
+        'df_val': df_val,
+        'df_test': df_test,
+        'df_train_nora': df_train_nora,
+        'df_val_nora': df_val_nora,
+        'df_test_nora': df_test_nora,
+        'df_train_nora_notrans': df_train_nora_notrans,
+        'df_val_nora_notrans': df_val_nora_notrans,
+        'df_test_nora_notrans': df_test_nora_notrans
+    }
 
     return {"observed_dataframes": observed_dataframes, "smoothing": smoothing}
 
@@ -178,7 +184,7 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params,
 
     # Get the required data
     df_district, df_district_notrans, df_train, df_val, df_test, \
-        df_train_nora, df_val_nora, df_test_nora, df_train_nora_notrans, df_val_nora_notrans, df_test_nora_notrans = [
+        _, _, _, df_train_nora_notrans, df_val_nora_notrans, df_test_nora_notrans = [
             observed_dataframes.get(k) for k in observed_dataframes.keys()]
 
     # Results dictionary
@@ -241,11 +247,19 @@ def run_cycle(observed_dataframes, data, model, model_params, default_params,
     results_dict['df_prediction'] = df_prediction_notrans
     results_dict['df_district'] = df_district_notrans
     data_last_date = df_district.iloc[-1]['date'].strftime("%Y-%m-%d")
-    for name in ['optimiser', 'df_train', 'df_val', 'df_test',
-                 'df_train_nora_notrans', 'df_val_nora_notrans', 'df_test_nora_notrans',
-                 'df_loss', 'df_loss_pointwise', 'trials',
-                 'data_last_date', 'draws']:
-        results_dict[name] = eval(name)
+    
+    results_dict['optimiser'] = optimiser
+    results_dict['df_train'] = df_train
+    results_dict['df_val'] = df_val
+    results_dict['df_test'] = df_test
+    results_dict['df_train_nora_notrans'] = df_train_nora_notrans
+    results_dict['df_val_nora_notrans'] = df_val_nora_notrans
+    results_dict['df_test_nora_notrans'] = df_test_nora_notrans
+    results_dict['df_loss'] = df_loss
+    results_dict['df_loss_pointwise'] = df_loss_pointwise
+    results_dict['trials'] = trials
+    results_dict['data_last_date'] = data_last_date
+    results_dict['draws'] = draws
 
     return results_dict
 
