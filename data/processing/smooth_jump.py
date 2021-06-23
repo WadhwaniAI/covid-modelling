@@ -20,7 +20,7 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
         method (str, optional): [description]. Defaults to 'uniform'.
 
     Raises:
-        Exception: [description]
+        ValueError: [description]
 
     Returns:
         [type]: [description]
@@ -53,7 +53,7 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
         elif method == 'weighted-mag':
             newcases = df_district.loc[:, smoothing_var]
         else:
-            raise Exception("unknown smoothing method provided")
+            raise ValueError("unknown smoothing method provided")
 
         valid_idx = newcases.first_valid_index()
         if smoothing_length is not None:
@@ -73,7 +73,7 @@ def smooth_big_jump_helper(df_district, smoothing_var, auxillary_var, d1, d2=Non
         df_district.loc[truncated.index, auxillary_var] = truncated[auxillary_var].astype('int64')
 
     else:
-        raise Exception("unknown smoothing method provided")
+        raise ValueError("unknown smoothing method provided")
     
     return df_district.reset_index(), description
 
