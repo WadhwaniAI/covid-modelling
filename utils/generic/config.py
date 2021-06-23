@@ -10,6 +10,7 @@ import main.seir.uncertainty as uncertainty_module
 import models
 from utils.fitting.util import update_dict
 from utils.generic.enums import Columns
+from utils.generic.exceptions import ConfigException
 
 
 def read_config(filename='default.yaml', preprocess=True, config_dir='seir'):
@@ -188,7 +189,7 @@ def expand_choices(pattern, choices):
                                         choices) if v is not None}
         choices = pd.date_range(**choices).date
     else:
-        raise Exception('Undefined pattern')
+        raise ConfigException('Undefined pattern')
     return choices
 
 
@@ -212,7 +213,7 @@ def generate_config(config):
             if select:
                 if pattern == 'string':
                     if len(choices) < 2:
-                        raise Exception('Insufficient arguments')
+                        raise ValueError('Insufficient arguments')
                     else:
                         format_strings = [choices[0]] * choices[1]
                         for i in range(2, len(choices)):
