@@ -14,7 +14,7 @@ For our case we need to define each of these,
 ---
 
 ### [Likelihood Function $\pi$](https://github.com/WadhwaniAI/covid-modelling/blob/document/main/seir/uncertainty/mcmc.py/#L127)
-The likelihood function here defines the probablity of a set of parameters given the time series x,y,z,w. And is defined as $P(\theta | x,y,z,w)$. The likelihood we have chosen is a gaussian likelihood [Link]. Intuitively the probability of those set of parameters $\theta$ will be high which have low loss with predicted time series.
+The likelihood function here defines the probablity of a set of parameters given the time series x,y,z,w. And is defined as <img src="https://render.githubusercontent.com/render/math?math=$P(\theta | x,y,z,w)$">. The likelihood we have chosen is a gaussian likelihood [Link]. Intuitively the probability of those set of parameters $\theta$ will be high which have low loss with predicted time series.
 Here the likelihood for a given $\theta$ is calculated as below,
 - First generate $\{ \hat{x}_t,\hat{y}_t,\hat{z}_t,\hat{w}_t\}$ by running the predict function of the optimization class MCMC_opt [Link] .
 - Then for a certain $\sigma$, $L(\theta)=\prod_{x,y,z}(\prod_k \mathcal{N}(\hat{x}_k|x_k,\sigma))$
