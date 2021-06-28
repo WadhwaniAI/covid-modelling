@@ -13,13 +13,13 @@ For our case we need to define each of these,
 
 ---
 
-### [Likelihood Function $\pi$](https://github.com/WadhwaniAI/covid-modelling/blob/document/main/seir/uncertainty/mcmc.py/#L127)
-The likelihood function here defines the probablity of a set of parameters given the time series x,y,z,w. And is defined as <img src="https://render.githubusercontent.com/render/math?math=$P(\theta | x,y,z,w)$">. The likelihood we have chosen is a gaussian likelihood [Link]. Intuitively the probability of those set of parameters $\theta$ will be high which have low loss with predicted time series.
-Here the likelihood for a given $\theta$ is calculated as below,
-- First generate $\{ \hat{x}_t,\hat{y}_t,\hat{z}_t,\hat{w}_t\}$ by running the predict function of the optimization class MCMC_opt [Link] .
-- Then for a certain $\sigma$, $L(\theta)=\prod_{x,y,z}(\prod_k \mathcal{N}(\hat{x}_k|x_k,\sigma))$
+### [Likelihood Function <img src="https://render.githubusercontent.com/render/math?math=$\pi$">](https://github.com/WadhwaniAI/covid-modelling/blob/document/main/seir/uncertainty/mcmc.py/#L127)
+The likelihood function here defines the probablity of a set of parameters given the time series x,y,z,w. And is defined as <img src="https://render.githubusercontent.com/render/math?math=$P(\theta | x,y,z,w)$">. The likelihood we have chosen is a gaussian likelihood . Intuitively the probability of those set of parameters <img src="https://render.githubusercontent.com/render/math?math=$\theta$"> will be high which have low loss with predicted time series.
+Here the likelihood for a given <img src="https://render.githubusercontent.com/render/math?math=$\theta$">  is calculated as below,
+- First generate <img src="https://render.githubusercontent.com/render/math?math=$\{\hat{x}_t,\hat{y}_t,\hat{z}_t,\hat{w}_t\}$"> by running the predict function of the optimization class MCMC_opt [Link] .
+- Then for a certain <img src="https://render.githubusercontent.com/render/math?math=$\sigma$,$L(\theta)=\prod_{x,y,z}(\prod_k\mathcal{N}(\hat{x}_k|x_k,\sigma))$">
 
-Now our problem turns to finding the correct value of $\sigma$. We take a conjugate prior to the Normal distribution as $\sigma \sim InvGamma(\alpha,\beta)$ and keep sampling from the posterior as defined in the KDD paper.
+Now our problem turns to finding the correct value of <img src="https://render.githubusercontent.com/render/math?math=$\sigma$">. We take a conjugate prior to the Normal distribution as <img src="https://render.githubusercontent.com/render/math?math=$\sigma\sim InvGamma(\alpha,\beta)$"> and keep sampling from the posterior as defined in the KDD paper.
 
 The log_likelihood function calls the [_gaussian_log_likelihood](https://github.com/WadhwaniAI/covid-modelling/blob/document/main/seir/uncertainty/mcmc.py/#L109) which does the actual likelihood computation. THe likelihood function takes a product of likelihoods for all the compartments and their correponding time series $x_t,y_t,z_t$ 
 
@@ -27,9 +27,9 @@ The log_likelihood function calls the [_gaussian_log_likelihood](https://github.
 
 ### [Transition Kernel Q](https://github.com/WadhwaniAI/covid-modelling/blob/document/main/seir/uncertainty/mcmc.py/#L80)
 
-The transition kernel defines how the chain progresses , i.e. $Q(\theta) = \theta_{new}$ where $\theta_{new}$ must also lie in the uniform prior range of $\theta$. Our transition kernel adds gaussian noise to $\theta$ till its inside the unfiorm prior of the given parameters. 
+The transition kernel defines how the chain progresses , i.e. <img src="https://render.githubusercontent.com/render/math?math=$Q(\theta) = \theta_{new}$"> where <img src="https://render.githubusercontent.com/render/math?math=$\theta_{new}$"> must also lie in the uniform prior range of <img src="https://render.githubusercontent.com/render/math?math=$\theta$"> . Our transition kernel adds gaussian noise to <img src="https://render.githubusercontent.com/render/math?math=$\theta$">  till its inside the unfiorm prior of the given parameters. 
 
-$Q(\theta) = \theta + \mathcal{z}$ where $\mathcal{z} \sim \mathcal{N}(0,\gamma)$
+<img src="https://render.githubusercontent.com/render/math?math=$Q(\theta) = \theta + \mathcal{z}$ where $\mathcal{z} \sim \mathcal{N}(0,\gamma)$">
 
 The corresponding code is in Gauss_proposal
 
@@ -38,10 +38,10 @@ The corresponding code is in Gauss_proposal
 ### [Acceptance Criteria](https://github.com/WadhwaniAI/covid-modelling/blob/document/main/seir/uncertainty/mcmc.py/#L175)
 The acceptance criteria defines whether a proposed sample in the MCMC chain is  accepted or not. Taking cues from the general MH algorithm , the acceptance criteria becomes,
 
-$A = min (1 , \frac{L(\theta_{new}|x_t,y_t,z_t) \times Q(\theta_{new},\theta) }{L(\theta|x_t,y_t,z_t) \times Q(\theta,\theta_{new})})$
+<img src="https://render.githubusercontent.com/render/math?math=$A = min (1 , \frac{L(\theta_{new}|x_t,y_t,z_t) \times Q(\theta_{new},\theta) }{L(\theta|x_t,y_t,z_t) \times Q(\theta,\theta_{new})})$">
 
 
-If we had an unconstrained parameter space the Q components would have cancelled out, but because of the presence of uniform prior the Q becomes a truncated gaussian [LINK] and the fraction $\frac{Q(\theta_{new},\theta)}{Q(\theta,\theta_{new})}$ becomes $\neq 1$. 
+If we had an unconstrained parameter space the Q components would have cancelled out, but because of the presence of uniform prior the Q becomes a truncated gaussian [LINK] and the fraction <img src="https://render.githubusercontent.com/render/math?math=$\frac{Q(\theta_{new},\theta)}{Q(\theta,\theta_{new})}$ becomes $\neq 1$">. 
 
 The corresponding code is in the _accept function
 
