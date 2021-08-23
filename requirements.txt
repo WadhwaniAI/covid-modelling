@@ -136,7 +136,7 @@ nbformat==5.0.4
 netCDF4==1.5.3
 networkx==2.2
 nodeenv==1.5.0
-notebook==6.1.5
+notebook==6.4.1
 numba==0.48.0
 numpy==1.18.2
 nvidia-ml-py3==7.352.0
