@@ -146,7 +146,7 @@ openpyexcel==2.5.14
 packaging==20.4
 pandas==1.1.3
 pandocfilters==1.4.2
-paramiko==2.7.1
+paramiko==2.10.1
 parso==0.6.2
 pathos==0.2.5
 pathtools==0.1.2
