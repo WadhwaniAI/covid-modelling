@@ -126,7 +126,7 @@ mdutils==1.2.1
 mercantile==1.1.6
 mistune==0.8.4
 mkl==2019.0
-mlflow==1.10.0
+mlflow==1.23.1
 mpld3==0.3
 msrest==0.6.18
 multiprocess==0.70.9
