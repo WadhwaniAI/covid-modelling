@@ -1,5 +1,12 @@
 # Wadhwani AI Covid Modelling
 
+**FEB 2023**: _We are no longer actively developing or supporting
+this project; it has been
+[archived](https://docs.github.com/en/repositories/archiving-a-github-repository/archiving-repositories).
+Others who may want to use it for their own modelling or
+experimentation are free to do so. For any questions,
+please [email our team](mailto:covid-modellers@wadhwaniai.org)._
+
 This repository holds the codebase for the Wadhwani AI Covid modelling
 effort. During the epidemic (2020 and early 2021) this codebase was
 developed and used by the Wadhwani AI team to provide estimates of
@@ -30,6 +37,7 @@ extend the capabilities of this codebase by creating concrete modules
 that extend our abstractions.
 
 Please find the detailed documentation of this repo in this folder.
+
 # Setting Up
 
 ### Clone the repo
