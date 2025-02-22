@@ -41,7 +41,7 @@ constantly==15.1.0
 contextily==1.0.1
 covasim==0.22.3
 crayons==0.4.0
-cryptography==3.3.2
+cryptography==39.0.1
 cycler==0.10.0
 data==0.4
 databricks-cli==0.11.0
